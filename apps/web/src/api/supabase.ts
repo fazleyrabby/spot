@@ -42,18 +42,18 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
     .from('spots')
     .select(`
       id, x, y, owner_id, claimed_at,
-      citizens!inner (
+      citizens:citizens!spots_owner_id_fkey (
         id, display_name, avatar_id, tagline, website_url, github_url, linkedin_url
       )
-    `);
+    `)
+    .not('owner_id', 'is', null);
 
   if (spotsErr) {
     console.error('Error fetching spots from Supabase:', spotsErr);
-    throw spotsErr;
   }
 
   const occupied: OccupiedSpotSummary[] = (spots || []).map((s: any) => {
-    const c = s.citizens;
+    const c = Array.isArray(s.citizens) ? s.citizens[0] : s.citizens;
     return {
       spotId: s.id,
       x: s.x,
@@ -108,13 +108,23 @@ export async function fetchSessionDirect(): Promise<{
 
   const ghUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username;
 
-  // Look up citizen by github_url or user id
+  // Look up citizen by github_url, email, github_id, or user id
   let citizenRow: any = null;
   if (ghUsername) {
     const { data } = await supabase
       .from('citizens')
       .select('*')
-      .ilike('github_url', ghUsername)
+      .ilike('github_url', `%${ghUsername}%`)
+      .limit(1)
+      .maybeSingle();
+    citizenRow = data;
+  }
+
+  if (!citizenRow && user.email) {
+    const { data } = await supabase
+      .from('citizens')
+      .select('*')
+      .eq('email', user.email)
       .limit(1)
       .maybeSingle();
     citizenRow = data;
@@ -124,7 +134,7 @@ export async function fetchSessionDirect(): Promise<{
     const { data } = await supabase
       .from('citizens')
       .select('*')
-      .eq('id', `c_${user.id.replace(/-/g, '').substring(0, 24)}`)
+      .or(`github_id.eq.${user.id},id.eq.c_${user.id.replace(/-/g, '').substring(0, 24)}`)
       .limit(1)
       .maybeSingle();
     citizenRow = data;
