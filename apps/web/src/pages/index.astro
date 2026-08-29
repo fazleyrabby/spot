@@ -936,71 +936,106 @@ import SearchModal from '../components/SearchModal.astro';
       : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api/realtime/stream` : '/api/realtime/stream');
     const streamUrl = `${streamBase}?${queryParams.toString()}`;
 
-    const sse = new EventSource(streamUrl);
-    activeSSE = sse;
-
-    sse.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'spot_claimed') {
-          if (!worldSnapshot.occupied.some((o) => o.spotId === msg.spot.id)) {
-            const newOccupied: OccupiedSpotSummary = {
-              spotId: msg.spot.id,
-              x: msg.spot.x,
-              y: msg.spot.y,
-              citizenId: msg.citizen.id,
-              displayName: msg.citizen.displayName,
-              avatarId: msg.citizen.avatarId,
-              tagline: msg.citizen.tagline,
-              websiteUrl: msg.citizen.websiteUrl,
-              githubUrl: msg.citizen.githubUrl,
-              isOnline: true,
-            };
-            worldSnapshot.occupied.push(newOccupied);
-            worldSnapshot.claimedCount++;
+    // Direct Supabase Realtime Channel
+    let supabaseChannel: any = null;
+    function connectSupabaseRealtime() {
+      if (supabaseChannel) return;
+      supabaseChannel = supabase
+        .channel('spot_world_realtime', {
+          config: { presence: { key: tabId || 'default' } }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'spots' }, async () => {
+          try {
+            const snap = await fetchWorldSnapshot();
+            worldSnapshot.occupied = snap.occupied;
+            worldSnapshot.claimedCount = snap.claimedCount;
             renderer.setSnapshot(worldSnapshot);
             if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-            showToast(`✨ ${msg.citizen.displayName} just claimed Spot (${msg.spot.x}, ${msg.spot.y})!`, 'info');
-          }
-        } else if (msg.type === 'profile_updated') {
-          const item = worldSnapshot.occupied.find((o) => 
-            o.citizenId === msg.citizen.id ||
-            (o.githubUrl && msg.citizen.githubUrl && o.githubUrl.toLowerCase() === msg.citizen.githubUrl.toLowerCase())
-          );
-          if (item) {
-            item.displayName = msg.citizen.displayName;
-            item.avatarId = msg.citizen.avatarId;
-            item.tagline = msg.citizen.tagline;
-            item.websiteUrl = msg.citizen.websiteUrl;
-            item.githubUrl = msg.citizen.githubUrl;
-            renderer.setSnapshot(worldSnapshot);
-          }
-        } else if (msg.type === 'spot_released') {
-          const idx = worldSnapshot.occupied.findIndex((o) => o.spotId === msg.spotId || (o.x === msg.x && o.y === msg.y));
-          if (idx !== -1) {
-            worldSnapshot.occupied.splice(idx, 1);
-            worldSnapshot.claimedCount = Math.max(0, worldSnapshot.claimedCount - 1);
-            renderer.setSnapshot(worldSnapshot);
-            if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-          }
-        } else if (msg.type === 'presence') {
+          } catch {}
+        })
+        .on('presence', { event: 'sync' }, () => {
+          const state = supabaseChannel.presenceState();
+          const count = Math.max(1, Object.keys(state).length);
           const onlineCountEl = document.getElementById('hud-online-count');
-          if (onlineCountEl && msg.onlineCount) {
-            onlineCountEl.textContent = String(msg.onlineCount);
+          if (onlineCountEl) onlineCountEl.textContent = String(count);
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await supabaseChannel.track({ online_at: new Date().toISOString() });
           }
-        }
-      } catch (err) {
-        console.error('Realtime message error:', err);
-      }
-    };
+        });
+    }
 
-    sse.onerror = () => {
-      if (activeSSE === sse) {
-        sse.close();
-        activeSSE = null;
-        setTimeout(connectRealtimeStream, 5000);
-      }
-    };
+    if (window.location.hostname === 'localhost' || import.meta.env.PUBLIC_API_URL) {
+      const sse = new EventSource(streamUrl);
+      activeSSE = sse;
+
+      sse.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'spot_claimed') {
+            if (!worldSnapshot.occupied.some((o) => o.spotId === msg.spot.id)) {
+              const newOccupied: OccupiedSpotSummary = {
+                spotId: msg.spot.id,
+                x: msg.spot.x,
+                y: msg.spot.y,
+                citizenId: msg.citizen.id,
+                displayName: msg.citizen.displayName,
+                avatarId: msg.citizen.avatarId,
+                tagline: msg.citizen.tagline,
+                websiteUrl: msg.citizen.websiteUrl,
+                githubUrl: msg.citizen.githubUrl,
+                isOnline: true,
+              };
+              worldSnapshot.occupied.push(newOccupied);
+              worldSnapshot.claimedCount++;
+              renderer.setSnapshot(worldSnapshot);
+              if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+              showToast(`✨ ${msg.citizen.displayName} just claimed Spot (${msg.spot.x}, ${msg.spot.y})!`, 'info');
+            }
+          } else if (msg.type === 'profile_updated') {
+            const item = worldSnapshot.occupied.find((o) => 
+              o.citizenId === msg.citizen.id ||
+              (o.githubUrl && msg.citizen.githubUrl && o.githubUrl.toLowerCase() === msg.citizen.githubUrl.toLowerCase())
+            );
+            if (item) {
+              item.displayName = msg.citizen.displayName;
+              item.avatarId = msg.citizen.avatarId;
+              item.tagline = msg.citizen.tagline;
+              item.websiteUrl = msg.citizen.websiteUrl;
+              item.githubUrl = msg.citizen.githubUrl;
+              renderer.setSnapshot(worldSnapshot);
+            }
+          } else if (msg.type === 'spot_released') {
+            const idx = worldSnapshot.occupied.findIndex((o) => o.spotId === msg.spotId || (o.x === msg.x && o.y === msg.y));
+            if (idx !== -1) {
+              worldSnapshot.occupied.splice(idx, 1);
+              worldSnapshot.claimedCount = Math.max(0, worldSnapshot.claimedCount - 1);
+              renderer.setSnapshot(worldSnapshot);
+              if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+            }
+          } else if (msg.type === 'presence') {
+            const onlineCountEl = document.getElementById('hud-online-count');
+            if (onlineCountEl && msg.onlineCount) {
+              onlineCountEl.textContent = String(msg.onlineCount);
+            }
+          }
+        } catch (err) {
+          console.error('Realtime message error:', err);
+        }
+      };
+
+      sse.onerror = () => {
+        if (activeSSE === sse) {
+          sse.close();
+          activeSSE = null;
+          connectSupabaseRealtime();
+        }
+      };
+    } else {
+      // Connect to Supabase Realtime directly on Vercel
+      connectSupabaseRealtime();
+    }
   }
 
   window.addEventListener('beforeunload', () => {
