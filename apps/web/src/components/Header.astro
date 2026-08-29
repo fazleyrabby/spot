@@ -281,12 +281,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       top: 8px;
       width: calc(100% - 16px);
       padding: 0 8px;
-      gap: 8px;
-    }
-
-    .visitors-pill,
-    .stat-divider:nth-of-type(1) {
-      display: none;
+      gap: 6px;
     }
 
     .mini-bar {
@@ -299,7 +294,24 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   }
 
   @media (max-width: 520px) {
+    .header-hud {
+      gap: 5px;
+      padding: 0 6px;
+    }
+
+    .hud-center {
+      gap: 6px;
+    }
+
     .stat-text {
+      display: none;
+    }
+
+    .stat-total {
+      display: none;
+    }
+
+    .stat-slash {
       display: none;
     }
 
@@ -308,12 +320,12 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
 
     .hud-search-btn {
-      padding: 6px 8px;
+      padding: 6px 7px;
     }
 
     .cta-claim-btn {
-      padding: 6px 9px;
-      font-size: 0.75rem;
+      padding: 5px 8px;
+      font-size: 0.72rem;
     }
   }
 </style>
