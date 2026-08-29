@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: spot_db
+      POSTGRES_USER: spot_user
+      POSTGRES_PASSWORD: spot_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - spot_pgdata:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  spot_pgdata:

@@ -1,0 +1,319 @@
+---
+interface Props {
+  totalSpots?: number;
+  claimedCount?: number;
+  onlineCount?: number;
+}
+
+const {
+  totalSpots = 10000,
+  claimedCount = 0,
+  onlineCount = 1,
+} = Astro.props;
+
+const pct = Math.round((claimedCount / totalSpots) * 100);
+---
+
+<header class="header-hud glass-panel" id="header-hud">
+  <div class="hud-left">
+    <div class="brand-badge">
+      <span class="badge-dot"></span>
+      <span class="brand-title">SPOT</span>
+    </div>
+  </div>
+
+  <div class="hud-center">
+    <!-- 1. Claimed Count -->
+    <div class="stat-pill" title="Total spots claimed">
+      <span class="stat-num mono-num highlight-amber" id="hud-claimed-count">{claimedCount.toLocaleString()}</span>
+      <span class="stat-slash">/</span>
+      <span class="stat-total mono-num">{totalSpots.toLocaleString()}</span>
+      <span class="stat-text">claimed</span>
+      <div class="mini-bar">
+        <div class="mini-bar-fill" style={`width: ${pct}%`}></div>
+      </div>
+    </div>
+
+    <div class="stat-divider"></div>
+
+    <!-- 2. Total Views -->
+    <div class="stat-pill visitors-pill" title="Total all-time views">
+      <span class="stat-num mono-num" id="hud-visitors-count">1</span>
+      <span class="stat-text">views</span>
+    </div>
+
+    <div class="stat-divider"></div>
+
+    <!-- 3. Realtime Online -->
+    <div class="stat-pill online-pill" title="Active real-time visitors">
+      <span class="online-dot"></span>
+      <span class="stat-num mono-num highlight-jade" id="hud-online-count">{onlineCount}</span>
+      <span class="stat-text">online</span>
+    </div>
+  </div>
+
+  <div class="hud-right">
+    <button class="hud-search-btn" id="header-search-btn" type="button" title="Search citizens (Cmd+K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <span class="search-label">Find</span>
+      <kbd class="search-shortcut">⌘K</kbd>
+    </button>
+
+    <button class="cta-claim-btn" id="header-claim-btn" type="button">
+      <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Claim a Spot</span>
+    </button>
+  </div>
+</header>
+
+<style>
+  .header-hud {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 46px;
+    padding: 0 12px 0 10px;
+    background: rgba(14, 17, 26, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    z-index: 40;
+    pointer-events: auto;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    white-space: nowrap;
+  }
+
+  .hud-left {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .brand-badge {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-amber);
+    border-radius: 1.5px;
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .hud-center {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .stat-pill {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .stat-num {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .highlight-amber {
+    color: var(--accent-amber);
+  }
+
+  .highlight-jade {
+    color: var(--accent-jade);
+  }
+
+  .stat-slash {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .stat-total {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .stat-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .mini-bar {
+    width: 36px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-left: 2px;
+  }
+
+  .mini-bar-fill {
+    height: 100%;
+    background: var(--accent-amber);
+    border-radius: 2px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .online-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-jade);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+  }
+
+  .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .hud-search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 9px;
+    border-radius: var(--radius-md);
+    transition: all 0.2s var(--ease-out-expo);
+  }
+
+  .hud-search-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .search-shortcut {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .cta-claim-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--accent-amber);
+    color: #120c02;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    transition: all 0.2s var(--ease-out-expo);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    white-space: nowrap;
+  }
+
+  .cta-claim-btn:hover {
+    background: var(--accent-amber-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+  }
+
+  .cta-claim-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Responsive Media Queries */
+  @media (max-width: 768px) {
+    .header-hud {
+      top: 8px;
+      width: calc(100% - 16px);
+      padding: 0 8px;
+      gap: 8px;
+    }
+
+    .visitors-pill,
+    .stat-divider:nth-of-type(1) {
+      display: none;
+    }
+
+    .mini-bar {
+      display: none;
+    }
+
+    .search-shortcut {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .stat-text {
+      display: none;
+    }
+
+    .search-label {
+      display: none;
+    }
+
+    .hud-search-btn {
+      padding: 6px 8px;
+    }
+
+    .cta-claim-btn {
+      padding: 6px 9px;
+      font-size: 0.75rem;
+    }
+  }
+</style>

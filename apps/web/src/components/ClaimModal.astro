@@ -1,0 +1,366 @@
+---
+---
+
+<div class="modal-backdrop" id="claim-modal-backdrop" aria-hidden="true">
+  <div class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="claim-title">
+    <button class="modal-close-btn" id="claim-modal-close" aria-label="Close claim window">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="claim-header">
+      <div class="claim-badge mono-num" id="claim-spot-badge">Spot (50, 50)</div>
+      <h2 class="claim-title" id="claim-title">Claim Your Spot</h2>
+      <p class="claim-desc">One person. One avatar. One permanent place on the Internet.</p>
+    </div>
+
+    <!-- 1-Click GitHub Verification Button -->
+    <div class="oauth-section" id="oauth-section">
+      <button type="button" class="github-oauth-btn" id="btn-claim-github">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+        </svg>
+        <span>Verify with GitHub & Claim</span>
+      </button>
+
+      <div class="oauth-divider">
+        <span>OR FILL MANUALLY</span>
+      </div>
+    </div>
+
+    <form class="claim-form" id="claim-form" onsubmit="return false;">
+      <!-- Avatar Selector -->
+      <div class="form-group">
+        <label class="form-label">CHOOSE AVATAR</label>
+        <div class="avatar-grid" id="claim-avatar-grid">
+          <!-- Avatars populated via JS with real canvas previews -->
+        </div>
+      </div>
+
+      <!-- Identity Inputs -->
+      <div class="form-group">
+        <label for="input-display-name" class="form-label">YOUR NAME / HANDLE <span class="required">*</span></label>
+        <input
+          type="text"
+          id="input-display-name"
+          name="displayName"
+          class="form-input"
+          placeholder="e.g. Satoshi"
+          maxlength="32"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="input-tagline" class="form-label">TAGLINE</label>
+        <input
+          type="text"
+          id="input-tagline"
+          name="tagline"
+          class="form-input"
+          placeholder="What are you building or exploring?"
+          maxlength="80"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="input-website" class="form-label">WEBSITE</label>
+          <input
+            type="url"
+            id="input-website"
+            name="website"
+            class="form-input"
+            placeholder="https://..."
+            maxlength="256"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="input-github" class="form-label">GITHUB</label>
+          <input
+            type="text"
+            id="input-github"
+            name="github"
+            class="form-input"
+            placeholder="username"
+            maxlength="64"
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-claim-btn" id="submit-claim-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Claim This Spot</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease-out-expo);
+    padding: 16px;
+  }
+
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 26px;
+    box-shadow: var(--shadow-elevated);
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.3s var(--ease-out-expo);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-backdrop.open .modal-card {
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .modal-close-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .claim-header {
+    margin-bottom: 20px;
+  }
+
+  .claim-badge {
+    display: inline-block;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 700;
+    color: var(--accent-amber);
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+  }
+
+  .claim-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .claim-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .oauth-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .github-oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #24292e;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 11px 16px;
+    border-radius: var(--radius-md);
+    transition: all 0.2s var(--ease-out-expo);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .github-oauth-btn:hover {
+    background: #2f363d;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .oauth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .oauth-divider::before,
+  .oauth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .oauth-divider span {
+    padding: 0 10px;
+  }
+
+  .claim-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-label {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  .form-label .required {
+    color: var(--accent-coral);
+  }
+
+  .avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  :global(.avatar-option) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  :global(.avatar-option:hover) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  :global(.avatar-option.selected) {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: var(--accent-amber);
+    box-shadow: 0 0 0 1px var(--accent-amber);
+  }
+
+  :global(.avatar-option canvas) {
+    width: 36px;
+    height: 36px;
+    image-rendering: pixelated;
+  }
+
+  :global(.avatar-option span) {
+    font-size: 0.72rem; /* 11.5px */
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .form-input {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: border-color 0.15s ease;
+  }
+
+  .form-input:focus {
+    border-color: var(--accent-amber);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--accent-amber);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .submit-claim-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent-amber);
+    color: #140d02;
+    font-size: 0.95rem;
+    font-weight: 800;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    margin-top: 8px;
+    transition: all 0.2s var(--ease-out-expo);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .submit-claim-btn:hover {
+    background: var(--accent-amber-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  .submit-claim-btn:active {
+    transform: translateY(0);
+  }
+</style>
