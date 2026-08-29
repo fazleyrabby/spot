@@ -104,9 +104,7 @@ export async function fetchSessionDirect(): Promise<{
   ownedSpot: { id: string; x: number; y: number; claimedAt: string } | null;
 }> {
   const user = await getSupabaseUser();
-  if (!user) return { authenticated: false, citizen: null, ownedSpot: null };
-
-  const ghUsername = user.user_metadata?.user_name || user.user_metadata?.preferred_username;
+  const ghUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
 
   // Look up citizen by github_url, email, github_id, or user id
   let citizenRow: any = null;
@@ -120,7 +118,7 @@ export async function fetchSessionDirect(): Promise<{
     citizenRow = data;
   }
 
-  if (!citizenRow && user.email) {
+  if (!citizenRow && user?.email) {
     const { data } = await supabase
       .from('citizens')
       .select('*')
@@ -130,7 +128,7 @@ export async function fetchSessionDirect(): Promise<{
     citizenRow = data;
   }
 
-  if (!citizenRow) {
+  if (!citizenRow && user) {
     const { data } = await supabase
       .from('citizens')
       .select('*')
@@ -140,8 +138,31 @@ export async function fetchSessionDirect(): Promise<{
     citizenRow = data;
   }
 
+  if (!citizenRow && typeof window !== 'undefined') {
+    const savedCitId = localStorage.getItem('spot_citizen_id');
+    const savedToken = localStorage.getItem('spot_session_token');
+    const savedOwned = localStorage.getItem('spot_my_owned');
+    if (savedCitId) {
+      const { data } = await supabase.from('citizens').select('*').eq('id', savedCitId).limit(1).maybeSingle();
+      citizenRow = data;
+    } else if (savedToken) {
+      const { data } = await supabase.from('citizens').select('*').eq('session_token_hash', savedToken).limit(1).maybeSingle();
+      citizenRow = data;
+    } else if (savedOwned) {
+      try {
+        const parsed = JSON.parse(savedOwned);
+        const spotId = parsed.id || `${parsed.x},${parsed.y}`;
+        const { data: sp } = await supabase.from('spots').select('owner_id').eq('id', spotId).limit(1).maybeSingle();
+        if (sp?.owner_id) {
+          const { data: cit } = await supabase.from('citizens').select('*').eq('id', sp.owner_id).limit(1).maybeSingle();
+          citizenRow = cit;
+        }
+      } catch {}
+    }
+  }
+
   if (!citizenRow) {
-    return { authenticated: true, citizen: null, ownedSpot: null };
+    return { authenticated: Boolean(user), citizen: null, ownedSpot: null };
   }
 
   const citizen: Citizen = {
@@ -239,6 +260,12 @@ export async function claimSpotDirect(input: {
 
   if (spotErr) throw spotErr;
 
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('spot_session_token', tokenHash);
+    localStorage.setItem('spot_citizen_id', citizenData.id);
+    localStorage.setItem('spot_my_owned', JSON.stringify({ id: spotData.id, x: spotData.x, y: spotData.y, claimedAt: spotData.claimed_at }));
+  }
+
   const citizen: Citizen = {
     id: citizenData.id,
     displayName: citizenData.display_name,
@@ -304,16 +331,49 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
 /**
  * DIRECT SUPABASE MODE: Delete account and release spot directly in Supabase
  */
-export async function deleteAccountDirect(): Promise<{ success: boolean; message: string }> {
-  const session = await fetchSessionDirect();
-  if (!session.citizen) throw new Error('Citizen not authenticated');
+export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId?: string): Promise<{ success: boolean; message: string }> {
+  let citizenId = targetCitizenId;
+  let spotId = targetSpotId;
+
+  if (!citizenId) {
+    const session = await fetchSessionDirect();
+    if (session.citizen) {
+      citizenId = session.citizen.id;
+      spotId = session.ownedSpot?.id;
+    }
+  }
+
+  if (!citizenId && typeof window !== 'undefined') {
+    const saved = localStorage.getItem('spot_my_owned');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        spotId = spotId || parsed.id || `${parsed.x},${parsed.y}`;
+      } catch {}
+    }
+    citizenId = localStorage.getItem('spot_citizen_id') || undefined;
+  }
+
+  if (spotId && !citizenId) {
+    const { data: sp } = await supabase.from('spots').select('owner_id').eq('id', spotId).limit(1).maybeSingle();
+    if (sp?.owner_id) citizenId = sp.owner_id;
+  }
 
   // 1. Release spot
-  await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('owner_id', session.citizen.id);
+  if (spotId) {
+    await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('id', spotId);
+  }
+  if (citizenId) {
+    await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('owner_id', citizenId);
+    // 2. Delete citizen row
+    await supabase.from('citizens').delete().eq('id', citizenId);
+  }
 
-  // 2. Delete citizen row
-  const { error } = await supabase.from('citizens').delete().eq('id', session.citizen.id);
-  if (error) throw error;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('spot_my_owned');
+    localStorage.removeItem('spot_citizen_id');
+    localStorage.removeItem('spot_session_token');
+  }
 
   return { success: true, message: 'Account and spot deleted successfully' };
 }

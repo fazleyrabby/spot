@@ -177,7 +177,7 @@ export async function updateMyProfile(
   return await updateProfileDirect(profile);
 }
 
-export async function deleteMyAccount(): Promise<{ success: boolean; message: string }> {
+export async function deleteMyAccount(targetSpotId?: string, targetCitizenId?: string): Promise<{ success: boolean; message: string }> {
   if (API_BASE) {
     try {
       const res = await fetch(`${API_BASE}/citizens/me`, {
@@ -188,5 +188,5 @@ export async function deleteMyAccount(): Promise<{ success: boolean; message: st
       if (res.ok) return await res.json();
     } catch {}
   }
-  return await deleteAccountDirect();
+  return await deleteAccountDirect(targetSpotId, targetCitizenId);
 }
