@@ -257,11 +257,22 @@ export async function claimSpotDirect(input: {
   };
   if (clientIp) citizenPayload.ip_address = clientIp;
 
-  const { data: citizenData, error: citErr } = await supabase
+  let { data: citizenData, error: citErr } = await supabase
     .from('citizens')
     .upsert(citizenPayload)
     .select()
     .single();
+
+  if (citErr && (citErr.code === '42703' || citErr.message?.includes('ip_address'))) {
+    delete citizenPayload.ip_address;
+    const retry = await supabase
+      .from('citizens')
+      .upsert(citizenPayload)
+      .select()
+      .single();
+    citizenData = retry.data;
+    citErr = retry.error;
+  }
 
   if (citErr) throw citErr;
 
