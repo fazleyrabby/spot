@@ -481,11 +481,28 @@ import SupportModal from '../components/SupportModal.astro';
       }
     }
 
-    // Show "Edit Profile" button if logged in as owner
-    const isOwner = Boolean(
+    // Show "Edit Profile" button if logged in as owner or owns this spot
+    let isOwner = Boolean(
       (myCitizen && (myCitizen.id === occupied.citizenId || (occupied.githubUrl && myCitizen.githubUrl && myCitizen.githubUrl.toLowerCase() === occupied.githubUrl.toLowerCase()))) ||
       (myOwnedSpot && (myOwnedSpot.id === occupied.spotId || (myOwnedSpot.x === occupied.x && myOwnedSpot.y === occupied.y)))
     );
+
+    if (!isOwner && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('spot_my_owned');
+      const savedCitId = localStorage.getItem('spot_citizen_id');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.id === occupied.spotId || (parsed.x === occupied.x && parsed.y === occupied.y)) {
+            isOwner = true;
+          }
+        } catch {}
+      }
+      if (savedCitId && savedCitId === occupied.citizenId) {
+        isOwner = true;
+      }
+    }
+
     if (profileOwnerActions) {
       profileOwnerActions.style.display = isOwner ? 'flex' : 'none';
     }
@@ -519,62 +536,68 @@ import SupportModal from '../components/SupportModal.astro';
   });
 
   btnCancelEdit?.addEventListener('click', () => {
-    if (profileViewSection) profileViewSection.style.display = 'block';
     if (profileEditSection) profileEditSection.style.display = 'none';
+    if (profileViewSection) profileViewSection.style.display = 'block';
   });
 
   editProfileForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!btnSaveEdit) return;
+    if (!currentViewingOccupied) return;
 
     btnSaveEdit.disabled = true;
     btnSaveEdit.textContent = 'Saving...';
 
+    const newDisplayName = editDisplayName.value.trim();
+    const newAvatarId = editSelectedAvatarId;
+    const newTagline = editTagline.value.trim() || undefined;
+    const newWebsite = editWebsite.value.trim() || undefined;
+    const newGithub = editGithub.value.trim() || undefined;
+
     try {
       const res = await updateMyProfile({
-        displayName: editDisplayName.value.trim(),
-        avatarId: editSelectedAvatarId,
-        tagline: editTagline.value.trim() || undefined,
-        websiteUrl: editWebsite.value.trim() || undefined,
-        githubUrl: editGithub.value.trim() || undefined,
+        displayName: newDisplayName,
+        avatarId: newAvatarId,
+        tagline: newTagline,
+        websiteUrl: newWebsite,
+        githubUrl: newGithub,
       });
 
-      myCitizen = res.citizen;
-
-      // Update spot summary in memory and renderer immediately
-      let found = worldSnapshot.occupied.find((o) => 
-        o.citizenId === res.citizen.id || 
-        (myOwnedSpot && (o.spotId === myOwnedSpot.id || (o.x === myOwnedSpot.x && o.y === myOwnedSpot.y)))
-      );
-
-      if (found) {
-        found.displayName = res.citizen.displayName;
-        found.avatarId = res.citizen.avatarId;
-        found.tagline = res.citizen.tagline;
-        found.websiteUrl = res.citizen.websiteUrl;
-        found.githubUrl = res.citizen.githubUrl;
-      } else if (myOwnedSpot) {
-        found = {
-          spotId: myOwnedSpot.id,
-          x: myOwnedSpot.x,
-          y: myOwnedSpot.y,
-          citizenId: res.citizen.id,
-          displayName: res.citizen.displayName,
-          avatarId: res.citizen.avatarId,
-          tagline: res.citizen.tagline,
-          websiteUrl: res.citizen.websiteUrl,
-          githubUrl: res.citizen.githubUrl,
-          isOnline: true,
+      if (res && (res.success || res.citizen)) {
+        const updated = res.citizen || {
+          ...currentViewingOccupied,
+          displayName: newDisplayName,
+          avatarId: newAvatarId,
+          tagline: newTagline,
+          websiteUrl: newWebsite,
+          githubUrl: newGithub,
         };
-        worldSnapshot.occupied.push(found);
-      }
 
-      renderer.setSnapshot(worldSnapshot);
-      if (found) {
-        openProfileModal(found);
-      }
+        if (myCitizen) {
+          myCitizen.displayName = updated.displayName;
+          myCitizen.avatarId = updated.avatarId;
+          myCitizen.tagline = updated.tagline;
+          myCitizen.websiteUrl = updated.websiteUrl;
+          myCitizen.githubUrl = updated.githubUrl;
+        }
 
-      showToast('✨ Profile updated instantly!', 'success');
+        const spotItem = worldSnapshot.occupied.find(o => 
+          o.spotId === currentViewingOccupied!.spotId || 
+          (o.x === currentViewingOccupied!.x && o.y === currentViewingOccupied!.y) ||
+          o.citizenId === updated.id
+        );
+
+        if (spotItem) {
+          spotItem.displayName = updated.displayName;
+          spotItem.avatarId = updated.avatarId;
+          spotItem.tagline = updated.tagline;
+          spotItem.websiteUrl = updated.websiteUrl;
+          spotItem.githubUrl = updated.githubUrl;
+        }
+
+        renderer.setSnapshot(worldSnapshot);
+        openProfileModal(spotItem || currentViewingOccupied);
+        showToast('✨ Profile updated successfully!', 'success');
+      }
     } catch (err: any) {
       showToast(err.message || 'Failed to update profile', 'error');
     } finally {
@@ -593,11 +616,15 @@ import SupportModal from '../components/SupportModal.astro';
 
     try {
       showToast('Releasing spot and deleting profile...', 'info');
-      await deleteMyAccount();
+      const targetSpotId = currentViewingOccupied?.spotId || myOwnedSpot?.id;
+      const targetCitId = currentViewingOccupied?.citizenId || myCitizen?.id;
+
+      await deleteMyAccount(targetSpotId, targetCitId);
 
       // Clear local state
-      if (myOwnedSpot) {
-        const idx = worldSnapshot.occupied.findIndex(o => o.spotId === myOwnedSpot!.id);
+      const spotIdToDelete = targetSpotId || (myOwnedSpot ? myOwnedSpot.id : null);
+      if (spotIdToDelete) {
+        const idx = worldSnapshot.occupied.findIndex(o => o.spotId === spotIdToDelete);
         if (idx !== -1) {
           worldSnapshot.occupied.splice(idx, 1);
           worldSnapshot.claimedCount = Math.max(0, worldSnapshot.claimedCount - 1);
@@ -608,6 +635,7 @@ import SupportModal from '../components/SupportModal.astro';
       myCitizen = null;
       myOwnedSpot = null;
       localStorage.removeItem('spot_my_owned');
+      localStorage.removeItem('spot_citizen_id');
       localStorage.removeItem('spot_session_token');
       try {
         await supabase.auth.signOut();
