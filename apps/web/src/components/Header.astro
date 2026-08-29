@@ -24,7 +24,13 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
   <div class="hud-center">
     <!-- 1. Claimed Count -->
-    <div class="stat-pill" title="Total spots claimed">
+    <div class="stat-pill claimed-pill" title="Total spots claimed">
+      <svg class="stat-icon icon-amber" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+      </svg>
       <span class="stat-num mono-num highlight-amber" id="hud-claimed-count">{claimedCount.toLocaleString()}</span>
       <span class="stat-slash">/</span>
       <span class="stat-total mono-num">{totalSpots.toLocaleString()}</span>
@@ -38,6 +44,10 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
     <!-- 2. Total Views -->
     <div class="stat-pill visitors-pill" title="Total all-time views">
+      <svg class="stat-icon icon-muted" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
       <span class="stat-num mono-num" id="hud-visitors-count">1</span>
       <span class="stat-text">views</span>
     </div>
@@ -158,6 +168,19 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   .stat-num {
     font-weight: 700;
     color: var(--text-primary);
+  }
+
+  .stat-icon {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .icon-amber {
+    color: var(--accent-amber);
+  }
+
+  .icon-muted {
+    color: var(--text-secondary);
   }
 
   .highlight-amber {
