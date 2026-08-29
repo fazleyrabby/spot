@@ -399,42 +399,66 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
  * DIRECT SUPABASE MODE: Delete account and release spot directly in Supabase
  */
 export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId?: string): Promise<{ success: boolean; message: string }> {
-  let citizenId = targetCitizenId;
-  let spotId = targetSpotId;
+  const session = await fetchSessionDirect();
+  const user = await getSupabaseUser();
+  const deviceFp = await getDeviceFingerprint();
+  const savedCitId = typeof window !== 'undefined' ? localStorage.getItem('spot_citizen_id') : null;
+  const savedToken = typeof window !== 'undefined' ? localStorage.getItem('spot_session_token') : null;
 
-  if (!citizenId) {
-    const session = await fetchSessionDirect();
-    if (session.citizen) {
-      citizenId = session.citizen.id;
-      spotId = session.ownedSpot?.id;
+  let ownerCitizenId: string | null = null;
+  if (session.citizen) {
+    ownerCitizenId = session.citizen.id;
+  }
+
+  const citizenToDelete = targetCitizenId || ownerCitizenId || savedCitId;
+  if (!citizenToDelete) {
+    throw new Error('Unauthorized: No active session or owned spot found.');
+  }
+
+  // Fetch the target citizen record to verify ownership proof
+  const { data: citRecord } = await supabase
+    .from('citizens')
+    .select('*')
+    .eq('id', citizenToDelete)
+    .maybeSingle();
+
+  if (!citRecord) {
+    throw new Error('Citizen record not found.');
+  }
+
+  // STRICT OWNERSHIP VERIFICATION
+  let isAuthorized = false;
+
+  // 1. Check if logged in user owns this record (via GitHub id, email, or username)
+  if (user) {
+    const ghUser = user.user_metadata?.user_name || user.user_metadata?.preferred_username;
+    if (
+      (citRecord.github_id && citRecord.github_id === user.id) ||
+      (citRecord.email && citRecord.email.toLowerCase() === (user.email || '').toLowerCase()) ||
+      (ghUser && citRecord.github_url && citRecord.github_url.toLowerCase() === ghUser.toLowerCase()) ||
+      (citRecord.id === `c_${user.id.replace(/-/g, '').substring(0, 24)}`)
+    ) {
+      isAuthorized = true;
     }
   }
 
-  if (!citizenId && typeof window !== 'undefined') {
-    const saved = localStorage.getItem('spot_my_owned');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        spotId = spotId || parsed.id || `${parsed.x},${parsed.y}`;
-      } catch {}
-    }
-    citizenId = localStorage.getItem('spot_citizen_id') || undefined;
+  // 2. Check if guest session token, citizen ID, or device fingerprint matches
+  if (!isAuthorized) {
+    if (savedCitId && savedCitId === citRecord.id) isAuthorized = true;
+    if (savedToken && savedToken === citRecord.session_token_hash) isAuthorized = true;
+    if (deviceFp && citRecord.device_fingerprint && citRecord.device_fingerprint === deviceFp) isAuthorized = true;
   }
 
-  if (spotId && !citizenId) {
-    const { data: sp } = await supabase.from('spots').select('owner_id').eq('id', spotId).limit(1).maybeSingle();
-    if (sp?.owner_id) citizenId = sp.owner_id;
+  if (!isAuthorized) {
+    throw new Error('Unauthorized: You can only delete your own spot and profile!');
   }
 
-  // 1. Release spot
-  if (spotId) {
-    await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('id', spotId);
+  // Perform deletion
+  await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('owner_id', citRecord.id);
+  if (targetSpotId) {
+    await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('id', targetSpotId);
   }
-  if (citizenId) {
-    await supabase.from('spots').update({ owner_id: null, claimed_at: null }).eq('owner_id', citizenId);
-    // 2. Delete citizen row
-    await supabase.from('citizens').delete().eq('id', citizenId);
-  }
+  await supabase.from('citizens').delete().eq('id', citRecord.id);
 
   if (typeof window !== 'undefined') {
     localStorage.removeItem('spot_my_owned');
