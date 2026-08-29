@@ -1,0 +1,378 @@
+---
+// Support Modal Component for Creator Sponsorship (Buy Me A Coffee, Support Kori, Payoneer)
+---
+
+<div class="modal-backdrop" id="support-modal-backdrop" aria-hidden="true">
+  <div class="modal-container support-modal glass-panel" id="support-modal">
+    <div class="modal-header">
+      <div class="header-title-row">
+        <div class="support-badge">
+          <span class="support-badge-icon">☕</span>
+          <span class="support-badge-text">SPONSOR / SUPPORT</span>
+        </div>
+        <button class="modal-close" id="support-modal-close" aria-label="Close modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <h2 class="support-heading">Support the Creator</h2>
+      <p class="support-subheading">
+        Spot is crafted with love by <strong>Md. Fazley Rabbi</strong>. Your support helps keep this 10,000-tile world alive, ad-free, and growing.
+      </p>
+    </div>
+
+    <div class="support-options-grid">
+      <!-- 1. Buy Me a Coffee (International) -->
+      <a href="https://buymeacoffee.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-card bmc-card">
+        <div class="support-card-icon bmc-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+          </svg>
+        </div>
+        <div class="support-card-content">
+          <div class="support-card-header">
+            <span class="support-card-title">Buy Me a Coffee</span>
+            <span class="support-pill-tag tag-global">GLOBAL / CARDS</span>
+          </div>
+          <p class="support-card-desc">Support via Credit Card, Debit Card, Apple Pay, Google Pay, or PayPal.</p>
+        </div>
+        <div class="support-card-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
+        </div>
+      </a>
+
+      <!-- 2. Support Kori (Bangladesh Local) -->
+      <a href="https://supportkori.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-card kori-card">
+        <div class="support-card-icon kori-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </div>
+        <div class="support-card-content">
+          <div class="support-card-header">
+            <span class="support-card-title">Support Kori (সাপোর্ট করি)</span>
+            <span class="support-pill-tag tag-bd">BANGLADESH / BKASH</span>
+          </div>
+          <p class="support-card-desc">Support from Bangladesh using bKash, Nagad, Rocket, or local cards.</p>
+        </div>
+        <div class="support-card-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
+        </div>
+      </a>
+
+      <!-- 3. Payoneer Direct -->
+      <div class="support-card payoneer-card" id="btn-copy-payoneer">
+        <div class="support-card-icon payoneer-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+        </div>
+        <div class="support-card-content">
+          <div class="support-card-header">
+            <span class="support-card-title">Payoneer Direct</span>
+            <span class="support-pill-tag tag-payoneer">DIRECT EMAIL</span>
+          </div>
+          <p class="support-card-desc"><code class="code-email" id="payoneer-email-text">fazleyrabbi93@gmail.com</code></p>
+        </div>
+        <button type="button" class="btn-copy-mini" id="btn-payoneer-copy-action" title="Copy Payoneer Email">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span id="payoneer-copy-label">Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="support-modal-footer">
+      <span class="footer-note">❤️ Thank you for keeping indie software alive!</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease-out-expo);
+    padding: 16px;
+  }
+
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .support-modal {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), 0 0 35px -5px rgba(245, 158, 11, 0.15);
+    transform: scale(0.96) translateY(8px);
+    transition: transform 0.25s var(--ease-out-expo);
+  }
+
+  .modal-backdrop.open .support-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-header {
+    margin-bottom: 20px;
+  }
+
+  .header-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .support-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+
+  .support-badge-icon {
+    font-size: 0.85rem;
+  }
+
+  .support-badge-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #f59e0b;
+    letter-spacing: 0.06em;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .modal-close:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .support-heading {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .support-subheading {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  .support-subheading strong {
+    color: var(--text-primary);
+  }
+
+  .support-options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .support-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s var(--ease-out-expo);
+    cursor: pointer;
+  }
+
+  .support-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-2px);
+  }
+
+  .bmc-card:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12);
+  }
+
+  .kori-card:hover {
+    border-color: rgba(236, 72, 153, 0.5);
+    box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.12);
+  }
+
+  .payoneer-card:hover {
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 4px 20px -2px rgba(56, 189, 248, 0.12);
+  }
+
+  .support-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .bmc-icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .kori-icon {
+    background: rgba(236, 72, 153, 0.15);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+  }
+
+  .payoneer-icon {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+
+  .support-card-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .support-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+    flex-wrap: wrap;
+  }
+
+  .support-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .support-pill-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.05em;
+  }
+
+  .tag-global {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .tag-bd {
+    background: rgba(236, 72, 153, 0.15);
+    color: #ec4899;
+  }
+
+  .tag-payoneer {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+  }
+
+  .support-card-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .code-email {
+    font-family: var(--font-mono);
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+  }
+
+  .support-card-arrow {
+    color: var(--text-secondary);
+    opacity: 0.7;
+    transition: all 0.15s ease;
+  }
+
+  .support-card:hover .support-card-arrow {
+    color: var(--text-primary);
+    transform: translate(2px, -2px);
+    opacity: 1;
+  }
+
+  .btn-copy-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-copy-mini:hover {
+    background: rgba(56, 189, 248, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .support-modal-footer {
+    margin-top: 20px;
+    text-align: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .footer-note {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+</style>
