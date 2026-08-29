@@ -1,8 +1,16 @@
 import type { WorldSnapshot, Citizen, CreateCitizenInput } from '@spot/shared';
+import {
+  fetchWorldDirect,
+  fetchSessionDirect,
+  claimSpotDirect,
+  updateProfileDirect,
+  deleteAccountDirect,
+  searchCitizensDirect,
+} from './supabase.js';
 
 const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
   ? 'http://localhost:5050/api'
-  : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api` : '/api');
+  : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api` : null);
 
 export interface MySessionResponse {
   authenticated: boolean;
@@ -32,21 +40,34 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
-  const res = await fetch(`${API_BASE}/world`, {
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error(`Failed to load world snapshot: ${res.statusText}`);
-  return res.json();
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/world`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('API /world unreachable, using direct Supabase mode:', err);
+    }
+  }
+  return await fetchWorldDirect();
 }
 
 export async function fetchMySession(): Promise<MySessionResponse> {
-  const res = await fetch(`${API_BASE}/citizens/me`, {
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  if (!res.ok) return { authenticated: false, citizen: null, ownedSpot: null };
-  return res.json();
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/citizens/me`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) return data;
+      }
+    } catch {}
+  }
+  return await fetchSessionDirect();
 }
 
 export async function syncGithubAuth(data: {
@@ -56,51 +77,58 @@ export async function syncGithubAuth(data: {
   avatarUrl?: string;
   displayName?: string;
 }): Promise<MySessionResponse> {
-  const res = await fetch(`${API_BASE}/auth/github/sync`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('Failed to sync GitHub session');
-  const result = await res.json();
-  if (result.sessionToken && typeof window !== 'undefined') {
-    localStorage.setItem('spot_session_token', result.sessionToken);
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/github/sync`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.sessionToken) {
+          localStorage.setItem('spot_session_token', json.sessionToken);
+        }
+        return json;
+      }
+    } catch {}
   }
-  return result;
+  return await fetchSessionDirect();
 }
 
 export async function claimSpot(
-  spotId: string,
-  citizenData?: CreateCitizenInput
+  spotIdOrInput: string | { x: number; y: number; displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string },
+  optionalInput?: { displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string }
 ): Promise<ClaimSpotResponse> {
-  const res = await fetch(`${API_BASE}/spots/claim`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-    body: JSON.stringify({
-      spotId,
-      citizen: citizenData,
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || data.error || 'Failed to claim spot');
+  let finalInput: { x: number; y: number; displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string };
+  if (typeof spotIdOrInput === 'string') {
+    const [x, y] = spotIdOrInput.split(',').map(Number);
+    finalInput = { x, y, ...optionalInput! };
+  } else {
+    finalInput = spotIdOrInput;
   }
-  if (data.sessionToken && typeof window !== 'undefined') {
-    localStorage.setItem('spot_session_token', data.sessionToken);
-  }
-  return data;
-}
 
-export async function fetchCitizen(id: string): Promise<{ citizen: Citizen; spot: any }> {
-  const res = await fetch(`${API_BASE}/citizens/${id}`, {
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('Citizen not found');
-  return res.json();
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/spots/claim`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(finalInput),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.sessionToken) {
+          localStorage.setItem('spot_session_token', data.sessionToken);
+        }
+        return data;
+      }
+    } catch (err) {
+      console.warn('API /spots/claim failed, falling back to direct mode:', err);
+    }
+  }
+  return await claimSpotDirect(finalInput);
 }
 
 export interface CitizenSearchResult {
@@ -117,40 +145,48 @@ export interface CitizenSearchResult {
 
 export async function searchCitizens(query: string): Promise<CitizenSearchResult[]> {
   if (!query.trim()) return [];
-  const res = await fetch(`${API_BASE}/citizens/search?q=${encodeURIComponent(query.trim())}`, {
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.results || [];
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/citizens/search?q=${encodeURIComponent(query.trim())}`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.results || [];
+      }
+    } catch {}
+  }
+  return await searchCitizensDirect(query);
 }
 
 export async function updateMyProfile(
   profile: Partial<CreateCitizenInput>
 ): Promise<{ success: boolean; citizen: Citizen }> {
-  const res = await fetch(`${API_BASE}/citizens/me`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-    body: JSON.stringify(profile),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || data.error || 'Failed to update profile');
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/citizens/me`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(profile),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
   }
-  return data;
+  return await updateProfileDirect(profile);
 }
 
 export async function deleteMyAccount(): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`${API_BASE}/citizens/me`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || data.error || 'Failed to delete account');
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/citizens/me`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) return await res.json();
+    } catch {}
   }
-  return data;
+  return await deleteAccountDirect();
 }
