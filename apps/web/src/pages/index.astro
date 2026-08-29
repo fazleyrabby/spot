@@ -933,7 +933,7 @@ import SearchModal from '../components/SearchModal.astro';
 
     const streamBase = window.location.hostname === 'localhost'
       ? 'http://localhost:5050/api/realtime/stream'
-      : '/api/realtime/stream';
+      : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api/realtime/stream` : '/api/realtime/stream');
     const streamUrl = `${streamBase}?${queryParams.toString()}`;
 
     const sse = new EventSource(streamUrl);

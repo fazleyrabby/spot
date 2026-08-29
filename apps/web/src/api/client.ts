@@ -2,7 +2,7 @@ import type { WorldSnapshot, Citizen, CreateCitizenInput } from '@spot/shared';
 
 const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
   ? 'http://localhost:5050/api'
-  : '/api';
+  : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api` : '/api');
 
 export interface MySessionResponse {
   authenticated: boolean;
