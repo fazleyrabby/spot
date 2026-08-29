@@ -34,6 +34,20 @@ export async function getSupabaseUser() {
   return user;
 }
 
+export async function getClientIp(): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch('https://api.ipify.org?format=json', { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      return data.ip || null;
+    }
+  } catch {}
+  return null;
+}
+
 /**
  * DIRECT SUPABASE MODE: Fetch entire 10k world snapshot directly from PostgreSQL
  */
@@ -229,18 +243,23 @@ export async function claimSpotDirect(input: {
 
   // 1. Upsert citizen record
   const tokenHash = 'direct_auth_' + Math.random().toString(36).substring(2, 16);
+  const clientIp = await getClientIp();
+
+  const citizenPayload: any = {
+    id: citizenId,
+    session_token_hash: tokenHash,
+    display_name: input.displayName.trim(),
+    avatar_id: input.avatarId,
+    tagline: input.tagline?.trim() || null,
+    website_url: input.websiteUrl?.trim() || null,
+    github_url: ghUsername || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (clientIp) citizenPayload.ip_address = clientIp;
+
   const { data: citizenData, error: citErr } = await supabase
     .from('citizens')
-    .upsert({
-      id: citizenId,
-      session_token_hash: tokenHash,
-      display_name: input.displayName.trim(),
-      avatar_id: input.avatarId,
-      tagline: input.tagline?.trim() || null,
-      website_url: input.websiteUrl?.trim() || null,
-      github_url: ghUsername || null,
-      updated_at: new Date().toISOString(),
-    })
+    .upsert(citizenPayload)
     .select()
     .single();
 
