@@ -1,33 +1,14 @@
 ---
-// Support Modal Component for Creator Sponsorship (Buy Me A Coffee, Support Kori, Payoneer)
+// Support Modal Component matching portfolio pixel-for-pixel
 ---
 
 <div class="modal-backdrop" id="support-modal-backdrop" aria-hidden="true">
-  <div class="modal-container support-modal glass-panel" id="support-modal">
-    <div class="modal-header">
-      <div class="header-title-row">
-        <div class="support-badge">
-          <span class="support-badge-icon">☕</span>
-          <span class="support-badge-text">SPONSOR / SUPPORT</span>
-        </div>
-        <button class="modal-close" id="support-modal-close" aria-label="Close modal">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <h2 class="support-heading">Support the Creator</h2>
-      <p class="support-subheading">
-        Spot is crafted with love by <strong>Md. Fazley Rabbi</strong>. Your support helps keep this 10,000-tile world alive, ad-free, and growing.
-      </p>
-    </div>
-
-    <div class="support-options-grid">
-      <!-- 1. Buy Me a Coffee (International) -->
-      <a href="https://buymeacoffee.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-card bmc-card">
-        <div class="support-card-icon bmc-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <div class="modal-container support-modal-box" id="support-modal">
+    <!-- Header -->
+    <div class="support-header">
+      <div class="support-header-left">
+        <div class="support-icon-circle">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
             <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
             <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -35,70 +16,110 @@
             <line x1="14" y1="1" x2="14" y2="4"></line>
           </svg>
         </div>
-        <div class="support-card-content">
-          <div class="support-card-header">
-            <span class="support-card-title">Buy Me a Coffee</span>
-            <span class="support-pill-tag tag-global">GLOBAL / CARDS</span>
-          </div>
-          <p class="support-card-desc">Support via Credit Card, Debit Card, Apple Pay, Google Pay, or PayPal.</p>
+        <div class="support-title-group">
+          <h2 class="support-title">Support the Project</h2>
+          <p class="support-subtitle">Keep open source work & creative coding alive</p>
         </div>
-        <div class="support-card-arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="7" y1="17" x2="17" y2="7"></line>
-            <polyline points="7 7 17 7 17 17"></polyline>
+      </div>
+      <button type="button" class="support-close-btn" id="support-modal-close" aria-label="Close modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="1" x2="6" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Cards Container -->
+    <div class="support-cards-list">
+      <!-- 1. SupportKori (Bangladesh) -->
+      <a href="https://supportkori.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-tier-card card-kori">
+        <div class="tier-card-left">
+          <div class="tier-icon-badge kori-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </div>
+          <div class="tier-info">
+            <div class="tier-title-row">
+              <span class="tier-title">SupportKori</span>
+            </div>
+            <div class="tier-tag-pill kori-tag">
+              <span>🇧🇩 BD USERS / BKASH • NAGAD</span>
+            </div>
+            <span class="tier-desc">For Bangladesh users (BDT ৳)</span>
+          </div>
+        </div>
+        <div class="tier-action-btn kori-btn">
+          <span>Support ৳</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </div>
       </a>
 
-      <!-- 2. Support Kori (Bangladesh Local) -->
-      <a href="https://supportkori.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-card kori-card">
-        <div class="support-card-icon kori-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        </div>
-        <div class="support-card-content">
-          <div class="support-card-header">
-            <span class="support-card-title">Support Kori (সাপোর্ট করি)</span>
-            <span class="support-pill-tag tag-bd">BANGLADESH / BKASH</span>
+      <!-- 2. Buy Me a Coffee (Global) -->
+      <a href="https://buymeacoffee.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-tier-card card-bmc">
+        <div class="tier-card-left">
+          <div class="tier-icon-badge bmc-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.216 6.415l-.132-.666c-.119-.597-.384-1.144-.766-1.583-.383-.44-.868-.767-1.405-.951-.537-.184-1.111-.237-1.666-.153-.556.084-1.077.306-1.512.645-.26-.307-.577-.552-.932-.72-.354-.168-.742-.255-1.137-.255H5.438C4.545 2.732 3.688 3.087 3.056 3.719c-.632.632-.987 1.489-.987 2.382v9.336c0 .893.355 1.75 1 2.382.632.632 1.489.987 2.382.987h7.828c.893 0 1.75-.355 2.382-.987.632-.632.987-1.489.987-2.382V14.1c.563-.122 1.085-.404 1.508-.813.423-.41.724-.932.868-1.507l.951-4.8c.075-.378.046-.769-.085-1.132-.132-.363-.357-.681-.65-.923l.369.39zm-3.084 5.37c-.07.282-.218.538-.426.738-.207.2-.464.339-.744.4v-6.38c.28.06.537.2.744.4.208.2.355.456.426.738l.951 4.8-.951-.696z"/>
+            </svg>
           </div>
-          <p class="support-card-desc">Support from Bangladesh using bKash, Nagad, Rocket, or local cards.</p>
+          <div class="tier-info">
+            <div class="tier-title-row">
+              <span class="tier-title">Buy Me a Coffee</span>
+            </div>
+            <div class="tier-tag-pill bmc-tag">
+              <span>GLOBAL / INTERNATIONAL</span>
+            </div>
+            <span class="tier-desc">Card, Apple Pay, Google Pay ($)</span>
+          </div>
         </div>
-        <div class="support-card-arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="7" y1="17" x2="17" y2="7"></line>
-            <polyline points="7 7 17 7 17 17"></polyline>
+        <div class="tier-action-btn bmc-btn">
+          <span>Donate $3</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </div>
       </a>
+    </div>
 
-      <!-- 3. Payoneer Direct -->
-      <div class="support-card payoneer-card" id="btn-copy-payoneer">
-        <div class="support-card-icon payoneer-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-            <line x1="2" y1="10" x2="22" y2="10"></line>
-          </svg>
-        </div>
-        <div class="support-card-content">
-          <div class="support-card-header">
-            <span class="support-card-title">Payoneer Direct</span>
-            <span class="support-pill-tag tag-payoneer">DIRECT EMAIL</span>
-          </div>
-          <p class="support-card-desc"><code class="code-email" id="payoneer-email-text">fazleyrabbi93@gmail.com</code></p>
-        </div>
-        <button type="button" class="btn-copy-mini" id="btn-payoneer-copy-action" title="Copy Payoneer Email">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Section Divider -->
+    <div class="support-divider">
+      <div class="divider-line"></div>
+      <span class="divider-text">OR VIA DIRECT PAYONEER ($0 FEE)</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Payoneer Box -->
+    <div class="payoneer-box" id="btn-copy-payoneer">
+      <div class="payoneer-top-row">
+        <span class="payoneer-label">Payoneer Customer ID:</span>
+        <span class="payoneer-fee-tag">$0 Fee Direct</span>
+      </div>
+
+      <div class="payoneer-id-display">
+        <span class="payoneer-id-value" id="payoneer-id-number">24076084</span>
+        <button type="button" class="payoneer-copy-btn" id="btn-payoneer-copy-action">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
-          <span id="payoneer-copy-label">Copy</span>
+          <span id="payoneer-copy-label">Copy ID</span>
         </button>
+      </div>
+
+      <div class="payoneer-tip">
+        <span class="tip-bulb">💡</span>
+        <span class="tip-text">Payoneer app: Go to <strong>Pay → Pay to recipient</strong> → Enter ID <strong class="gold-id">24076084</strong>.</span>
       </div>
     </div>
 
+    <!-- Footer -->
     <div class="support-modal-footer">
-      <span class="footer-note">❤️ Thank you for keeping indie software alive!</span>
+      <span class="footer-thankyou">Thank you for your support! ✨</span>
     </div>
   </div>
 </div>
@@ -107,16 +128,16 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(10, 12, 18, 0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 60;
+    z-index: 70;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s var(--ease-out-expo);
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 16px;
   }
 
@@ -125,254 +146,370 @@
     pointer-events: auto;
   }
 
-  .support-modal {
+  .support-modal-box {
     width: 100%;
-    max-width: 480px;
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    border-radius: var(--radius-xl);
-    padding: 24px;
-    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), 0 0 35px -5px rgba(245, 158, 11, 0.15);
-    transform: scale(0.96) translateY(8px);
-    transition: transform 0.25s var(--ease-out-expo);
+    max-width: 490px;
+    background: #12151c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 26px 24px 22px 24px;
+    box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .modal-backdrop.open .support-modal {
+  .modal-backdrop.open .support-modal-box {
     transform: scale(1) translateY(0);
   }
 
-  .modal-header {
-    margin-bottom: 20px;
+  /* Header */
+  .support-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 22px;
   }
 
-  .header-title-row {
+  .support-header-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    gap: 14px;
   }
 
-  .support-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: var(--radius-full);
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-  }
-
-  .support-badge-icon {
-    font-size: 0.85rem;
-  }
-
-  .support-badge-text {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #f59e0b;
-    letter-spacing: 0.06em;
-  }
-
-  .modal-close {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-secondary);
+  .support-icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1c212c;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  .support-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .support-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: Georgia, serif;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .support-subtitle {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .support-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  .modal-close:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.12);
+  .support-close-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.08);
   }
 
-  .support-heading {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 6px;
-  }
-
-  .support-subheading {
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: var(--text-secondary);
-  }
-
-  .support-subheading strong {
-    color: var(--text-primary);
-  }
-
-  .support-options-grid {
+  /* Cards List */
+  .support-cards-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .support-card {
+  .support-tier-card {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-subtle);
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-radius: 14px;
     text-decoration: none;
-    color: inherit;
-    transition: all 0.2s var(--ease-out-expo);
+    transition: all 0.2s ease;
     cursor: pointer;
   }
 
-  .support-card:hover {
-    background: rgba(255, 255, 255, 0.07);
-    transform: translateY(-2px);
+  /* SupportKori Styling */
+  .card-kori {
+    background: #0f1c1a;
+    border: 1px solid #164e3e;
   }
 
-  .bmc-card:hover {
-    border-color: rgba(245, 158, 11, 0.5);
-    box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12);
+  .card-kori:hover {
+    border-color: #00df89;
+    box-shadow: 0 0 25px -5px rgba(0, 223, 137, 0.2);
+    transform: translateY(-1px);
   }
 
-  .kori-card:hover {
-    border-color: rgba(236, 72, 153, 0.5);
-    box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.12);
-  }
-
-  .payoneer-card:hover {
-    border-color: rgba(56, 189, 248, 0.5);
-    box-shadow: 0 4px 20px -2px rgba(56, 189, 248, 0.12);
-  }
-
-  .support-card-icon {
+  .kori-icon {
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
+    background: #00df89;
+    color: #0a1b14;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
+  .kori-tag {
+    background: rgba(0, 223, 137, 0.12);
+    border: 1px solid rgba(0, 223, 137, 0.3);
+    color: #00df89;
+  }
+
+  .kori-btn {
+    background: #00df89;
+    color: #0a1b14;
+    font-weight: 700;
+  }
+
+  .kori-btn:hover {
+    background: #1aff9d;
+    transform: scale(1.02);
+  }
+
+  /* Buy Me a Coffee Styling */
+  .card-bmc {
+    background: #1d1b11;
+    border: 1px solid #4a3e14;
+  }
+
+  .card-bmc:hover {
+    border-color: #ffdd00;
+    box-shadow: 0 0 25px -5px rgba(255, 221, 0, 0.2);
+    transform: translateY(-1px);
+  }
+
   .bmc-icon {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ffdd00;
+    color: #141002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
-  .kori-icon {
-    background: rgba(236, 72, 153, 0.15);
-    color: #ec4899;
-    border: 1px solid rgba(236, 72, 153, 0.3);
+  .bmc-tag {
+    background: rgba(255, 221, 0, 0.12);
+    border: 1px solid rgba(255, 221, 0, 0.3);
+    color: #ffdd00;
   }
 
-  .payoneer-icon {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+  .bmc-btn {
+    background: #ffdd00;
+    color: #141002;
+    font-weight: 700;
   }
 
-  .support-card-content {
-    flex: 1;
+  .bmc-btn:hover {
+    background: #ffe433;
+    transform: scale(1.02);
+  }
+
+  /* Card Interior */
+  .tier-card-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     min-width: 0;
   }
 
-  .support-card-header {
+  .tier-info {
     display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .tier-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .tier-tag-pill {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 3px;
-    flex-wrap: wrap;
-  }
-
-  .support-card-title {
-    font-size: 0.95rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--text-primary);
+    padding: 2px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.04em;
+    width: fit-content;
   }
 
-  .support-pill-tag {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    letter-spacing: 0.05em;
+  .tier-desc {
+    font-size: 0.76rem;
+    color: #94a3b8;
+    margin-top: 1px;
   }
 
-  .tag-global {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-  }
-
-  .tag-bd {
-    background: rgba(236, 72, 153, 0.15);
-    color: #ec4899;
-  }
-
-  .tag-payoneer {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-  }
-
-  .support-card-desc {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-
-  .code-email {
-    font-family: var(--font-mono);
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
-  }
-
-  .support-card-arrow {
-    color: var(--text-secondary);
-    opacity: 0.7;
+  .tier-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 15px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
     transition: all 0.15s ease;
   }
 
-  .support-card:hover .support-card-arrow {
-    color: var(--text-primary);
-    transform: translate(2px, -2px);
-    opacity: 1;
+  /* Divider */
+  .support-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 16px 0;
   }
 
-  .btn-copy-mini {
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .divider-text {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: #64748b;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  /* Payoneer Box */
+  .payoneer-box {
+    background: #171a22;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .payoneer-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .payoneer-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-family: var(--font-mono);
+  }
+
+  .payoneer-fee-tag {
+    font-size: 0.85rem;
+    color: #00df89;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+
+  .payoneer-id-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0b0d13;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 12px 8px 16px;
+  }
+
+  .payoneer-id-value {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #ffdd00;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  .payoneer-copy-btn {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    color: #38bdf8;
-    font-size: 0.75rem;
-    font-weight: 700;
+    gap: 6px;
+    background: #1c212c;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 7px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  .btn-copy-mini:hover {
-    background: rgba(56, 189, 248, 0.25);
-    transform: translateY(-1px);
+  .payoneer-copy-btn:hover {
+    background: #28303f;
+    border-color: rgba(255, 255, 255, 0.25);
   }
 
+  .payoneer-tip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+    color: #94a3b8;
+  }
+
+  .tip-bulb {
+    font-size: 0.85rem;
+  }
+
+  .gold-id {
+    color: #ffdd00;
+  }
+
+  /* Footer */
   .support-modal-footer {
-    margin-top: 20px;
+    margin-top: 18px;
     text-align: center;
-    padding-top: 14px;
-    border-top: 1px solid var(--border-subtle);
   }
 
-  .footer-note {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
+  .footer-thankyou {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  @media (max-width: 520px) {
+    .support-modal-box {
+      padding: 20px 16px;
+    }
+    .support-tier-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .tier-action-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
