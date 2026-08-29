@@ -1,0 +1,1073 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import SpotCanvas from '../components/SpotCanvas.astro';
+import ProfileModal from '../components/ProfileModal.astro';
+import ClaimModal from '../components/ClaimModal.astro';
+import SearchModal from '../components/SearchModal.astro';
+---
+
+<Layout>
+  <main class="spot-app">
+    <Header />
+    <SpotCanvas />
+    <ProfileModal />
+    <ClaimModal />
+    <SearchModal />
+    <div id="toast-container" class="toast-container"></div>
+  </main>
+</Layout>
+
+<script>
+  import { fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, type CitizenSearchResult } from '../api/client.js';
+  import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
+  import { WorldCanvasRenderer } from '../canvas/renderer.js';
+  import { CanvasInputHandler } from '../canvas/input.js';
+  import { AVATAR_CATALOG, getAvatar, drawAvatarOnCanvas } from '../canvas/avatars.js';
+  import type { OccupiedSpotSummary, WorldSnapshot, Citizen } from '@spot/shared';
+
+  // 1. Toast Notification Helper
+  function showToast(message: string, type: 'error' | 'success' | 'info' = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} glass-panel`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+
+  // 2. DOM Selectors
+  const canvas = document.getElementById('spot-canvas') as HTMLCanvasElement;
+  const coordPill = document.getElementById('coord-pill');
+  const coordText = document.getElementById('coord-text');
+  const coordStatus = document.getElementById('coord-status');
+  const hudClaimedCount = document.getElementById('hud-claimed-count');
+  const hudOnlineCount = document.getElementById('hud-online-count');
+  const hudVisitorsCount = document.getElementById('hud-visitors-count');
+  const headerClaimBtn = document.getElementById('header-claim-btn') as HTMLButtonElement;
+  const headerSearchBtn = document.getElementById('header-search-btn') as HTMLButtonElement;
+
+  // Nav Buttons
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnRecenter = document.getElementById('btn-recenter');
+
+  // Profile Modal Elements
+  const profileBackdrop = document.getElementById('profile-modal-backdrop');
+  const profileCloseBtn = document.getElementById('profile-modal-close');
+  const profileViewSection = document.getElementById('profile-view-section');
+  const profileEditSection = document.getElementById('profile-edit-section');
+  const profileAvatarCanvas = document.getElementById('profile-avatar-canvas') as HTMLCanvasElement;
+  const profileSpotId = document.getElementById('profile-spot-id');
+  const profileName = document.getElementById('profile-name');
+  const profilePresence = document.getElementById('profile-presence');
+  const profileTagline = document.getElementById('profile-tagline');
+  const linkWebsite = document.getElementById('link-website') as HTMLAnchorElement;
+  const linkWebsiteText = document.getElementById('link-website-text');
+  const linkGithub = document.getElementById('link-github') as HTMLAnchorElement;
+  const linkSupport = document.getElementById('link-support') as HTMLAnchorElement;
+  const profileOwnerActions = document.getElementById('profile-owner-actions');
+  const btnOpenEditProfile = document.getElementById('btn-open-edit-profile');
+
+  // Edit Profile Elements
+  const editProfileForm = document.getElementById('edit-profile-form') as HTMLFormElement;
+  const editAvatarGrid = document.getElementById('edit-avatar-grid');
+  const editDisplayName = document.getElementById('edit-display-name') as HTMLInputElement;
+  const editTagline = document.getElementById('edit-tagline') as HTMLInputElement;
+  const editWebsite = document.getElementById('edit-website') as HTMLInputElement;
+  const editGithub = document.getElementById('edit-github') as HTMLInputElement;
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+  const btnSaveEdit = document.getElementById('btn-save-edit') as HTMLButtonElement;
+
+  // Claim Modal Elements
+  const claimBackdrop = document.getElementById('claim-modal-backdrop');
+  const claimCloseBtn = document.getElementById('claim-modal-close');
+  const claimSpotBadge = document.getElementById('claim-spot-badge');
+  const claimAvatarGrid = document.getElementById('claim-avatar-grid');
+  const claimForm = document.getElementById('claim-form') as HTMLFormElement;
+  const submitClaimBtn = document.getElementById('submit-claim-btn') as HTMLButtonElement;
+  const inputDisplayName = document.getElementById('input-display-name') as HTMLInputElement;
+  const inputTagline = document.getElementById('input-tagline') as HTMLInputElement;
+  const inputWebsite = document.getElementById('input-website') as HTMLInputElement;
+  const inputGithub = document.getElementById('input-github') as HTMLInputElement;
+
+  // Search Modal Elements
+  const searchBackdrop = document.getElementById('search-modal-backdrop');
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const searchStatus = document.getElementById('search-status');
+  const searchResultsList = document.getElementById('search-results-list');
+
+  let currentTargetSpot: { x: number; y: number } = { x: 50, y: 50 };
+  let selectedAvatarId = 'astronaut';
+  let editSelectedAvatarId = 'astronaut';
+  let myCitizen: Citizen | null = null;
+  let myOwnedSpot: { id: string; x: number; y: number } | null = null;
+  let currentViewingOccupied: OccupiedSpotSummary | null = null;
+  let worldSnapshot: WorldSnapshot = {
+    width: 100,
+    height: 100,
+    totalSpots: 10000,
+    claimedCount: 0,
+    onlineCount: 1,
+    occupied: [],
+  };
+
+  // 3. Initialize Canvas Renderer
+  const renderer = new WorldCanvasRenderer(canvas, worldSnapshot, {
+    onSpotClick: (spot) => {
+      if (spot.occupied) {
+        openProfileModal(spot.occupied);
+      } else {
+        openClaimModal(spot.x, spot.y);
+      }
+    },
+    onSpotHover: (spot) => {
+      if (!spot) {
+        if (coordPill) coordPill.style.opacity = '0.6';
+        return;
+      }
+      if (coordPill) coordPill.style.opacity = '1';
+      if (coordText) coordText.textContent = `Spot: (${spot.x}, ${spot.y})`;
+      if (coordStatus) {
+        if (spot.occupied) {
+          coordStatus.textContent = spot.occupied.displayName;
+          coordStatus.className = 'coord-badge occupied';
+        } else {
+          coordStatus.textContent = 'Available';
+          coordStatus.className = 'coord-badge empty';
+        }
+      }
+    },
+  });
+
+  const inputHandler = new CanvasInputHandler(renderer);
+  (window as any).__spotInputHandler = inputHandler;
+  renderer.start();
+
+  // 4. Render Avatar Selection Grids
+  function renderAvatarSelector(container: HTMLElement | null, currentSelected: string, onSelect: (id: string) => void) {
+    if (!container) return;
+    container.innerHTML = '';
+    Object.values(AVATAR_CATALOG).forEach((avatar) => {
+      const option = document.createElement('div');
+      option.className = `avatar-option ${avatar.id === currentSelected ? 'selected' : ''}`;
+      option.dataset.avatarId = avatar.id;
+
+      const optCanvas = document.createElement('canvas');
+      optCanvas.width = 36;
+      optCanvas.height = 36;
+      const optCtx = optCanvas.getContext('2d');
+      if (optCtx) drawAvatarOnCanvas(optCtx, avatar, 0, 0, 36);
+
+      const label = document.createElement('span');
+      label.textContent = avatar.name;
+
+      option.appendChild(optCanvas);
+      option.appendChild(label);
+
+      option.addEventListener('click', () => {
+        container.querySelectorAll('.avatar-option').forEach((el) => el.classList.remove('selected'));
+        option.classList.add('selected');
+        onSelect(avatar.id);
+      });
+
+      container.appendChild(option);
+    });
+  }
+
+  // Synchronous zero-latency restoration on page load
+  try {
+    const saved = localStorage.getItem('spot_my_owned');
+    if (saved) {
+      myOwnedSpot = JSON.parse(saved);
+      if (myOwnedSpot) {
+        if (headerClaimBtn) {
+          headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+        }
+        if (!window.location.search.includes('spot=')) {
+          renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
+        }
+      }
+    }
+  } catch {}
+
+  // 5. Load Data & Hydrate Session
+  async function loadData() {
+    try {
+      const snapshot = await fetchWorldSnapshot();
+      worldSnapshot = snapshot;
+      renderer.setSnapshot(snapshot);
+      if (hudClaimedCount) {
+        hudClaimedCount.textContent = snapshot.claimedCount.toLocaleString();
+      }
+      if (hudVisitorsCount && snapshot.totalVisitors) {
+        hudVisitorsCount.textContent = snapshot.totalVisitors.toLocaleString();
+      }
+      if (hudOnlineCount && snapshot.onlineCount) {
+        hudOnlineCount.textContent = String(snapshot.onlineCount);
+      }
+    } catch (err) {
+      console.warn('Backend API snapshot load fallback:', err);
+    }
+
+    try {
+      // Check GitHub OAuth session
+      const user = await getSupabaseUser();
+      if (user) {
+        const metadata = user.user_metadata || {};
+        const syncRes = await syncGithubAuth({
+          githubId: user.id,
+          username: metadata.user_name || metadata.preferred_username,
+          email: user.email,
+          avatarUrl: metadata.avatar_url,
+          displayName: metadata.full_name || metadata.name || metadata.user_name,
+        });
+        if ((syncRes.authenticated || syncRes.success) && syncRes.citizen) {
+          myCitizen = syncRes.citizen;
+          myOwnedSpot = syncRes.ownedSpot;
+          if (myOwnedSpot) {
+            localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
+            if (headerClaimBtn) {
+              headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+            }
+            if (!window.location.search.includes('spot=')) {
+              renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
+              if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
+              if (coordStatus) {
+                coordStatus.textContent = syncRes.citizen.displayName;
+                coordStatus.className = 'coord-badge occupied';
+              }
+            }
+          }
+
+          // If user does not own a spot yet and has a pending target, claim it automatically!
+          const pending = localStorage.getItem('spot_claim_pending_target');
+          if (!myOwnedSpot && pending) {
+            localStorage.removeItem('spot_claim_pending_target');
+            const coords = JSON.parse(pending);
+            if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
+              await autoClaimWithGithub(coords.x, coords.y, syncRes.citizen);
+            }
+          }
+        }
+      } else {
+        const session = await fetchMySession();
+        if ((session.authenticated || (session as any).success) && session.citizen) {
+          myCitizen = session.citizen;
+          myOwnedSpot = session.ownedSpot;
+          if (myOwnedSpot) {
+            localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
+            if (headerClaimBtn) {
+              headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+            }
+            if (!window.location.search.includes('spot=')) {
+              renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
+              if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
+              if (coordStatus) {
+                coordStatus.textContent = session.citizen.displayName;
+                coordStatus.className = 'coord-badge occupied';
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Session check fallback:', err);
+    }
+  }
+
+  // Automatic Claim on return from GitHub OAuth
+  async function autoClaimWithGithub(gx: number, gy: number, citizen: Citizen) {
+    const spotId = renderer.grid.getSpotId(gx, gy);
+    try {
+      showToast('Securing spot with your GitHub profile...', 'info');
+      const res = await claimSpot(spotId, {
+        displayName: citizen.displayName,
+        avatarId: citizen.avatarId || selectedAvatarId,
+        tagline: citizen.tagline || 'Proud citizen of Spot.',
+        websiteUrl: citizen.websiteUrl || undefined,
+        githubUrl: citizen.githubUrl || undefined,
+      });
+
+      myCitizen = res.citizen;
+      myOwnedSpot = { id: spotId, x: gx, y: gy };
+
+      const newOccupied: OccupiedSpotSummary = {
+        spotId,
+        x: gx,
+        y: gy,
+        citizenId: res.citizen.id,
+        displayName: res.citizen.displayName,
+        avatarId: res.citizen.avatarId,
+        tagline: res.citizen.tagline,
+        websiteUrl: res.citizen.websiteUrl,
+        githubUrl: res.citizen.githubUrl,
+        isOnline: true,
+      };
+
+      worldSnapshot.occupied.push(newOccupied);
+      worldSnapshot.claimedCount++;
+      renderer.setSnapshot(worldSnapshot);
+
+      if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+      if (headerClaimBtn) headerClaimBtn.innerHTML = `<span>My Spot (${gx}, ${gy})</span>`;
+
+      // Clean hash from URL bar
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+
+      showToast(`🎉 Spot (${gx}, ${gy}) is now yours forever!`, 'success');
+
+      // Center camera on newly claimed spot
+      const worldPos = renderer.grid.gridToWorld(gx, gy);
+      renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+      renderer.selectSpot(gx, gy);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to claim spot with GitHub', 'error');
+    }
+  }
+
+  // Deep link parsing: ?spot=x,y
+  function checkUrlDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const spotParam = params.get('spot');
+    if (spotParam && /^\d{1,3},\d{1,3}$/.test(spotParam)) {
+      const [gx, gy] = spotParam.split(',').map(Number);
+      if (renderer.grid.isValidCoordinate(gx, gy)) {
+        setTimeout(() => {
+          const worldPos = renderer.grid.gridToWorld(gx, gy);
+          renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+          renderer.selectSpot(gx, gy);
+        }, 200);
+      }
+    }
+  }
+
+  // 10b. 1-Click GitHub Verification Trigger
+  const btnClaimGithub = document.getElementById('btn-claim-github');
+  btnClaimGithub?.addEventListener('click', async () => {
+    try {
+      localStorage.setItem('spot_claim_pending_target', JSON.stringify(currentTargetSpot));
+      await signInWithGitHub(window.location.origin);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to connect to GitHub', 'error');
+    }
+  });
+
+  // 10c. Listen for Supabase OAuth return events
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      const user = session.user;
+      const metadata = user.user_metadata || {};
+      try {
+        const syncRes = await syncGithubAuth({
+          githubId: user.id,
+          username: metadata.user_name || metadata.preferred_username,
+          email: user.email,
+          avatarUrl: metadata.avatar_url,
+          displayName: metadata.full_name || metadata.name || metadata.user_name,
+        });
+
+        if ((syncRes.authenticated || syncRes.success) && syncRes.citizen) {
+          myCitizen = syncRes.citizen;
+          myOwnedSpot = syncRes.ownedSpot;
+          if (myOwnedSpot && headerClaimBtn) {
+            headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+          }
+
+          const pending = localStorage.getItem('spot_claim_pending_target');
+          if (!myOwnedSpot && pending) {
+            localStorage.removeItem('spot_claim_pending_target');
+            const coords = JSON.parse(pending);
+            if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
+              await autoClaimWithGithub(coords.x, coords.y, syncRes.citizen);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('GitHub auth sync error:', err);
+      }
+    }
+  });
+
+  loadData().then(() => {
+    checkUrlDeepLink();
+  });
+
+  // Copy Spot Share Link
+  const btnCopySpotLink = document.getElementById('btn-copy-spot-link');
+  const btnCopySpotLinkText = document.getElementById('btn-copy-spot-link-text');
+  btnCopySpotLink?.addEventListener('click', () => {
+    if (!currentViewingOccupied) return;
+    const url = `${window.location.origin}/?spot=${currentViewingOccupied.x},${currentViewingOccupied.y}`;
+    navigator.clipboard.writeText(url).then(() => {
+      if (btnCopySpotLinkText) btnCopySpotLinkText.textContent = 'Copied!';
+      showToast('🔗 Spot link copied to clipboard!', 'success');
+      setTimeout(() => {
+        if (btnCopySpotLinkText) btnCopySpotLinkText.textContent = 'Share Spot';
+      }, 2000);
+    });
+  });
+
+  // 6. Profile Modal Controller
+  function openProfileModal(occupied: OccupiedSpotSummary) {
+    if (!profileBackdrop) return;
+    currentViewingOccupied = occupied;
+
+    // Reset view vs edit sections
+    if (profileViewSection) profileViewSection.style.display = 'block';
+    if (profileEditSection) profileEditSection.style.display = 'none';
+
+    if (profileSpotId) profileSpotId.textContent = `Spot (${occupied.x}, ${occupied.y})`;
+    if (profileName) profileName.textContent = occupied.displayName;
+    if (profileTagline) profileTagline.textContent = occupied.tagline || 'Proud citizen of Spot.';
+
+    // Avatar preview
+    if (profileAvatarCanvas) {
+      const ctx = profileAvatarCanvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 64, 64);
+        const avatar = getAvatar(occupied.avatarId);
+        drawAvatarOnCanvas(ctx, avatar, 4, 4, 56);
+      }
+    }
+
+    // External links
+    if (linkWebsite) {
+      if (occupied.websiteUrl) {
+        linkWebsite.href = occupied.websiteUrl;
+        linkWebsite.style.display = 'inline-flex';
+        if (linkWebsiteText) linkWebsiteText.textContent = occupied.websiteUrl.replace(/^https?:\/\//, '');
+      } else {
+        linkWebsite.style.display = 'none';
+      }
+    }
+
+    if (linkGithub) {
+      if (occupied.githubUrl) {
+        linkGithub.href = occupied.githubUrl.startsWith('http') ? occupied.githubUrl : `https://github.com/${occupied.githubUrl}`;
+        linkGithub.style.display = 'inline-flex';
+      } else {
+        linkGithub.style.display = 'none';
+      }
+    }
+
+    // Citizen Tier Badge (Founder vs Verified GitHub vs Anonymous)
+    const isFounder = (occupied.githubUrl && occupied.githubUrl.toLowerCase() === 'fazleyrabby') || occupied.spotId === '52,60';
+    if (linkSupport) {
+      linkSupport.style.display = isFounder ? 'inline-flex' : 'none';
+    }
+
+    if (profilePresence) {
+      const textEl = profilePresence.querySelector('.presence-text');
+      if (textEl) {
+        if (isFounder) {
+          textEl.textContent = 'Founder / Permanent Citizen';
+          profilePresence.className = 'presence-badge founder-badge';
+        } else if (occupied.githubUrl) {
+          textEl.textContent = 'Verified Citizen';
+          profilePresence.className = 'presence-badge verified-badge';
+        } else {
+          textEl.textContent = 'Citizen';
+          profilePresence.className = 'presence-badge';
+        }
+      }
+    }
+
+    // Show "Edit Profile" button if logged in as owner
+    const isOwner = Boolean(
+      (myCitizen && (myCitizen.id === occupied.citizenId || (occupied.githubUrl && myCitizen.githubUrl && myCitizen.githubUrl.toLowerCase() === occupied.githubUrl.toLowerCase()))) ||
+      (myOwnedSpot && (myOwnedSpot.id === occupied.spotId || (myOwnedSpot.x === occupied.x && myOwnedSpot.y === occupied.y)))
+    );
+    if (profileOwnerActions) {
+      profileOwnerActions.style.display = isOwner ? 'flex' : 'none';
+    }
+
+    profileBackdrop.classList.add('open');
+    profileBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeProfileModal() {
+    if (profileBackdrop) {
+      profileBackdrop.classList.remove('open');
+      profileBackdrop.setAttribute('aria-hidden', 'true');
+      renderer.clearSelection();
+    }
+  }
+
+  // 7. Profile Edit Handlers
+  btnOpenEditProfile?.addEventListener('click', () => {
+    if (!myCitizen || !currentViewingOccupied) return;
+    if (profileViewSection) profileViewSection.style.display = 'none';
+    if (profileEditSection) profileEditSection.style.display = 'block';
+
+    editDisplayName.value = myCitizen.displayName;
+    editTagline.value = myCitizen.tagline || '';
+    editWebsite.value = myCitizen.websiteUrl || '';
+    editGithub.value = myCitizen.githubUrl || '';
+    editSelectedAvatarId = myCitizen.avatarId;
+
+    renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
+  });
+
+  btnCancelEdit?.addEventListener('click', () => {
+    if (profileViewSection) profileViewSection.style.display = 'block';
+    if (profileEditSection) profileEditSection.style.display = 'none';
+  });
+
+  editProfileForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!btnSaveEdit) return;
+
+    btnSaveEdit.disabled = true;
+    btnSaveEdit.textContent = 'Saving...';
+
+    try {
+      const res = await updateMyProfile({
+        displayName: editDisplayName.value.trim(),
+        avatarId: editSelectedAvatarId,
+        tagline: editTagline.value.trim() || undefined,
+        websiteUrl: editWebsite.value.trim() || undefined,
+        githubUrl: editGithub.value.trim() || undefined,
+      });
+
+      myCitizen = res.citizen;
+
+      // Update spot summary in memory and renderer immediately
+      let found = worldSnapshot.occupied.find((o) => 
+        o.citizenId === res.citizen.id || 
+        (myOwnedSpot && (o.spotId === myOwnedSpot.id || (o.x === myOwnedSpot.x && o.y === myOwnedSpot.y)))
+      );
+
+      if (found) {
+        found.displayName = res.citizen.displayName;
+        found.avatarId = res.citizen.avatarId;
+        found.tagline = res.citizen.tagline;
+        found.websiteUrl = res.citizen.websiteUrl;
+        found.githubUrl = res.citizen.githubUrl;
+      } else if (myOwnedSpot) {
+        found = {
+          spotId: myOwnedSpot.id,
+          x: myOwnedSpot.x,
+          y: myOwnedSpot.y,
+          citizenId: res.citizen.id,
+          displayName: res.citizen.displayName,
+          avatarId: res.citizen.avatarId,
+          tagline: res.citizen.tagline,
+          websiteUrl: res.citizen.websiteUrl,
+          githubUrl: res.citizen.githubUrl,
+          isOnline: true,
+        };
+        worldSnapshot.occupied.push(found);
+      }
+
+      renderer.setSnapshot(worldSnapshot);
+      if (found) {
+        openProfileModal(found);
+      }
+
+      showToast('✨ Profile updated instantly!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile', 'error');
+    } finally {
+      btnSaveEdit.disabled = false;
+      btnSaveEdit.textContent = 'Save Changes';
+    }
+  });
+
+  // Delete Spot & Profile (Right to Erasure)
+  const btnDeleteAccount = document.getElementById('btn-delete-account');
+  btnDeleteAccount?.addEventListener('click', async () => {
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to release your spot and delete your profile? Your spot will become empty and available for anyone else.'
+    );
+    if (!confirmed) return;
+
+    try {
+      showToast('Releasing spot and deleting profile...', 'info');
+      await deleteMyAccount();
+
+      // Clear local state
+      if (myOwnedSpot) {
+        const idx = worldSnapshot.occupied.findIndex(o => o.spotId === myOwnedSpot!.id);
+        if (idx !== -1) {
+          worldSnapshot.occupied.splice(idx, 1);
+          worldSnapshot.claimedCount = Math.max(0, worldSnapshot.claimedCount - 1);
+          renderer.setSnapshot(worldSnapshot);
+        }
+      }
+
+      myCitizen = null;
+      myOwnedSpot = null;
+      localStorage.removeItem('spot_my_owned');
+      localStorage.removeItem('spot_session_token');
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+
+      if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+      if (headerClaimBtn) {
+        headerClaimBtn.innerHTML = `
+          <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Claim a Spot</span>
+        `;
+      }
+
+      closeProfileModal();
+      showToast('🗑️ Spot released and profile deleted.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete account', 'error');
+    }
+  });
+
+  // 8. Search Modal Controller
+  function openSearchModal() {
+    if (!searchBackdrop) return;
+    searchBackdrop.classList.add('open');
+    searchBackdrop.setAttribute('aria-hidden', 'false');
+    setTimeout(() => searchInput?.focus(), 50);
+  }
+
+  function closeSearchModal() {
+    if (!searchBackdrop) return;
+    searchBackdrop.classList.remove('open');
+    searchBackdrop.setAttribute('aria-hidden', 'true');
+    if (searchInput) searchInput.value = '';
+    if (searchResultsList) searchResultsList.innerHTML = '';
+    if (searchStatus) {
+      searchStatus.style.display = 'block';
+      searchStatus.textContent = 'Type to search across citizens and spots...';
+    }
+  }
+
+  headerSearchBtn?.addEventListener('click', openSearchModal);
+  searchBackdrop?.addEventListener('click', (e) => {
+    if (e.target === searchBackdrop) closeSearchModal();
+  });
+
+  let searchTimeout: any = null;
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const q = searchInput.value.trim();
+    if (!q) {
+      if (searchResultsList) searchResultsList.innerHTML = '';
+      if (searchStatus) {
+        searchStatus.style.display = 'block';
+        searchStatus.textContent = 'Type to search across citizens and spots...';
+      }
+      return;
+    }
+
+    if (searchStatus) {
+      searchStatus.style.display = 'block';
+      searchStatus.textContent = 'Searching...';
+    }
+
+    searchTimeout = setTimeout(async () => {
+      const results = await searchCitizens(q);
+      if (!searchResultsList || !searchStatus) return;
+
+      searchResultsList.innerHTML = '';
+      if (results.length === 0) {
+        searchStatus.style.display = 'block';
+        searchStatus.textContent = `No citizens or spots found matching "${q}"`;
+      } else {
+        searchStatus.style.display = 'none';
+        results.forEach((item: CitizenSearchResult) => {
+          const row = document.createElement('div');
+          row.className = 'search-result-item';
+
+          const avatar = getAvatar(item.avatarId);
+          const canvasEl = document.createElement('canvas');
+          canvasEl.width = 32;
+          canvasEl.height = 32;
+          canvasEl.className = 'search-result-avatar';
+          const ctx = canvasEl.getContext('2d');
+          if (ctx) drawAvatarOnCanvas(ctx, avatar, 0, 0, 32);
+
+          const left = document.createElement('div');
+          left.className = 'search-result-left';
+          left.appendChild(canvasEl);
+
+          const meta = document.createElement('div');
+          meta.className = 'search-result-meta';
+          const nameSpan = document.createElement('div');
+          nameSpan.className = 'search-result-name';
+          nameSpan.textContent = item.displayName;
+          const taglineSpan = document.createElement('div');
+          taglineSpan.className = 'search-result-tagline';
+          taglineSpan.textContent = item.tagline || `@${item.githubUrl || 'citizen'}`;
+
+          meta.appendChild(nameSpan);
+          meta.appendChild(taglineSpan);
+          left.appendChild(meta);
+
+          const spotBadge = document.createElement('div');
+          spotBadge.className = 'search-result-spot';
+          spotBadge.textContent = `(${item.x}, ${item.y})`;
+
+          row.appendChild(left);
+          row.appendChild(spotBadge);
+
+          // Click to Jump To Spot
+          row.addEventListener('click', () => {
+            closeSearchModal();
+            const worldPos = renderer.grid.gridToWorld(item.x, item.y);
+            renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+            renderer.selectSpot(item.x, item.y);
+
+            const occupiedItem: OccupiedSpotSummary = {
+              spotId: item.spotId,
+              x: item.x,
+              y: item.y,
+              citizenId: item.id,
+              displayName: item.displayName,
+              avatarId: item.avatarId,
+              tagline: item.tagline,
+              websiteUrl: item.websiteUrl,
+              githubUrl: item.githubUrl,
+              isOnline: true,
+            };
+            setTimeout(() => openProfileModal(occupiedItem), 300);
+          });
+
+          searchResultsList.appendChild(row);
+        });
+      }
+    }, 200);
+  });
+
+  // 9. Global Keyboard Shortcuts
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeProfileModal();
+      closeClaimModal();
+      closeSearchModal();
+    }
+    // Cmd+K or Ctrl+K or "/" to search
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      openSearchModal();
+    } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+      e.preventDefault();
+      openSearchModal();
+    }
+  });
+
+  // 10. Claim Modal Controller
+  function openClaimModal(gx: number, gy: number) {
+    if (myOwnedSpot) {
+      showToast(`You already own Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})!`, 'info');
+      const pos = renderer.grid.gridToWorld(myOwnedSpot.x, myOwnedSpot.y);
+      renderer.camera.centerOn(pos.x + 18, pos.y + 18, 2.0);
+      renderer.selectSpot(myOwnedSpot.x, myOwnedSpot.y);
+      return;
+    }
+
+    currentTargetSpot = { x: gx, y: gy };
+    if (claimSpotBadge) claimSpotBadge.textContent = `Spot (${gx}, ${gy})`;
+    renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => { selectedAvatarId = id; });
+    if (claimBackdrop) {
+      claimBackdrop.classList.add('open');
+      claimBackdrop.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function closeClaimModal() {
+    if (claimBackdrop) {
+      claimBackdrop.classList.remove('open');
+      claimBackdrop.setAttribute('aria-hidden', 'true');
+      renderer.clearSelection();
+    }
+  }
+
+  profileCloseBtn?.addEventListener('click', closeProfileModal);
+  profileBackdrop?.addEventListener('click', (e) => { if (e.target === profileBackdrop) closeProfileModal(); });
+  claimCloseBtn?.addEventListener('click', closeClaimModal);
+  claimBackdrop?.addEventListener('click', (e) => { if (e.target === claimBackdrop) closeClaimModal(); });
+
+  // Nav HUD Actions
+  btnZoomIn?.addEventListener('click', () => renderer.camera.zoomAt(window.innerWidth / 2, window.innerHeight / 2, -300));
+  btnZoomOut?.addEventListener('click', () => renderer.camera.zoomAt(window.innerWidth / 2, window.innerHeight / 2, 300));
+  btnRecenter?.addEventListener('click', () => {
+    let target = myOwnedSpot;
+    if (!target) {
+      try {
+        const saved = localStorage.getItem('spot_my_owned');
+        if (saved) target = JSON.parse(saved);
+      } catch {}
+    }
+    const gx = target ? target.x : 52;
+    const gy = target ? target.y : 60;
+    renderer.focusSpot(gx, gy, 2.2);
+    if (coordText) coordText.textContent = `Spot: (${gx}, ${gy})`;
+    showToast(`🎯 Focusing on Spot (${gx}, ${gy})`, 'info');
+  });
+
+  // CTA Claim Button
+  headerClaimBtn?.addEventListener('click', () => {
+    if (myOwnedSpot) {
+      const pos = renderer.grid.gridToWorld(myOwnedSpot.x, myOwnedSpot.y);
+      renderer.camera.centerOn(pos.x + 18, pos.y + 18, 2.0);
+      const spotId = renderer.grid.getSpotId(myOwnedSpot.x, myOwnedSpot.y);
+      const occupied = worldSnapshot.occupied.find(o => o.spotId === spotId || (o.x === myOwnedSpot!.x && o.y === myOwnedSpot!.y));
+      if (occupied) {
+        openProfileModal(occupied);
+      }
+      return;
+    }
+
+    let target = { x: 50, y: 50 };
+    for (let radius = 0; radius < 50; radius++) {
+      let found = false;
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          const gx = 50 + dx;
+          const gy = 50 + dy;
+          const spotId = renderer.grid.getSpotId(gx, gy);
+          // @ts-ignore
+          if (renderer.grid.isValidCoordinate(gx, gy) && !renderer['occupiedMap'].has(spotId)) {
+            target = { x: gx, y: gy };
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) break;
+    }
+
+    const worldPos = renderer.grid.gridToWorld(target.x, target.y);
+    renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 1.8);
+    renderer.selectSpot(target.x, target.y);
+    openClaimModal(target.x, target.y);
+  });
+
+  // Submit Claim
+  claimForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const displayName = inputDisplayName.value.trim();
+    if (!displayName) return;
+
+    const spotId = renderer.grid.getSpotId(currentTargetSpot.x, currentTargetSpot.y);
+    submitClaimBtn.disabled = true;
+    submitClaimBtn.textContent = 'Securing spot...';
+
+    try {
+      const res = await claimSpot(spotId, {
+        displayName,
+        avatarId: selectedAvatarId,
+        tagline: inputTagline.value.trim() || undefined,
+        websiteUrl: inputWebsite.value.trim() || undefined,
+        githubUrl: inputGithub.value.trim() || undefined,
+      });
+
+      myCitizen = res.citizen;
+      myOwnedSpot = { id: spotId, x: currentTargetSpot.x, y: currentTargetSpot.y };
+
+      const newOccupied: OccupiedSpotSummary = {
+        spotId,
+        x: currentTargetSpot.x,
+        y: currentTargetSpot.y,
+        citizenId: res.citizen.id,
+        displayName: res.citizen.displayName,
+        avatarId: res.citizen.avatarId,
+        tagline: res.citizen.tagline,
+        websiteUrl: res.citizen.websiteUrl,
+        githubUrl: res.citizen.githubUrl,
+        isOnline: true,
+      };
+
+      worldSnapshot.occupied.push(newOccupied);
+      worldSnapshot.claimedCount++;
+      renderer.setSnapshot(worldSnapshot);
+
+      if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+      if (headerClaimBtn) headerClaimBtn.innerHTML = `<span>My Spot (${currentTargetSpot.x}, ${currentTargetSpot.y})</span>`;
+
+      closeClaimModal();
+      showToast(`🎉 Spot (${currentTargetSpot.x}, ${currentTargetSpot.y}) is now yours forever!`, 'success');
+
+      const worldPos = renderer.grid.gridToWorld(currentTargetSpot.x, currentTargetSpot.y);
+      renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+      renderer.selectSpot(currentTargetSpot.x, currentTargetSpot.y);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to claim spot', 'error');
+    } finally {
+      submitClaimBtn.disabled = false;
+      submitClaimBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Claim This Spot</span>
+      `;
+    }
+  });
+
+  // 11. Live Realtime Stream (Instant Sync across all tabs & devices)
+  let activeSSE: EventSource | null = null;
+  function connectRealtimeStream() {
+    if (activeSSE) {
+      activeSSE.close();
+      activeSSE = null;
+    }
+
+    const sessionToken = localStorage.getItem('spot_session_token') || '';
+    let tabId = sessionStorage.getItem('spot_tab_id');
+    if (!tabId) {
+      tabId = Math.random().toString(36).substring(2, 9);
+      sessionStorage.setItem('spot_tab_id', tabId);
+    }
+
+    const queryParams = new URLSearchParams();
+    if (sessionToken) queryParams.set('token', sessionToken);
+    if (tabId) queryParams.set('tabId', tabId);
+
+    const streamBase = window.location.hostname === 'localhost'
+      ? 'http://localhost:5050/api/realtime/stream'
+      : '/api/realtime/stream';
+    const streamUrl = `${streamBase}?${queryParams.toString()}`;
+
+    const sse = new EventSource(streamUrl);
+    activeSSE = sse;
+
+    sse.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'spot_claimed') {
+          if (!worldSnapshot.occupied.some((o) => o.spotId === msg.spot.id)) {
+            const newOccupied: OccupiedSpotSummary = {
+              spotId: msg.spot.id,
+              x: msg.spot.x,
+              y: msg.spot.y,
+              citizenId: msg.citizen.id,
+              displayName: msg.citizen.displayName,
+              avatarId: msg.citizen.avatarId,
+              tagline: msg.citizen.tagline,
+              websiteUrl: msg.citizen.websiteUrl,
+              githubUrl: msg.citizen.githubUrl,
+              isOnline: true,
+            };
+            worldSnapshot.occupied.push(newOccupied);
+            worldSnapshot.claimedCount++;
+            renderer.setSnapshot(worldSnapshot);
+            if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+            showToast(`✨ ${msg.citizen.displayName} just claimed Spot (${msg.spot.x}, ${msg.spot.y})!`, 'info');
+          }
+        } else if (msg.type === 'profile_updated') {
+          const item = worldSnapshot.occupied.find((o) => 
+            o.citizenId === msg.citizen.id ||
+            (o.githubUrl && msg.citizen.githubUrl && o.githubUrl.toLowerCase() === msg.citizen.githubUrl.toLowerCase())
+          );
+          if (item) {
+            item.displayName = msg.citizen.displayName;
+            item.avatarId = msg.citizen.avatarId;
+            item.tagline = msg.citizen.tagline;
+            item.websiteUrl = msg.citizen.websiteUrl;
+            item.githubUrl = msg.citizen.githubUrl;
+            renderer.setSnapshot(worldSnapshot);
+          }
+        } else if (msg.type === 'spot_released') {
+          const idx = worldSnapshot.occupied.findIndex((o) => o.spotId === msg.spotId || (o.x === msg.x && o.y === msg.y));
+          if (idx !== -1) {
+            worldSnapshot.occupied.splice(idx, 1);
+            worldSnapshot.claimedCount = Math.max(0, worldSnapshot.claimedCount - 1);
+            renderer.setSnapshot(worldSnapshot);
+            if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
+          }
+        } else if (msg.type === 'presence') {
+          const onlineCountEl = document.getElementById('hud-online-count');
+          if (onlineCountEl && msg.onlineCount) {
+            onlineCountEl.textContent = String(msg.onlineCount);
+          }
+        }
+      } catch (err) {
+        console.error('Realtime message error:', err);
+      }
+    };
+
+    sse.onerror = () => {
+      if (activeSSE === sse) {
+        sse.close();
+        activeSSE = null;
+        setTimeout(connectRealtimeStream, 5000);
+      }
+    };
+  }
+
+  window.addEventListener('beforeunload', () => {
+    if (activeSSE) {
+      activeSSE.close();
+      activeSSE = null;
+    }
+  });
+
+  connectRealtimeStream();
+</script>
+
+<style>
+  .spot-app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .toast-container {
+    position: fixed;
+    top: 84px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  :global(.toast) {
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    pointer-events: auto;
+    animation: slideDown 0.25s var(--ease-out-expo);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  :global(.toast-success) {
+    background: rgba(16, 185, 129, 0.9);
+    color: #032014;
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+
+  :global(.toast-error) {
+    background: rgba(239, 68, 68, 0.9);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  :global(.toast-info) {
+    background: rgba(245, 158, 11, 0.9);
+    color: #1a1002;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  :global(.toast.fade-out) {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

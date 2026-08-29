@@ -1,0 +1,207 @@
+---
+---
+
+<div class="canvas-container" id="canvas-container">
+  <canvas id="spot-canvas" class="spot-canvas"></canvas>
+
+  <!-- Bottom-Left Hover/Coordinate Pill & Support Button -->
+  <div class="hud-bottom-left" id="hud-bottom-left">
+    <div class="coord-pill glass-panel" id="coord-pill">
+      <span class="coord-icon">🎯</span>
+      <span class="coord-text mono-num" id="coord-text">Spot: (52, 60)</span>
+      <span class="coord-badge empty" id="coord-status">Available</span>
+    </div>
+
+    <a href="https://buymeacoffee.com/fazleyrabbi" target="_blank" rel="noopener noreferrer" class="support-btn glass-panel" title="Support creator & development of Spot">
+      <svg class="coffee-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+        <line x1="6" y1="1" x2="6" y2="4"></line>
+        <line x1="10" y1="1" x2="10" y2="4"></line>
+        <line x1="14" y1="1" x2="14" y2="4"></line>
+      </svg>
+      <span>Support</span>
+    </a>
+  </div>
+
+  <!-- Bottom-Right Navigation HUD Controls -->
+  <div class="hud-bottom-right" id="hud-bottom-right">
+    <div class="nav-controls glass-panel">
+      <button class="nav-btn" id="btn-zoom-in" title="Zoom in (+)" aria-label="Zoom in">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      <div class="nav-divider"></div>
+
+      <button class="nav-btn" id="btn-zoom-out" title="Zoom out (-)" aria-label="Zoom out">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      <div class="nav-divider"></div>
+
+      <button class="nav-btn" id="btn-recenter" title="Recenter world" aria-label="Recenter world">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="22" y1="12" x2="18" y2="12"></line>
+          <line x1="6" y1="12" x2="2" y2="12"></line>
+          <line x1="12" y1="6" x2="12" y2="2"></line>
+          <line x1="12" y1="22" x2="12" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .canvas-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .spot-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+  }
+
+  .hud-bottom-left {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 30;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .support-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    pointer-events: auto;
+    transition: all 0.2s var(--ease-out-expo);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .support-btn:hover {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .coffee-icon {
+    color: #f59e0b;
+  }
+
+  .coord-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 500;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .coord-icon {
+    font-size: 0.9rem;
+  }
+
+  .coord-text {
+    color: var(--text-primary);
+  }
+
+  .coord-badge {
+    font-size: 0.72rem; /* 11.5px */
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .coord-badge.empty {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+
+  .coord-badge.occupied {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-jade);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+  }
+
+  .hud-bottom-right {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 30;
+    pointer-events: auto;
+  }
+
+  .nav-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+  }
+
+  .nav-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-btn:active {
+    transform: scale(0.94);
+  }
+
+  .nav-divider {
+    width: 20px;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  @media (max-width: 640px) {
+    .hud-bottom-left {
+      bottom: 12px;
+      left: 12px;
+    }
+    .hud-bottom-right {
+      bottom: 12px;
+      right: 12px;
+    }
+  }
+</style>

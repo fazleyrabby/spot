@@ -1,0 +1,16 @@
+{
+  "name": "spot-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter server --filter web dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm --filter @spot/shared build && pnpm --filter @spot/world build && pnpm --filter server build && pnpm --filter web build",
+    "check": "pnpm --filter @spot/shared check && pnpm --filter @spot/world check && pnpm --filter server check && pnpm --filter web check"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
