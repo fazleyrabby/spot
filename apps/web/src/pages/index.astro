@@ -799,14 +799,14 @@ import SupportModal from '../components/SupportModal.astro';
     e.preventDefault();
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText('fazleyrabbi93@gmail.com');
+      await navigator.clipboard.writeText('24076084');
       if (payoneerCopyLabel) payoneerCopyLabel.textContent = 'Copied!';
-      showToast('📋 Copied Payoneer email: fazleyrabbi93@gmail.com', 'success');
+      showToast('📋 Copied Payoneer ID: 24076084', 'success');
       setTimeout(() => {
-        if (payoneerCopyLabel) payoneerCopyLabel.textContent = 'Copy';
+        if (payoneerCopyLabel) payoneerCopyLabel.textContent = 'Copy ID';
       }, 2000);
     } catch {
-      showToast('Payoneer email: fazleyrabbi93@gmail.com', 'info');
+      showToast('Payoneer ID: 24076084', 'info');
     }
   });
 
