@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { WorldSnapshot, OccupiedSpotSummary, Citizen, CreateCitizenInput } from '@spot/shared';
+import { getDeviceFingerprint } from './fingerprint.js';
 
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://koqodifauvvemouhnjqz.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvcW9kaWZhdXZ2ZW1vdWhuanF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMTk5ODYsImV4cCI6MjEwMzU5NTk4Nn0.hCknsp_62Qj0bj3Vlhe5gNftDYMiNGSv1vZa-Ib9OlI';
@@ -156,13 +157,22 @@ export async function fetchSessionDirect(): Promise<{
     const savedCitId = localStorage.getItem('spot_citizen_id');
     const savedToken = localStorage.getItem('spot_session_token');
     const savedOwned = localStorage.getItem('spot_my_owned');
+    const deviceFp = await getDeviceFingerprint();
+
     if (savedCitId) {
       const { data } = await supabase.from('citizens').select('*').eq('id', savedCitId).limit(1).maybeSingle();
       citizenRow = data;
     } else if (savedToken) {
       const { data } = await supabase.from('citizens').select('*').eq('session_token_hash', savedToken).limit(1).maybeSingle();
       citizenRow = data;
-    } else if (savedOwned) {
+    } else if (deviceFp) {
+      try {
+        const { data } = await supabase.from('citizens').select('*').eq('device_fingerprint', deviceFp).limit(1).maybeSingle();
+        if (data) citizenRow = data;
+      } catch {}
+    }
+
+    if (!citizenRow && savedOwned) {
       try {
         const parsed = JSON.parse(savedOwned);
         const spotId = parsed.id || `${parsed.x},${parsed.y}`;
@@ -241,6 +251,31 @@ export async function claimSpotDirect(input: {
     throw new Error('This spot is already claimed by another citizen!');
   }
 
+  // Device Fingerprint verification
+  const deviceFp = await getDeviceFingerprint();
+  if (deviceFp) {
+    try {
+      const { data: existingFp } = await supabase
+        .from('citizens')
+        .select(`
+          id, display_name,
+          spots!spots_owner_id_fkey (id, x, y)
+        `)
+        .eq('device_fingerprint', deviceFp)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingFp && existingFp.id !== citizenId) {
+        const sp = Array.isArray(existingFp.spots) ? existingFp.spots[0] : existingFp.spots;
+        if (sp && sp.x !== undefined) {
+          throw new Error(`You have already claimed Spot (${sp.x}, ${sp.y}) from this device! Release it first before claiming a new one.`);
+        }
+      }
+    } catch (fpErr: any) {
+      if (fpErr.message?.includes('already claimed')) throw fpErr;
+    }
+  }
+
   // 1. Upsert citizen record
   const tokenHash = 'direct_auth_' + Math.random().toString(36).substring(2, 16);
   const clientIp = await getClientIp();
@@ -256,6 +291,7 @@ export async function claimSpotDirect(input: {
     updated_at: new Date().toISOString(),
   };
   if (clientIp) citizenPayload.ip_address = clientIp;
+  if (deviceFp) citizenPayload.device_fingerprint = deviceFp;
 
   let { data: citizenData, error: citErr } = await supabase
     .from('citizens')
@@ -263,8 +299,9 @@ export async function claimSpotDirect(input: {
     .select()
     .single();
 
-  if (citErr && (citErr.code === '42703' || citErr.message?.includes('ip_address'))) {
+  if (citErr && (citErr.code === '42703' || citErr.message?.includes('ip_address') || citErr.message?.includes('device_fingerprint'))) {
     delete citizenPayload.ip_address;
+    delete citizenPayload.device_fingerprint;
     const retry = await supabase
       .from('citizens')
       .upsert(citizenPayload)

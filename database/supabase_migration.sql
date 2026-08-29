@@ -14,12 +14,14 @@ CREATE TABLE IF NOT EXISTS public.citizens (
   github_url VARCHAR(256),
   linkedin_url VARCHAR(256),
   ip_address VARCHAR(64),
+  device_fingerprint VARCHAR(64),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
--- Add column if table already exists
+-- Add columns if table already exists
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64);
+ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS device_fingerprint VARCHAR(64);
 
 -- Index for instant session token authentication lookups
 CREATE INDEX IF NOT EXISTS idx_citizens_token_hash ON public.citizens(session_token_hash);
