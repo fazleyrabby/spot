@@ -61,7 +61,8 @@ export async function getDeviceFingerprint(): Promise<string> {
 
   try {
     const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}@${window.devicePixelRatio || 1}`;
-    const navInfo = `${navigator.language || ''}|${(navigator as any).hardwareConcurrency || ''}|${(navigator as any).deviceMemory || ''}|${navigator.platform || ''}`;
+    const platformInfo = (navigator as any).userAgentData?.platform || (navigator as any).platform || '';
+    const navInfo = `${navigator.language || ''}|${(navigator as any).hardwareConcurrency || ''}|${(navigator as any).deviceMemory || ''}|${platformInfo}`;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
     const canvasHash = simpleHash(getCanvasFingerprint());
     const webglHash = simpleHash(getWebGLFingerprint());
