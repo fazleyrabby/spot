@@ -23,6 +23,7 @@ import SupportModal from '../components/SupportModal.astro';
 <script>
   import { fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, type CitizenSearchResult } from '../api/client.js';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
+  import { getDeviceFingerprint } from '../api/fingerprint.js';
   import { WorldCanvasRenderer } from '../canvas/renderer.js';
   import { CanvasInputHandler } from '../canvas/input.js';
   import { AVATAR_CATALOG, getAvatar, drawAvatarOnCanvas } from '../canvas/avatars.js';
@@ -275,6 +276,14 @@ import SupportModal from '../components/SupportModal.astro';
               }
             }
           }
+        }
+      }
+
+      // Auto-sync device fingerprint with citizen record
+      if (myCitizen && typeof window !== 'undefined') {
+        const fp = await getDeviceFingerprint();
+        if (fp) {
+          supabase.from('citizens').update({ device_fingerprint: fp }).eq('id', myCitizen.id).then();
         }
       }
     } catch (err) {
