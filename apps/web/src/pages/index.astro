@@ -504,15 +504,16 @@ import SupportModal from '../components/SupportModal.astro';
 
   // 7. Profile Edit Handlers
   btnOpenEditProfile?.addEventListener('click', () => {
-    if (!myCitizen || !currentViewingOccupied) return;
+    if (!currentViewingOccupied) return;
     if (profileViewSection) profileViewSection.style.display = 'none';
     if (profileEditSection) profileEditSection.style.display = 'block';
 
-    editDisplayName.value = myCitizen.displayName;
-    editTagline.value = myCitizen.tagline || '';
-    editWebsite.value = myCitizen.websiteUrl || '';
-    editGithub.value = myCitizen.githubUrl || '';
-    editSelectedAvatarId = myCitizen.avatarId;
+    const cit = myCitizen || currentViewingOccupied;
+    editDisplayName.value = cit.displayName || '';
+    editTagline.value = cit.tagline || '';
+    editWebsite.value = cit.websiteUrl || '';
+    editGithub.value = cit.githubUrl || '';
+    editSelectedAvatarId = cit.avatarId || 'astronaut';
 
     renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
   });
@@ -753,6 +754,7 @@ import SupportModal from '../components/SupportModal.astro';
       closeProfileModal();
       closeClaimModal();
       closeSearchModal();
+      closeSupportModal();
     }
     // Cmd+K or Ctrl+K or "/" to search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -764,7 +766,51 @@ import SupportModal from '../components/SupportModal.astro';
     }
   });
 
-  // 10. Claim Modal Controller
+  // 10. Support Modal Controller
+  const supportBackdrop = document.getElementById('support-modal-backdrop');
+  const supportCloseBtn = document.getElementById('support-modal-close');
+  const btnOpenSupport = document.getElementById('btn-open-support');
+  const btnCopyPayoneer = document.getElementById('btn-copy-payoneer');
+  const payoneerCopyLabel = document.getElementById('payoneer-copy-label');
+
+  function openSupportModal() {
+    if (!supportBackdrop) return;
+    supportBackdrop.classList.add('open');
+    supportBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeSupportModal() {
+    if (!supportBackdrop) return;
+    supportBackdrop.classList.remove('open');
+    supportBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  btnOpenSupport?.addEventListener('click', openSupportModal);
+  linkSupport?.addEventListener('click', () => {
+    closeProfileModal();
+    openSupportModal();
+  });
+  supportCloseBtn?.addEventListener('click', closeSupportModal);
+  supportBackdrop?.addEventListener('click', (e) => {
+    if (e.target === supportBackdrop) closeSupportModal();
+  });
+
+  btnCopyPayoneer?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText('fazleyrabbi93@gmail.com');
+      if (payoneerCopyLabel) payoneerCopyLabel.textContent = 'Copied!';
+      showToast('📋 Copied Payoneer email: fazleyrabbi93@gmail.com', 'success');
+      setTimeout(() => {
+        if (payoneerCopyLabel) payoneerCopyLabel.textContent = 'Copy';
+      }, 2000);
+    } catch {
+      showToast('Payoneer email: fazleyrabbi93@gmail.com', 'info');
+    }
+  });
+
+  // 11. Claim Modal Controller
   function openClaimModal(gx: number, gy: number) {
     if (myOwnedSpot) {
       showToast(`You already own Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})!`, 'info');
