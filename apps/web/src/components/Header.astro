@@ -24,12 +24,10 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
   <div class="hud-center">
     <!-- 1. Claimed Count -->
-    <div class="stat-pill claimed-pill" title="Total spots claimed">
+    <div class="stat-pill claimed-pill" title="Total citizens / spots claimed">
       <svg class="stat-icon icon-amber" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
       </svg>
       <span class="stat-num mono-num highlight-amber" id="hud-claimed-count">{claimedCount.toLocaleString()}</span>
       <span class="stat-slash">/</span>
