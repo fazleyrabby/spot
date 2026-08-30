@@ -59,9 +59,13 @@
 
 <style>
   .canvas-container {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
+    width: 100dvw;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     touch-action: none;
   }
@@ -74,9 +78,9 @@
   }
 
   .hud-bottom-left {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
+    position: fixed;
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+    left: max(16px, calc(env(safe-area-inset-left, 0px) + 16px));
     z-index: 30;
     pointer-events: none;
     display: flex;
@@ -152,9 +156,9 @@
   }
 
   .hud-bottom-right {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
+    position: fixed;
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+    right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px));
     z-index: 30;
     pointer-events: auto;
   }
@@ -196,12 +200,35 @@
 
   @media (max-width: 640px) {
     .hud-bottom-left {
-      bottom: 12px;
-      left: 12px;
+      bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+      left: max(12px, calc(env(safe-area-inset-left, 0px) + 12px));
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      max-width: calc(100vw - 80px);
     }
+
+    .coord-pill {
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      gap: 6px;
+    }
+
+    .support-btn {
+      padding: 5px 9px;
+      font-size: 0.74rem;
+    }
+
     .hud-bottom-right {
-      bottom: 12px;
-      right: 12px;
+      bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+      right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px));
+    }
+  }
+
+  @media (max-width: 380px) {
+    .coord-badge {
+      display: none;
     }
   }
 </style>
