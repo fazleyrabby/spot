@@ -53,6 +53,12 @@ export const CreateCitizenSchema = z.object({
     .trim()
     .optional()
     .or(z.literal('')),
+  facebookUrl: z
+    .string()
+    .max(128, 'Facebook profile or URL must not exceed 128 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
   instagramUrl: z
     .string()
     .max(128, 'Instagram handle or URL must not exceed 128 characters')
@@ -108,6 +114,11 @@ export const UpdateCitizenSchema = z.object({
     .trim()
     .optional(),
   twitterUrl: z
+    .string()
+    .max(128)
+    .trim()
+    .optional(),
+  facebookUrl: z
     .string()
     .max(128)
     .trim()

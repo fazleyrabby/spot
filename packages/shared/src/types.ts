@@ -36,6 +36,7 @@ export interface Citizen {
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
+  facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
@@ -54,6 +55,7 @@ export interface OccupiedSpotSummary {
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
+  facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;

@@ -104,6 +104,7 @@ export interface ClaimInputData {
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
+  facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;

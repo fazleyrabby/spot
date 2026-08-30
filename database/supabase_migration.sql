@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.citizens (
   website_url VARCHAR(256),
   github_url VARCHAR(256),
   twitter_url VARCHAR(256),
+  facebook_url VARCHAR(256),
   instagram_url VARCHAR(256),
   youtube_url VARCHAR(256),
   linkedin_url VARCHAR(256),
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.citizens (
 
 -- Add columns if table already exists
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(256);
+ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS youtube_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(256);
