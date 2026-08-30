@@ -458,7 +458,7 @@ export async function claimSpotDirect(input: {
 
   if (citErr) throw citErr;
 
-  // 2. Claim spot
+  // 2. Claim spot — atomic: only if free or already owned by this citizen (prevents TOCTOU race)
   const now = new Date().toISOString();
   const { data: spotData, error: spotErr } = await supabase
     .from('spots')
@@ -466,11 +466,23 @@ export async function claimSpotDirect(input: {
       owner_id: citizenId,
       claimed_at: now,
     })
+    .or(`owner_id.is.null,owner_id.eq.${citizenId}`)
     .eq('id', spotId)
     .select('id, x, y, owner_id, claimed_at')
     .single();
 
-  if (spotErr) throw spotErr;
+  if (spotErr) {
+    // PGRST116 = 0 rows (spot taken between read and write), 23505 = unique violation (citizen already owns another spot)
+    const msg = (spotErr as any).message || '';
+    const code = (spotErr as any).code || '';
+    if (code === 'PGRST116' || msg.includes('0 rows') || msg.includes('No rows')) {
+      throw new Error('This spot was just claimed by someone else — try another spot!');
+    }
+    if (code === '23505' || msg.includes('duplicate') || msg.includes('unique')) {
+      throw new Error('You already own a spot — each citizen gets exactly one.');
+    }
+    throw spotErr;
+  }
 
   if (typeof window !== 'undefined') {
     localStorage.setItem('spot_session_token', tokenHash);
