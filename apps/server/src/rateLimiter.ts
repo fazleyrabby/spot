@@ -17,8 +17,11 @@ export class SlidingWindowRateLimiter {
     this.message = message || 'Too many requests, please try again later';
     this.maxKeys = maxKeys;
 
-    // Auto-cleanup stale keys every 10 minutes
-    setInterval(() => this.cleanup(), 10 * 60 * 1000);
+    // Auto-cleanup stale keys every 10 minutes (long-running hosts only;
+    // per-request filtering already prunes in serverless)
+    if (!process.env.VERCEL) {
+      setInterval(() => this.cleanup(), 10 * 60 * 1000);
+    }
   }
 
   private evictOldest(): void {
