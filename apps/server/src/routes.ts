@@ -224,7 +224,6 @@ apiRouter.get('/world', async (req, res) => {
       FROM spots s
       INNER JOIN citizens c ON s.owner_id = c.id
     `);
-
     const statsRes = await query<any>(`
       SELECT 
         count(*) as total_spots,
@@ -268,7 +267,7 @@ apiRouter.get('/world', async (req, res) => {
     });
   } catch (err: any) {
     console.error('Error fetching world snapshot:', err);
-    res.status(500).json({ error: 'InternalServerError', message: 'Failed to load world snapshot' });
+    res.status(500).json({ error: 'InternalServerError', message: 'Failed to load world snapshot', detail: err?.message });
   }
 });
 
