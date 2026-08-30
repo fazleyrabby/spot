@@ -145,9 +145,11 @@ export function broadcastRealtimeEvent(event: { type: string; [key: string]: any
 
 /**
  * GET /api/realtime/stream
- * Server-Sent Events (SSE) stream for instant real-time canvas updates across all tabs/devices
+ * Server-Sent Events (SSE) stream for instant real-time canvas updates across all tabs/devices.
+ * Only registered on long-running hosts — disabled on Vercel serverless (client uses Supabase Realtime).
  */
-apiRouter.get('/realtime/stream', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+const enableSSE = process.env.VERCEL ? false : process.env.ENABLE_SSE !== 'false';
+const sseHandler = async (req: AuthenticatedRequest, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -183,19 +185,25 @@ apiRouter.get('/realtime/stream', optionalAuthMiddleware, async (req: Authentica
   req.on('end', cleanup);
   res.on('close', cleanup);
   res.on('error', cleanup);
-});
+};
 
-// Periodic heartbeat every 15s to prune stale socket connections
-setInterval(() => {
-  for (const conn of sseConnections) {
-    try {
-      conn.res.write(': ping\n\n');
-    } catch {
-      sseConnections.delete(conn);
-      broadcastRealtimeEvent({ type: 'presence', onlineCount: getUniqueOnlineCount() });
+if (enableSSE) {
+  apiRouter.get('/realtime/stream', optionalAuthMiddleware, sseHandler as any);
+}
+
+// Periodic heartbeat every 15s to prune stale socket connections (long-running hosts only)
+if (enableSSE) {
+  setInterval(() => {
+    for (const conn of sseConnections) {
+      try {
+        conn.res.write(': ping\n\n');
+      } catch {
+        sseConnections.delete(conn);
+        broadcastRealtimeEvent({ type: 'presence', onlineCount: getUniqueOnlineCount() });
+      }
     }
-  }
-}, 15000);
+  }, 15000);
+}
 
 /**
  * GET /api/world
