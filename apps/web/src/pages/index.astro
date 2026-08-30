@@ -177,15 +177,20 @@ import TransferModal from '../components/TransferModal.astro';
   let myOwnedSpot: { id: string; x: number; y: number; claimedAt?: string } | null = null;
   let currentViewingOccupied: OccupiedSpotSummary | null = null;
   let activityTimer: number | undefined;
+  let activityResetTimer: number | undefined;
 
   function showActivity(message: string): void {
     if (!activityText) return;
+    if (activityResetTimer) window.clearTimeout(activityResetTimer);
     activityText.classList.remove('activity-enter');
     void activityText.offsetWidth;
     activityText.textContent = message;
     activityText.classList.add('activity-enter');
     if (activityTimer) window.clearTimeout(activityTimer);
     activityTimer = window.setTimeout(() => activityText.classList.remove('activity-enter'), 450);
+    activityResetTimer = window.setTimeout(() => {
+      activityText.textContent = 'Watching the city...';
+    }, 10_000);
   }
 
   function activityFromSpot(spot: { displayName: string; x: number; y: number }): string {
@@ -333,7 +338,9 @@ import TransferModal from '../components/TransferModal.astro';
       const snapshot = await fetchWorldSnapshot();
       worldSnapshot = snapshot;
       renderer.setSnapshot(snapshot);
-      const latest = snapshot.occupied.find((spot) => spot.claimedAt);
+      const latest = snapshot.occupied
+        .filter((spot) => spot.claimedAt && Date.now() - new Date(spot.claimedAt).getTime() <= 24 * 60 * 60 * 1000)
+        .sort((a, b) => new Date(b.claimedAt || 0).getTime() - new Date(a.claimedAt || 0).getTime())[0];
       if (latest) showActivity(activityFromSpot(latest));
       if (hudClaimedCount) {
         hudClaimedCount.textContent = snapshot.claimedCount.toLocaleString();
