@@ -595,16 +595,18 @@ import SupportModal from '../components/SupportModal.astro';
     if (profileEditSection) profileEditSection.style.display = 'block';
 
     const cit = myCitizen || currentViewingOccupied;
-    editDisplayName.value = cit.displayName || '';
-    editTagline.value = cit.tagline || '';
-    editWebsite.value = cit.websiteUrl || '';
-    editTwitter.value = cit.twitterUrl || '';
-    editFacebook.value = cit.facebookUrl || '';
-    editInstagram.value = cit.instagramUrl || '';
-    editLinkedin.value = cit.linkedinUrl || '';
-    editYoutube.value = cit.youtubeUrl || '';
-    editGithub.value = cit.githubUrl || '';
-    editSelectedAvatarId = cit.avatarId || 'astronaut';
+    const occ = currentViewingOccupied;
+
+    editDisplayName.value = cit?.displayName || occ?.displayName || '';
+    editTagline.value = cit?.tagline || occ?.tagline || '';
+    editWebsite.value = cit?.websiteUrl || occ?.websiteUrl || '';
+    editTwitter.value = cit?.twitterUrl || occ?.twitterUrl || '';
+    editFacebook.value = cit?.facebookUrl || occ?.facebookUrl || '';
+    editInstagram.value = cit?.instagramUrl || occ?.instagramUrl || '';
+    editLinkedin.value = cit?.linkedinUrl || occ?.linkedinUrl || '';
+    editYoutube.value = cit?.youtubeUrl || occ?.youtubeUrl || '';
+    editGithub.value = cit?.githubUrl || occ?.githubUrl || '';
+    editSelectedAvatarId = cit?.avatarId || occ?.avatarId || 'astronaut';
 
     renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
   });
