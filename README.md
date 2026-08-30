@@ -88,12 +88,43 @@ pnpm dev
 
 ## 🌐 Production Deployment
 
+> **Security:** the browser only ever gets the public Supabase anon key. In production all
+> **writes** (claim / edit / delete / GitHub sync) must go through `apps/server`, and the
+> public anon key must be locked to read-only. Steps 3–5 below do exactly that.
+
 ### Option A: Hybrid Deployment (Recommended)
-1. **Frontend (`apps/web`):** Deploy to **Vercel** or **Cloudflare Pages** (Set Root Directory to `apps/web`).
-2. **Backend (`apps/server`):** Deploy to your **VPS / Homelab** via PM2 or Docker (supports persistent SSE streams):
+
+1. **Backend (`apps/server`)** — deploy to **Render** (or Railway/Fly). Create a new Web Service from the repo:
+   - **Build:** `pnpm install && pnpm --filter @spot/shared build && pnpm --filter @spot/world build && pnpm --filter server build`
+   - **Start:** `pnpm --filter server start`
+   - **Env vars:**
+     ```
+     DATABASE_URL=postgresql://...   # Supabase transaction pooler (port 6543)
+     CORS_ORIGIN=https://www.claimyourspot.lol
+     COOKIE_SECRET=<long random string>
+     NODE_ENV=production
+     ```
+   - Note the resulting URL, e.g. `https://spot-api.onrender.com`.
+
+2. **Frontend (`apps/web`)** — deploy to **Vercel** (Root Directory `apps/web`). Add env var:
+   ```
+   PUBLIC_API_BASE=https://spot-api.onrender.com
+   ```
+   (also add `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` if you changed them). Redeploy.
+
+3. **Lock the database** — after the server is live, run `database/migrations/003_rls_lockdown.sql`
+   in the Supabase SQL Editor. This drops the public write/delete policies, revokes
+   `session_token_hash` reads, and locks `moderation_flags` to server-only. Verify:
    ```bash
-   pnpm --filter server build
-   pm2 start apps/server/dist/index.js --name "spot-api"
+   curl https://spot-api.onrender.com/health
+   curl https://spot-api.onrender.com/api/world
+   ```
+
+4. **Verify writes go through the server** (should return JSON, not a DB error):
+   ```bash
+   curl -X POST https://spot-api.onrender.com/api/spots/claim \
+     -H "Content-Type: application/json" \
+     -d '{"x":50,"y":50,"displayName":"Smoke Test","avatarId":"astronaut"}'
    ```
 
 ### Option B: Docker Compose

@@ -8,7 +8,9 @@ import {
   searchCitizensDirect,
 } from './supabase.js';
 
-const API_BASE = null;
+// All writes go through the authoritative server when PUBLIC_API_BASE is set.
+// Leave unset for local dev without the server (falls back to direct Supabase mode).
+const API_BASE = (import.meta.env.PUBLIC_API_BASE as string | undefined) || null;
 
 export interface MySessionResponse {
   authenticated: boolean;
@@ -62,8 +64,16 @@ export async function fetchMySession(): Promise<MySessionResponse> {
       if (res.ok) {
         const data = await res.json();
         if (data.authenticated) return data;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const err: any = new Error(errData.message || errData.error || 'Session check failed');
+        err.status = res.status;
+        throw err;
       }
-    } catch {}
+    } catch (err: any) {
+      if (err?.status) throw err;
+      console.warn('API /citizens/me unreachable, falling back to direct mode:', err);
+    }
   }
   return await fetchSessionDirect();
 }
@@ -83,14 +93,20 @@ export async function syncGithubAuth(data: {
         credentials: 'include',
         body: JSON.stringify(data),
       });
+      const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        const json = await res.json();
         if (json.sessionToken) {
           localStorage.setItem('spot_session_token', json.sessionToken);
         }
         return json;
       }
-    } catch {}
+      const err: any = new Error(json.message || json.error || 'Failed to sync GitHub');
+      err.status = res.status;
+      throw err;
+    } catch (err: any) {
+      if (err?.status) throw err;
+      console.warn('API /auth/github/sync unreachable, falling back to direct mode:', err);
+    }
   }
   return await fetchSessionDirect();
 }
@@ -129,15 +145,20 @@ export async function claimSpot(
         credentials: 'include',
         body: JSON.stringify(finalInput),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         if (data.sessionToken) {
           localStorage.setItem('spot_session_token', data.sessionToken);
         }
         return data;
       }
-    } catch (err) {
-      console.warn('API /spots/claim failed, falling back to direct mode:', err);
+      // Surface the server's authoritative error (409 spot taken, 403 blocked, etc.)
+      const err: any = new Error(data.message || data.error || 'Claim failed');
+      err.status = res.status;
+      throw err;
+    } catch (err: any) {
+      if (err?.status) throw err; // real server error — do NOT fall back to direct mode
+      console.warn('API /spots/claim unreachable, falling back to direct mode:', err);
     }
   }
   return await claimSpotDirect(finalInput);
@@ -184,8 +205,15 @@ export async function updateMyProfile(
         credentials: 'include',
         body: JSON.stringify(profile),
       });
-      if (res.ok) return await res.json();
-    } catch {}
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return data;
+      const err: any = new Error(data.message || data.error || 'Failed to update profile');
+      err.status = res.status;
+      throw err;
+    } catch (err: any) {
+      if (err?.status) throw err;
+      console.warn('API /citizens/me PATCH unreachable, falling back to direct mode:', err);
+    }
   }
   return await updateProfileDirect(profile);
 }
@@ -198,8 +226,15 @@ export async function deleteMyAccount(targetSpotId?: string, targetCitizenId?: s
         headers: getAuthHeaders(),
         credentials: 'include',
       });
-      if (res.ok) return await res.json();
-    } catch {}
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return data;
+      const err: any = new Error(data.message || data.error || 'Failed to delete account');
+      err.status = res.status;
+      throw err;
+    } catch (err: any) {
+      if (err?.status) throw err;
+      console.warn('API /citizens/me DELETE unreachable, falling back to direct mode:', err);
+    }
   }
   return await deleteAccountDirect(targetSpotId, targetCitizenId);
 }

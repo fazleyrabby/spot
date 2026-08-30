@@ -1,5 +1,38 @@
 import { z } from 'zod';
 
+// Lightweight profanity blocklist — extend as needed or swap for a library like `bad-words`
+export const BLOCKED_WORDS = [
+  'fuck', 'fucker', 'fucking', 'shit', 'bitch', 'bastard', 'asshole',
+  'nigger', 'nigga', 'cunt', 'dick', 'pussy', 'slut', 'whore',
+  'motherfucker', 'bullshit', 'douche',
+];
+
+export function containsBlockedWord(text?: string | null): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return BLOCKED_WORDS.some((w) => {
+    const re = new RegExp(`\\b${w}\\b`, 'i');
+    return re.test(lower) || (w.length > 4 && lower.includes(w));
+  });
+}
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Replace blocked words with asterisks of the same length; fall back to "Citizen"
+export function sanitizeDisplayName(name: string): string {
+  let clean = name.trim();
+  for (const w of BLOCKED_WORDS) {
+    if (w.length >= 3) {
+      const re = new RegExp(`\\b${escapeRegExp(w)}\\b`, 'gi');
+      clean = clean.replace(re, (m) => '*'.repeat(m.length));
+    }
+  }
+  clean = clean.replace(/\s{2,}/g, ' ').trim();
+  return (clean.slice(0, 32) || 'Citizen').trim();
+}
+
 /**
  * Validates external URLs to strictly permit only http: and https: protocols,
  * preventing javascript:, data:, or vbscript: XSS vectors.

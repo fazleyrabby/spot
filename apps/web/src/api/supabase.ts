@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { WorldSnapshot, OccupiedSpotSummary, Citizen, CreateCitizenInput } from '@spot/shared';
+import { containsBlockedWord, sanitizeDisplayName } from '@spot/shared';
 import { getDeviceFingerprint } from './fingerprint.js';
 
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://koqodifauvvemouhnjqz.supabase.co';
@@ -337,6 +338,59 @@ function isColumnMissingError(err: any): boolean {
   return err.code === '42703' || err.code === 'PGRST204' || err.message?.includes('schema cache') || err.message?.includes('column');
 }
 
+const MAX_PROFANITY_WARNINGS = 3;
+
+/**
+ * Profanity policy: first attempts are auto-renamed + warned (tracked by device
+ * fingerprint & IP); repeat offenders get blocked. Returns the (possibly
+ * sanitized) display name to persist.
+ */
+async function applyProfanityPolicy(
+  displayName: string,
+  tagline?: string
+): Promise<{ displayName: string; warned: boolean }> {
+  const profane = containsBlockedWord(displayName) || containsBlockedWord(tagline);
+  if (!profane) return { displayName, warned: false };
+
+  const fp = await getDeviceFingerprint();
+  const ip = await getClientIp();
+
+  const keys: string[] = [];
+  if (fp) keys.push(`fp:${fp}`);
+  if (ip) keys.push(`ip:${ip}`);
+
+  let current = 0;
+  if (keys.length > 0) {
+    try {
+      const { data: rows } = await supabase
+        .from('moderation_flags')
+        .select('warning_count')
+        .in('device_key', keys);
+      current = Math.max(0, ...(rows || []).map((r: any) => Number(r.warning_count) || 0));
+    } catch {}
+  }
+
+  const next = current + 1;
+  const now = new Date().toISOString();
+  for (const key of keys) {
+    try {
+      await supabase.from('moderation_flags').upsert({
+        device_key: key,
+        device_fingerprint: fp || null,
+        ip_address: ip || null,
+        warning_count: next,
+        last_attempt: now,
+      });
+    } catch {}
+  }
+
+  if (next >= MAX_PROFANITY_WARNINGS) {
+    throw new Error('🚫 Blocked: you repeatedly used offensive language. Your spot access has been revoked.');
+  }
+
+  return { displayName: sanitizeDisplayName(displayName), warned: true };
+}
+
 /**
  * DIRECT SUPABASE MODE: Claim spot directly in Supabase
  */
@@ -359,6 +413,9 @@ export async function claimSpotDirect(input: {
   spot: { id: string; x: number; y: number; ownerId: string; claimedAt: string };
   citizen: Citizen;
 }> {
+  const policy = await applyProfanityPolicy(input.displayName, input.tagline);
+  const finalDisplayName = policy.displayName;
+
   const user = await getSupabaseUser();
   const ghUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username || input.githubUrl;
   const citizenId = user ? `c_${user.id.replace(/-/g, '').substring(0, 24)}` : `c_${Math.random().toString(36).substring(2, 14)}`;
@@ -415,7 +472,7 @@ export async function claimSpotDirect(input: {
   const citizenPayload: any = {
     id: citizenId,
     session_token_hash: tokenHash,
-    display_name: input.displayName.trim(),
+    display_name: finalDisplayName.trim(),
     avatar_id: input.avatarId,
     custom_avatar_data: input.customAvatarData || null,
     tagline: input.tagline?.trim() || null,
@@ -528,8 +585,13 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
   const session = await fetchSessionDirect();
   if (!session.citizen) throw new Error('Citizen not authenticated');
 
+  const policy = await applyProfanityPolicy(
+    profile.displayName || session.citizen.displayName,
+    profile.tagline !== undefined ? profile.tagline : session.citizen.tagline
+  );
+
   const updatePayload: any = {
-    display_name: profile.displayName || session.citizen.displayName,
+    display_name: profile.displayName !== undefined ? policy.displayName.trim() : session.citizen.displayName,
     avatar_id: profile.avatarId || session.citizen.avatarId,
     custom_avatar_data: profile.customAvatarData !== undefined ? profile.customAvatarData : (session.citizen as any).customAvatarData || null,
     tagline: profile.tagline !== undefined ? profile.tagline : session.citizen.tagline,

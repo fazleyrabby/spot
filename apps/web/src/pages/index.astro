@@ -25,6 +25,7 @@ import TransferModal from '../components/TransferModal.astro';
 <script>
   import QRCode from 'qrcode';
   import { fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, type CitizenSearchResult } from '../api/client.js';
+  import { containsBlockedWord } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
   import { WorldCanvasRenderer } from '../canvas/renderer.js';
@@ -794,6 +795,13 @@ import TransferModal from '../components/TransferModal.astro';
     const newYoutube = editYoutube.value.trim() || undefined;
     const newGithub = editGithub.value.trim() || undefined;
 
+    if (containsBlockedWord(newDisplayName) || containsBlockedWord(newTagline)) {
+      showToast('That name/tagline contains blocked language. Please choose something respectful.', 'error');
+      btnSaveEdit.disabled = false;
+      btnSaveEdit.textContent = 'Save Changes';
+      return;
+    }
+
     try {
       const res = await updateMyProfile({
         displayName: newDisplayName,
@@ -1369,6 +1377,12 @@ import TransferModal from '../components/TransferModal.astro';
     e.preventDefault();
     const displayName = inputDisplayName.value.trim();
     if (!displayName) return;
+
+    // Client-side guard: warn before submitting blocked language
+    if (containsBlockedWord(displayName) || containsBlockedWord(inputTagline.value)) {
+      showToast('That name/tagline contains blocked language. Please choose something respectful.', 'error');
+      return;
+    }
 
     const spotId = renderer.grid.getSpotId(currentTargetSpot.x, currentTargetSpot.y);
     submitClaimBtn.disabled = true;

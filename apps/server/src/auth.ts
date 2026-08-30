@@ -40,8 +40,12 @@ export async function resolveCitizen(token: string): Promise<Citizen | null> {
   const tokenHash = hashToken(token);
   const res = await query<any>(
     `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
-            tagline, website_url as "websiteUrl", github_url as "githubUrl", 
-            linkedin_url as "linkedinUrl", created_at as "createdAt", updated_at as "updatedAt"
+            custom_avatar_data as "customAvatarData", tagline,
+            website_url as "websiteUrl", github_url as "githubUrl",
+            twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+            instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+            linkedin_url as "linkedinUrl",
+            created_at as "createdAt", updated_at as "updatedAt"
      FROM citizens
      WHERE session_token_hash = $1
      LIMIT 1`,

@@ -14,11 +14,11 @@ app.set('trust proxy', 1);
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow localhost and specified CORS origin
+      // Only allow the app's own origin (no third-party origins)
       if (!origin || origin.startsWith('http://localhost') || origin === config.corsOrigin) {
         callback(null, true);
       } else {
-        callback(null, true); // Allow during dev/preview
+        callback(null, false);
       }
     },
     credentials: true,
