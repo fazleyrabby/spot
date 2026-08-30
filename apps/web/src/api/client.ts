@@ -150,6 +150,7 @@ export interface CitizenSearchResult {
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;
+  isVerified?: boolean;
   spotId: string;
   x: number;
   y: number;

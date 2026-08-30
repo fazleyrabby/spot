@@ -10,6 +10,21 @@
       <span class="coord-icon">🎯</span>
       <span class="coord-text mono-num" id="coord-text">Spot: (52, 60)</span>
       <span class="coord-badge empty" id="coord-status">Available</span>
+      <span class="verified-badge-mini" id="coord-verified-badge" style="display: none;" title="Verified GitHub Citizen">
+        <svg class="verified-badge-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2.8l1.3 1.8 2.2-.2.9 2 2.1.7.3 2.2 1.8 1.3-.4 2.2 1.3 1.8-1.3 1.8.4 2.2-1.8 1.3-.3 2.2-2.1.7-.9 2-2.2-.2L12 23.2l-1.3-1.8-2.2.2-.9-2-2.1-.7-.3-2.2-1.8-1.3.4-2.2L2.5 13.6l1.3-1.8-.4-2.2 1.8-1.3.3-2.2 2.1-.7.9-2 2.2.2L12 2.8z" fill="#090d16"/>
+          <path d="M12 1.6l1.3 1.8 2.2-.2.9 2 2.1.7.3 2.2 1.8 1.3-.4 2.2 1.3 1.8-1.3 1.8.4 2.2-1.8 1.3-.3 2.2-2.1.7-.9 2-2.2-.2L12 22l-1.3-1.8-2.2.2-.9-2-2.1-.7-.3-2.2-1.8-1.3.4-2.2L2.5 12.4l1.3-1.8-.4-2.2 1.8-1.3.3-2.2 2.1-.7.9-2 2.2.2L12 1.6z" fill="url(#scallopGradMini)" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M7.8 12.6l3.1 3.1 6.1-6.1" stroke="#090d16" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+          <path d="M7.5 12l3.1 3.1 6.1-6.1" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="scallopGradMini" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#38bdf8"/>
+              <stop offset="0.55" stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </span>
     </div>
 
     <button type="button" class="support-btn glass-panel" id="btn-open-support" title="Support creator & development of Spot">
@@ -153,6 +168,21 @@
     background: rgba(16, 185, 129, 0.15);
     color: var(--accent-jade);
     border: 1px solid rgba(16, 185, 129, 0.35);
+  }
+
+  .verified-badge-mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .verified-badge-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 4px rgba(56, 189, 248, 0.4));
   }
 
   .hud-bottom-right {

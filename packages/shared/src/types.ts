@@ -41,6 +41,7 @@ export interface Citizen {
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
+  isVerified?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -61,6 +62,7 @@ export interface OccupiedSpotSummary {
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
+  isVerified?: boolean;
   isOnline?: boolean;
 }
 

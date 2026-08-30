@@ -52,6 +52,7 @@ import TransferModal from '../components/TransferModal.astro';
   const coordPill = document.getElementById('coord-pill');
   const coordText = document.getElementById('coord-text');
   const coordStatus = document.getElementById('coord-status');
+  const coordVerifiedBadge = document.getElementById('coord-verified-badge');
   const hudClaimedCount = document.getElementById('hud-claimed-count');
   const hudOnlineCount = document.getElementById('hud-online-count');
   const hudVisitorsCount = document.getElementById('hud-visitors-count');
@@ -71,6 +72,7 @@ import TransferModal from '../components/TransferModal.astro';
   const profileAvatarCanvas = document.getElementById('profile-avatar-canvas') as HTMLCanvasElement;
   const profileSpotId = document.getElementById('profile-spot-id');
   const profileName = document.getElementById('profile-name');
+  const profileVerifiedBadge = document.getElementById('profile-verified-badge');
   const profilePresence = document.getElementById('profile-presence');
   const profileTagline = document.getElementById('profile-tagline');
   const linkWebsite = document.getElementById('link-website') as HTMLAnchorElement;
@@ -182,6 +184,7 @@ import TransferModal from '../components/TransferModal.astro';
     onSpotHover: (spot) => {
       if (!spot) {
         if (coordPill) coordPill.style.opacity = '0.6';
+        if (coordVerifiedBadge) coordVerifiedBadge.style.display = 'none';
         return;
       }
       if (coordPill) coordPill.style.opacity = '1';
@@ -190,9 +193,11 @@ import TransferModal from '../components/TransferModal.astro';
         if (spot.occupied) {
           coordStatus.textContent = spot.occupied.displayName;
           coordStatus.className = 'coord-badge occupied';
+          if (coordVerifiedBadge) coordVerifiedBadge.style.display = spot.occupied.isVerified ? 'inline-flex' : 'none';
         } else {
           coordStatus.textContent = 'Available';
           coordStatus.className = 'coord-badge empty';
+          if (coordVerifiedBadge) coordVerifiedBadge.style.display = 'none';
         }
       }
     },
@@ -555,6 +560,7 @@ import TransferModal from '../components/TransferModal.astro';
 
     if (profileSpotId) profileSpotId.textContent = `Spot (${occupied.x}, ${occupied.y})`;
     if (profileName) profileName.textContent = occupied.displayName;
+    if (profileVerifiedBadge) profileVerifiedBadge.style.display = occupied.isVerified ? 'inline-flex' : 'none';
     if (profileTagline) profileTagline.textContent = occupied.tagline || 'Proud citizen of Spot.';
 
     // Avatar preview
@@ -648,9 +654,9 @@ import TransferModal from '../components/TransferModal.astro';
         if (isFounder) {
           textEl.textContent = 'Founder / Permanent Citizen';
           profilePresence.className = 'presence-badge founder-badge';
-        } else if (occupied.githubUrl) {
+        } else if (occupied.githubUrl || occupied.isVerified) {
           textEl.textContent = 'Verified Citizen';
-          profilePresence.className = 'presence-badge verified-badge';
+          profilePresence.className = 'presence-badge verified-pill-badge';
         } else {
           textEl.textContent = 'Citizen';
           profilePresence.className = 'presence-badge';
@@ -971,6 +977,25 @@ import TransferModal from '../components/TransferModal.astro';
           const nameSpan = document.createElement('div');
           nameSpan.className = 'search-result-name';
           nameSpan.textContent = item.displayName;
+
+          if (item.isVerified || item.githubUrl) {
+            const badge = document.createElement('span');
+            badge.className = 'verified-badge-mini';
+            badge.title = 'Verified GitHub Citizen';
+            badge.innerHTML = `
+              <svg class="verified-rosette-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M23 13.2c0-1.6-.8-3-2.1-3.8.5-1.5.2-3.3-1-4.4-1.1-1.1-2.9-1.5-4.4-1C14.7 2.8 13.4 2.2 12 2.2s-2.7.6-3.5 1.8c-1.5-.5-3.3-.1-4.4 1-1.1 1.1-1.5 2.9-1 4.4C1.8 10.2 1 11.6 1 13.2s.8 3 2.1 3.8c-.5 1.5-.2 3.3 1 4.4 1.1 1.1 2.9 1.5 4.4 1 .8 1.2 2.1 1.8 3.5 1.8s2.7-.6 3.5-1.8c1.5.5 3.3.1 4.4-1 1.1-1.1 1.5-2.9 1-4.4 1.3-.8 2.1-2.2 2.1-3.8z" fill="#090d16" opacity="0.6"/>
+                <path d="M23 12c0-1.6-.8-3-2.1-3.8.5-1.5.2-3.3-1-4.4-1.1-1.1-2.9-1.5-4.4-1C14.7 1.6 13.4 1 12 1s-2.7.6-3.5 1.8c-1.5-.5-3.3-.1-4.4 1-1.1 1.1-1.5 2.9-1 4.4C1.8 9 1 10.4 1 12s.8 3 2.1 3.8c-.5 1.5-.2 3.3 1 4.4 1.1 1.1 2.9 1.5 4.4 1 .8 1.2 2.1 1.8 3.5 1.8s2.7-.6 3.5-1.8c1.5.5 3.3.1 4.4-1 1.1-1.1 1.5-2.9 1-4.4 1.3-.8 2.1-2.2 2.1-3.8z" fill="url(#verifiedRosetteGradProfile)" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round"/>
+                <path d="M7.5 12.8l3.2 3.2 6.5-6.5" stroke="#090d16" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+                <path d="M7.2 12.2l3.2 3.2 6.5-6.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            `;
+            nameSpan.style.display = 'inline-flex';
+            nameSpan.style.alignItems = 'center';
+            nameSpan.style.gap = '6px';
+            nameSpan.appendChild(badge);
+          }
+
           const taglineSpan = document.createElement('div');
           taglineSpan.className = 'search-result-tagline';
           taglineSpan.textContent = item.tagline || `@${item.githubUrl || 'citizen'}`;
