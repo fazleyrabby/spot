@@ -411,17 +411,40 @@ import TransferModal from '../components/TransferModal.astro';
   function checkUrlDeepLink() {
     const params = new URLSearchParams(window.location.search);
 
-    // 1. Cross-Device Magic Transfer Key (?auth_key=...)
+    // 1. Cross-Device Magic Transfer Key (?auth_key=...&cit_id=...&spot=x,y)
     const authKey = params.get('auth_key');
-    if (authKey) {
-      localStorage.setItem('spot_session_token', authKey);
-      showToast('📱 Device Connected! Owner permissions activated.', 'success');
+    const citId = params.get('cit_id');
+    const spotParam = params.get('spot');
+    const spotIdParam = params.get('spot_id');
 
-      // Fetch freshly synced session
+    if (authKey || citId) {
+      if (authKey) localStorage.setItem('spot_session_token', authKey);
+      if (citId) localStorage.setItem('spot_citizen_id', citId);
+
+      if (spotParam && /^\d{1,3},\d{1,3}$/.test(spotParam)) {
+        const [gx, gy] = spotParam.split(',').map(Number);
+        const spotId = spotIdParam || renderer.grid.getSpotId(gx, gy);
+        myOwnedSpot = { id: spotId, x: gx, y: gy };
+        localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
+        
+        if (headerClaimBtn) {
+          headerClaimBtn.innerHTML = `<span>My Spot (${gx}, ${gy})</span>`;
+        }
+
+        setTimeout(() => {
+          const worldPos = renderer.grid.gridToWorld(gx, gy);
+          renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+          renderer.selectSpot(gx, gy);
+        }, 150);
+      }
+
+      showToast('📱 Device Synced! Owner permissions activated.', 'success');
+
+      // Fetch freshly synced session from database
       fetchMySession().then((session) => {
         if (session.authenticated && session.citizen) {
           myCitizen = session.citizen;
-          myOwnedSpot = session.ownedSpot;
+          if (session.ownedSpot) myOwnedSpot = session.ownedSpot;
           if (myOwnedSpot && headerClaimBtn) {
             headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
           }
@@ -433,14 +456,16 @@ import TransferModal from '../components/TransferModal.astro';
         }
       });
 
-      // Clean auth_key parameter from browser address bar
+      // Clean auth parameters from address bar
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete('auth_key');
+      cleanUrl.searchParams.delete('cit_id');
+      cleanUrl.searchParams.delete('spot_id');
       window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.searchParams.toString() ? '?' + cleanUrl.searchParams.toString() : ''));
+      return;
     }
 
-    // 2. Spot coordinate deep link (?spot=x,y)
-    const spotParam = params.get('spot');
+    // 2. Regular spot coordinate deep link (?spot=x,y)
     if (spotParam && /^\d{1,3},\d{1,3}$/.test(spotParam)) {
       const [gx, gy] = spotParam.split(',').map(Number);
       if (renderer.grid.isValidCoordinate(gx, gy)) {
@@ -1376,18 +1401,22 @@ import TransferModal from '../components/TransferModal.astro';
   const txtCopyTransfer = document.getElementById('txt-copy-transfer');
 
   btnOpenTransfer?.addEventListener('click', async () => {
-    let token = localStorage.getItem('spot_session_token');
-    if (!token && myCitizen) {
-      token = myCitizen.id;
-    }
-    if (!token) {
+    let token: string | null = localStorage.getItem('spot_session_token');
+    const citizenId: string | undefined = myCitizen?.id || localStorage.getItem('spot_citizen_id') || currentViewingOccupied?.citizenId;
+    if (!token && citizenId) token = citizenId;
+
+    if (!token && !citizenId) {
       showToast('Please claim a spot first to sync devices', 'error');
       return;
     }
 
-    const currentSpot = myOwnedSpot || (currentViewingOccupied ? { x: currentViewingOccupied.x, y: currentViewingOccupied.y } : null);
-    const spotParam = currentSpot ? `&spot=${currentSpot.x},${currentSpot.y}` : '';
-    const transferUrl = `${window.location.origin}/?auth_key=${encodeURIComponent(token)}${spotParam}`;
+    const currentSpot = myOwnedSpot || (currentViewingOccupied ? { id: currentViewingOccupied.spotId, x: currentViewingOccupied.x, y: currentViewingOccupied.y } : null);
+    if (!currentSpot) {
+      showToast('No spot owned to sync', 'error');
+      return;
+    }
+
+    const transferUrl = `${window.location.origin}/?auth_key=${encodeURIComponent(token || '')}&cit_id=${encodeURIComponent(citizenId || '')}&spot=${currentSpot.x},${currentSpot.y}&spot_id=${encodeURIComponent(currentSpot.id || '')}`;
 
     if (transferLinkInput) {
       transferLinkInput.value = transferUrl;

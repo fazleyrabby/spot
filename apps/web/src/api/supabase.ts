@@ -189,7 +189,7 @@ export async function fetchSessionDirect(): Promise<{
       const { data } = await supabase.from('citizens').select('*').eq('id', savedCitId).limit(1).maybeSingle();
       citizenRow = data;
     } else if (savedToken) {
-      const { data } = await supabase.from('citizens').select('*').eq('session_token_hash', savedToken).limit(1).maybeSingle();
+      const { data } = await supabase.from('citizens').select('*').or(`id.eq.${savedToken},session_token_hash.eq.${savedToken}`).limit(1).maybeSingle();
       citizenRow = data;
     } else if (deviceFp) {
       try {
@@ -246,6 +246,11 @@ export async function fetchSessionDirect(): Promise<{
     y: spotRow.y,
     claimedAt: spotRow.claimed_at,
   } : null;
+
+  if (typeof window !== 'undefined' && citizen && ownedSpot) {
+    localStorage.setItem('spot_citizen_id', citizen.id);
+    localStorage.setItem('spot_my_owned', JSON.stringify(ownedSpot));
+  }
 
   return { authenticated: true, citizen, ownedSpot };
 }
