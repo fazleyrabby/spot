@@ -1,3 +1,5 @@
+import { cacheCustomImage } from './avatars.js';
+
 export type AvatarResolution = 8 | 16 | 24 | 32;
 
 export interface PixelArtAvatar {
@@ -103,6 +105,16 @@ export async function pixelizeImage(
 
   ctx.putImageData(imgData, 0, 0);
   const dataUrl = canvas.toDataURL('image/webp', 0.92);
+
+  // Pre-load & cache the generated data URL so it renders with 0 latency synchronously
+  const imgObj = new Image();
+  imgObj.src = dataUrl;
+  await new Promise<void>((resolve) => {
+    if (imgObj.complete) return resolve();
+    imgObj.onload = () => resolve();
+    imgObj.onerror = () => resolve();
+  });
+  cacheCustomImage(dataUrl, imgObj);
 
   return { resolution, matrix, dataUrl };
 }

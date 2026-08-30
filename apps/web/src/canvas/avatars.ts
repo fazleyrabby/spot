@@ -304,6 +304,10 @@ export function setOnAvatarImageLoaded(cb: () => void) {
   onAvatarImageLoadedCallback = cb;
 }
 
+export function cacheCustomImage(dataUrl: string, img: HTMLImageElement) {
+  customImageCache.set(dataUrl, img);
+}
+
 export function drawCustomAvatarOnCanvas(
   ctx: CanvasRenderingContext2D,
   customData: string,
@@ -324,6 +328,10 @@ export function drawCustomAvatarOnCanvas(
       img.src = customData;
       img.onload = () => {
         customImageCache.set(customData, img!);
+        try {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img!, Math.floor(x), Math.floor(y), Math.ceil(size), Math.ceil(size));
+        } catch {}
         if (onAvatarImageLoadedCallback) onAvatarImageLoadedCallback();
       };
       customImageCache.set(customData, img);
@@ -333,6 +341,7 @@ export function drawCustomAvatarOnCanvas(
       ctx.drawImage(img, Math.floor(x), Math.floor(y), Math.ceil(size), Math.ceil(size));
       return;
     }
+    return; // Don't draw astronaut while image is decoding!
   }
 
   // If it's a JSON 2D hex matrix
