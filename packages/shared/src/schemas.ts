@@ -78,6 +78,7 @@ export const CreateCitizenSchema = z.object({
     .trim()
     .optional()
     .or(z.literal('')),
+  bio: z.string().max(280, 'Bio must not exceed 280 characters').trim().optional().or(z.literal('')),
   websiteUrl: SafeUrlSchema,
   githubUrl: z
     .string()
@@ -150,6 +151,7 @@ export const UpdateCitizenSchema = z.object({
     .max(80)
     .trim()
     .optional(),
+  bio: z.string().max(280).trim().optional(),
   websiteUrl: SafeUrlSchema,
   githubUrl: z
     .string()

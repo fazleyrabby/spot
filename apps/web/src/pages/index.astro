@@ -24,7 +24,7 @@ import TransferModal from '../components/TransferModal.astro';
 
 <script>
   import QRCode from 'qrcode';
-  import { fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, type CitizenSearchResult } from '../api/client.js';
+  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, type CitizenSearchResult, type SpotComment } from '../api/client.js';
   import { containsBlockedWord } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
@@ -53,10 +53,13 @@ import TransferModal from '../components/TransferModal.astro';
   const coordPill = document.getElementById('coord-pill');
   const coordText = document.getElementById('coord-text');
   const coordStatus = document.getElementById('coord-status');
+  const coordDistrict = document.getElementById('coord-district');
+  const coordPrime = document.getElementById('coord-prime');
   const coordVerifiedBadge = document.getElementById('coord-verified-badge');
   const hudClaimedCount = document.getElementById('hud-claimed-count');
   const hudOnlineCount = document.getElementById('hud-online-count');
   const hudVisitorsCount = document.getElementById('hud-visitors-count');
+  const activityText = document.getElementById('activity-text');
   const headerClaimBtn = document.getElementById('header-claim-btn') as HTMLButtonElement;
   const headerSearchBtn = document.getElementById('header-search-btn') as HTMLButtonElement;
 
@@ -76,6 +79,14 @@ import TransferModal from '../components/TransferModal.astro';
   const profileVerifiedBadge = document.getElementById('profile-verified-badge');
   const profilePresence = document.getElementById('profile-presence');
   const profileTagline = document.getElementById('profile-tagline');
+  const spotWallComments = document.getElementById('spot-wall-comments');
+  const spotWallForm = document.getElementById('spot-wall-form') as HTMLFormElement;
+  const spotWallAuthor = document.getElementById('spot-wall-author') as HTMLInputElement;
+  const spotWallBody = document.getElementById('spot-wall-body') as HTMLInputElement;
+  const spotWallSubmit = document.getElementById('spot-wall-submit') as HTMLButtonElement;
+  const spotWallSelfNote = document.getElementById('spot-wall-self-note');
+  const btnToggleWall = document.getElementById('btn-toggle-wall') as HTMLButtonElement;
+  const btnInviteNeighbor = document.getElementById('btn-invite-neighbor') as HTMLButtonElement;
   const linkWebsite = document.getElementById('link-website') as HTMLAnchorElement;
   const linkWebsiteText = document.getElementById('link-website-text');
   const linkTwitter = document.getElementById('link-twitter') as HTMLAnchorElement;
@@ -159,11 +170,56 @@ import TransferModal from '../components/TransferModal.astro';
   const searchResultsList = document.getElementById('search-results-list');
 
   let currentTargetSpot: { x: number; y: number } = { x: 50, y: 50 };
+  let referralSpotId: string | null = null;
   let selectedAvatarId = 'astronaut';
   let editSelectedAvatarId = 'astronaut';
   let myCitizen: Citizen | null = null;
   let myOwnedSpot: { id: string; x: number; y: number; claimedAt?: string } | null = null;
   let currentViewingOccupied: OccupiedSpotSummary | null = null;
+  let activityTimer: number | undefined;
+
+  function showActivity(message: string): void {
+    if (!activityText) return;
+    activityText.classList.remove('activity-enter');
+    void activityText.offsetWidth;
+    activityText.textContent = message;
+    activityText.classList.add('activity-enter');
+    if (activityTimer) window.clearTimeout(activityTimer);
+    activityTimer = window.setTimeout(() => activityText.classList.remove('activity-enter'), 450);
+  }
+
+  function activityFromSpot(spot: { displayName: string; x: number; y: number }): string {
+    return `@${spot.displayName} claimed (${spot.x}, ${spot.y})`;
+  }
+
+  const districtNames = [
+    'Pixel Quarter', 'Neon Harbor', 'Code Alley', 'Orbit Heights',
+    'Signal Gardens', 'The Gridworks', 'Byte Bazaar', 'Lumen Row',
+    'Cloud Commons', 'Circuit Park', 'Vector Vale', 'Arcade Ward',
+    'Moon Market', 'Syntax Square', 'Data Docks', 'Retro Heights',
+    'Canvas Crossing', 'Starboard', 'Glitch Gardens', 'The Foundry',
+  ];
+
+  function getDistrictName(x: number, y: number): string {
+    const column = Math.floor(x / 10);
+    const row = Math.floor(y / 10);
+    const districtNumber = row * 10 + column + 1;
+    return `${districtNames[(districtNumber - 1) % districtNames.length]} ${String(districtNumber).padStart(2, '0')}`;
+  }
+
+  function isPrimeSpot(x: number, y: number): boolean {
+    return (x === 0 && y === 0) || (x === 50 && y === 50) || (x === 99 && y === 99);
+  }
+
+  async function refreshWorldFromApi(): Promise<void> {
+    if (!API_BASE) return;
+    try {
+      const snapshot = await fetchWorldSnapshot();
+      worldSnapshot = snapshot;
+      renderer.setSnapshot(snapshot);
+      if (hudClaimedCount) hudClaimedCount.textContent = snapshot.claimedCount.toLocaleString();
+    } catch {}
+  }
   let worldSnapshot: WorldSnapshot = {
     width: 100,
     height: 100,
@@ -186,10 +242,13 @@ import TransferModal from '../components/TransferModal.astro';
       if (!spot) {
         if (coordPill) coordPill.style.opacity = '0.6';
         if (coordVerifiedBadge) coordVerifiedBadge.style.display = 'none';
+        if (coordPrime) coordPrime.style.display = 'none';
         return;
       }
       if (coordPill) coordPill.style.opacity = '1';
       if (coordText) coordText.textContent = `Spot: (${spot.x}, ${spot.y})`;
+      if (coordDistrict) coordDistrict.textContent = getDistrictName(spot.x, spot.y);
+      if (coordPrime) coordPrime.style.display = isPrimeSpot(spot.x, spot.y) ? 'inline-flex' : 'none';
       if (coordStatus) {
         if (spot.occupied) {
           coordStatus.textContent = spot.occupied.displayName;
@@ -274,6 +333,8 @@ import TransferModal from '../components/TransferModal.astro';
       const snapshot = await fetchWorldSnapshot();
       worldSnapshot = snapshot;
       renderer.setSnapshot(snapshot);
+      const latest = snapshot.occupied.find((spot) => spot.claimedAt);
+      if (latest) showActivity(activityFromSpot(latest));
       if (hudClaimedCount) {
         hudClaimedCount.textContent = snapshot.claimedCount.toLocaleString();
       }
@@ -424,6 +485,7 @@ import TransferModal from '../components/TransferModal.astro';
     const citId = params.get('cit_id');
     const spotParam = params.get('spot');
     const spotIdParam = params.get('spot_id');
+    const refParam = params.get('ref');
 
     if (authKey || citId) {
       if (authKey) localStorage.setItem('spot_session_token', authKey);
@@ -473,7 +535,36 @@ import TransferModal from '../components/TransferModal.astro';
       return;
     }
 
-    // 2. Regular spot coordinate deep link (?spot=x,y)
+    // 2. Referral invite: find an available tile beside the referrer.
+    if (refParam && /^\d{1,2},\d{1,2}$/.test(refParam)) {
+      const [refX, refY] = refParam.split(',').map(Number);
+      if (renderer.grid.isValidCoordinate(refX, refY)) {
+        const occupiedIds = new Set(worldSnapshot.occupied.map((spot) => spot.spotId));
+        const neighbors = [
+          [refX + 1, refY], [refX - 1, refY], [refX, refY + 1], [refX, refY - 1],
+          [refX + 1, refY + 1], [refX - 1, refY - 1], [refX + 1, refY - 1], [refX - 1, refY + 1],
+        ];
+        const target = neighbors.find(([x, y]) => renderer.grid.isValidCoordinate(x, y) && !occupiedIds.has(`${x},${y}`));
+        if (target) {
+          referralSpotId = refParam;
+          const [targetX, targetY] = target;
+          setTimeout(() => {
+            renderer.camera.centerOn(renderer.grid.gridToWorld(targetX, targetY).x + 18, renderer.grid.gridToWorld(targetX, targetY).y + 18, 2.2);
+            renderer.selectSpot(targetX, targetY);
+            openClaimModal(targetX, targetY);
+            showToast(`Claim a spot beside (${refX}, ${refY})`, 'info');
+          }, 200);
+        } else {
+          showToast('That neighborhood is full. Choose another spot.', 'info');
+        }
+      }
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('ref');
+      window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.searchParams.toString() ? '?' + cleanUrl.searchParams.toString() : ''));
+      return;
+    }
+
+    // 3. Regular spot coordinate deep link (?spot=x,y)
     if (spotParam && /^\d{1,3},\d{1,3}$/.test(spotParam)) {
       const [gx, gy] = spotParam.split(',').map(Number);
       if (renderer.grid.isValidCoordinate(gx, gy)) {
@@ -563,10 +654,98 @@ import TransferModal from '../components/TransferModal.astro';
     });
   });
 
+  btnInviteNeighbor?.addEventListener('click', async () => {
+    if (!currentViewingOccupied) return;
+    const url = `${window.location.origin}/?ref=${currentViewingOccupied.x},${currentViewingOccupied.y}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('🧭 Neighbor invite link copied!', 'success');
+    } catch {
+      showToast(url, 'info');
+    }
+  });
+
+  function renderSpotComments(comments: SpotComment[]): void {
+    if (!spotWallComments) return;
+    spotWallComments.replaceChildren();
+    if (comments.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'spot-wall-empty';
+      empty.textContent = 'Be the first to leave a note.';
+      spotWallComments.appendChild(empty);
+      return;
+    }
+    comments.forEach((comment) => {
+      const item = document.createElement('article');
+      item.className = 'spot-wall-comment';
+      const meta = document.createElement('div');
+      meta.className = 'spot-wall-comment-meta';
+      const author = document.createElement('span');
+      author.className = 'spot-wall-comment-author';
+      author.textContent = `@${comment.authorName}`;
+      const time = document.createElement('time');
+      time.textContent = `• ${new Date(comment.createdAt).toLocaleDateString()}`;
+      meta.append(author, time);
+      const body = document.createElement('p');
+      body.className = 'spot-wall-comment-body';
+      body.textContent = comment.body;
+      item.append(meta, body);
+      spotWallComments.appendChild(item);
+    });
+  }
+
+  async function loadSpotComments(spotId: string): Promise<void> {
+    if (!spotWallComments) return;
+    spotWallComments.textContent = 'Loading wall...';
+    try {
+      const wall = await fetchSpotComments(spotId);
+      renderSpotComments(wall.comments);
+      const localOwner = Boolean(
+        currentViewingOccupied && (
+          myCitizen?.id === currentViewingOccupied.citizenId ||
+          myOwnedSpot?.id === spotId ||
+          localStorage.getItem('spot_citizen_id') === currentViewingOccupied.citizenId
+        )
+      );
+      updateSpotWallComposer(currentViewingOccupied!, wall.isOwner || localOwner, wall.canPost, wall.visibility);
+    } catch {
+      spotWallComments.textContent = 'The wall is unavailable right now.';
+    }
+  }
+
+  function updateSpotWallComposer(occupied: OccupiedSpotSummary, isOwner: boolean, canPost = false, visibility: 'open' | 'readonly' = 'readonly'): void {
+    const hasSession = Boolean(myCitizen || localStorage.getItem('spot_session_token'));
+    const ownSpot = isOwner || Boolean(myCitizen?.id === occupied.citizenId);
+    if (spotWallForm) {
+      const showComposer = canPost && !ownSpot;
+      spotWallForm.hidden = !showComposer;
+      spotWallForm.style.display = showComposer ? 'grid' : 'none';
+    }
+    if (spotWallSelfNote) {
+      spotWallSelfNote.hidden = canPost && !ownSpot;
+      spotWallSelfNote.style.display = canPost && !ownSpot ? 'none' : 'block';
+      spotWallSelfNote.textContent = ownSpot
+        ? 'This is your spot. Visitors can leave notes here.'
+        : 'This wall is read-only until the owner opens it.';
+    }
+    if (btnToggleWall) {
+      btnToggleWall.style.display = isOwner ? 'inline-flex' : 'none';
+      btnToggleWall.textContent = visibility === 'open' ? 'Close Visitor Messages' : 'Open Visitor Messages';
+      btnToggleWall.dataset.visibility = visibility;
+    }
+    if (btnInviteNeighbor) btnInviteNeighbor.style.display = isOwner ? 'inline-flex' : 'none';
+    if (spotWallAuthor) {
+      spotWallAuthor.hidden = hasSession;
+      spotWallAuthor.value = hasSession ? (myCitizen?.displayName || '') : '';
+      spotWallAuthor.placeholder = hasSession ? 'Posting from your profile' : 'Your name';
+    }
+  }
+
   // 6. Profile Modal Controller
   function openProfileModal(occupied: OccupiedSpotSummary) {
     if (!profileBackdrop) return;
     currentViewingOccupied = occupied;
+    void loadSpotComments(occupied.spotId);
 
     // Reset view vs edit sections
     if (profileViewSection) profileViewSection.style.display = 'block';
@@ -703,6 +882,7 @@ import TransferModal from '../components/TransferModal.astro';
     if (profileOwnerActions) {
       profileOwnerActions.style.display = isOwner ? 'flex' : 'none';
     }
+    updateSpotWallComposer(occupied, isOwner);
 
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');
@@ -1304,6 +1484,38 @@ import TransferModal from '../components/TransferModal.astro';
 
   profileCloseBtn?.addEventListener('click', closeProfileModal);
   profileBackdrop?.addEventListener('click', (e) => { if (e.target === profileBackdrop) closeProfileModal(); });
+  spotWallForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const spotId = currentViewingOccupied?.spotId;
+    const body = spotWallBody?.value.trim();
+    if (!spotId || !body || !spotWallSubmit) return;
+    spotWallSubmit.disabled = true;
+    try {
+      const comment = await postSpotComment(spotId, body, spotWallAuthor?.value.trim());
+      await loadSpotComments(spotId);
+      if (spotWallBody) spotWallBody.value = '';
+      showActivity(`💬 @${comment.authorName} posted on Spot ${spotId}`);
+    } catch (err: any) {
+      showToast(err?.message || 'Could not post to this wall.', 'error');
+    } finally {
+      spotWallSubmit.disabled = false;
+    }
+  });
+  btnToggleWall?.addEventListener('click', async () => {
+    const spotId = currentViewingOccupied?.spotId;
+    if (!spotId || !btnToggleWall) return;
+    const nextVisibility = btnToggleWall.dataset.visibility === 'open' ? 'readonly' : 'open';
+    btnToggleWall.disabled = true;
+    try {
+      const visibility = await updateSpotWall(spotId, nextVisibility);
+      updateSpotWallComposer(currentViewingOccupied!, true, false, visibility);
+      showToast(visibility === 'open' ? 'Visitor messages are now open.' : 'Visitor messages are now closed.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Could not update wall settings.', 'error');
+    } finally {
+      btnToggleWall.disabled = false;
+    }
+  });
   claimCloseBtn?.addEventListener('click', closeClaimModal);
   claimBackdrop?.addEventListener('click', (e) => { if (e.target === claimBackdrop) closeClaimModal(); });
 
@@ -1393,7 +1605,9 @@ import TransferModal from '../components/TransferModal.astro';
         linkedinUrl: inputLinkedin.value.trim() || undefined,
         youtubeUrl: inputYoutube.value.trim() || undefined,
         githubUrl: inputGithub.value.trim() || undefined,
+        referrerSpotId: referralSpotId || undefined,
       });
+      referralSpotId = null;
 
       myCitizen = res.citizen;
       myOwnedSpot = { id: spotId, x: currentTargetSpot.x, y: currentTargetSpot.y };
@@ -1521,6 +1735,53 @@ import TransferModal from '../components/TransferModal.astro';
 
   // 11. Live Realtime Stream (Instant Sync across all tabs & devices)
   let supabaseChannel: any = null;
+  let apiEventSource: EventSource | null = null;
+
+  function connectApiActivityStream(tabId: string): boolean {
+    if (!API_BASE || apiEventSource) return Boolean(apiEventSource);
+    const token = localStorage.getItem('spot_session_token');
+    const params = new URLSearchParams({ tabId });
+    if (token) params.set('token', token);
+    apiEventSource = new EventSource(`${API_BASE}/realtime/stream?${params.toString()}`, { withCredentials: true });
+    apiEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'presence') {
+          if (hudOnlineCount) hudOnlineCount.textContent = String(data.onlineCount || 1);
+          const onlineIds = new Set<string>(data.onlineCitizenIds || []);
+          worldSnapshot.occupied.forEach((spot) => {
+            spot.isOnline = onlineIds.has(spot.citizenId);
+          });
+          renderer.setSnapshot(worldSnapshot);
+        } else if (data.type === 'spot_claimed' && data.citizen && data.spot) {
+          showActivity(activityFromSpot({
+            displayName: data.citizen.displayName,
+            x: data.spot.x,
+            y: data.spot.y,
+          }));
+          const myId = myCitizen?.id || localStorage.getItem('spot_citizen_id');
+          if (myId && data.neighborCitizenIds?.includes(myId)) {
+            showToast(`👋 Your new neighbor @${data.citizen.displayName} claimed (${data.spot.x}, ${data.spot.y})`, 'success');
+          }
+          void refreshWorldFromApi();
+        } else if (data.type === 'profile_updated' && data.citizen) {
+          showActivity(`✏️ @${data.citizen.displayName} updated their profile`);
+          void refreshWorldFromApi();
+        } else if (data.type === 'spot_released' && data.spotId) {
+          showActivity(`↩ Spot ${data.spotId} is available again`);
+          void refreshWorldFromApi();
+        } else if (data.type === 'comment_posted' && data.comment && data.spotId) {
+          showActivity(`💬 @${data.comment.authorName} posted on Spot ${data.spotId}`);
+          if (currentViewingOccupied?.spotId === data.spotId) void loadSpotComments(data.spotId);
+        }
+      } catch {}
+    };
+    apiEventSource.onerror = () => {
+      apiEventSource?.close();
+      apiEventSource = null;
+    };
+    return true;
+  }
   function connectRealtimeStream() {
     let tabId = sessionStorage.getItem('spot_tab_id');
     if (!tabId) {
@@ -1528,7 +1789,9 @@ import TransferModal from '../components/TransferModal.astro';
       sessionStorage.setItem('spot_tab_id', tabId);
     }
 
-    // Direct Supabase Realtime Channel (Production & Local)
+    if (connectApiActivityStream(tabId)) return;
+
+    // Direct Supabase Realtime Channel (fallback when no authoritative API is configured)
     function connectSupabaseRealtime() {
       if (supabaseChannel) return;
       supabaseChannel = supabase
@@ -1562,6 +1825,10 @@ import TransferModal from '../components/TransferModal.astro';
   }
 
   function disconnectRealtime() {
+    if (apiEventSource) {
+      apiEventSource.close();
+      apiEventSource = null;
+    }
     if (supabaseChannel) {
       try { supabase.removeChannel(supabaseChannel); } catch {}
       supabaseChannel = null;

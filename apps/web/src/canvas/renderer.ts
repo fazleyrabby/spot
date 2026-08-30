@@ -155,6 +155,7 @@ export class WorldCanvasRenderer {
 
     // World boundaries
     this.renderWorldBorder(ctx);
+    this.renderDistrictBoundaries(ctx);
 
     // Get visible grid slice for frustum culling
     const bounds = camera.getViewportBounds();
@@ -169,6 +170,15 @@ export class WorldCanvasRenderer {
       size: number;
       occupied: OccupiedSpotSummary;
       isHovered: boolean;
+      isSelected: boolean;
+    }> = [];
+    const activeSpotsToRender: Array<{
+      x: number;
+      y: number;
+      size: number;
+      occupied: OccupiedSpotSummary;
+      isHovered: boolean;
+      isSelected: boolean;
     }> = [];
 
     for (let gx = visible.minX; gx <= visible.maxX; gx++) {
@@ -182,22 +192,39 @@ export class WorldCanvasRenderer {
 
         if (occupied) {
           this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, isHovered, isSelected);
+          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered || isSelected);
           if (this.camera.zoom > 1.2 || isHovered) {
-            labelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered });
+            labelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered, isSelected });
+          }
+          if (isHovered || isSelected) {
+            activeSpotsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered, isSelected });
           }
         } else {
           this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered, isSelected);
+          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered || isSelected);
         }
       }
     }
 
-    // 2. Pass 2: Draw All Labels on Top with Pill Background — hovered last so it stays on top when side-by-side
+    // 2. Pass 2: Draw background labels above the tile/avatar pass.
     labelsToRender.sort((a, b) => Number(a.isHovered) - Number(b.isHovered));
-    for (const item of labelsToRender) {
+    for (const item of labelsToRender.filter((item) => !item.isHovered && !item.isSelected)) {
+      this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, false);
+    }
+
+    // 3. Foreground pass: keep the hovered/focused spot, including its avatar,
+    // above neighboring labels and sprites. This matters when labels overlap
+    // adjacent tiles in a dense part of the map.
+    for (const item of activeSpotsToRender) {
+      this.renderOccupiedSpot(ctx, item.x, item.y, item.size, item.occupied, item.isHovered, item.isSelected);
+      const activeCoords = grid.worldToGrid(item.x, item.y);
+      if (activeCoords && this.isPrimeSpot(activeCoords.x, activeCoords.y)) {
+        this.renderPrimeSpot(ctx, item.x, item.y, item.size, true);
+      }
       this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, item.isHovered);
     }
 
-    // 3. Pass 3: Render Selection Cursor if active
+    // 4. Pass 4: Render Selection Cursor if active
     if (this.selectedCoord) {
       const pos = grid.gridToWorld(this.selectedCoord.x, this.selectedCoord.y);
       this.renderSelectedBeacon(ctx, pos.x, pos.y, spotSize);
@@ -259,6 +286,44 @@ export class WorldCanvasRenderer {
     ctx.stroke();
   }
 
+  private renderDistrictBoundaries(ctx: CanvasRenderingContext2D): void {
+    if (this.camera.zoom < 0.35) return;
+
+    const { grid } = this;
+    const boundaryOffset = grid.config.spotGap / 2;
+    ctx.save();
+    ctx.strokeStyle = `rgba(245, 158, 11, ${this.camera.zoom > 0.8 ? 0.2 : 0.12})`;
+    ctx.lineWidth = 1 / this.camera.zoom;
+    ctx.setLineDash([5 / this.camera.zoom, 5 / this.camera.zoom]);
+    ctx.beginPath();
+
+    for (let district = 1; district < 10; district += 1) {
+      const offset = district * 10 * grid.cellSize - boundaryOffset;
+      ctx.moveTo(offset, 0);
+      ctx.lineTo(offset, grid.totalHeight);
+      ctx.moveTo(0, offset);
+      ctx.lineTo(grid.totalWidth, offset);
+    }
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  private isPrimeSpot(x: number, y: number): boolean {
+    return (x === 0 && y === 0) || (x === 50 && y === 50) || (x === 99 && y === 99);
+  }
+
+  private renderPrimeSpot(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, isActive: boolean): void {
+    ctx.save();
+    ctx.strokeStyle = isActive ? '#fbbf24' : 'rgba(251, 191, 36, 0.6)';
+    ctx.lineWidth = (isActive ? 2 : 1) / this.camera.zoom;
+    ctx.setLineDash([4 / this.camera.zoom, 3 / this.camera.zoom]);
+    ctx.beginPath();
+    ctx.roundRect(x - 2, y - 2, size + 4, size + 4, 7);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   private renderEmptySpot(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -272,7 +337,7 @@ export class WorldCanvasRenderer {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 2;
     } else if (isHovered) {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      ctx.fillStyle = '#3b2b0d';
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 1.5;
     } else {
@@ -311,14 +376,28 @@ export class WorldCanvasRenderer {
   ): void {
     const avatar = getAvatar(occupied.avatarId);
 
+    // Live presence glow: kept to one lightweight stroke per online tile.
+    if (occupied.isOnline && this.camera.zoom > 0.45) {
+      const pulse = (Math.sin(this.pulsePhase) + 1) / 2;
+      ctx.save();
+      ctx.shadowColor = `rgba(16, 185, 129, ${0.45 + pulse * 0.3})`;
+      ctx.shadowBlur = 7 + pulse * 7;
+      ctx.strokeStyle = `rgba(52, 211, 153, ${0.55 + pulse * 0.25})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x - 1, y - 1, size + 2, size + 2, 6);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Tile backdrop
     if (isSelected) {
       ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 2;
     } else if (isHovered) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.fillStyle = '#263247';
+      ctx.strokeStyle = '#f8fafc';
       ctx.lineWidth = 1.5;
     } else {
       ctx.fillStyle = 'rgba(24, 28, 40, 0.85)';

@@ -10,7 +10,10 @@ import {
 
 // All writes go through the authoritative server when PUBLIC_API_BASE is set.
 // Leave unset for local dev without the server (falls back to direct Supabase mode).
-const API_BASE = (import.meta.env.PUBLIC_API_BASE as string | undefined) || null;
+const configuredApiBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
+export const API_BASE = configuredApiBase
+  ? (configuredApiBase.endsWith('/api') ? configuredApiBase : `${configuredApiBase}/api`)
+  : null;
 
 export interface MySessionResponse {
   authenticated: boolean;
@@ -27,6 +30,20 @@ export interface ClaimSpotResponse {
   message?: string;
 }
 
+export interface SpotComment {
+  id: number;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface SpotWallState {
+  comments: SpotComment[];
+  visibility: 'open' | 'readonly';
+  canPost: boolean;
+  isOwner: boolean;
+}
+
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (typeof window !== 'undefined') {
@@ -39,6 +56,41 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+export async function fetchSpotComments(spotId: string): Promise<SpotWallState> {
+  if (!API_BASE) return { comments: [], visibility: 'readonly', canPost: false, isOwner: false };
+  const res = await fetch(`${API_BASE}/spots/${encodeURIComponent(spotId)}/comments`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to load spot wall');
+  const data = await res.json();
+  return data;
+}
+
+export async function postSpotComment(spotId: string, body: string, authorName?: string): Promise<SpotComment> {
+  if (!API_BASE) throw new Error('Spot walls require the authoritative API');
+  const res = await fetch(`${API_BASE}/spots/${encodeURIComponent(spotId)}/comments`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+    body: JSON.stringify({ body, authorName }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Failed to post comment');
+  return data.comment;
+}
+
+export async function updateSpotWall(spotId: string, visibility: 'open' | 'readonly'): Promise<'open' | 'readonly'> {
+  if (!API_BASE) throw new Error('Spot walls require the authoritative API');
+  const res = await fetch(`${API_BASE}/spots/${encodeURIComponent(spotId)}/wall`, {
+    method: 'PATCH', headers: getAuthHeaders(), credentials: 'include',
+    body: JSON.stringify({ visibility }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Could not update wall settings');
+  return data.visibility;
+}
+
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
   if (API_BASE) {
     try {
@@ -47,8 +99,12 @@ export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
         credentials: 'include',
       });
       if (res.ok) return await res.json();
+      throw new Error(`World API returned ${res.status}`);
     } catch (err) {
-      console.warn('API /world unreachable, using direct Supabase mode:', err);
+      // Never fall back to direct Supabase reads when the authoritative API is configured.
+      // This keeps local development isolated from the live dataset.
+      console.error('API /world unavailable; refusing live-data fallback:', err);
+      throw err;
     }
   }
   return await fetchWorldDirect();
@@ -116,6 +172,7 @@ export interface ClaimInputData {
   avatarId: string;
   customAvatarData?: string;
   tagline?: string;
+  bio?: string;
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
@@ -123,6 +180,7 @@ export interface ClaimInputData {
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
+  referrerSpotId?: string;
 }
 
 export async function claimSpot(
