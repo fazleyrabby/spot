@@ -332,8 +332,30 @@ export class WorldCanvasRenderer {
     if (occupied.isOnline && this.camera.zoom > 0.6) {
       ctx.fillStyle = '#10b981';
       ctx.beginPath();
-      ctx.arc(x + size - 4, y + 4, 2.5, 0, Math.PI * 2);
+      ctx.arc(x + 4, y + 4, 2.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Verified badge indicator
+    if (occupied.isVerified && this.camera.zoom > 0.45) {
+      const bx = x + size - 5;
+      const by = y + 5;
+      ctx.fillStyle = '#38bdf8';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(bx, by, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Mini white checkmark
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(bx - 1.5, by);
+      ctx.lineTo(bx - 0.3, by + 1.2);
+      ctx.lineTo(bx + 1.6, by - 1.1);
+      ctx.stroke();
     }
   }
 

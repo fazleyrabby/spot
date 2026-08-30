@@ -106,6 +106,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
       instagramUrl: c?.instagram_url || undefined,
       youtubeUrl: c?.youtube_url || undefined,
       linkedinUrl: c?.linkedin_url || undefined,
+      isVerified: Boolean(c?.github_id || c?.is_verified || (c?.github_url && c?.github_url.trim().length > 0)),
       isOnline: true,
     };
   });
@@ -228,6 +229,7 @@ export async function fetchSessionDirect(): Promise<{
     instagramUrl: citizenRow.instagram_url || undefined,
     youtubeUrl: citizenRow.youtube_url || undefined,
     linkedinUrl: citizenRow.linkedin_url || undefined,
+    isVerified: Boolean(citizenRow.github_id || citizenRow.is_verified || (citizenRow.github_url && citizenRow.github_url.trim().length > 0)),
     createdAt: citizenRow.created_at,
     updatedAt: citizenRow.updated_at,
   };
@@ -434,6 +436,7 @@ export async function claimSpotDirect(input: {
     instagramUrl: citizenData.instagram_url || undefined,
     youtubeUrl: citizenData.youtube_url || undefined,
     linkedinUrl: citizenData.linkedin_url || undefined,
+    isVerified: Boolean(citizenData.github_id || citizenData.is_verified || (citizenData.github_url && citizenData.github_url.trim().length > 0)),
     createdAt: citizenData.created_at,
     updatedAt: citizenData.updated_at,
   };
