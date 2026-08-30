@@ -1,3 +1,8 @@
 {
-  "installCommand": "pnpm install --no-frozen-lockfile"
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "functions": {
+    "api/[...path].ts": {
+      "regions": ["sin1"]
+    }
+  }
 }
