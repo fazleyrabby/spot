@@ -14,6 +14,10 @@
       <div class="claim-badge mono-num" id="claim-spot-badge">Spot (50, 50)</div>
       <h2 class="claim-title" id="claim-title">Claim Your Spot</h2>
       <p class="claim-desc">One person. One avatar. One permanent place on the Internet.</p>
+      <div class="claim-free-tag">
+        <span class="pulse-sparkle">✨</span>
+        <span>100% Free Forever • No Catch • No Money Needed</span>
+      </div>
     </div>
 
     <!-- 1-Click GitHub Verification Button -->
@@ -257,6 +261,30 @@
   .claim-desc {
     font-size: 0.88rem;
     color: var(--text-secondary);
+  }
+
+  .claim-free-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  .pulse-sparkle {
+    font-size: 0.85rem;
+    animation: gentle-sparkle 2s infinite ease-in-out;
+  }
+
+  @keyframes gentle-sparkle {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
   }
 
   .oauth-section {
