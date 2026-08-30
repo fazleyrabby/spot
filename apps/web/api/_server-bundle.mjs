@@ -371,6 +371,11 @@ var CITIZEN_PROFILE_COLUMNS = `
   created_at as "createdAt", updated_at as "updatedAt"
 `;
 var sseConnections = /* @__PURE__ */ new Set();
+var WORLD_CACHE_TTL_MS = 1e4;
+var worldCache = null;
+function invalidateWorldCache() {
+  worldCache = null;
+}
 function getUniqueOnlineCount() {
   const uniqueIds = /* @__PURE__ */ new Set();
   for (const conn of sseConnections) {
@@ -440,6 +445,9 @@ if (enableSSE) {
 }
 apiRouter.get("/world", async (req, res) => {
   try {
+    if (worldCache && Date.now() < worldCache.expiresAt) {
+      return res.json(worldCache.data);
+    }
     const spotsRes = await query(`
       SELECT 
         s.id as "spotId", s.x, s.y, s.owner_id as "citizenId",
@@ -479,7 +487,7 @@ apiRouter.get("/world", async (req, res) => {
       const readRes = await query(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
       totalVisitors = parseInt(readRes.rows[0]?.value, 10) || 1;
     }
-    res.json({
+    const data = {
       width: 100,
       height: 100,
       totalSpots,
@@ -487,7 +495,9 @@ apiRouter.get("/world", async (req, res) => {
       totalVisitors,
       onlineCount: getUniqueOnlineCount(),
       occupied: spotsRes.rows
-    });
+    };
+    worldCache = { data, expiresAt: Date.now() + WORLD_CACHE_TTL_MS };
+    res.json(data);
   } catch (err) {
     console.error("Error fetching world snapshot:", err);
     res.status(500).json({ error: "InternalServerError", message: "Failed to load world snapshot" });
@@ -718,6 +728,7 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
       citizen,
       sessionToken: rawToken || void 0
     });
+    invalidateWorldCache();
   } catch (err) {
     if (err?.code === "23505" || String(err?.message || "").includes("duplicate key")) {
       res.status(409).json({
@@ -854,6 +865,7 @@ apiRouter.patch("/citizens/me", requireAuthMiddleware, async (req, res) => {
       citizen: updatedCitizen
     });
     res.json({ success: true, citizen: updatedCitizen });
+    invalidateWorldCache();
   } catch (err) {
     console.error("Error updating citizen profile:", err);
     res.status(500).json({ error: "InternalServerError" });
@@ -879,6 +891,7 @@ apiRouter.delete("/citizens/me", requireAuthMiddleware, async (req, res) => {
       });
     }
     res.json({ success: true, message: "Account and spot successfully deleted." });
+    invalidateWorldCache();
   } catch (err) {
     console.error("Error deleting citizen account:", err);
     res.status(500).json({ error: "InternalServerError", message: "Failed to delete account" });
