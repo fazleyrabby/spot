@@ -57,20 +57,27 @@ const author = 'Md. Fazley Rabbi';
     <meta property="twitter:image" content={image} />
     <meta property="twitter:creator" content="@fazleyrabby" />
 
-    <!-- JSON-LD Structured Data for WebApp -->
+    <!-- JSON-LD Structured Data -->
     <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "SPOT",
-      "url": "https://spot.fazleyrabbi.xyz/",
-      "description": "A persistent 10,000-tile cyber canvas where everyone claims their own physical spot on the Internet.",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "All",
-      "author": {
-        "@type": "Person",
-        "name": "Md. Fazley Rabbi",
-        "url": "https://fazleyrabbi.xyz/"
-      }
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "SPOT",
+          "url": "https://www.claimyourspot.lol/",
+          "description": description,
+          "applicationCategory": "SocialNetworkingApplication",
+          "operatingSystem": "All",
+          "author": { "@type": "Person", "name": "Md. Fazley Rabbi", "url": "https://fazleyrabbi.xyz/" },
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        },
+        {
+          "@type": "Organization",
+          "name": "SPOT",
+          "url": "https://www.claimyourspot.lol/",
+          "logo": "https://www.claimyourspot.lol/logo.png"
+        }
+      ]
     })} />
   </head>
   <body>
