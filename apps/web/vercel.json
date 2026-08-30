@@ -1,8 +1,12 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "functions": {
-    "api/[...path].ts": {
-      "regions": ["sin1"]
-    }
-  }
+  "routes": [
+    { "src": "^/assets/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
+    { "src": "^/_astro/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
+    { "handle": "filesystem" },
+    { "src": "^/api/(.*)$", "dest": "/api/[...path]?...path=$1", "check": true },
+    { "handle": "error" },
+    { "status": 404, "src": "^(?!/api).*$", "dest": "/404.html" },
+    { "handle": "miss" }
+  ]
 }
