@@ -1,16 +1,14 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load root .env (safe to fail — Vercel sets env vars via dashboard)
+// Load root .env (safe to fail in Vercel)
 try {
-  if (typeof import.meta.url !== 'undefined') {
-    const { fileURLToPath } = await import('url');
-    const { default: path } = await import('path');
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-  }
-} catch { /* ignore in Vercel/serverless */ }
-dotenv.config(); // fallback to local cwd
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+} catch { /* ignore in serverless */ }
+dotenv.config();
 
 export const config = {
   port: parseInt(process.env.PORT || '5050', 10),
