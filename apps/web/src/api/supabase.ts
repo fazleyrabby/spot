@@ -257,6 +257,61 @@ export async function fetchSessionDirect(): Promise<{
   return { authenticated: true, citizen, ownedSpot };
 }
 
+export async function syncGithubAuthDirect(data: {
+  githubId: string;
+  username?: string;
+  email?: string;
+  avatarUrl?: string;
+  displayName?: string;
+}): Promise<{ authenticated: boolean; success?: boolean; citizen: Citizen | null; ownedSpot: { id: string; x: number; y: number; claimedAt: string } | null }> {
+  const currentSession = await fetchSessionDirect();
+  
+  if (currentSession.citizen) {
+    // Update citizen with github details and mark as verified
+    const updatePayload: any = {
+      github_id: data.githubId,
+      is_verified: true,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.username && !currentSession.citizen.githubUrl) {
+      updatePayload.github_url = data.username;
+    }
+    
+    try {
+      await supabase.from('citizens').update(updatePayload).eq('id', currentSession.citizen.id);
+    } catch {
+      delete updatePayload.is_verified;
+      await supabase.from('citizens').update(updatePayload).eq('id', currentSession.citizen.id);
+    }
+    
+    currentSession.citizen.isVerified = true;
+    if (data.username && !currentSession.citizen.githubUrl) {
+      currentSession.citizen.githubUrl = data.username;
+    }
+    return currentSession;
+  }
+
+  // If not currently logged in on this browser, check if an existing citizen has this github_id or github_url
+  let { data: cit } = await supabase
+    .from('citizens')
+    .select('*')
+    .or(`github_id.eq.${data.githubId}${data.username ? `,github_url.ilike.%${data.username}%` : ''}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (cit) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('spot_citizen_id', cit.id);
+      if (cit.session_token_hash) {
+        localStorage.setItem('spot_session_token', cit.session_token_hash);
+      }
+    }
+    return await fetchSessionDirect();
+  }
+
+  return currentSession;
+}
+
 export function formatSocialUrl(val?: string, platform?: 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'): string | undefined {
   if (!val) return undefined;
   let clean = val.trim();

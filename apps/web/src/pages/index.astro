@@ -161,7 +161,7 @@ import TransferModal from '../components/TransferModal.astro';
   let selectedAvatarId = 'astronaut';
   let editSelectedAvatarId = 'astronaut';
   let myCitizen: Citizen | null = null;
-  let myOwnedSpot: { id: string; x: number; y: number } | null = null;
+  let myOwnedSpot: { id: string; x: number; y: number; claimedAt?: string } | null = null;
   let currentViewingOccupied: OccupiedSpotSummary | null = null;
   let worldSnapshot: WorldSnapshot = {
     width: 100,
@@ -288,6 +288,9 @@ import TransferModal from '../components/TransferModal.astro';
 
     try {
       // Check GitHub OAuth session
+      let sessionCitizen: Citizen | null = null;
+      let sessionOwnedSpot: { id: string; x: number; y: number; claimedAt?: string } | null = null;
+
       const user = await getSupabaseUser();
       if (user) {
         const metadata = user.user_metadata || {};
@@ -298,53 +301,60 @@ import TransferModal from '../components/TransferModal.astro';
           avatarUrl: metadata.avatar_url,
           displayName: metadata.full_name || metadata.name || metadata.user_name,
         });
-        if ((syncRes.authenticated || syncRes.success) && syncRes.citizen) {
-          myCitizen = syncRes.citizen;
-          myOwnedSpot = syncRes.ownedSpot;
-          if (myOwnedSpot) {
-            localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
-            if (headerClaimBtn) {
-              headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
-            }
-            if (!window.location.search.includes('spot=')) {
-              renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
-              if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
-              if (coordStatus) {
-                coordStatus.textContent = syncRes.citizen.displayName;
-                coordStatus.className = 'coord-badge occupied';
-              }
-            }
-          }
+        if (syncRes.authenticated || syncRes.success) {
+          sessionCitizen = syncRes.citizen;
+          sessionOwnedSpot = syncRes.ownedSpot;
+          myCitizen = sessionCitizen;
 
-          // If user does not own a spot yet and has a pending target, claim it automatically!
-          const pending = localStorage.getItem('spot_claim_pending_target');
-          if (!myOwnedSpot && pending) {
-            localStorage.removeItem('spot_claim_pending_target');
-            const coords = JSON.parse(pending);
-            if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
-              await autoClaimWithGithub(coords.x, coords.y, syncRes.citizen);
+          // If the user does not own a spot yet and has a pending target, claim it automatically!
+          if (!sessionOwnedSpot && sessionCitizen) {
+            const pending = localStorage.getItem('spot_claim_pending_target');
+            if (pending) {
+              localStorage.removeItem('spot_claim_pending_target');
+              const coords = JSON.parse(pending);
+              if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
+                await autoClaimWithGithub(coords.x, coords.y, sessionCitizen);
+                sessionOwnedSpot = myOwnedSpot;
+              }
             }
           }
         }
       } else {
         const session = await fetchMySession();
-        if ((session.authenticated || (session as any).success) && session.citizen) {
-          myCitizen = session.citizen;
-          myOwnedSpot = session.ownedSpot;
-          if (myOwnedSpot) {
-            localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
-            if (headerClaimBtn) {
-              headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
-            }
-            if (!window.location.search.includes('spot=')) {
-              renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
-              if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
-              if (coordStatus) {
-                coordStatus.textContent = session.citizen.displayName;
-                coordStatus.className = 'coord-badge occupied';
-              }
-            }
+        if (session.authenticated || (session as any).success) {
+          sessionCitizen = session.citizen;
+          sessionOwnedSpot = session.ownedSpot;
+          myCitizen = sessionCitizen;
+        }
+      }
+
+      // Apply the database-authoritative ownership state, overriding any value
+      // that was synchronously restored from localStorage on page load so the
+      // header never shows a ghost "My Spot (x, y)" for a released/deleted spot.
+      myOwnedSpot = sessionOwnedSpot;
+      if (myOwnedSpot) {
+        localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
+        if (headerClaimBtn) {
+          headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+        }
+        if (!window.location.search.includes('spot=')) {
+          renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
+          if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
+          if (coordStatus) {
+            coordStatus.textContent = myCitizen?.displayName || 'Citizen';
+            coordStatus.className = 'coord-badge occupied';
           }
+        }
+      } else {
+        localStorage.removeItem('spot_my_owned');
+        if (headerClaimBtn) {
+          headerClaimBtn.innerHTML = `
+            <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Claim a Spot</span>
+          `;
         }
       }
 
@@ -374,7 +384,7 @@ import TransferModal from '../components/TransferModal.astro';
       });
 
       myCitizen = res.citizen;
-      myOwnedSpot = { id: spotId, x: gx, y: gy };
+      myOwnedSpot = { id: spotId, x: gx, y: gy, claimedAt: new Date().toISOString() };
 
       const newOccupied: OccupiedSpotSummary = {
         spotId,
