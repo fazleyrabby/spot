@@ -1,6 +1,6 @@
 import { GridEngine, Camera2D } from '@spot/world';
 import type { Coordinates, OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
-import { getAvatar, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from './avatars.js';
+import { getAvatar, drawAvatarOnCanvas, drawCustomAvatarOnCanvas, setOnAvatarImageLoaded } from './avatars.js';
 
 export interface RendererEvents {
   onSpotClick?: (spot: { x: number; y: number; occupied?: OccupiedSpotSummary }) => void;
@@ -59,6 +59,7 @@ export class WorldCanvasRenderer {
     const centerWorld = this.grid.gridToWorld(52, 60);
     this.camera.centerOn(centerWorld.x + 18, centerWorld.y + 18, 2.0, true);
     this.selectedCoord = { x: 52, y: 60 };
+    setOnAvatarImageLoaded(() => this.render());
   }
 
   setSnapshot(snapshot: WorldSnapshot): void {
