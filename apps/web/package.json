@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev --host",
-    "build": "astro build",
+    "build": "node scripts/build-api.mjs && astro build",
     "preview": "astro preview",
     "check": "astro check"
   },
@@ -26,6 +26,7 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/sitemap": "^3.7.3",
     "@types/qrcode": "^1.5.6",
+    "esbuild": "^0.28.2",
     "typescript": "^5.8.2"
   }
 }
