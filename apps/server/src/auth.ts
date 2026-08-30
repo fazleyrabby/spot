@@ -40,7 +40,7 @@ export async function resolveCitizen(token: string): Promise<Citizen | null> {
   const tokenHash = hashToken(token);
   const res = await query<any>(
     `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
-            custom_avatar_data as "customAvatarData", tagline,
+            custom_avatar_data as "customAvatarData", tagline, bio,
             website_url as "websiteUrl", github_url as "githubUrl",
             twitter_url as "twitterUrl", facebook_url as "facebookUrl",
             instagram_url as "instagramUrl", youtube_url as "youtubeUrl",

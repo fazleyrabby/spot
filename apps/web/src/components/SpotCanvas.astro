@@ -10,19 +10,12 @@
       <span class="coord-icon">🎯</span>
       <span class="coord-text mono-num" id="coord-text">Spot: (52, 60)</span>
       <span class="coord-badge empty" id="coord-status">Available</span>
+      <span class="district-text" id="coord-district">Sector 5-5</span>
+      <span class="prime-badge" id="coord-prime" style="display: none;">PRIME</span>
       <span class="verified-badge-mini" id="coord-verified-badge" style="display: none;" title="Verified GitHub Citizen">
         <svg class="verified-badge-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2.8l1.3 1.8 2.2-.2.9 2 2.1.7.3 2.2 1.8 1.3-.4 2.2 1.3 1.8-1.3 1.8.4 2.2-1.8 1.3-.3 2.2-2.1.7-.9 2-2.2-.2L12 23.2l-1.3-1.8-2.2.2-.9-2-2.1-.7-.3-2.2-1.8-1.3.4-2.2L2.5 13.6l1.3-1.8-.4-2.2 1.8-1.3.3-2.2 2.1-.7.9-2 2.2.2L12 2.8z" fill="#090d16"/>
-          <path d="M12 1.6l1.3 1.8 2.2-.2.9 2 2.1.7.3 2.2 1.8 1.3-.4 2.2 1.3 1.8-1.3 1.8.4 2.2-1.8 1.3-.3 2.2-2.1.7-.9 2-2.2-.2L12 22l-1.3-1.8-2.2.2-.9-2-2.1-.7-.3-2.2-1.8-1.3.4-2.2L2.5 12.4l1.3-1.8-.4-2.2 1.8-1.3.3-2.2 2.1-.7.9-2 2.2.2L12 1.6z" fill="url(#scallopGradMini)" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M7.8 12.6l3.1 3.1 6.1-6.1" stroke="#090d16" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
-          <path d="M7.5 12l3.1 3.1 6.1-6.1" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <defs>
-            <linearGradient id="scallopGradMini" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#38bdf8"/>
-              <stop offset="0.55" stop-color="#6366f1"/>
-              <stop offset="1" stop-color="#a855f7"/>
-            </linearGradient>
-          </defs>
+          <circle cx="12" cy="12" r="9.5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5"/>
+          <path d="M7.7 12.2l2.8 2.8 5.9-5.9" stroke="#07111f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
     </div>
@@ -150,6 +143,24 @@
     color: var(--text-primary);
   }
 
+  .district-text {
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .prime-badge {
+    color: #fbbf24;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 3px 6px;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    border-radius: var(--radius-sm);
+    background: rgba(120, 53, 15, 0.35);
+  }
+
   .coord-badge {
     font-size: 0.72rem; /* 11.5px */
     font-weight: 700;
@@ -264,6 +275,14 @@
   @media (max-width: 380px) {
     .coord-badge {
       display: none;
+    }
+
+    .district-text {
+      display: none;
+    }
+
+    .prime-badge {
+      display: none !important;
     }
   }
 </style>

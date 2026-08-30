@@ -103,6 +103,13 @@ identity beyond a single tile.
 Bids for the few landmark coordinates. Scarcity + social proof = the most
 defensible revenue lever.
 
+**D2. City Showcase — sponsored businesses and SaaS**
+A curated showcase outside the canvas for indie SaaS, developer tools, studios,
+ and internet-native brands. Listings should be clearly marked as sponsored,
+ sold for fixed durations, and kept separate from permanent citizen spots. No
+ intrusive ads, popups, or tracking-heavy ad network. Validate with direct
+ sponsorships once SPOT has meaningful traffic.
+
 ---
 
 ## 4. Suggested First Builds

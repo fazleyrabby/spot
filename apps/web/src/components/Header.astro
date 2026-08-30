@@ -80,6 +80,12 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   </div>
 </header>
 
+<div class="activity-ticker glass-panel" id="activity-ticker" aria-live="polite">
+  <span class="activity-live-dot"></span>
+  <span class="activity-label">LIVE</span>
+  <span class="activity-text" id="activity-text">Watching the city...</span>
+</div>
+
 <style>
   .header-hud {
     position: fixed;
@@ -105,6 +111,48 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     width: max-content;
     max-width: calc(100vw - 24px);
     white-space: nowrap;
+  }
+
+  .activity-ticker {
+    position: fixed;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 39;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: min(430px, calc(100vw - 28px));
+    padding: 6px 11px;
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    border-radius: var(--radius-full);
+    background: rgba(11, 17, 23, 0.78);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .activity-live-dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 9px rgba(16, 185, 129, 0.9);
+  }
+
+  .activity-label {
+    color: #34d399;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+  }
+
+  .activity-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .hud-left {
@@ -311,6 +359,10 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
     .search-shortcut {
       display: none;
+    }
+
+    .activity-ticker {
+      top: 62px;
     }
   }
 

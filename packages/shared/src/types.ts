@@ -34,6 +34,7 @@ export interface Citizen {
   avatarId: string;
   customAvatarData?: string;
   tagline?: string;
+  bio?: string;
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
@@ -50,11 +51,13 @@ export interface OccupiedSpotSummary {
   spotId: string;
   x: number;
   y: number;
+  claimedAt?: string | null;
   citizenId: string;
   displayName: string;
   avatarId: string;
   customAvatarData?: string;
   tagline?: string;
+  bio?: string;
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;

@@ -94,3 +94,10 @@ export const spotClaimLimiter = new SlidingWindowRateLimiter(
   60 * 1000,
   'Spot claim rate limit exceeded. Please wait a minute before trying again.'
 ).middleware();
+
+// 3. Spot wall limiter: Max 5 comments per IP every 10 minutes
+export const spotCommentLimiter = new SlidingWindowRateLimiter(
+  5,
+  10 * 60 * 1000,
+  'Spot wall rate limit exceeded. Please wait before posting again.'
+).middleware();
