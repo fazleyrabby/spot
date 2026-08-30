@@ -481,6 +481,17 @@ import TransferModal from '../components/TransferModal.astro';
         }, 200);
       }
     }
+
+    // Clean tracking garbage (fbclid, gclid, utm_*) from address bar
+    if (params.has('fbclid') || params.has('gclid') || params.has('utm_source') || params.has('utm_medium')) {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('fbclid');
+      cleanUrl.searchParams.delete('gclid');
+      cleanUrl.searchParams.delete('utm_source');
+      cleanUrl.searchParams.delete('utm_medium');
+      cleanUrl.searchParams.delete('utm_campaign');
+      window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.searchParams.toString() ? '?' + cleanUrl.searchParams.toString() : ''));
+    }
   }
 
   // 10b. 1-Click GitHub Verification Trigger
