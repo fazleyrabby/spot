@@ -182,7 +182,7 @@ export class WorldCanvasRenderer {
 
         if (occupied) {
           this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, isHovered, isSelected);
-          if (this.camera.zoom > 1.2) {
+          if (this.camera.zoom > 1.2 || isHovered) {
             labelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered });
           }
         } else {
@@ -191,7 +191,8 @@ export class WorldCanvasRenderer {
       }
     }
 
-    // 2. Pass 2: Draw All Labels on Top with Pill Background
+    // 2. Pass 2: Draw All Labels on Top with Pill Background — hovered last so it stays on top when side-by-side
+    labelsToRender.sort((a, b) => Number(a.isHovered) - Number(b.isHovered));
     for (const item of labelsToRender) {
       this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, item.isHovered);
     }
