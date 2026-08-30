@@ -490,7 +490,7 @@ apiRouter.get("/world", async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching world snapshot:", err);
-    res.status(500).json({ error: "InternalServerError", message: "Failed to load world snapshot" });
+    res.status(500).json({ error: "InternalServerError", message: "Failed to load world snapshot", detail: err?.message });
   }
 });
 apiRouter.get("/citizens/me", optionalAuthMiddleware, async (req, res) => {
