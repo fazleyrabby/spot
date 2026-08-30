@@ -43,7 +43,25 @@ export const CreateCitizenSchema = z.object({
   websiteUrl: SafeUrlSchema,
   githubUrl: z
     .string()
-    .max(64, 'GitHub handle must not exceed 64 characters')
+    .max(128, 'GitHub handle or URL must not exceed 128 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  twitterUrl: z
+    .string()
+    .max(128, 'X / Twitter handle or URL must not exceed 128 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  instagramUrl: z
+    .string()
+    .max(128, 'Instagram handle or URL must not exceed 128 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  youtubeUrl: z
+    .string()
+    .max(128, 'YouTube channel or URL must not exceed 128 characters')
     .trim()
     .optional()
     .or(z.literal('')),
@@ -86,7 +104,22 @@ export const UpdateCitizenSchema = z.object({
   websiteUrl: SafeUrlSchema,
   githubUrl: z
     .string()
-    .max(64)
+    .max(128)
+    .trim()
+    .optional(),
+  twitterUrl: z
+    .string()
+    .max(128)
+    .trim()
+    .optional(),
+  instagramUrl: z
+    .string()
+    .max(128)
+    .trim()
+    .optional(),
+  youtubeUrl: z
+    .string()
+    .max(128)
     .trim()
     .optional(),
   linkedinUrl: SafeUrlSchema,
