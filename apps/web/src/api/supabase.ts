@@ -53,7 +53,10 @@ export async function getClientIp(): Promise<string | null> {
  * DIRECT SUPABASE MODE: Fetch entire 10k world snapshot directly from PostgreSQL
  */
 export async function fetchWorldDirect(): Promise<WorldSnapshot> {
-  const { data: spots, error: spotsErr } = await supabase
+  let spots: any = null;
+  let spotsErr: any = null;
+
+  const fullRes = await supabase
     .from('spots')
     .select(`
       id, x, y, owner_id, claimed_at,
@@ -62,6 +65,24 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
       )
     `)
     .not('owner_id', 'is', null);
+
+  if (fullRes.error) {
+    const basicRes = await supabase
+      .from('spots')
+      .select(`
+        id, x, y, owner_id, claimed_at,
+        citizens:citizens!spots_owner_id_fkey (
+          id, display_name, avatar_id, tagline, website_url, github_url, linkedin_url
+        )
+      `)
+      .not('owner_id', 'is', null);
+
+    spots = basicRes.data;
+    spotsErr = basicRes.error;
+  } else {
+    spots = fullRes.data;
+    spotsErr = fullRes.error;
+  }
 
   if (spotsErr) {
     console.error('Error fetching spots from Supabase:', spotsErr);
