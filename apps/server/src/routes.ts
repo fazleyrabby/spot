@@ -14,14 +14,107 @@ import {
 import { citizenCreationLimiter, spotClaimLimiter } from './rateLimiter.js';
 import {
   CreateCitizenSchema,
-  ClaimSpotSchema,
   UpdateCitizenSchema,
+  containsBlockedWord,
+  sanitizeDisplayName,
 } from '@spot/shared';
 import crypto from 'crypto';
 
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 
 export const apiRouter: ExpressRouter = Router();
+
+const MAX_PROFANITY_WARNINGS = 3;
+
+function clientIp(req: Request): string | null {
+  const fwd = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim();
+  return fwd || req.socket?.remoteAddress || req.ip || null;
+}
+
+/**
+ * Profanity policy (server-side): first attempts are auto-renamed + warned
+ * (tracked by IP); repeat offenders get a 403. Returns the display name to persist.
+ */
+async function enforceServerProfanity(
+  displayName: string,
+  tagline: string | undefined,
+  req: Request
+): Promise<string> {
+  if (!containsBlockedWord(displayName) && !containsBlockedWord(tagline)) {
+    return displayName;
+  }
+
+  const ip = clientIp(req);
+  const key = ip ? `ip:${ip}` : null;
+
+  let current = 0;
+  if (key) {
+    const rows = await query<any>(
+      `SELECT warning_count FROM moderation_flags WHERE device_key = $1 LIMIT 1`,
+      [key]
+    );
+    current = Number(rows.rows[0]?.warning_count) || 0;
+  }
+
+  const next = current + 1;
+  if (key) {
+    await query<any>(
+      `INSERT INTO moderation_flags (device_key, ip_address, warning_count, last_attempt)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (device_key)
+       DO UPDATE SET warning_count = EXCLUDED.warning_count, ip_address = EXCLUDED.ip_address, last_attempt = NOW()`,
+      [key, ip, next]
+    );
+  }
+
+  if (next >= MAX_PROFANITY_WARNINGS) {
+    const err: any = new Error('Blocked: you repeatedly used offensive language.');
+    err.status = 403;
+    throw err;
+  }
+
+  return sanitizeDisplayName(displayName);
+}
+
+// Build a dynamic column list for updating a citizen's optional profile fields.
+// Provided (non-undefined) values are applied, so fields can also be cleared.
+function buildCitizenProfileUpdate(fields: Record<string, unknown>): {
+  assignments: string[];
+  params: unknown[];
+} {
+  const colMap: Array<[string, string]> = [
+    ['displayName', 'display_name'],
+    ['avatarId', 'avatar_id'],
+    ['customAvatarData', 'custom_avatar_data'],
+    ['tagline', 'tagline'],
+    ['websiteUrl', 'website_url'],
+    ['githubUrl', 'github_url'],
+    ['twitterUrl', 'twitter_url'],
+    ['facebookUrl', 'facebook_url'],
+    ['instagramUrl', 'instagram_url'],
+    ['youtubeUrl', 'youtube_url'],
+    ['linkedinUrl', 'linkedin_url'],
+  ];
+  const assignments: string[] = [];
+  const params: unknown[] = [];
+  for (const [key, col] of colMap) {
+    if (fields[key] !== undefined) {
+      params.push(fields[key]);
+      assignments.push(`${col} = $${params.length}`);
+    }
+  }
+  return { assignments, params };
+}
+
+const CITIZEN_PROFILE_COLUMNS = `
+  id, display_name as "displayName", avatar_id as "avatarId",
+  custom_avatar_data as "customAvatarData", tagline,
+  website_url as "websiteUrl", github_url as "githubUrl",
+  twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+  instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+  linkedin_url as "linkedinUrl",
+  created_at as "createdAt", updated_at as "updatedAt"
+`;
 
 // Realtime Event Stream Subscribers (tracked by unique client/IP)
 interface SseConnection {
@@ -114,8 +207,12 @@ apiRouter.get('/world', async (req, res) => {
       SELECT 
         s.id as "spotId", s.x, s.y, s.owner_id as "citizenId",
         c.display_name as "displayName", c.avatar_id as "avatarId",
-        c.tagline, c.website_url as "websiteUrl", c.github_url as "githubUrl",
-        c.linkedin_url as "linkedinUrl"
+        c.custom_avatar_data as "customAvatarData", c.tagline,
+        c.website_url as "websiteUrl", c.github_url as "githubUrl",
+        c.twitter_url as "twitterUrl", c.facebook_url as "facebookUrl",
+        c.instagram_url as "instagramUrl", c.youtube_url as "youtubeUrl",
+        c.linkedin_url as "linkedinUrl",
+        (c.github_url IS NOT NULL AND c.github_url <> '') as "isVerified"
       FROM spots s
       INNER JOIN citizens c ON s.owner_id = c.id
     `);
@@ -208,8 +305,7 @@ apiRouter.post('/auth/github/sync', async (req, res) => {
   try {
     // Check if citizen with github_id already exists
     const existing = await query<any>(
-      `SELECT id, display_name as "displayName", avatar_id as "avatarId", tagline,
-              website_url as "websiteUrl", github_url as "githubUrl", session_token_hash
+      `SELECT ${CITIZEN_PROFILE_COLUMNS}
        FROM citizens
        WHERE github_id = $1
        LIMIT 1`,
@@ -222,16 +318,20 @@ apiRouter.post('/auth/github/sync', async (req, res) => {
 
     if (existing.rows.length > 0) {
       citizen = existing.rows[0];
-      // Update session token hash
-      await query(`UPDATE citizens SET session_token_hash = $1, updated_at = NOW() WHERE id = $2`, [tokenHash, citizen.id]);
+      // Update session token hash + refresh github handle/email/avatar
+      await query(
+        `UPDATE citizens SET session_token_hash = $1, github_url = COALESCE($2, github_url),
+           email = COALESCE($3, email), avatar_url = COALESCE($4, avatar_url), updated_at = NOW()
+         WHERE id = $5`,
+        [tokenHash, username || null, email || null, avatarUrl || null, citizen.id]
+      );
     } else {
       const citizenId = `c_${crypto.randomBytes(12).toString('hex')}`;
       const name = displayName || username || 'Citizen';
       const insertRes = await query<any>(
         `INSERT INTO citizens (id, session_token_hash, display_name, avatar_id, github_url, github_id, email, avatar_url)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, display_name as "displayName", avatar_id as "avatarId", tagline,
-                   website_url as "websiteUrl", github_url as "githubUrl", created_at as "createdAt"`,
+         RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
         [citizenId, tokenHash, name, 'astronaut', username || null, String(githubId), email || null, avatarUrl || null]
       );
       citizen = insertRes.rows[0];
@@ -259,26 +359,43 @@ apiRouter.post('/auth/github/sync', async (req, res) => {
  * Atomic, idempotent spot claim transaction
  */
 apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
-  const parsed = ClaimSpotSchema.safeParse(req.body);
+  const parsed = CreateCitizenSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'ValidationError', details: parsed.error.format() });
     return;
   }
 
-  const { spotId, citizen: citizenInput } = parsed.data;
+  const { x, y } = req.body as { x?: unknown; y?: unknown };
+  if (!Number.isInteger(x) || !Number.isInteger(y) || (x as number) < 0 || (x as number) > 99 || (y as number) < 0 || (y as number) > 99) {
+    res.status(400).json({ error: 'ValidationError', message: 'x and y coordinates are required (0-99).' });
+    return;
+  }
+  const spotId = `${x},${y}`;
+  const input = parsed.data;
+
+  // Profanity policy: auto-rename + warn, block repeat offenders by IP
+  let displayName = input.displayName;
+  try {
+    displayName = await enforceServerProfanity(input.displayName, input.tagline, req);
+  } catch (err: any) {
+    if (err?.status === 403) {
+      res.status(403).json({ error: 'Blocked', message: err.message });
+      return;
+    }
+    throw err;
+  }
+
   let citizen = req.citizen;
   let rawToken = req.rawSessionToken;
 
   // If citizen was not resolved from cookie/header, check by githubId if supplied
-  if (!citizen && citizenInput?.githubId) {
+  if (!citizen && input.githubId) {
     const gitRes = await query<any>(
-      `SELECT id, display_name as "displayName", avatar_id as "avatarId", tagline,
-              website_url as "websiteUrl", github_url as "githubUrl", linkedin_url as "linkedinUrl",
-              created_at as "createdAt"
+      `SELECT ${CITIZEN_PROFILE_COLUMNS}
        FROM citizens
        WHERE github_id = $1
        LIMIT 1`,
-      [citizenInput.githubId]
+      [input.githubId]
     );
     if (gitRes.rows.length > 0) {
       citizen = gitRes.rows[0];
@@ -287,37 +404,37 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
 
   // If citizen is not yet registered, create them on the fly
   if (!citizen) {
-    if (!citizenInput) {
-      res.status(400).json({
-        error: 'MissingCitizenProfile',
-        message: 'Must provide citizen profile details when claiming without an active session',
-      });
-      return;
-    }
-
     const newRawToken = generateSessionToken();
     const tokenHash = hashToken(newRawToken);
     const citizenId = `c_${crypto.randomBytes(12).toString('hex')}`;
 
     try {
       const citizenRes = await query<any>(
-        `INSERT INTO citizens (id, session_token_hash, display_name, avatar_id, tagline, website_url, github_url, linkedin_url, github_id, email, avatar_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING id, display_name as "displayName", avatar_id as "avatarId", tagline,
-                   website_url as "websiteUrl", github_url as "githubUrl", linkedin_url as "linkedinUrl",
-                   created_at as "createdAt"`,
+        `INSERT INTO citizens (
+           id, session_token_hash, display_name, avatar_id, custom_avatar_data,
+           tagline, website_url, github_url, twitter_url, facebook_url,
+           instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
         [
           citizenId,
           tokenHash,
-          citizenInput.displayName,
-          citizenInput.avatarId,
-          citizenInput.tagline || null,
-          citizenInput.websiteUrl || null,
-          citizenInput.githubUrl || null,
-          citizenInput.linkedinUrl || null,
-          citizenInput.githubId || null,
-          citizenInput.email || null,
-          citizenInput.avatarUrl || null,
+          displayName,
+          input.avatarId,
+          input.customAvatarData || null,
+          input.tagline || null,
+          input.websiteUrl || null,
+          input.githubUrl || null,
+          input.twitterUrl || null,
+          input.facebookUrl || null,
+          input.instagramUrl || null,
+          input.youtubeUrl || null,
+          input.linkedinUrl || null,
+          input.githubId || null,
+          input.email || null,
+          input.avatarUrl || null,
+          clientIp(req),
         ]
       );
       citizen = citizenRes.rows[0];
@@ -327,6 +444,31 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
       console.error('Error creating citizen during claim:', err);
       res.status(500).json({ error: 'InternalServerError', message: 'Failed to create citizen profile' });
       return;
+    }
+  } else if (input.avatarId || input.customAvatarData || input.tagline) {
+    // Existing citizen (e.g. GitHub user) claiming for the first time — apply chosen profile
+    try {
+      const { assignments, params } = buildCitizenProfileUpdate({
+        avatarId: input.avatarId,
+        customAvatarData: input.customAvatarData,
+        tagline: input.tagline,
+        websiteUrl: input.websiteUrl,
+        githubUrl: input.githubUrl,
+        twitterUrl: input.twitterUrl,
+        facebookUrl: input.facebookUrl,
+        instagramUrl: input.instagramUrl,
+        youtubeUrl: input.youtubeUrl,
+        linkedinUrl: input.linkedinUrl,
+      });
+      if (assignments.length > 0) {
+        params.push(citizen.id);
+        await query<any>(
+          `UPDATE citizens SET ${assignments.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
+          params
+        );
+      }
+    } catch (err) {
+      console.error('Error updating citizen profile during claim:', err);
     }
   }
 
@@ -390,6 +532,7 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
       success: true,
       spot: claimedSpot,
       citizen,
+      sessionToken: rawToken || undefined,
     });
   } catch (err: any) {
     // 23505 = unique_violation (spots_owner_id_unique) when citizen races to claim 2 spots at once
@@ -420,8 +563,12 @@ apiRouter.get('/citizens/search', async (req, res) => {
     const searchPattern = `%${q}%`;
     const searchRes = await query<any>(
       `SELECT 
-         c.id, c.display_name as "displayName", c.avatar_id as "avatarId", 
-         c.tagline, c.website_url as "websiteUrl", c.github_url as "githubUrl",
+         c.id, c.display_name as "displayName", c.avatar_id as "avatarId",
+         c.custom_avatar_data as "customAvatarData", c.tagline,
+         c.website_url as "websiteUrl", c.github_url as "githubUrl",
+         c.twitter_url as "twitterUrl", c.facebook_url as "facebookUrl",
+         c.instagram_url as "instagramUrl", c.youtube_url as "youtubeUrl",
+         c.linkedin_url as "linkedinUrl",
          s.id as "spotId", s.x, s.y
        FROM citizens c
        INNER JOIN spots s ON s.owner_id = c.id
@@ -449,9 +596,7 @@ apiRouter.get('/citizens/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const citizenRes = await query<any>(
-      `SELECT id, display_name as "displayName", avatar_id as "avatarId", tagline,
-              website_url as "websiteUrl", github_url as "githubUrl", linkedin_url as "linkedinUrl",
-              created_at as "createdAt"
+      `SELECT ${CITIZEN_PROFILE_COLUMNS}
        FROM citizens
        WHERE id = $1
        LIMIT 1`,
@@ -489,32 +634,62 @@ apiRouter.patch('/citizens/me', requireAuthMiddleware, async (req: Authenticated
     return;
   }
 
-  const { displayName, avatarId, tagline, websiteUrl, githubUrl, linkedinUrl } = parsed.data;
+  const {
+    displayName,
+    avatarId,
+    customAvatarData,
+    tagline,
+    websiteUrl,
+    githubUrl,
+    twitterUrl,
+    facebookUrl,
+    instagramUrl,
+    youtubeUrl,
+    linkedinUrl,
+  } = parsed.data;
   const citizen = req.citizen!;
 
   try {
+    // Profanity policy on the update path too
+    let finalName = citizen.displayName;
+    if (displayName !== undefined) {
+      try {
+        finalName = await enforceServerProfanity(displayName, tagline, req);
+      } catch (err: any) {
+        if (err?.status === 403) {
+          res.status(403).json({ error: 'Blocked', message: err.message });
+          return;
+        }
+        throw err;
+      }
+    }
+
+    const fields: Record<string, unknown> = {
+      displayName: displayName !== undefined ? finalName : undefined,
+      avatarId,
+      customAvatarData,
+      tagline: tagline !== undefined ? tagline : undefined,
+      websiteUrl: websiteUrl !== undefined ? websiteUrl : undefined,
+      githubUrl: githubUrl !== undefined ? githubUrl : undefined,
+      twitterUrl: twitterUrl !== undefined ? twitterUrl : undefined,
+      facebookUrl: facebookUrl !== undefined ? facebookUrl : undefined,
+      instagramUrl: instagramUrl !== undefined ? instagramUrl : undefined,
+      youtubeUrl: youtubeUrl !== undefined ? youtubeUrl : undefined,
+      linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : undefined,
+    };
+    const { assignments, params } = buildCitizenProfileUpdate(fields);
+
+    if (assignments.length === 0) {
+      res.json({ success: true, citizen });
+      return;
+    }
+
+    params.push(citizen.id);
     const updateRes = await query<any>(
-      `UPDATE citizens
-       SET display_name = COALESCE($1, display_name),
-           avatar_id = COALESCE($2, avatar_id),
-           tagline = COALESCE($3, tagline),
-           website_url = COALESCE($4, website_url),
-           github_url = COALESCE($5, github_url),
-           linkedin_url = COALESCE($6, linkedin_url),
-           updated_at = NOW()
-       WHERE id = $7
-       RETURNING id, display_name as "displayName", avatar_id as "avatarId", tagline,
-                 website_url as "websiteUrl", github_url as "githubUrl", linkedin_url as "linkedinUrl",
-                 created_at as "createdAt", updated_at as "updatedAt"`,
-      [
-        displayName || null,
-        avatarId || null,
-        tagline !== undefined ? tagline : null,
-        websiteUrl !== undefined ? websiteUrl : null,
-        githubUrl !== undefined ? githubUrl : null,
-        linkedinUrl !== undefined ? linkedinUrl : null,
-        citizen.id,
-      ]
+      `UPDATE citizens SET ${assignments.join(', ')}, updated_at = NOW()
+       WHERE id = $${params.length}
+       RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
+      params
     );
 
     const updatedCitizen = updateRes.rows[0];
