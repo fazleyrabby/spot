@@ -71,6 +71,10 @@ import SupportModal from '../components/SupportModal.astro';
   const profileTagline = document.getElementById('profile-tagline');
   const linkWebsite = document.getElementById('link-website') as HTMLAnchorElement;
   const linkWebsiteText = document.getElementById('link-website-text');
+  const linkTwitter = document.getElementById('link-twitter') as HTMLAnchorElement;
+  const linkInstagram = document.getElementById('link-instagram') as HTMLAnchorElement;
+  const linkLinkedin = document.getElementById('link-linkedin') as HTMLAnchorElement;
+  const linkYoutube = document.getElementById('link-youtube') as HTMLAnchorElement;
   const linkGithub = document.getElementById('link-github') as HTMLAnchorElement;
   const linkSupport = document.getElementById('link-support') as HTMLAnchorElement;
   const profileOwnerActions = document.getElementById('profile-owner-actions');
@@ -82,6 +86,10 @@ import SupportModal from '../components/SupportModal.astro';
   const editDisplayName = document.getElementById('edit-display-name') as HTMLInputElement;
   const editTagline = document.getElementById('edit-tagline') as HTMLInputElement;
   const editWebsite = document.getElementById('edit-website') as HTMLInputElement;
+  const editTwitter = document.getElementById('edit-twitter') as HTMLInputElement;
+  const editInstagram = document.getElementById('edit-instagram') as HTMLInputElement;
+  const editLinkedin = document.getElementById('edit-linkedin') as HTMLInputElement;
+  const editYoutube = document.getElementById('edit-youtube') as HTMLInputElement;
   const editGithub = document.getElementById('edit-github') as HTMLInputElement;
   const btnCancelEdit = document.getElementById('btn-cancel-edit');
   const btnSaveEdit = document.getElementById('btn-save-edit') as HTMLButtonElement;
@@ -96,6 +104,10 @@ import SupportModal from '../components/SupportModal.astro';
   const inputDisplayName = document.getElementById('input-display-name') as HTMLInputElement;
   const inputTagline = document.getElementById('input-tagline') as HTMLInputElement;
   const inputWebsite = document.getElementById('input-website') as HTMLInputElement;
+  const inputTwitter = document.getElementById('input-twitter') as HTMLInputElement;
+  const inputInstagram = document.getElementById('input-instagram') as HTMLInputElement;
+  const inputLinkedin = document.getElementById('input-linkedin') as HTMLInputElement;
+  const inputYoutube = document.getElementById('input-youtube') as HTMLInputElement;
   const inputGithub = document.getElementById('input-github') as HTMLInputElement;
 
   // Search Modal Elements
@@ -453,9 +465,45 @@ import SupportModal from '../components/SupportModal.astro';
       if (occupied.websiteUrl) {
         linkWebsite.href = occupied.websiteUrl;
         linkWebsite.style.display = 'inline-flex';
-        if (linkWebsiteText) linkWebsiteText.textContent = occupied.websiteUrl.replace(/^https?:\/\//, '');
+        if (linkWebsiteText) linkWebsiteText.textContent = occupied.websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
       } else {
         linkWebsite.style.display = 'none';
+      }
+    }
+
+    if (linkTwitter) {
+      if (occupied.twitterUrl) {
+        linkTwitter.href = occupied.twitterUrl;
+        linkTwitter.style.display = 'inline-flex';
+      } else {
+        linkTwitter.style.display = 'none';
+      }
+    }
+
+    if (linkInstagram) {
+      if (occupied.instagramUrl) {
+        linkInstagram.href = occupied.instagramUrl;
+        linkInstagram.style.display = 'inline-flex';
+      } else {
+        linkInstagram.style.display = 'none';
+      }
+    }
+
+    if (linkLinkedin) {
+      if (occupied.linkedinUrl) {
+        linkLinkedin.href = occupied.linkedinUrl;
+        linkLinkedin.style.display = 'inline-flex';
+      } else {
+        linkLinkedin.style.display = 'none';
+      }
+    }
+
+    if (linkYoutube) {
+      if (occupied.youtubeUrl) {
+        linkYoutube.href = occupied.youtubeUrl;
+        linkYoutube.style.display = 'inline-flex';
+      } else {
+        linkYoutube.style.display = 'none';
       }
     }
 
@@ -538,6 +586,10 @@ import SupportModal from '../components/SupportModal.astro';
     editDisplayName.value = cit.displayName || '';
     editTagline.value = cit.tagline || '';
     editWebsite.value = cit.websiteUrl || '';
+    editTwitter.value = cit.twitterUrl || '';
+    editInstagram.value = cit.instagramUrl || '';
+    editLinkedin.value = cit.linkedinUrl || '';
+    editYoutube.value = cit.youtubeUrl || '';
     editGithub.value = cit.githubUrl || '';
     editSelectedAvatarId = cit.avatarId || 'astronaut';
 
@@ -560,6 +612,10 @@ import SupportModal from '../components/SupportModal.astro';
     const newAvatarId = editSelectedAvatarId;
     const newTagline = editTagline.value.trim() || undefined;
     const newWebsite = editWebsite.value.trim() || undefined;
+    const newTwitter = editTwitter.value.trim() || undefined;
+    const newInstagram = editInstagram.value.trim() || undefined;
+    const newLinkedin = editLinkedin.value.trim() || undefined;
+    const newYoutube = editYoutube.value.trim() || undefined;
     const newGithub = editGithub.value.trim() || undefined;
 
     try {
@@ -568,6 +624,10 @@ import SupportModal from '../components/SupportModal.astro';
         avatarId: newAvatarId,
         tagline: newTagline,
         websiteUrl: newWebsite,
+        twitterUrl: newTwitter,
+        instagramUrl: newInstagram,
+        linkedinUrl: newLinkedin,
+        youtubeUrl: newYoutube,
         githubUrl: newGithub,
       });
 
@@ -578,6 +638,10 @@ import SupportModal from '../components/SupportModal.astro';
           avatarId: newAvatarId,
           tagline: newTagline,
           websiteUrl: newWebsite,
+          twitterUrl: newTwitter,
+          instagramUrl: newInstagram,
+          linkedinUrl: newLinkedin,
+          youtubeUrl: newYoutube,
           githubUrl: newGithub,
         };
 
@@ -586,6 +650,10 @@ import SupportModal from '../components/SupportModal.astro';
           myCitizen.avatarId = updated.avatarId;
           myCitizen.tagline = updated.tagline;
           myCitizen.websiteUrl = updated.websiteUrl;
+          myCitizen.twitterUrl = updated.twitterUrl;
+          myCitizen.instagramUrl = updated.instagramUrl;
+          myCitizen.linkedinUrl = updated.linkedinUrl;
+          myCitizen.youtubeUrl = updated.youtubeUrl;
           myCitizen.githubUrl = updated.githubUrl;
         }
 
@@ -600,6 +668,10 @@ import SupportModal from '../components/SupportModal.astro';
           spotItem.avatarId = updated.avatarId;
           spotItem.tagline = updated.tagline;
           spotItem.websiteUrl = updated.websiteUrl;
+          spotItem.twitterUrl = updated.twitterUrl;
+          spotItem.instagramUrl = updated.instagramUrl;
+          spotItem.linkedinUrl = updated.linkedinUrl;
+          spotItem.youtubeUrl = updated.youtubeUrl;
           spotItem.githubUrl = updated.githubUrl;
         }
 
@@ -952,6 +1024,10 @@ import SupportModal from '../components/SupportModal.astro';
         avatarId: selectedAvatarId,
         tagline: inputTagline.value.trim() || undefined,
         websiteUrl: inputWebsite.value.trim() || undefined,
+        twitterUrl: inputTwitter.value.trim() || undefined,
+        instagramUrl: inputInstagram.value.trim() || undefined,
+        linkedinUrl: inputLinkedin.value.trim() || undefined,
+        youtubeUrl: inputYoutube.value.trim() || undefined,
         githubUrl: inputGithub.value.trim() || undefined,
       });
 
@@ -967,6 +1043,10 @@ import SupportModal from '../components/SupportModal.astro';
         avatarId: res.citizen.avatarId,
         tagline: res.citizen.tagline,
         websiteUrl: res.citizen.websiteUrl,
+        twitterUrl: res.citizen.twitterUrl,
+        instagramUrl: res.citizen.instagramUrl,
+        linkedinUrl: res.citizen.linkedinUrl,
+        youtubeUrl: res.citizen.youtubeUrl,
         githubUrl: res.citizen.githubUrl,
         isOnline: true,
       };

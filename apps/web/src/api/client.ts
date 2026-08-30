@@ -97,11 +97,23 @@ export async function syncGithubAuth(data: {
   return await fetchSessionDirect();
 }
 
+export interface ClaimInputData {
+  displayName: string;
+  avatarId: string;
+  tagline?: string;
+  websiteUrl?: string;
+  githubUrl?: string;
+  twitterUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  linkedinUrl?: string;
+}
+
 export async function claimSpot(
-  spotIdOrInput: string | { x: number; y: number; displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string },
-  optionalInput?: { displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string }
+  spotIdOrInput: string | ({ x: number; y: number } & ClaimInputData),
+  optionalInput?: ClaimInputData
 ): Promise<ClaimSpotResponse> {
-  let finalInput: { x: number; y: number; displayName: string; avatarId: string; tagline?: string; websiteUrl?: string; githubUrl?: string };
+  let finalInput: { x: number; y: number } & ClaimInputData;
   if (typeof spotIdOrInput === 'string') {
     const [x, y] = spotIdOrInput.split(',').map(Number);
     finalInput = { x, y, ...optionalInput! };

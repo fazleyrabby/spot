@@ -58,7 +58,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
     .select(`
       id, x, y, owner_id, claimed_at,
       citizens:citizens!spots_owner_id_fkey (
-        id, display_name, avatar_id, tagline, website_url, github_url, linkedin_url
+        id, display_name, avatar_id, tagline, website_url, github_url, twitter_url, instagram_url, youtube_url, linkedin_url
       )
     `)
     .not('owner_id', 'is', null);
@@ -79,6 +79,9 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
       tagline: c?.tagline || undefined,
       websiteUrl: c?.website_url || undefined,
       githubUrl: c?.github_url || undefined,
+      twitterUrl: c?.twitter_url || undefined,
+      instagramUrl: c?.instagram_url || undefined,
+      youtubeUrl: c?.youtube_url || undefined,
       linkedinUrl: c?.linkedin_url || undefined,
       isOnline: true,
     };
@@ -219,6 +222,25 @@ export async function fetchSessionDirect(): Promise<{
   return { authenticated: true, citizen, ownedSpot };
 }
 
+export function formatSocialUrl(val?: string, platform?: 'twitter' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'): string | undefined {
+  if (!val) return undefined;
+  let clean = val.trim();
+  if (!clean) return undefined;
+
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
+
+  clean = clean.replace(/^@/, '');
+  switch (platform) {
+    case 'twitter': return `https://x.com/${clean}`;
+    case 'instagram': return `https://instagram.com/${clean}`;
+    case 'youtube': return clean.startsWith('UC') || clean.startsWith('@') ? `https://youtube.com/${clean}` : `https://youtube.com/@${clean}`;
+    case 'github': return `https://github.com/${clean}`;
+    case 'linkedin': return clean.startsWith('in/') ? `https://linkedin.com/${clean}` : `https://linkedin.com/in/${clean}`;
+    case 'website': return `https://${clean}`;
+    default: return clean;
+  }
+}
+
 /**
  * DIRECT SUPABASE MODE: Claim spot directly in Supabase
  */
@@ -230,6 +252,10 @@ export async function claimSpotDirect(input: {
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;
+  twitterUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  linkedinUrl?: string;
 }): Promise<{
   success: boolean;
   spot: { id: string; x: number; y: number; ownerId: string; claimedAt: string };
@@ -280,14 +306,25 @@ export async function claimSpotDirect(input: {
   const tokenHash = 'direct_auth_' + Math.random().toString(36).substring(2, 16);
   const clientIp = await getClientIp();
 
+  const formattedWebsite = formatSocialUrl(input.websiteUrl, 'website');
+  const formattedGithub = formatSocialUrl(ghUsername, 'github');
+  const formattedTwitter = formatSocialUrl(input.twitterUrl, 'twitter');
+  const formattedInstagram = formatSocialUrl(input.instagramUrl, 'instagram');
+  const formattedYoutube = formatSocialUrl(input.youtubeUrl, 'youtube');
+  const formattedLinkedin = formatSocialUrl(input.linkedinUrl, 'linkedin');
+
   const citizenPayload: any = {
     id: citizenId,
     session_token_hash: tokenHash,
     display_name: input.displayName.trim(),
     avatar_id: input.avatarId,
     tagline: input.tagline?.trim() || null,
-    website_url: input.websiteUrl?.trim() || null,
-    github_url: ghUsername || null,
+    website_url: formattedWebsite || null,
+    github_url: formattedGithub || null,
+    twitter_url: formattedTwitter || null,
+    instagram_url: formattedInstagram || null,
+    youtube_url: formattedYoutube || null,
+    linkedin_url: formattedLinkedin || null,
     updated_at: new Date().toISOString(),
   };
   if (clientIp) citizenPayload.ip_address = clientIp;
@@ -299,9 +336,14 @@ export async function claimSpotDirect(input: {
     .select()
     .single();
 
-  if (citErr && (citErr.code === '42703' || citErr.message?.includes('ip_address') || citErr.message?.includes('device_fingerprint'))) {
+  if (citErr && citErr.code === '42703') {
+    // Retry omitting non-essential custom columns if migration hasn't been run yet
     delete citizenPayload.ip_address;
     delete citizenPayload.device_fingerprint;
+    delete citizenPayload.twitter_url;
+    delete citizenPayload.instagram_url;
+    delete citizenPayload.youtube_url;
+    delete citizenPayload.linkedin_url;
     const retry = await supabase
       .from('citizens')
       .upsert(citizenPayload)
@@ -340,6 +382,10 @@ export async function claimSpotDirect(input: {
     tagline: citizenData.tagline || undefined,
     websiteUrl: citizenData.website_url || undefined,
     githubUrl: citizenData.github_url || undefined,
+    twitterUrl: citizenData.twitter_url || undefined,
+    instagramUrl: citizenData.instagram_url || undefined,
+    youtubeUrl: citizenData.youtube_url || undefined,
+    linkedinUrl: citizenData.linkedin_url || undefined,
     createdAt: citizenData.created_at,
     updatedAt: citizenData.updated_at,
   };
@@ -364,19 +410,40 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
   const session = await fetchSessionDirect();
   if (!session.citizen) throw new Error('Citizen not authenticated');
 
-  const { data, error } = await supabase
+  const updatePayload: any = {
+    display_name: profile.displayName || session.citizen.displayName,
+    avatar_id: profile.avatarId || session.citizen.avatarId,
+    tagline: profile.tagline !== undefined ? profile.tagline : session.citizen.tagline,
+    website_url: profile.websiteUrl !== undefined ? formatSocialUrl(profile.websiteUrl, 'website') : session.citizen.websiteUrl,
+    github_url: profile.githubUrl !== undefined ? formatSocialUrl(profile.githubUrl, 'github') : session.citizen.githubUrl,
+    twitter_url: profile.twitterUrl !== undefined ? formatSocialUrl(profile.twitterUrl, 'twitter') : session.citizen.twitterUrl,
+    instagram_url: profile.instagramUrl !== undefined ? formatSocialUrl(profile.instagramUrl, 'instagram') : session.citizen.instagramUrl,
+    youtube_url: profile.youtubeUrl !== undefined ? formatSocialUrl(profile.youtubeUrl, 'youtube') : session.citizen.youtubeUrl,
+    linkedin_url: profile.linkedinUrl !== undefined ? formatSocialUrl(profile.linkedinUrl, 'linkedin') : session.citizen.linkedinUrl,
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data, error } = await supabase
     .from('citizens')
-    .update({
-      display_name: profile.displayName || session.citizen.displayName,
-      avatar_id: profile.avatarId || session.citizen.avatarId,
-      tagline: profile.tagline !== undefined ? profile.tagline : session.citizen.tagline,
-      website_url: profile.websiteUrl !== undefined ? profile.websiteUrl : session.citizen.websiteUrl,
-      github_url: profile.githubUrl !== undefined ? profile.githubUrl : session.citizen.githubUrl,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', session.citizen.id)
     .select()
     .single();
+
+  if (error && error.code === '42703') {
+    delete updatePayload.twitter_url;
+    delete updatePayload.instagram_url;
+    delete updatePayload.youtube_url;
+    delete updatePayload.linkedin_url;
+    const retry = await supabase
+      .from('citizens')
+      .update(updatePayload)
+      .eq('id', session.citizen.id)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) throw error;
 
@@ -389,6 +456,10 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
       tagline: data.tagline || undefined,
       websiteUrl: data.website_url || undefined,
       githubUrl: data.github_url || undefined,
+      twitterUrl: data.twitter_url || undefined,
+      instagramUrl: data.instagram_url || undefined,
+      youtubeUrl: data.youtube_url || undefined,
+      linkedinUrl: data.linkedin_url || undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     },
