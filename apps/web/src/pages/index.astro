@@ -72,6 +72,7 @@ import SupportModal from '../components/SupportModal.astro';
   const linkWebsite = document.getElementById('link-website') as HTMLAnchorElement;
   const linkWebsiteText = document.getElementById('link-website-text');
   const linkTwitter = document.getElementById('link-twitter') as HTMLAnchorElement;
+  const linkFacebook = document.getElementById('link-facebook') as HTMLAnchorElement;
   const linkInstagram = document.getElementById('link-instagram') as HTMLAnchorElement;
   const linkLinkedin = document.getElementById('link-linkedin') as HTMLAnchorElement;
   const linkYoutube = document.getElementById('link-youtube') as HTMLAnchorElement;
@@ -87,6 +88,7 @@ import SupportModal from '../components/SupportModal.astro';
   const editTagline = document.getElementById('edit-tagline') as HTMLInputElement;
   const editWebsite = document.getElementById('edit-website') as HTMLInputElement;
   const editTwitter = document.getElementById('edit-twitter') as HTMLInputElement;
+  const editFacebook = document.getElementById('edit-facebook') as HTMLInputElement;
   const editInstagram = document.getElementById('edit-instagram') as HTMLInputElement;
   const editLinkedin = document.getElementById('edit-linkedin') as HTMLInputElement;
   const editYoutube = document.getElementById('edit-youtube') as HTMLInputElement;
@@ -105,6 +107,7 @@ import SupportModal from '../components/SupportModal.astro';
   const inputTagline = document.getElementById('input-tagline') as HTMLInputElement;
   const inputWebsite = document.getElementById('input-website') as HTMLInputElement;
   const inputTwitter = document.getElementById('input-twitter') as HTMLInputElement;
+  const inputFacebook = document.getElementById('input-facebook') as HTMLInputElement;
   const inputInstagram = document.getElementById('input-instagram') as HTMLInputElement;
   const inputLinkedin = document.getElementById('input-linkedin') as HTMLInputElement;
   const inputYoutube = document.getElementById('input-youtube') as HTMLInputElement;
@@ -480,6 +483,15 @@ import SupportModal from '../components/SupportModal.astro';
       }
     }
 
+    if (linkFacebook) {
+      if (occupied.facebookUrl) {
+        linkFacebook.href = occupied.facebookUrl;
+        linkFacebook.style.display = 'inline-flex';
+      } else {
+        linkFacebook.style.display = 'none';
+      }
+    }
+
     if (linkInstagram) {
       if (occupied.instagramUrl) {
         linkInstagram.href = occupied.instagramUrl;
@@ -587,6 +599,7 @@ import SupportModal from '../components/SupportModal.astro';
     editTagline.value = cit.tagline || '';
     editWebsite.value = cit.websiteUrl || '';
     editTwitter.value = cit.twitterUrl || '';
+    editFacebook.value = cit.facebookUrl || '';
     editInstagram.value = cit.instagramUrl || '';
     editLinkedin.value = cit.linkedinUrl || '';
     editYoutube.value = cit.youtubeUrl || '';
@@ -613,6 +626,7 @@ import SupportModal from '../components/SupportModal.astro';
     const newTagline = editTagline.value.trim() || undefined;
     const newWebsite = editWebsite.value.trim() || undefined;
     const newTwitter = editTwitter.value.trim() || undefined;
+    const newFacebook = editFacebook.value.trim() || undefined;
     const newInstagram = editInstagram.value.trim() || undefined;
     const newLinkedin = editLinkedin.value.trim() || undefined;
     const newYoutube = editYoutube.value.trim() || undefined;
@@ -625,6 +639,7 @@ import SupportModal from '../components/SupportModal.astro';
         tagline: newTagline,
         websiteUrl: newWebsite,
         twitterUrl: newTwitter,
+        facebookUrl: newFacebook,
         instagramUrl: newInstagram,
         linkedinUrl: newLinkedin,
         youtubeUrl: newYoutube,
@@ -639,6 +654,7 @@ import SupportModal from '../components/SupportModal.astro';
           tagline: newTagline,
           websiteUrl: newWebsite,
           twitterUrl: newTwitter,
+          facebookUrl: newFacebook,
           instagramUrl: newInstagram,
           linkedinUrl: newLinkedin,
           youtubeUrl: newYoutube,
@@ -651,6 +667,7 @@ import SupportModal from '../components/SupportModal.astro';
           myCitizen.tagline = updated.tagline;
           myCitizen.websiteUrl = updated.websiteUrl;
           myCitizen.twitterUrl = updated.twitterUrl;
+          myCitizen.facebookUrl = updated.facebookUrl;
           myCitizen.instagramUrl = updated.instagramUrl;
           myCitizen.linkedinUrl = updated.linkedinUrl;
           myCitizen.youtubeUrl = updated.youtubeUrl;
@@ -669,6 +686,7 @@ import SupportModal from '../components/SupportModal.astro';
           spotItem.tagline = updated.tagline;
           spotItem.websiteUrl = updated.websiteUrl;
           spotItem.twitterUrl = updated.twitterUrl;
+          spotItem.facebookUrl = updated.facebookUrl;
           spotItem.instagramUrl = updated.instagramUrl;
           spotItem.linkedinUrl = updated.linkedinUrl;
           spotItem.youtubeUrl = updated.youtubeUrl;
@@ -1025,6 +1043,7 @@ import SupportModal from '../components/SupportModal.astro';
         tagline: inputTagline.value.trim() || undefined,
         websiteUrl: inputWebsite.value.trim() || undefined,
         twitterUrl: inputTwitter.value.trim() || undefined,
+        facebookUrl: inputFacebook.value.trim() || undefined,
         instagramUrl: inputInstagram.value.trim() || undefined,
         linkedinUrl: inputLinkedin.value.trim() || undefined,
         youtubeUrl: inputYoutube.value.trim() || undefined,
@@ -1044,6 +1063,7 @@ import SupportModal from '../components/SupportModal.astro';
         tagline: res.citizen.tagline,
         websiteUrl: res.citizen.websiteUrl,
         twitterUrl: res.citizen.twitterUrl,
+        facebookUrl: res.citizen.facebookUrl,
         instagramUrl: res.citizen.instagramUrl,
         linkedinUrl: res.citizen.linkedinUrl,
         youtubeUrl: res.citizen.youtubeUrl,

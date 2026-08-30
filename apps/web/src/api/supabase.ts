@@ -61,7 +61,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
     .select(`
       id, x, y, owner_id, claimed_at,
       citizens:citizens!spots_owner_id_fkey (
-        id, display_name, avatar_id, tagline, website_url, github_url, twitter_url, instagram_url, youtube_url, linkedin_url
+        id, display_name, avatar_id, tagline, website_url, github_url, twitter_url, facebook_url, instagram_url, youtube_url, linkedin_url
       )
     `)
     .not('owner_id', 'is', null);
@@ -101,6 +101,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
       websiteUrl: c?.website_url || undefined,
       githubUrl: c?.github_url || undefined,
       twitterUrl: c?.twitter_url || undefined,
+      facebookUrl: c?.facebook_url || undefined,
       instagramUrl: c?.instagram_url || undefined,
       youtubeUrl: c?.youtube_url || undefined,
       linkedinUrl: c?.linkedin_url || undefined,
@@ -243,7 +244,7 @@ export async function fetchSessionDirect(): Promise<{
   return { authenticated: true, citizen, ownedSpot };
 }
 
-export function formatSocialUrl(val?: string, platform?: 'twitter' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'): string | undefined {
+export function formatSocialUrl(val?: string, platform?: 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'): string | undefined {
   if (!val) return undefined;
   let clean = val.trim();
   if (!clean) return undefined;
@@ -253,6 +254,7 @@ export function formatSocialUrl(val?: string, platform?: 'twitter' | 'instagram'
   clean = clean.replace(/^@/, '');
   switch (platform) {
     case 'twitter': return `https://x.com/${clean}`;
+    case 'facebook': return clean.startsWith('profile.php') ? `https://facebook.com/${clean}` : `https://facebook.com/${clean}`;
     case 'instagram': return `https://instagram.com/${clean}`;
     case 'youtube': return clean.startsWith('UC') || clean.startsWith('@') ? `https://youtube.com/${clean}` : `https://youtube.com/@${clean}`;
     case 'github': return `https://github.com/${clean}`;
@@ -274,6 +276,7 @@ export async function claimSpotDirect(input: {
   websiteUrl?: string;
   githubUrl?: string;
   twitterUrl?: string;
+  facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
@@ -330,6 +333,7 @@ export async function claimSpotDirect(input: {
   const formattedWebsite = formatSocialUrl(input.websiteUrl, 'website');
   const formattedGithub = formatSocialUrl(ghUsername, 'github');
   const formattedTwitter = formatSocialUrl(input.twitterUrl, 'twitter');
+  const formattedFacebook = formatSocialUrl(input.facebookUrl, 'facebook');
   const formattedInstagram = formatSocialUrl(input.instagramUrl, 'instagram');
   const formattedYoutube = formatSocialUrl(input.youtubeUrl, 'youtube');
   const formattedLinkedin = formatSocialUrl(input.linkedinUrl, 'linkedin');
@@ -343,6 +347,7 @@ export async function claimSpotDirect(input: {
     website_url: formattedWebsite || null,
     github_url: formattedGithub || null,
     twitter_url: formattedTwitter || null,
+    facebook_url: formattedFacebook || null,
     instagram_url: formattedInstagram || null,
     youtube_url: formattedYoutube || null,
     linkedin_url: formattedLinkedin || null,
@@ -362,6 +367,7 @@ export async function claimSpotDirect(input: {
     delete citizenPayload.ip_address;
     delete citizenPayload.device_fingerprint;
     delete citizenPayload.twitter_url;
+    delete citizenPayload.facebook_url;
     delete citizenPayload.instagram_url;
     delete citizenPayload.youtube_url;
     delete citizenPayload.linkedin_url;
@@ -404,6 +410,7 @@ export async function claimSpotDirect(input: {
     websiteUrl: citizenData.website_url || undefined,
     githubUrl: citizenData.github_url || undefined,
     twitterUrl: citizenData.twitter_url || undefined,
+    facebookUrl: citizenData.facebook_url || undefined,
     instagramUrl: citizenData.instagram_url || undefined,
     youtubeUrl: citizenData.youtube_url || undefined,
     linkedinUrl: citizenData.linkedin_url || undefined,
@@ -438,6 +445,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
     website_url: profile.websiteUrl !== undefined ? formatSocialUrl(profile.websiteUrl, 'website') : session.citizen.websiteUrl,
     github_url: profile.githubUrl !== undefined ? formatSocialUrl(profile.githubUrl, 'github') : session.citizen.githubUrl,
     twitter_url: profile.twitterUrl !== undefined ? formatSocialUrl(profile.twitterUrl, 'twitter') : session.citizen.twitterUrl,
+    facebook_url: profile.facebookUrl !== undefined ? formatSocialUrl(profile.facebookUrl, 'facebook') : (session.citizen as any).facebookUrl,
     instagram_url: profile.instagramUrl !== undefined ? formatSocialUrl(profile.instagramUrl, 'instagram') : session.citizen.instagramUrl,
     youtube_url: profile.youtubeUrl !== undefined ? formatSocialUrl(profile.youtubeUrl, 'youtube') : session.citizen.youtubeUrl,
     linkedin_url: profile.linkedinUrl !== undefined ? formatSocialUrl(profile.linkedinUrl, 'linkedin') : session.citizen.linkedinUrl,
@@ -453,6 +461,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
 
   if (error && error.code === '42703') {
     delete updatePayload.twitter_url;
+    delete updatePayload.facebook_url;
     delete updatePayload.instagram_url;
     delete updatePayload.youtube_url;
     delete updatePayload.linkedin_url;
@@ -478,6 +487,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
       websiteUrl: data.website_url || undefined,
       githubUrl: data.github_url || undefined,
       twitterUrl: data.twitter_url || undefined,
+      facebookUrl: data.facebook_url || undefined,
       instagramUrl: data.instagram_url || undefined,
       youtubeUrl: data.youtube_url || undefined,
       linkedinUrl: data.linkedin_url || undefined,
