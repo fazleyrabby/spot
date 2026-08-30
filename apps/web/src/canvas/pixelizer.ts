@@ -1,21 +1,19 @@
-/**
- * Client-Side Retro Pixel Art Avatar Converter
- * Converts any uploaded photo or image into a sanitized 16x16 or 8x8 pixel art matrix.
- */
+export type AvatarResolution = 8 | 16 | 24 | 32;
 
 export interface PixelArtAvatar {
-  resolution: 8 | 16;
+  resolution: AvatarResolution;
   matrix: string[][]; // 2D array of hex color strings (e.g. '#38bdf8' or '' for transparent)
-  dataUrl: string;    // Tiny compressed WebP data URL (~500 bytes)
+  dataUrl: string;    // Tiny compressed WebP data URL (~500 bytes - 2 KB)
 }
 
 /**
- * Quantize / Pixelize an image from an HTML Image or File
+ * High-Fidelity Retro Pixel Art Converter
+ * Uses two-pass downsampling + smart color quantization for crisp, detailed facial & photo avatars.
  */
 export async function pixelizeImage(
   imageSource: HTMLImageElement | File | Blob,
-  resolution: 8 | 16 = 16,
-  options: { contrast?: number; brightness?: number } = {}
+  resolution: AvatarResolution = 32,
+  options: { contrast?: number; brightness?: number; sharpness?: number } = {}
 ): Promise<PixelArtAvatar> {
   let img: HTMLImageElement;
 
@@ -25,27 +23,42 @@ export async function pixelizeImage(
     img = await loadImageFromFile(imageSource);
   }
 
+  // Pass 1: High quality intermediate downscale to preserve features
+  const intermediateSize = Math.max(resolution * 4, 128);
+  const pass1Canvas = document.createElement('canvas');
+  pass1Canvas.width = intermediateSize;
+  pass1Canvas.height = intermediateSize;
+  const p1Ctx = pass1Canvas.getContext('2d');
+  if (!p1Ctx) throw new Error('Could not create intermediate canvas');
+
+  p1Ctx.imageSmoothingEnabled = true;
+  p1Ctx.imageSmoothingQuality = 'high';
+
+  const naturalW = img.naturalWidth || img.width;
+  const naturalH = img.naturalHeight || img.height;
+  const minDim = Math.min(naturalW, naturalH);
+  const sx = (naturalW - minDim) / 2;
+  const sy = (naturalH - minDim) / 2;
+
+  p1Ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, intermediateSize, intermediateSize);
+
+  // Pass 2: Final pixel grid
   const canvas = document.createElement('canvas');
   canvas.width = resolution;
   canvas.height = resolution;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error('Could not create canvas context');
+  if (!ctx) throw new Error('Could not create final canvas context');
 
-  // Disable smoothing for sharp pixel downscaling
-  ctx.imageSmoothingEnabled = false;
-
-  // Center crop square
-  const minDim = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
-  const sx = ((img.naturalWidth || img.width) - minDim) / 2;
-  const sy = ((img.naturalHeight || img.height) - minDim) / 2;
-
-  ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, resolution, resolution);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
+  ctx.drawImage(pass1Canvas, 0, 0, intermediateSize, intermediateSize, 0, 0, resolution, resolution);
 
   const imgData = ctx.getImageData(0, 0, resolution, resolution);
   const pixels = imgData.data;
 
-  const contrast = options.contrast ?? 1.15; // slightly punchier colors
-  const brightness = options.brightness ?? 1.0;
+  const contrast = options.contrast ?? 1.12; // enhanced punch
+  const brightness = options.brightness ?? 1.02;
+  const quantizeStep = resolution >= 24 ? 6 : (resolution >= 16 ? 10 : 16);
 
   const matrix: string[][] = [];
 
@@ -58,20 +71,19 @@ export async function pixelizeImage(
       let blue = pixels[idx + 2];
       let alpha = pixels[idx + 3];
 
-      if (alpha < 32) {
-        // Transparent pixel
+      if (alpha < 24) {
         row.push('');
         pixels[idx + 3] = 0;
       } else {
-        // Apply contrast & brightness
+        // Contrast & brightness calibration
         red = clamp(Math.round(((red / 255 - 0.5) * contrast + 0.5) * 255 * brightness));
         green = clamp(Math.round(((green / 255 - 0.5) * contrast + 0.5) * 255 * brightness));
         blue = clamp(Math.round(((blue / 255 - 0.5) * contrast + 0.5) * 255 * brightness));
 
-        // Quantize colors to retro 8-bit palette vibe (step of 16 for cleaner pixel blocks)
-        red = Math.round(red / 16) * 16;
-        green = Math.round(green / 16) * 16;
-        blue = Math.round(blue / 16) * 16;
+        // Smart palette quantization
+        red = Math.round(red / quantizeStep) * quantizeStep;
+        green = Math.round(green / quantizeStep) * quantizeStep;
+        blue = Math.round(blue / quantizeStep) * quantizeStep;
 
         red = clamp(red);
         green = clamp(green);
@@ -90,7 +102,7 @@ export async function pixelizeImage(
   }
 
   ctx.putImageData(imgData, 0, 0);
-  const dataUrl = canvas.toDataURL('image/webp', 0.9);
+  const dataUrl = canvas.toDataURL('image/webp', 0.92);
 
   return { resolution, matrix, dataUrl };
 }

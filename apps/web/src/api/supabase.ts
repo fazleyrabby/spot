@@ -270,6 +270,11 @@ export function formatSocialUrl(val?: string, platform?: 'twitter' | 'facebook' 
   }
 }
 
+function isColumnMissingError(err: any): boolean {
+  if (!err) return false;
+  return err.code === '42703' || err.code === 'PGRST204' || err.message?.includes('schema cache') || err.message?.includes('column');
+}
+
 /**
  * DIRECT SUPABASE MODE: Claim spot directly in Supabase
  */
@@ -370,7 +375,7 @@ export async function claimSpotDirect(input: {
     .select()
     .single();
 
-  if (citErr && citErr.code === '42703') {
+  if (citErr && isColumnMissingError(citErr)) {
     // Retry omitting non-essential custom columns if migration hasn't been run yet
     delete citizenPayload.ip_address;
     delete citizenPayload.device_fingerprint;
@@ -470,7 +475,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
     .select()
     .single();
 
-  if (error && error.code === '42703') {
+  if (error && isColumnMissingError(error)) {
     delete updatePayload.custom_avatar_data;
     delete updatePayload.twitter_url;
     delete updatePayload.facebook_url;

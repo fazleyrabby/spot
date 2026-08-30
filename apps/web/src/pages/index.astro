@@ -118,25 +118,33 @@ import SupportModal from '../components/SupportModal.astro';
   const inputCustomAvatarFile = document.getElementById('input-custom-avatar-file') as HTMLInputElement;
   const claimCustomPreviewBox = document.getElementById('claim-custom-preview-box');
   const claimCustomPreviewCanvas = document.getElementById('claim-custom-preview-canvas') as HTMLCanvasElement;
+  const btnClaimRes32 = document.getElementById('btn-claim-res-32') as HTMLButtonElement;
   const btnClaimRes16 = document.getElementById('btn-claim-res-16') as HTMLButtonElement;
   const btnClaimRes8 = document.getElementById('btn-claim-res-8') as HTMLButtonElement;
   const btnClaimRemoveCustom = document.getElementById('btn-claim-remove-custom') as HTMLButtonElement;
+  const spinnerClaimUpload = document.getElementById('spinner-claim-upload');
+  const txtClaimUploadLabel = document.getElementById('txt-claim-upload-label');
+  const iconClaimUpload = document.getElementById('icon-claim-upload');
 
   // Custom Avatar Elements (Edit Modal)
   const inputEditCustomAvatarFile = document.getElementById('edit-custom-avatar-file') as HTMLInputElement;
   const editCustomPreviewBox = document.getElementById('edit-custom-preview-box');
   const editCustomPreviewCanvas = document.getElementById('edit-custom-preview-canvas') as HTMLCanvasElement;
+  const btnEditRes32 = document.getElementById('btn-edit-res-32') as HTMLButtonElement;
   const btnEditRes16 = document.getElementById('btn-edit-res-16') as HTMLButtonElement;
   const btnEditRes8 = document.getElementById('btn-edit-res-8') as HTMLButtonElement;
   const btnEditRemoveCustom = document.getElementById('btn-edit-remove-custom') as HTMLButtonElement;
+  const spinnerEditUpload = document.getElementById('spinner-edit-upload');
+  const txtEditUploadLabel = document.getElementById('txt-edit-upload-label');
+  const iconEditUpload = document.getElementById('icon-edit-upload');
 
   let claimCustomAvatarData: string | null = null;
   let claimCustomAvatarFile: File | null = null;
-  let claimCustomRes: 8 | 16 = 16;
+  let claimCustomRes: 8 | 16 | 24 | 32 = 32;
 
   let editCustomAvatarData: string | null = null;
   let editCustomAvatarFile: File | null = null;
-  let editCustomRes: 8 | 16 = 16;
+  let editCustomRes: 8 | 16 | 24 | 32 = 32;
 
   // Search Modal Elements
   const searchBackdrop = document.getElementById('search-modal-backdrop');
@@ -1031,8 +1039,14 @@ import SupportModal from '../components/SupportModal.astro';
     const file = inputCustomAvatarFile.files?.[0];
     if (!file) return;
     claimCustomAvatarFile = file;
+
+    // Loading State
+    if (spinnerClaimUpload) spinnerClaimUpload.style.display = 'inline-block';
+    if (iconClaimUpload) iconClaimUpload.style.display = 'none';
+    if (txtClaimUploadLabel) txtClaimUploadLabel.textContent = 'Processing Avatar...';
+
     try {
-      showToast('🎨 Converting photo to 8-bit avatar...', 'info');
+      showToast('🎨 Converting photo to crisp pixel art...', 'info');
       const result = await pixelizeImage(file, claimCustomRes);
       claimCustomAvatarData = result.dataUrl;
 
@@ -1044,47 +1058,43 @@ import SupportModal from '../components/SupportModal.astro';
           drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
         }
       }
-      showToast('✨ 8-bit avatar generated!', 'success');
+      showToast('✨ Custom pixel avatar ready!', 'success');
     } catch (err) {
       showToast('Failed to process image', 'error');
+    } finally {
+      if (spinnerClaimUpload) spinnerClaimUpload.style.display = 'none';
+      if (iconClaimUpload) iconClaimUpload.style.display = 'inline-block';
+      if (txtClaimUploadLabel) txtClaimUploadLabel.textContent = 'Change Custom Photo';
     }
   });
 
-  btnClaimRes16?.addEventListener('click', async () => {
-    claimCustomRes = 16;
-    btnClaimRes16.classList.add('active');
-    btnClaimRes8?.classList.remove('active');
+  function setClaimRes(res: 8 | 16 | 32) {
+    claimCustomRes = res;
+    btnClaimRes32?.classList.toggle('active', res === 32);
+    btnClaimRes16?.classList.toggle('active', res === 16);
+    btnClaimRes8?.classList.toggle('active', res === 8);
     if (claimCustomAvatarFile) {
-      const result = await pixelizeImage(claimCustomAvatarFile, 16);
-      claimCustomAvatarData = result.dataUrl;
-      const ctx = claimCustomPreviewCanvas?.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, 64, 64);
-        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
-      }
+      pixelizeImage(claimCustomAvatarFile, res).then(result => {
+        claimCustomAvatarData = result.dataUrl;
+        const ctx = claimCustomPreviewCanvas?.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, 64, 64);
+          drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+        }
+      });
     }
-  });
+  }
 
-  btnClaimRes8?.addEventListener('click', async () => {
-    claimCustomRes = 8;
-    btnClaimRes8.classList.add('active');
-    btnClaimRes16?.classList.remove('active');
-    if (claimCustomAvatarFile) {
-      const result = await pixelizeImage(claimCustomAvatarFile, 8);
-      claimCustomAvatarData = result.dataUrl;
-      const ctx = claimCustomPreviewCanvas?.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, 64, 64);
-        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
-      }
-    }
-  });
+  btnClaimRes32?.addEventListener('click', () => setClaimRes(32));
+  btnClaimRes16?.addEventListener('click', () => setClaimRes(16));
+  btnClaimRes8?.addEventListener('click', () => setClaimRes(8));
 
   btnClaimRemoveCustom?.addEventListener('click', () => {
     claimCustomAvatarData = null;
     claimCustomAvatarFile = null;
     if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
     if (inputCustomAvatarFile) inputCustomAvatarFile.value = '';
+    if (txtClaimUploadLabel) txtClaimUploadLabel.textContent = 'Upload Photo → Pixel Avatar';
     renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => { selectedAvatarId = id; });
   });
 
@@ -1093,8 +1103,14 @@ import SupportModal from '../components/SupportModal.astro';
     const file = inputEditCustomAvatarFile.files?.[0];
     if (!file) return;
     editCustomAvatarFile = file;
+
+    // Loading State
+    if (spinnerEditUpload) spinnerEditUpload.style.display = 'inline-block';
+    if (iconEditUpload) iconEditUpload.style.display = 'none';
+    if (txtEditUploadLabel) txtEditUploadLabel.textContent = 'Processing Avatar...';
+
     try {
-      showToast('🎨 Converting photo to 8-bit avatar...', 'info');
+      showToast('🎨 Converting photo to crisp pixel art...', 'info');
       const result = await pixelizeImage(file, editCustomRes);
       editCustomAvatarData = result.dataUrl;
 
@@ -1106,47 +1122,43 @@ import SupportModal from '../components/SupportModal.astro';
           drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
         }
       }
-      showToast('✨ 8-bit avatar generated!', 'success');
+      showToast('✨ Custom pixel avatar ready!', 'success');
     } catch (err) {
       showToast('Failed to process image', 'error');
+    } finally {
+      if (spinnerEditUpload) spinnerEditUpload.style.display = 'none';
+      if (iconEditUpload) iconEditUpload.style.display = 'inline-block';
+      if (txtEditUploadLabel) txtEditUploadLabel.textContent = 'Change Custom Photo';
     }
   });
 
-  btnEditRes16?.addEventListener('click', async () => {
-    editCustomRes = 16;
-    btnEditRes16.classList.add('active');
-    btnEditRes8?.classList.remove('active');
+  function setEditRes(res: 8 | 16 | 32) {
+    editCustomRes = res;
+    btnEditRes32?.classList.toggle('active', res === 32);
+    btnEditRes16?.classList.toggle('active', res === 16);
+    btnEditRes8?.classList.toggle('active', res === 8);
     if (editCustomAvatarFile) {
-      const result = await pixelizeImage(editCustomAvatarFile, 16);
-      editCustomAvatarData = result.dataUrl;
-      const ctx = editCustomPreviewCanvas?.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, 64, 64);
-        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
-      }
+      pixelizeImage(editCustomAvatarFile, res).then(result => {
+        editCustomAvatarData = result.dataUrl;
+        const ctx = editCustomPreviewCanvas?.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, 64, 64);
+          drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+        }
+      });
     }
-  });
+  }
 
-  btnEditRes8?.addEventListener('click', async () => {
-    editCustomRes = 8;
-    btnEditRes8.classList.add('active');
-    btnEditRes16?.classList.remove('active');
-    if (editCustomAvatarFile) {
-      const result = await pixelizeImage(editCustomAvatarFile, 8);
-      editCustomAvatarData = result.dataUrl;
-      const ctx = editCustomPreviewCanvas?.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, 64, 64);
-        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
-      }
-    }
-  });
+  btnEditRes32?.addEventListener('click', () => setEditRes(32));
+  btnEditRes16?.addEventListener('click', () => setEditRes(16));
+  btnEditRes8?.addEventListener('click', () => setEditRes(8));
 
   btnEditRemoveCustom?.addEventListener('click', () => {
     editCustomAvatarData = null;
     editCustomAvatarFile = null;
     if (editCustomPreviewBox) editCustomPreviewBox.style.display = 'none';
     if (inputEditCustomAvatarFile) inputEditCustomAvatarFile.value = '';
+    if (txtEditUploadLabel) txtEditUploadLabel.textContent = 'Upload Photo → Pixel Avatar';
     renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
   });
 
