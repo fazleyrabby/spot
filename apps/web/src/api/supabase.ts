@@ -6,6 +6,10 @@ import { getDeviceFingerprint } from './fingerprint.js';
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://koqodifauvvemouhnjqz.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvcW9kaWZhdXZ2ZW1vdWhuanF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMTk5ODYsImV4cCI6MjEwMzU5NTk4Nn0.hCknsp_62Qj0bj3Vlhe5gNftDYMiNGSv1vZa-Ib9OlI';
 
+// Columns anon is allowed to read after the RLS lockdown (server-only columns like
+// session_token_hash, github_id, email, device_fingerprint are revoked from anon).
+const CITIZEN_SAFE_COLUMNS = 'id, display_name, avatar_id, custom_avatar_data, tagline, website_url, github_url, twitter_url, facebook_url, instagram_url, youtube_url, linkedin_url, created_at, updated_at';
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -149,23 +153,13 @@ export async function fetchSessionDirect(): Promise<{
   const user = await getSupabaseUser();
   const ghUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
 
-  // Look up citizen by github_url, email, github_id, or user id
+  // Look up citizen by github_url or user id (email/github_id are server-only columns now)
   let citizenRow: any = null;
   if (ghUsername) {
     const { data } = await supabase
       .from('citizens')
-      .select('*')
+      .select(CITIZEN_SAFE_COLUMNS)
       .ilike('github_url', `%${ghUsername}%`)
-      .limit(1)
-      .maybeSingle();
-    citizenRow = data;
-  }
-
-  if (!citizenRow && user?.email) {
-    const { data } = await supabase
-      .from('citizens')
-      .select('*')
-      .eq('email', user.email)
       .limit(1)
       .maybeSingle();
     citizenRow = data;
@@ -174,8 +168,8 @@ export async function fetchSessionDirect(): Promise<{
   if (!citizenRow && user) {
     const { data } = await supabase
       .from('citizens')
-      .select('*')
-      .or(`github_id.eq.${user.id},id.eq.c_${user.id.replace(/-/g, '').substring(0, 24)}`)
+      .select(CITIZEN_SAFE_COLUMNS)
+      .eq('id', `c_${user.id.replace(/-/g, '').substring(0, 24)}`)
       .limit(1)
       .maybeSingle();
     citizenRow = data;
@@ -183,21 +177,11 @@ export async function fetchSessionDirect(): Promise<{
 
   if (!citizenRow && typeof window !== 'undefined') {
     const savedCitId = localStorage.getItem('spot_citizen_id');
-    const savedToken = localStorage.getItem('spot_session_token');
     const savedOwned = localStorage.getItem('spot_my_owned');
-    const deviceFp = await getDeviceFingerprint();
 
     if (savedCitId) {
-      const { data } = await supabase.from('citizens').select('*').eq('id', savedCitId).limit(1).maybeSingle();
+      const { data } = await supabase.from('citizens').select(CITIZEN_SAFE_COLUMNS).eq('id', savedCitId).limit(1).maybeSingle();
       citizenRow = data;
-    } else if (savedToken) {
-      const { data } = await supabase.from('citizens').select('*').or(`id.eq.${savedToken},session_token_hash.eq.${savedToken}`).limit(1).maybeSingle();
-      citizenRow = data;
-    } else if (deviceFp) {
-      try {
-        const { data } = await supabase.from('citizens').select('*').eq('device_fingerprint', deviceFp).limit(1).maybeSingle();
-        if (data) citizenRow = data;
-      } catch {}
     }
 
     if (!citizenRow && savedOwned) {
@@ -206,7 +190,7 @@ export async function fetchSessionDirect(): Promise<{
         const spotId = parsed.id || `${parsed.x},${parsed.y}`;
         const { data: sp } = await supabase.from('spots').select('owner_id').eq('id', spotId).limit(1).maybeSingle();
         if (sp?.owner_id) {
-          const { data: cit } = await supabase.from('citizens').select('*').eq('id', sp.owner_id).limit(1).maybeSingle();
+          const { data: cit } = await supabase.from('citizens').select(CITIZEN_SAFE_COLUMNS).eq('id', sp.owner_id).limit(1).maybeSingle();
           citizenRow = cit;
         }
       } catch {}
@@ -292,20 +276,17 @@ export async function syncGithubAuthDirect(data: {
     return currentSession;
   }
 
-  // If not currently logged in on this browser, check if an existing citizen has this github_id or github_url
+  // If not currently logged in on this browser, check if an existing citizen has this github_url
   let { data: cit } = await supabase
     .from('citizens')
-    .select('*')
-    .or(`github_id.eq.${data.githubId}${data.username ? `,github_url.ilike.%${data.username}%` : ''}`)
+    .select(CITIZEN_SAFE_COLUMNS)
+    .or(`github_url.ilike.%${data.username}%`)
     .limit(1)
     .maybeSingle();
 
   if (cit) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('spot_citizen_id', cit.id);
-      if (cit.session_token_hash) {
-        localStorage.setItem('spot_session_token', cit.session_token_hash);
-      }
     }
     return await fetchSessionDirect();
   }
@@ -675,7 +656,7 @@ export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId
   // Fetch the target citizen record to verify ownership proof
   const { data: citRecord } = await supabase
     .from('citizens')
-    .select('*')
+    .select(CITIZEN_SAFE_COLUMNS)
     .eq('id', citizenToDelete)
     .maybeSingle();
 
@@ -686,12 +667,10 @@ export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId
   // STRICT OWNERSHIP VERIFICATION
   let isAuthorized = false;
 
-  // 1. Check if logged in user owns this record (via GitHub id, email, or username)
+  // 1. Check if logged in user owns this record (via GitHub username or id pattern)
   if (user) {
     const ghUser = user.user_metadata?.user_name || user.user_metadata?.preferred_username;
     if (
-      (citRecord.github_id && citRecord.github_id === user.id) ||
-      (citRecord.email && citRecord.email.toLowerCase() === (user.email || '').toLowerCase()) ||
       (ghUser && citRecord.github_url && citRecord.github_url.toLowerCase() === ghUser.toLowerCase()) ||
       (citRecord.id === `c_${user.id.replace(/-/g, '').substring(0, 24)}`)
     ) {
@@ -699,11 +678,9 @@ export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId
     }
   }
 
-  // 2. Check if guest session token, citizen ID, or device fingerprint matches
+  // 2. Check if guest session token or citizen ID matches (server-only columns are unavailable to anon)
   if (!isAuthorized) {
     if (savedCitId && savedCitId === citRecord.id) isAuthorized = true;
-    if (savedToken && savedToken === citRecord.session_token_hash) isAuthorized = true;
-    if (deviceFp && citRecord.device_fingerprint && citRecord.device_fingerprint === deviceFp) isAuthorized = true;
   }
 
   if (!isAuthorized) {

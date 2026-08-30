@@ -63,7 +63,7 @@ export async function fetchMySession(): Promise<MySessionResponse> {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.authenticated) return data;
+        return data;
       } else {
         const errData = await res.json().catch(() => ({}));
         const err: any = new Error(errData.message || errData.error || 'Session check failed');
