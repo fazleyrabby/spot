@@ -32,9 +32,10 @@ var { Pool } = pg;
 var _pool = null;
 function getPool() {
   if (!_pool) {
+    const needsSsl = config.databaseUrl.includes("supabase.co") || config.databaseUrl.includes("pooler.supabase.com") || config.databaseUrl.includes("sslmode=require");
     _pool = new Pool({
       connectionString: config.databaseUrl,
-      ssl: config.databaseUrl.includes("supabase.co") || config.databaseUrl.includes("sslmode=require") ? { rejectUnauthorized: false } : void 0,
+      ssl: needsSsl ? { rejectUnauthorized: false } : void 0,
       max: 10,
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3

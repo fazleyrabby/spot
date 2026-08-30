@@ -7,11 +7,13 @@ let _pool: pg.Pool | null = null;
 
 function getPool(): pg.Pool {
   if (!_pool) {
+    const needsSsl =
+      config.databaseUrl.includes('supabase.co') ||
+      config.databaseUrl.includes('pooler.supabase.com') ||
+      config.databaseUrl.includes('sslmode=require');
     _pool = new Pool({
       connectionString: config.databaseUrl,
-      ssl: config.databaseUrl.includes('supabase.co') || config.databaseUrl.includes('sslmode=require')
-        ? { rejectUnauthorized: false }
-        : undefined,
+      ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
