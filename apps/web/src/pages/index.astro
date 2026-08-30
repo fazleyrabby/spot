@@ -1514,13 +1514,8 @@ import TransferModal from '../components/TransferModal.astro';
   });
 
   // 11. Live Realtime Stream (Instant Sync across all tabs & devices)
-  let activeSSE: EventSource | null = null;
+  let supabaseChannel: any = null;
   function connectRealtimeStream() {
-    if (activeSSE) {
-      activeSSE.close();
-      activeSSE = null;
-    }
-
     let tabId = sessionStorage.getItem('spot_tab_id');
     if (!tabId) {
       tabId = Math.random().toString(36).substring(2, 9);
@@ -1528,7 +1523,6 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     // Direct Supabase Realtime Channel (Production & Local)
-    let supabaseChannel: any = null;
     function connectSupabaseRealtime() {
       if (supabaseChannel) return;
       supabaseChannel = supabase
@@ -1561,12 +1555,19 @@ import TransferModal from '../components/TransferModal.astro';
     connectSupabaseRealtime();
   }
 
-  window.addEventListener('beforeunload', () => {
-    if (activeSSE) {
-      activeSSE.close();
-      activeSSE = null;
+  function disconnectRealtime() {
+    if (supabaseChannel) {
+      try { supabase.removeChannel(supabaseChannel); } catch {}
+      supabaseChannel = null;
     }
-  });
+    try { renderer.destroy(); } catch {}
+  }
+
+  window.addEventListener('beforeunload', disconnectRealtime);
+  // Astro HMR / Vite dev: clean up on hot reload to avoid leaked channels
+  if (import.meta.hot) {
+    import.meta.hot.dispose(disconnectRealtime);
+  }
 
   connectRealtimeStream();
 </script>

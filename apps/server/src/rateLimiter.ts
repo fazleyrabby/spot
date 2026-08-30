@@ -9,14 +9,21 @@ export class SlidingWindowRateLimiter {
   private maxRequests: number;
   private windowMs: number;
   private message: string;
+  private maxKeys: number;
 
-  constructor(maxRequests: number, windowMs: number, message?: string) {
+  constructor(maxRequests: number, windowMs: number, message?: string, maxKeys = 10000) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
     this.message = message || 'Too many requests, please try again later';
+    this.maxKeys = maxKeys;
 
     // Auto-cleanup stale keys every 10 minutes
     setInterval(() => this.cleanup(), 10 * 60 * 1000);
+  }
+
+  private evictOldest(): void {
+    const firstKey = this.windows.keys().next().value;
+    if (firstKey !== undefined) this.windows.delete(firstKey);
   }
 
   private cleanup(): void {
@@ -40,7 +47,13 @@ export class SlidingWindowRateLimiter {
       let entry = this.windows.get(ip);
 
       if (!entry) {
+        // LRU cap: prevent unbounded Map growth from IP spoofing
+        if (this.windows.size >= this.maxKeys) this.evictOldest();
         entry = { timestamps: [] };
+        this.windows.set(ip, entry);
+      } else {
+        // Refresh LRU order on hit
+        this.windows.delete(ip);
         this.windows.set(ip, entry);
       }
 

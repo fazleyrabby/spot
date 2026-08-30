@@ -26,6 +26,7 @@ export class WorldCanvasRenderer {
   private lastTime = 0;
   private pulsePhase = 0;
   private dpr = 1;
+  private boundHandleResize: (() => void) | null = null;
 
   events: RendererEvents = {};
 
@@ -53,7 +54,8 @@ export class WorldCanvasRenderer {
 
     this.rebuildOccupiedMap();
     this.handleResize();
-    window.addEventListener('resize', () => this.handleResize());
+    this.boundHandleResize = () => this.handleResize();
+    window.addEventListener('resize', this.boundHandleResize);
 
     // Initial center on founder spot (52, 60)
     const centerWorld = this.grid.gridToWorld(52, 60);
@@ -107,6 +109,15 @@ export class WorldCanvasRenderer {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+  }
+
+  destroy(): void {
+    this.stop();
+    if (this.boundHandleResize) {
+      window.removeEventListener('resize', this.boundHandleResize);
+      this.boundHandleResize = null;
+    }
+    setOnAvatarImageLoaded(() => {});
   }
 
   update(): void {

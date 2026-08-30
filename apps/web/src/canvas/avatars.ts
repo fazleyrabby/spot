@@ -297,6 +297,7 @@ export function drawAvatarOnCanvas(
   }
 }
 
+const AVATAR_CACHE_MAX = 120;
 const customImageCache = new Map<string, HTMLImageElement>();
 let onAvatarImageLoadedCallback: (() => void) | null = null;
 
@@ -304,8 +305,18 @@ export function setOnAvatarImageLoaded(cb: () => void) {
   onAvatarImageLoadedCallback = cb;
 }
 
+function trimAvatarCache() {
+  while (customImageCache.size > AVATAR_CACHE_MAX) {
+    const oldest = customImageCache.keys().next().value;
+    if (oldest === undefined) break;
+    customImageCache.delete(oldest);
+  }
+}
+
 export function cacheCustomImage(dataUrl: string, img: HTMLImageElement) {
+  if (customImageCache.has(dataUrl)) customImageCache.delete(dataUrl);
   customImageCache.set(dataUrl, img);
+  trimAvatarCache();
 }
 
 export function drawCustomAvatarOnCanvas(
@@ -323,11 +334,18 @@ export function drawCustomAvatarOnCanvas(
   // If it's a data URL or image URL
   if (customData.startsWith('data:image') || customData.startsWith('http')) {
     let img = customImageCache.get(customData);
+    if (img) {
+      // Refresh LRU order
+      customImageCache.delete(customData);
+      customImageCache.set(customData, img);
+    }
     if (!img) {
       img = new Image();
       img.src = customData;
       img.onload = () => {
+        if (customImageCache.has(customData)) customImageCache.delete(customData);
         customImageCache.set(customData, img!);
+        trimAvatarCache();
         try {
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img!, Math.floor(x), Math.floor(y), Math.ceil(size), Math.ceil(size));
@@ -335,6 +353,7 @@ export function drawCustomAvatarOnCanvas(
         if (onAvatarImageLoadedCallback) onAvatarImageLoadedCallback();
       };
       customImageCache.set(customData, img);
+      trimAvatarCache();
     }
     if (img.complete && img.naturalWidth > 0) {
       ctx.imageSmoothingEnabled = false;
