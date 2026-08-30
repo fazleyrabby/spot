@@ -8,9 +8,7 @@ import {
   searchCitizensDirect,
 } from './supabase.js';
 
-const API_BASE = (import.meta.env.PUBLIC_API_URL && import.meta.env.PUBLIC_API_URL.startsWith('http'))
-  ? `${import.meta.env.PUBLIC_API_URL}/api`
-  : null;
+const API_BASE = null;
 
 export interface MySessionResponse {
   authenticated: boolean;
