@@ -358,14 +358,6 @@ import TransferModal from '../components/TransferModal.astro';
           `;
         }
       }
-
-      // Auto-sync device fingerprint with citizen record
-      if (myCitizen && typeof window !== 'undefined') {
-        const fp = await getDeviceFingerprint();
-        if (fp) {
-          supabase.from('citizens').update({ device_fingerprint: fp }).eq('id', myCitizen.id).then();
-        }
-      }
     } catch (err) {
       console.warn('Session check fallback:', err);
     }

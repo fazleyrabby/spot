@@ -530,13 +530,27 @@ apiRouter.post("/auth/github/sync", async (req, res) => {
     return;
   }
   try {
-    const existing = await query(
+    let existing = await query(
       `SELECT ${CITIZEN_PROFILE_COLUMNS}
        FROM citizens
        WHERE github_id = $1
        LIMIT 1`,
       [String(githubId)]
     );
+    if (existing.rows.length === 0 && username) {
+      const cleanUser = String(username).replace(/^@/, "").replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+      const matches = await query(
+        `SELECT ${CITIZEN_PROFILE_COLUMNS}
+         FROM citizens
+         WHERE github_url ILIKE '%' || $1
+         LIMIT 1`,
+        [cleanUser]
+      );
+      if (matches.rows.length > 0) {
+        existing = matches;
+        await query(`UPDATE citizens SET github_id = $1, updated_at = NOW() WHERE id = $2`, [String(githubId), matches.rows[0].id]);
+      }
+    }
     let citizen;
     let rawToken = generateSessionToken();
     const tokenHash = hashToken(rawToken);

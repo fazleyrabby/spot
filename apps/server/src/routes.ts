@@ -328,13 +328,31 @@ apiRouter.post('/auth/github/sync', async (req, res) => {
 
   try {
     // Check if citizen with github_id already exists
-    const existing = await query<any>(
+    let existing = await query<any>(
       `SELECT ${CITIZEN_PROFILE_COLUMNS}
        FROM citizens
        WHERE github_id = $1
        LIMIT 1`,
       [String(githubId)]
     );
+
+    // Fallback: match by github username/handle (accounts created before GitHub ID
+    // was captured, e.g. direct-mode claims). Normalize to https://github.com/<user>
+    if (existing.rows.length === 0 && username) {
+      const cleanUser = String(username).replace(/^@/, '').replace(/^https?:\/\/(www\.)?github\.com\//i, '');
+      const matches = await query<any>(
+        `SELECT ${CITIZEN_PROFILE_COLUMNS}
+         FROM citizens
+         WHERE github_url ILIKE '%' || $1
+         LIMIT 1`,
+        [cleanUser]
+      );
+      if (matches.rows.length > 0) {
+        existing = matches;
+        // Persist the github_id so future syncs match by ID directly
+        await query(`UPDATE citizens SET github_id = $1, updated_at = NOW() WHERE id = $2`, [String(githubId), matches.rows[0].id]);
+      }
+    }
 
     let citizen: any;
     let rawToken = generateSessionToken();
