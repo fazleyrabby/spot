@@ -42,15 +42,16 @@
           <!-- Avatars populated via JS with real canvas previews -->
         </div>
 
-        <!-- Custom Photo to 8-Bit Pixel Converter -->
+        <!-- Custom Photo to Pixel Art Converter -->
         <div class="custom-avatar-uploader">
           <div class="custom-upload-row">
-            <label class="custom-upload-btn" for="input-custom-avatar-file">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <label class="custom-upload-btn" id="lbl-claim-upload-btn" for="input-custom-avatar-file">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icon-claim-upload">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                 <circle cx="12" cy="13" r="4"></circle>
               </svg>
-              <span>Upload Photo $\to$ 8-Bit Avatar</span>
+              <span id="txt-claim-upload-label">Upload Photo → Pixel Avatar</span>
+              <span id="spinner-claim-upload" class="upload-spinner" style="display: none;"></span>
               <input type="file" id="input-custom-avatar-file" accept="image/*" style="display: none;" />
             </label>
           </div>
@@ -60,9 +61,10 @@
               <canvas id="claim-custom-preview-canvas" width="64" height="64" class="custom-preview-canvas"></canvas>
             </div>
             <div class="custom-preview-meta">
-              <div class="custom-preview-title">Custom 8-Bit Avatar Ready!</div>
+              <div class="custom-preview-title" id="txt-claim-preview-title">Custom Pixel Avatar Ready! ✨</div>
               <div class="custom-preview-controls">
-                <button type="button" class="btn-res-toggle active" id="btn-claim-res-16" data-res="16">16×16 HD</button>
+                <button type="button" class="btn-res-toggle active" id="btn-claim-res-32" data-res="32">32×32 Ultra HD</button>
+                <button type="button" class="btn-res-toggle" id="btn-claim-res-16" data-res="16">16×16 HD</button>
                 <button type="button" class="btn-res-toggle" id="btn-claim-res-8" data-res="8">8×8 Retro</button>
                 <button type="button" class="btn-remove-custom" id="btn-claim-remove-custom">Remove</button>
               </div>
@@ -475,6 +477,19 @@
     background: rgba(56, 189, 248, 0.16);
     border-color: #38bdf8;
     transform: translateY(-1px);
+  }
+
+  .upload-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(56, 189, 248, 0.3);
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
   .custom-avatar-preview-box {
