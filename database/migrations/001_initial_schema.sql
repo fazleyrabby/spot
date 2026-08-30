@@ -27,6 +27,16 @@ CREATE TABLE IF NOT EXISTS spots (
 CREATE INDEX IF NOT EXISTS idx_spots_owner ON spots(owner_id);
 CREATE INDEX IF NOT EXISTS idx_spots_coords ON spots(x, y);
 
+-- Local/authoritative API visitor counter
+CREATE TABLE IF NOT EXISTS site_stats (
+  key VARCHAR(64) PRIMARY KEY,
+  value BIGINT NOT NULL DEFAULT 0
+);
+
+INSERT INTO site_stats (key, value)
+VALUES ('total_visitors', 1)
+ON CONFLICT (key) DO NOTHING;
+
 -- Function to seed 10,000 spots if empty
 DO $$
 BEGIN
