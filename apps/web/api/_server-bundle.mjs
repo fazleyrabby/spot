@@ -1,9 +1,9 @@
-// ../server/src/app.ts
+// apps/server/src/app.ts
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-// ../server/src/config.ts
+// apps/server/src/config.ts
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -23,10 +23,10 @@ var config = {
   isProd: process.env.NODE_ENV === "production"
 };
 
-// ../server/src/routes.ts
+// apps/server/src/routes.ts
 import { Router } from "express";
 
-// ../server/src/db.ts
+// apps/server/src/db.ts
 import pg from "pg";
 var { Pool } = pg;
 var _pool = null;
@@ -61,7 +61,7 @@ async function query(text, params) {
   return res;
 }
 
-// ../server/src/auth.ts
+// apps/server/src/auth.ts
 import crypto from "crypto";
 var COOKIE_NAME = "spot_session_token";
 var COOKIE_OPTIONS = {
@@ -137,7 +137,7 @@ async function requireAuthMiddleware(req, res, next) {
   next();
 }
 
-// ../server/src/rateLimiter.ts
+// apps/server/src/rateLimiter.ts
 var SlidingWindowRateLimiter = class {
   windows = /* @__PURE__ */ new Map();
   maxRequests;
@@ -207,7 +207,7 @@ var spotClaimLimiter = new SlidingWindowRateLimiter(
   "Spot claim rate limit exceeded. Please wait a minute before trying again."
 ).middleware();
 
-// ../../packages/shared/src/schemas.ts
+// packages/shared/src/schemas.ts
 import { z } from "zod";
 var BLOCKED_WORDS = [
   "fuck",
@@ -298,7 +298,7 @@ var UpdateCitizenSchema = z.object({
   linkedinUrl: SafeUrlSchema
 });
 
-// ../server/src/routes.ts
+// apps/server/src/routes.ts
 import crypto2 from "crypto";
 var apiRouter = Router();
 var MAX_PROFANITY_WARNINGS = 3;
@@ -490,7 +490,7 @@ apiRouter.get("/world", async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching world snapshot:", err);
-    res.status(500).json({ error: "InternalServerError", message: "Failed to load world snapshot", detail: err?.message });
+    res.status(500).json({ error: "InternalServerError", message: "Failed to load world snapshot" });
   }
 });
 apiRouter.get("/citizens/me", optionalAuthMiddleware, async (req, res) => {
@@ -903,7 +903,7 @@ apiRouter.get("/stats", async (_req, res) => {
   }
 });
 
-// ../server/src/app.ts
+// apps/server/src/app.ts
 var app = express();
 app.set("trust proxy", 1);
 app.use((req, _res, next) => {
