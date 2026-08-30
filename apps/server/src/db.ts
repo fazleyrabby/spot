@@ -3,18 +3,30 @@ import { config } from './config.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
-  connectionString: config.databaseUrl,
-  ssl: config.databaseUrl.includes('supabase.co') || config.databaseUrl.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-});
+let _pool: pg.Pool | null = null;
 
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle PostgreSQL client', err);
+function getPool(): pg.Pool {
+  if (!_pool) {
+    _pool = new Pool({
+      connectionString: config.databaseUrl,
+      ssl: config.databaseUrl.includes('supabase.co') || config.databaseUrl.includes('sslmode=require')
+        ? { rejectUnauthorized: false }
+        : undefined,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
+    _pool.on('error', (err) => {
+      console.error('Unexpected error on idle PostgreSQL client', err);
+    });
+  }
+  return _pool;
+}
+
+export const pool = new Proxy({} as pg.Pool, {
+  get(_target, prop, _receiver) {
+    return (getPool() as any)[prop];
+  },
 });
 
 export async function query<T extends pg.QueryResultRow = any>(
@@ -22,7 +34,7 @@ export async function query<T extends pg.QueryResultRow = any>(
   params?: any[]
 ): Promise<pg.QueryResult<T>> {
   const start = Date.now();
-  const res = await pool.query<T>(text, params);
+  const res = await getPool().query<T>(text, params);
   const duration = Date.now() - start;
   if (config.nodeEnv === 'development' && duration > 200) {
     console.warn(`[DB Slow Query] ${duration}ms: ${text.slice(0, 80)}...`);
