@@ -6,6 +6,7 @@ import ProfileModal from '../components/ProfileModal.astro';
 import ClaimModal from '../components/ClaimModal.astro';
 import SearchModal from '../components/SearchModal.astro';
 import SupportModal from '../components/SupportModal.astro';
+import TransferModal from '../components/TransferModal.astro';
 ---
 
 <Layout>
@@ -16,11 +17,13 @@ import SupportModal from '../components/SupportModal.astro';
     <ClaimModal />
     <SearchModal />
     <SupportModal />
+    <TransferModal />
     <div id="toast-container" class="toast-container"></div>
   </main>
 </Layout>
 
 <script>
+  import QRCode from 'qrcode';
   import { fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, type CitizenSearchResult } from '../api/client.js';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
@@ -404,9 +407,39 @@ import SupportModal from '../components/SupportModal.astro';
     }
   }
 
-  // Deep link parsing: ?spot=x,y
+  // Deep link parsing: ?spot=x,y and ?auth_key=token
   function checkUrlDeepLink() {
     const params = new URLSearchParams(window.location.search);
+
+    // 1. Cross-Device Magic Transfer Key (?auth_key=...)
+    const authKey = params.get('auth_key');
+    if (authKey) {
+      localStorage.setItem('spot_session_token', authKey);
+      showToast('📱 Device Connected! Owner permissions activated.', 'success');
+
+      // Fetch freshly synced session
+      fetchMySession().then((session) => {
+        if (session.authenticated && session.citizen) {
+          myCitizen = session.citizen;
+          myOwnedSpot = session.ownedSpot;
+          if (myOwnedSpot && headerClaimBtn) {
+            headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+          }
+          if (myOwnedSpot) {
+            const worldPos = renderer.grid.gridToWorld(myOwnedSpot.x, myOwnedSpot.y);
+            renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
+            renderer.selectSpot(myOwnedSpot.x, myOwnedSpot.y);
+          }
+        }
+      });
+
+      // Clean auth_key parameter from browser address bar
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('auth_key');
+      window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.searchParams.toString() ? '?' + cleanUrl.searchParams.toString() : ''));
+    }
+
+    // 2. Spot coordinate deep link (?spot=x,y)
     const spotParam = params.get('spot');
     if (spotParam && /^\d{1,3},\d{1,3}$/.test(spotParam)) {
       const [gx, gy] = spotParam.split(',').map(Number);
@@ -1330,6 +1363,78 @@ import SupportModal from '../components/SupportModal.astro';
         </svg>
         <span>Claim This Spot</span>
       `;
+    }
+  });
+
+  // 10d. Device Sync / QR Code Transfer Modal Controller
+  const btnOpenTransfer = document.getElementById('btn-open-transfer');
+  const transferModalBackdrop = document.getElementById('transfer-modal-backdrop');
+  const transferModalClose = document.getElementById('transfer-modal-close');
+  const transferQrCanvas = document.getElementById('transfer-qr-canvas') as HTMLCanvasElement;
+  const transferLinkInput = document.getElementById('transfer-link-input') as HTMLInputElement;
+  const btnCopyTransfer = document.getElementById('btn-copy-transfer');
+  const txtCopyTransfer = document.getElementById('txt-copy-transfer');
+
+  btnOpenTransfer?.addEventListener('click', async () => {
+    let token = localStorage.getItem('spot_session_token');
+    if (!token && myCitizen) {
+      token = myCitizen.id;
+    }
+    if (!token) {
+      showToast('Please claim a spot first to sync devices', 'error');
+      return;
+    }
+
+    const currentSpot = myOwnedSpot || (currentViewingOccupied ? { x: currentViewingOccupied.x, y: currentViewingOccupied.y } : null);
+    const spotParam = currentSpot ? `&spot=${currentSpot.x},${currentSpot.y}` : '';
+    const transferUrl = `${window.location.origin}/?auth_key=${encodeURIComponent(token)}${spotParam}`;
+
+    if (transferLinkInput) {
+      transferLinkInput.value = transferUrl;
+    }
+
+    if (transferQrCanvas) {
+      try {
+        await QRCode.toCanvas(transferQrCanvas, transferUrl, {
+          width: 180,
+          margin: 1,
+          color: {
+            dark: '#0c0e14',
+            light: '#ffffff',
+          },
+        });
+      } catch (err) {
+        console.error('QR code generation error:', err);
+      }
+    }
+
+    if (transferModalBackdrop) {
+      transferModalBackdrop.classList.add('open');
+      transferModalBackdrop.setAttribute('aria-hidden', 'false');
+    }
+  });
+
+  transferModalClose?.addEventListener('click', () => {
+    transferModalBackdrop?.classList.remove('open');
+    transferModalBackdrop?.setAttribute('aria-hidden', 'true');
+  });
+
+  transferModalBackdrop?.addEventListener('click', (e) => {
+    if (e.target === transferModalBackdrop) {
+      transferModalBackdrop.classList.remove('open');
+      transferModalBackdrop.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  btnCopyTransfer?.addEventListener('click', () => {
+    if (transferLinkInput && transferLinkInput.value) {
+      navigator.clipboard.writeText(transferLinkInput.value).then(() => {
+        if (txtCopyTransfer) txtCopyTransfer.textContent = 'Copied!';
+        showToast('🔗 Sync link copied to clipboard!', 'success');
+        setTimeout(() => {
+          if (txtCopyTransfer) txtCopyTransfer.textContent = 'Copy Link';
+        }, 2000);
+      });
     }
   });
 

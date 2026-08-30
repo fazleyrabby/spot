@@ -1,0 +1,262 @@
+---
+---
+
+<div class="modal-backdrop" id="transfer-modal-backdrop" aria-hidden="true">
+  <div class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="transfer-title">
+    <button class="modal-close-btn" id="transfer-modal-close" aria-label="Close transfer window">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="transfer-header">
+      <div class="transfer-badge mono-num">📱 Device Sync</div>
+      <h2 class="transfer-title" id="transfer-title">Edit from Your Phone</h2>
+      <p class="transfer-desc">Scan this QR code with your phone camera to instantly gain owner access without any password or signup.</p>
+    </div>
+
+    <div class="qr-container">
+      <div class="qr-frame">
+        <canvas id="transfer-qr-canvas" width="200" height="200" class="qr-canvas"></canvas>
+      </div>
+      <div class="qr-instruction">
+        <span class="qr-pulse-dot"></span>
+        <span>Point your camera & tap the notification to connect</span>
+      </div>
+    </div>
+
+    <div class="transfer-link-section">
+      <label class="transfer-label">OR COPY MAGIC SYNC LINK</label>
+      <div class="transfer-input-row">
+        <input type="text" id="transfer-link-input" class="transfer-link-input mono-num" readonly value="" />
+        <button type="button" class="btn-copy-transfer" id="btn-copy-transfer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span id="txt-copy-transfer">Copy Link</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="transfer-notice">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      <span>This private key gives owner access to your spot. Only scan it on your own personal devices.</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 10, 15, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease-out-expo);
+  }
+
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-elevated);
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.3s var(--ease-out-expo);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-backdrop.open .modal-card {
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .modal-close-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .transfer-header {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .transfer-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-jade);
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+
+  .transfer-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .transfer-desc {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 16px 0 20px;
+  }
+
+  .qr-frame {
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qr-canvas {
+    width: 180px;
+    height: 180px;
+    display: block;
+  }
+
+  .qr-instruction {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .qr-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-jade);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.4); opacity: 1; }
+  }
+
+  .transfer-link-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .transfer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  .transfer-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .transfer-link-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    outline: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-copy-transfer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .btn-copy-transfer:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+  }
+
+  .transfer-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+    font-size: 0.74rem;
+    line-height: 1.35;
+  }
+
+  .transfer-notice svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+</style>
