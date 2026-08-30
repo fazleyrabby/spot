@@ -298,6 +298,11 @@ export function drawAvatarOnCanvas(
 }
 
 const customImageCache = new Map<string, HTMLImageElement>();
+let onAvatarImageLoadedCallback: (() => void) | null = null;
+
+export function setOnAvatarImageLoaded(cb: () => void) {
+  onAvatarImageLoadedCallback = cb;
+}
 
 export function drawCustomAvatarOnCanvas(
   ctx: CanvasRenderingContext2D,
@@ -317,7 +322,10 @@ export function drawCustomAvatarOnCanvas(
     if (!img) {
       img = new Image();
       img.src = customData;
-      img.onload = () => { customImageCache.set(customData, img!); };
+      img.onload = () => {
+        customImageCache.set(customData, img!);
+        if (onAvatarImageLoadedCallback) onAvatarImageLoadedCallback();
+      };
       customImageCache.set(customData, img);
     }
     if (img.complete && img.naturalWidth > 0) {

@@ -200,12 +200,17 @@ import SupportModal from '../components/SupportModal.astro';
   renderer.start();
 
   // 4. Render Avatar Selection Grids
-  function renderAvatarSelector(container: HTMLElement | null, currentSelected: string, onSelect: (id: string) => void) {
+  function renderAvatarSelector(
+    container: HTMLElement | null,
+    currentSelected: string,
+    onSelect: (id: string) => void,
+    hasCustom: boolean = false
+  ) {
     if (!container) return;
     container.innerHTML = '';
     Object.values(AVATAR_CATALOG).forEach((avatar) => {
       const option = document.createElement('div');
-      option.className = `avatar-option ${avatar.id === currentSelected ? 'selected' : ''}`;
+      option.className = `avatar-option ${(!hasCustom && avatar.id === currentSelected) ? 'selected' : ''}`;
       option.dataset.avatarId = avatar.id;
 
       const optCanvas = document.createElement('canvas');
@@ -223,6 +228,14 @@ import SupportModal from '../components/SupportModal.astro';
       option.addEventListener('click', () => {
         container.querySelectorAll('.avatar-option').forEach((el) => el.classList.remove('selected'));
         option.classList.add('selected');
+        if (container === claimAvatarGrid && claimCustomPreviewBox) {
+          claimCustomPreviewBox.classList.remove('selected-custom');
+          claimCustomAvatarData = null;
+        }
+        if (container === editAvatarGrid && editCustomPreviewBox) {
+          editCustomPreviewBox.classList.remove('selected-custom');
+          editCustomAvatarData = null;
+        }
         onSelect(avatar.id);
       });
 
@@ -648,6 +661,7 @@ import SupportModal from '../components/SupportModal.astro';
 
     if (editCustomAvatarData && editCustomPreviewBox && editCustomPreviewCanvas) {
       editCustomPreviewBox.style.display = 'flex';
+      editCustomPreviewBox.classList.add('selected-custom');
       const pctx = editCustomPreviewCanvas.getContext('2d');
       if (pctx) {
         pctx.clearRect(0, 0, 64, 64);
@@ -655,13 +669,21 @@ import SupportModal from '../components/SupportModal.astro';
       }
     } else if (editCustomPreviewBox) {
       editCustomPreviewBox.style.display = 'none';
+      editCustomPreviewBox.classList.remove('selected-custom');
     }
 
-    renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { 
-      editSelectedAvatarId = id;
-      editCustomAvatarData = null;
-      if (editCustomPreviewBox) editCustomPreviewBox.style.display = 'none';
-    });
+    renderAvatarSelector(
+      editAvatarGrid,
+      editSelectedAvatarId,
+      (id) => { 
+        editSelectedAvatarId = id;
+        editCustomAvatarData = null;
+        if (editCustomPreviewBox) {
+          editCustomPreviewBox.classList.remove('selected-custom');
+        }
+      },
+      Boolean(editCustomAvatarData)
+    );
   });
 
   btnCancelEdit?.addEventListener('click', () => {
@@ -1052,6 +1074,8 @@ import SupportModal from '../components/SupportModal.astro';
 
       if (claimCustomPreviewBox && claimCustomPreviewCanvas) {
         claimCustomPreviewBox.style.display = 'flex';
+        claimCustomPreviewBox.classList.add('selected-custom');
+        claimAvatarGrid?.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         const ctx = claimCustomPreviewCanvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, 64, 64);
@@ -1076,6 +1100,8 @@ import SupportModal from '../components/SupportModal.astro';
     if (claimCustomAvatarFile) {
       pixelizeImage(claimCustomAvatarFile, res).then(result => {
         claimCustomAvatarData = result.dataUrl;
+        claimCustomPreviewBox?.classList.add('selected-custom');
+        claimAvatarGrid?.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         const ctx = claimCustomPreviewCanvas?.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, 64, 64);
@@ -1092,7 +1118,10 @@ import SupportModal from '../components/SupportModal.astro';
   btnClaimRemoveCustom?.addEventListener('click', () => {
     claimCustomAvatarData = null;
     claimCustomAvatarFile = null;
-    if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
+    if (claimCustomPreviewBox) {
+      claimCustomPreviewBox.style.display = 'none';
+      claimCustomPreviewBox.classList.remove('selected-custom');
+    }
     if (inputCustomAvatarFile) inputCustomAvatarFile.value = '';
     if (txtClaimUploadLabel) txtClaimUploadLabel.textContent = 'Upload Photo → Pixel Avatar';
     renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => { selectedAvatarId = id; });
@@ -1116,6 +1145,8 @@ import SupportModal from '../components/SupportModal.astro';
 
       if (editCustomPreviewBox && editCustomPreviewCanvas) {
         editCustomPreviewBox.style.display = 'flex';
+        editCustomPreviewBox.classList.add('selected-custom');
+        editAvatarGrid?.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         const ctx = editCustomPreviewCanvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, 64, 64);
@@ -1140,6 +1171,8 @@ import SupportModal from '../components/SupportModal.astro';
     if (editCustomAvatarFile) {
       pixelizeImage(editCustomAvatarFile, res).then(result => {
         editCustomAvatarData = result.dataUrl;
+        editCustomPreviewBox?.classList.add('selected-custom');
+        editAvatarGrid?.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         const ctx = editCustomPreviewCanvas?.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, 64, 64);
@@ -1156,7 +1189,10 @@ import SupportModal from '../components/SupportModal.astro';
   btnEditRemoveCustom?.addEventListener('click', () => {
     editCustomAvatarData = null;
     editCustomAvatarFile = null;
-    if (editCustomPreviewBox) editCustomPreviewBox.style.display = 'none';
+    if (editCustomPreviewBox) {
+      editCustomPreviewBox.style.display = 'none';
+      editCustomPreviewBox.classList.remove('selected-custom');
+    }
     if (inputEditCustomAvatarFile) inputEditCustomAvatarFile.value = '';
     if (txtEditUploadLabel) txtEditUploadLabel.textContent = 'Upload Photo → Pixel Avatar';
     renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
