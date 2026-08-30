@@ -392,6 +392,14 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
       citizen,
     });
   } catch (err: any) {
+    // 23505 = unique_violation (spots_owner_id_unique) when citizen races to claim 2 spots at once
+    if (err?.code === '23505' || String(err?.message || '').includes('duplicate key')) {
+      res.status(409).json({
+        error: 'CitizenAlreadyOwnsSpot',
+        message: 'You already own a spot — each citizen gets exactly one.',
+      });
+      return;
+    }
     console.error('Error executing claim query:', err);
     res.status(500).json({ error: 'InternalServerError', message: 'Failed to claim spot' });
   }
