@@ -1,0 +1,10 @@
+{
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "functions": {
+    "api/[...path].ts": {
+      "includeFiles": [
+        "../server/src/**"
+      ]
+    }
+  }
+}
