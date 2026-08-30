@@ -124,6 +124,34 @@
         <div class="form-group">
           <label class="form-label">AVATAR</label>
           <div class="edit-avatar-grid" id="edit-avatar-grid"></div>
+
+          <!-- Custom Photo to 8-Bit Pixel Converter -->
+          <div class="custom-avatar-uploader">
+            <div class="custom-upload-row">
+              <label class="custom-upload-btn" for="edit-custom-avatar-file">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>Upload Photo $\to$ 8-Bit Avatar</span>
+                <input type="file" id="edit-custom-avatar-file" accept="image/*" style="display: none;" />
+              </label>
+            </div>
+
+            <div class="custom-avatar-preview-box" id="edit-custom-preview-box" style="display: none;">
+              <div class="preview-canvas-wrapper">
+                <canvas id="edit-custom-preview-canvas" width="64" height="64" class="custom-preview-canvas"></canvas>
+              </div>
+              <div class="custom-preview-meta">
+                <div class="custom-preview-title">Custom 8-Bit Avatar Ready!</div>
+                <div class="custom-preview-controls">
+                  <button type="button" class="btn-res-toggle active" id="btn-edit-res-16" data-res="16">16×16 HD</button>
+                  <button type="button" class="btn-res-toggle" id="btn-edit-res-8" data-res="8">8×8 Retro</button>
+                  <button type="button" class="btn-remove-custom" id="btn-edit-remove-custom">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -469,6 +497,121 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
+  }
+
+  .custom-avatar-uploader {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .custom-upload-row {
+    display: flex;
+  }
+
+  .custom-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    border-radius: var(--radius-md);
+    color: #38bdf8;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .custom-upload-btn:hover {
+    background: rgba(56, 189, 248, 0.16);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+  }
+
+  .custom-avatar-preview-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(24, 28, 40, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .preview-canvas-wrapper {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .custom-preview-canvas {
+    width: 40px;
+    height: 40px;
+    image-rendering: pixelated;
+  }
+
+  .custom-preview-meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .custom-preview-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+
+  .custom-preview-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-res-toggle {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-res-toggle.active {
+    color: #090b10;
+    background: #38bdf8;
+    border-color: #38bdf8;
+    font-weight: 700;
+  }
+
+  .btn-remove-custom {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-coral);
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-remove-custom:hover {
+    background: rgba(244, 63, 94, 0.2);
   }
 
   .edit-btn-row {

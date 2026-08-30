@@ -296,3 +296,63 @@ export function drawAvatarOnCanvas(
     }
   }
 }
+
+const customImageCache = new Map<string, HTMLImageElement>();
+
+export function drawCustomAvatarOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  customData: string,
+  x: number,
+  y: number,
+  size: number
+): void {
+  if (!customData) {
+    drawAvatarOnCanvas(ctx, AVATAR_CATALOG.astronaut, x, y, size);
+    return;
+  }
+
+  // If it's a data URL or image URL
+  if (customData.startsWith('data:image') || customData.startsWith('http')) {
+    let img = customImageCache.get(customData);
+    if (!img) {
+      img = new Image();
+      img.src = customData;
+      img.onload = () => { customImageCache.set(customData, img!); };
+      customImageCache.set(customData, img);
+    }
+    if (img.complete && img.naturalWidth > 0) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.floor(x), Math.floor(y), Math.ceil(size), Math.ceil(size));
+      return;
+    }
+  }
+
+  // If it's a JSON 2D hex matrix
+  try {
+    const matrix: string[][] = JSON.parse(customData);
+    if (Array.isArray(matrix) && matrix.length > 0) {
+      const rows = matrix.length;
+      const cols = matrix[0].length;
+      const pixelW = size / cols;
+      const pixelH = size / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const color = matrix[r][c];
+          if (color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(
+              Math.floor(x + c * pixelW),
+              Math.floor(y + r * pixelH),
+              Math.ceil(pixelW),
+              Math.ceil(pixelH)
+            );
+          }
+        }
+      }
+      return;
+    }
+  } catch {}
+
+  drawAvatarOnCanvas(ctx, AVATAR_CATALOG.astronaut, x, y, size);
+}

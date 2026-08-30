@@ -34,6 +34,11 @@ export const CreateCitizenSchema = z.object({
     .min(1, 'Avatar selection is required')
     .max(32, 'Avatar ID must not exceed 32 characters')
     .trim(),
+  customAvatarData: z
+    .string()
+    .max(65536)
+    .optional()
+    .or(z.literal('')),
   tagline: z
     .string()
     .max(80, 'Tagline must not exceed 80 characters')
@@ -102,6 +107,11 @@ export const UpdateCitizenSchema = z.object({
     .max(32)
     .trim()
     .optional(),
+  customAvatarData: z
+    .string()
+    .max(65536)
+    .optional()
+    .or(z.literal('')),
   tagline: z
     .string()
     .max(80)

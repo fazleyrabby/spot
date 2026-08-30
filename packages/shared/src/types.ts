@@ -32,6 +32,7 @@ export interface Citizen {
   displayName: string;
   username?: string;
   avatarId: string;
+  customAvatarData?: string;
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;
@@ -51,6 +52,7 @@ export interface OccupiedSpotSummary {
   citizenId: string;
   displayName: string;
   avatarId: string;
+  customAvatarData?: string;
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;

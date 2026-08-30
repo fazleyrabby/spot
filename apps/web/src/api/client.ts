@@ -98,6 +98,7 @@ export async function syncGithubAuth(data: {
 export interface ClaimInputData {
   displayName: string;
   avatarId: string;
+  customAvatarData?: string;
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;
