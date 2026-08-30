@@ -1114,15 +1114,6 @@ import SupportModal from '../components/SupportModal.astro';
       sessionStorage.setItem('spot_tab_id', tabId);
     }
 
-    const queryParams = new URLSearchParams();
-    if (sessionToken) queryParams.set('token', sessionToken);
-    if (tabId) queryParams.set('tabId', tabId);
-
-    const streamBase = window.location.hostname === 'localhost'
-      ? 'http://localhost:5050/api/realtime/stream'
-      : (import.meta.env.PUBLIC_API_URL ? `${import.meta.env.PUBLIC_API_URL}/api/realtime/stream` : '/api/realtime/stream');
-    const streamUrl = `${streamBase}?${queryParams.toString()}`;
-
     // Direct Supabase Realtime Channel (Production & Local)
     let supabaseChannel: any = null;
     function connectSupabaseRealtime() {
