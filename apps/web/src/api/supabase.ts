@@ -61,7 +61,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
     .select(`
       id, x, y, owner_id, claimed_at,
       citizens:citizens!spots_owner_id_fkey (
-        id, display_name, avatar_id, tagline, website_url, github_url, twitter_url, facebook_url, instagram_url, youtube_url, linkedin_url
+        id, display_name, avatar_id, custom_avatar_data, tagline, website_url, github_url, twitter_url, facebook_url, instagram_url, youtube_url, linkedin_url
       )
     `)
     .not('owner_id', 'is', null);
@@ -97,6 +97,7 @@ export async function fetchWorldDirect(): Promise<WorldSnapshot> {
       citizenId: c?.id || s.owner_id,
       displayName: c?.display_name || 'Citizen',
       avatarId: c?.avatar_id || 'astronaut',
+      customAvatarData: c?.custom_avatar_data || undefined,
       tagline: c?.tagline || undefined,
       websiteUrl: c?.website_url || undefined,
       githubUrl: c?.github_url || undefined,
@@ -218,6 +219,7 @@ export async function fetchSessionDirect(): Promise<{
     id: citizenRow.id,
     displayName: citizenRow.display_name,
     avatarId: citizenRow.avatar_id,
+    customAvatarData: citizenRow.custom_avatar_data || undefined,
     tagline: citizenRow.tagline || undefined,
     websiteUrl: citizenRow.website_url || undefined,
     githubUrl: citizenRow.github_url || undefined,
@@ -276,6 +278,7 @@ export async function claimSpotDirect(input: {
   y: number;
   displayName: string;
   avatarId: string;
+  customAvatarData?: string;
   tagline?: string;
   websiteUrl?: string;
   githubUrl?: string;
@@ -347,6 +350,7 @@ export async function claimSpotDirect(input: {
     session_token_hash: tokenHash,
     display_name: input.displayName.trim(),
     avatar_id: input.avatarId,
+    custom_avatar_data: input.customAvatarData || null,
     tagline: input.tagline?.trim() || null,
     website_url: formattedWebsite || null,
     github_url: formattedGithub || null,
@@ -370,6 +374,7 @@ export async function claimSpotDirect(input: {
     // Retry omitting non-essential custom columns if migration hasn't been run yet
     delete citizenPayload.ip_address;
     delete citizenPayload.device_fingerprint;
+    delete citizenPayload.custom_avatar_data;
     delete citizenPayload.twitter_url;
     delete citizenPayload.facebook_url;
     delete citizenPayload.instagram_url;
@@ -410,6 +415,7 @@ export async function claimSpotDirect(input: {
     id: citizenData.id,
     displayName: citizenData.display_name,
     avatarId: citizenData.avatar_id,
+    customAvatarData: citizenData.custom_avatar_data || undefined,
     tagline: citizenData.tagline || undefined,
     websiteUrl: citizenData.website_url || undefined,
     githubUrl: citizenData.github_url || undefined,
@@ -445,6 +451,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
   const updatePayload: any = {
     display_name: profile.displayName || session.citizen.displayName,
     avatar_id: profile.avatarId || session.citizen.avatarId,
+    custom_avatar_data: profile.customAvatarData !== undefined ? profile.customAvatarData : (session.citizen as any).customAvatarData || null,
     tagline: profile.tagline !== undefined ? profile.tagline : session.citizen.tagline,
     website_url: profile.websiteUrl !== undefined ? formatSocialUrl(profile.websiteUrl, 'website') : session.citizen.websiteUrl,
     github_url: profile.githubUrl !== undefined ? formatSocialUrl(profile.githubUrl, 'github') : session.citizen.githubUrl,
@@ -464,6 +471,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
     .single();
 
   if (error && error.code === '42703') {
+    delete updatePayload.custom_avatar_data;
     delete updatePayload.twitter_url;
     delete updatePayload.facebook_url;
     delete updatePayload.instagram_url;
@@ -487,6 +495,7 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
       id: data.id,
       displayName: data.display_name,
       avatarId: data.avatar_id,
+      customAvatarData: data.custom_avatar_data || undefined,
       tagline: data.tagline || undefined,
       websiteUrl: data.website_url || undefined,
       githubUrl: data.github_url || undefined,

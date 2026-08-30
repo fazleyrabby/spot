@@ -29,6 +29,7 @@ ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS youtube_url VARCHAR(256);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(256);
+ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS custom_avatar_data TEXT;
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64);
 ALTER TABLE public.citizens ADD COLUMN IF NOT EXISTS device_fingerprint VARCHAR(64);
 

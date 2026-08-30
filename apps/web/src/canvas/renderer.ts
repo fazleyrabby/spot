@@ -1,6 +1,6 @@
 import { GridEngine, Camera2D } from '@spot/world';
 import type { Coordinates, OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
-import { getAvatar, drawAvatarOnCanvas } from './avatars.js';
+import { getAvatar, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from './avatars.js';
 
 export interface RendererEvents {
   onSpotClick?: (spot: { x: number; y: number; occupied?: OccupiedSpotSummary }) => void;
@@ -321,7 +321,11 @@ export class WorldCanvasRenderer {
     // Avatar Sprite
     const pad = 4;
     const avatarSize = size - pad * 2;
-    drawAvatarOnCanvas(ctx, avatar, x + pad, y + pad, avatarSize);
+    if (occupied.customAvatarData) {
+      drawCustomAvatarOnCanvas(ctx, occupied.customAvatarData, x + pad, y + pad, avatarSize);
+    } else {
+      drawAvatarOnCanvas(ctx, avatar, x + pad, y + pad, avatarSize);
+    }
 
     // Online presence badge
     if (occupied.isOnline && this.camera.zoom > 0.6) {

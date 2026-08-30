@@ -26,7 +26,8 @@ import SupportModal from '../components/SupportModal.astro';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
   import { WorldCanvasRenderer } from '../canvas/renderer.js';
   import { CanvasInputHandler } from '../canvas/input.js';
-  import { AVATAR_CATALOG, getAvatar, drawAvatarOnCanvas } from '../canvas/avatars.js';
+  import { AVATAR_CATALOG, getAvatar, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
+  import { pixelizeImage } from '../canvas/pixelizer.js';
   import type { OccupiedSpotSummary, WorldSnapshot, Citizen } from '@spot/shared';
 
   // 1. Toast Notification Helper
@@ -112,6 +113,30 @@ import SupportModal from '../components/SupportModal.astro';
   const inputLinkedin = document.getElementById('input-linkedin') as HTMLInputElement;
   const inputYoutube = document.getElementById('input-youtube') as HTMLInputElement;
   const inputGithub = document.getElementById('input-github') as HTMLInputElement;
+
+  // Custom Avatar Elements (Claim Modal)
+  const inputCustomAvatarFile = document.getElementById('input-custom-avatar-file') as HTMLInputElement;
+  const claimCustomPreviewBox = document.getElementById('claim-custom-preview-box');
+  const claimCustomPreviewCanvas = document.getElementById('claim-custom-preview-canvas') as HTMLCanvasElement;
+  const btnClaimRes16 = document.getElementById('btn-claim-res-16') as HTMLButtonElement;
+  const btnClaimRes8 = document.getElementById('btn-claim-res-8') as HTMLButtonElement;
+  const btnClaimRemoveCustom = document.getElementById('btn-claim-remove-custom') as HTMLButtonElement;
+
+  // Custom Avatar Elements (Edit Modal)
+  const inputEditCustomAvatarFile = document.getElementById('edit-custom-avatar-file') as HTMLInputElement;
+  const editCustomPreviewBox = document.getElementById('edit-custom-preview-box');
+  const editCustomPreviewCanvas = document.getElementById('edit-custom-preview-canvas') as HTMLCanvasElement;
+  const btnEditRes16 = document.getElementById('btn-edit-res-16') as HTMLButtonElement;
+  const btnEditRes8 = document.getElementById('btn-edit-res-8') as HTMLButtonElement;
+  const btnEditRemoveCustom = document.getElementById('btn-edit-remove-custom') as HTMLButtonElement;
+
+  let claimCustomAvatarData: string | null = null;
+  let claimCustomAvatarFile: File | null = null;
+  let claimCustomRes: 8 | 16 = 16;
+
+  let editCustomAvatarData: string | null = null;
+  let editCustomAvatarFile: File | null = null;
+  let editCustomRes: 8 | 16 = 16;
 
   // Search Modal Elements
   const searchBackdrop = document.getElementById('search-modal-backdrop');
@@ -458,8 +483,12 @@ import SupportModal from '../components/SupportModal.astro';
       const ctx = profileAvatarCanvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, 64, 64);
-        const avatar = getAvatar(occupied.avatarId);
-        drawAvatarOnCanvas(ctx, avatar, 4, 4, 56);
+        if (occupied.customAvatarData) {
+          drawCustomAvatarOnCanvas(ctx, occupied.customAvatarData, 4, 4, 56);
+        } else {
+          const avatar = getAvatar(occupied.avatarId);
+          drawAvatarOnCanvas(ctx, avatar, 4, 4, 56);
+        }
       }
     }
 
@@ -607,8 +636,24 @@ import SupportModal from '../components/SupportModal.astro';
     editYoutube.value = cit?.youtubeUrl || occ?.youtubeUrl || '';
     editGithub.value = cit?.githubUrl || occ?.githubUrl || '';
     editSelectedAvatarId = cit?.avatarId || occ?.avatarId || 'astronaut';
+    editCustomAvatarData = cit?.customAvatarData || occ?.customAvatarData || null;
 
-    renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
+    if (editCustomAvatarData && editCustomPreviewBox && editCustomPreviewCanvas) {
+      editCustomPreviewBox.style.display = 'flex';
+      const pctx = editCustomPreviewCanvas.getContext('2d');
+      if (pctx) {
+        pctx.clearRect(0, 0, 64, 64);
+        drawCustomAvatarOnCanvas(pctx, editCustomAvatarData, 0, 0, 64);
+      }
+    } else if (editCustomPreviewBox) {
+      editCustomPreviewBox.style.display = 'none';
+    }
+
+    renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { 
+      editSelectedAvatarId = id;
+      editCustomAvatarData = null;
+      if (editCustomPreviewBox) editCustomPreviewBox.style.display = 'none';
+    });
   });
 
   btnCancelEdit?.addEventListener('click', () => {
@@ -638,6 +683,7 @@ import SupportModal from '../components/SupportModal.astro';
       const res = await updateMyProfile({
         displayName: newDisplayName,
         avatarId: newAvatarId,
+        customAvatarData: editCustomAvatarData || undefined,
         tagline: newTagline,
         websiteUrl: newWebsite,
         twitterUrl: newTwitter,
@@ -653,6 +699,7 @@ import SupportModal from '../components/SupportModal.astro';
           ...currentViewingOccupied,
           displayName: newDisplayName,
           avatarId: newAvatarId,
+          customAvatarData: editCustomAvatarData || undefined,
           tagline: newTagline,
           websiteUrl: newWebsite,
           twitterUrl: newTwitter,
@@ -666,6 +713,7 @@ import SupportModal from '../components/SupportModal.astro';
         if (myCitizen) {
           myCitizen.displayName = updated.displayName;
           myCitizen.avatarId = updated.avatarId;
+          myCitizen.customAvatarData = updated.customAvatarData;
           myCitizen.tagline = updated.tagline;
           myCitizen.websiteUrl = updated.websiteUrl;
           myCitizen.twitterUrl = updated.twitterUrl;
@@ -685,6 +733,7 @@ import SupportModal from '../components/SupportModal.astro';
         if (spotItem) {
           spotItem.displayName = updated.displayName;
           spotItem.avatarId = updated.avatarId;
+          spotItem.customAvatarData = updated.customAvatarData;
           spotItem.tagline = updated.tagline;
           spotItem.websiteUrl = updated.websiteUrl;
           spotItem.twitterUrl = updated.twitterUrl;
@@ -951,7 +1000,18 @@ import SupportModal from '../components/SupportModal.astro';
 
     currentTargetSpot = { x: gx, y: gy };
     if (claimSpotBadge) claimSpotBadge.textContent = `Spot (${gx}, ${gy})`;
-    renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => { selectedAvatarId = id; });
+    
+    // Reset custom avatar in claim modal
+    claimCustomAvatarData = null;
+    claimCustomAvatarFile = null;
+    if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
+    if (inputCustomAvatarFile) inputCustomAvatarFile.value = '';
+
+    renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => {
+      selectedAvatarId = id;
+      claimCustomAvatarData = null;
+      if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
+    });
     if (claimBackdrop) {
       claimBackdrop.classList.add('open');
       claimBackdrop.setAttribute('aria-hidden', 'false');
@@ -965,6 +1025,130 @@ import SupportModal from '../components/SupportModal.astro';
       renderer.clearSelection();
     }
   }
+
+  // Handle Photo-to-Pixel Avatar for Claim Modal
+  inputCustomAvatarFile?.addEventListener('change', async () => {
+    const file = inputCustomAvatarFile.files?.[0];
+    if (!file) return;
+    claimCustomAvatarFile = file;
+    try {
+      showToast('🎨 Converting photo to 8-bit avatar...', 'info');
+      const result = await pixelizeImage(file, claimCustomRes);
+      claimCustomAvatarData = result.dataUrl;
+
+      if (claimCustomPreviewBox && claimCustomPreviewCanvas) {
+        claimCustomPreviewBox.style.display = 'flex';
+        const ctx = claimCustomPreviewCanvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, 64, 64);
+          drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+        }
+      }
+      showToast('✨ 8-bit avatar generated!', 'success');
+    } catch (err) {
+      showToast('Failed to process image', 'error');
+    }
+  });
+
+  btnClaimRes16?.addEventListener('click', async () => {
+    claimCustomRes = 16;
+    btnClaimRes16.classList.add('active');
+    btnClaimRes8?.classList.remove('active');
+    if (claimCustomAvatarFile) {
+      const result = await pixelizeImage(claimCustomAvatarFile, 16);
+      claimCustomAvatarData = result.dataUrl;
+      const ctx = claimCustomPreviewCanvas?.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 64, 64);
+        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+      }
+    }
+  });
+
+  btnClaimRes8?.addEventListener('click', async () => {
+    claimCustomRes = 8;
+    btnClaimRes8.classList.add('active');
+    btnClaimRes16?.classList.remove('active');
+    if (claimCustomAvatarFile) {
+      const result = await pixelizeImage(claimCustomAvatarFile, 8);
+      claimCustomAvatarData = result.dataUrl;
+      const ctx = claimCustomPreviewCanvas?.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 64, 64);
+        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+      }
+    }
+  });
+
+  btnClaimRemoveCustom?.addEventListener('click', () => {
+    claimCustomAvatarData = null;
+    claimCustomAvatarFile = null;
+    if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
+    if (inputCustomAvatarFile) inputCustomAvatarFile.value = '';
+    renderAvatarSelector(claimAvatarGrid, selectedAvatarId, (id) => { selectedAvatarId = id; });
+  });
+
+  // Handle Photo-to-Pixel Avatar for Edit Profile Modal
+  inputEditCustomAvatarFile?.addEventListener('change', async () => {
+    const file = inputEditCustomAvatarFile.files?.[0];
+    if (!file) return;
+    editCustomAvatarFile = file;
+    try {
+      showToast('🎨 Converting photo to 8-bit avatar...', 'info');
+      const result = await pixelizeImage(file, editCustomRes);
+      editCustomAvatarData = result.dataUrl;
+
+      if (editCustomPreviewBox && editCustomPreviewCanvas) {
+        editCustomPreviewBox.style.display = 'flex';
+        const ctx = editCustomPreviewCanvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, 64, 64);
+          drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+        }
+      }
+      showToast('✨ 8-bit avatar generated!', 'success');
+    } catch (err) {
+      showToast('Failed to process image', 'error');
+    }
+  });
+
+  btnEditRes16?.addEventListener('click', async () => {
+    editCustomRes = 16;
+    btnEditRes16.classList.add('active');
+    btnEditRes8?.classList.remove('active');
+    if (editCustomAvatarFile) {
+      const result = await pixelizeImage(editCustomAvatarFile, 16);
+      editCustomAvatarData = result.dataUrl;
+      const ctx = editCustomPreviewCanvas?.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 64, 64);
+        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+      }
+    }
+  });
+
+  btnEditRes8?.addEventListener('click', async () => {
+    editCustomRes = 8;
+    btnEditRes8.classList.add('active');
+    btnEditRes16?.classList.remove('active');
+    if (editCustomAvatarFile) {
+      const result = await pixelizeImage(editCustomAvatarFile, 8);
+      editCustomAvatarData = result.dataUrl;
+      const ctx = editCustomPreviewCanvas?.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 64, 64);
+        drawCustomAvatarOnCanvas(ctx, result.dataUrl, 0, 0, 64);
+      }
+    }
+  });
+
+  btnEditRemoveCustom?.addEventListener('click', () => {
+    editCustomAvatarData = null;
+    editCustomAvatarFile = null;
+    if (editCustomPreviewBox) editCustomPreviewBox.style.display = 'none';
+    if (inputEditCustomAvatarFile) inputEditCustomAvatarFile.value = '';
+    renderAvatarSelector(editAvatarGrid, editSelectedAvatarId, (id) => { editSelectedAvatarId = id; });
+  });
 
   profileCloseBtn?.addEventListener('click', closeProfileModal);
   profileBackdrop?.addEventListener('click', (e) => { if (e.target === profileBackdrop) closeProfileModal(); });
@@ -1042,6 +1226,7 @@ import SupportModal from '../components/SupportModal.astro';
       const res = await claimSpot(spotId, {
         displayName,
         avatarId: selectedAvatarId,
+        customAvatarData: claimCustomAvatarData || undefined,
         tagline: inputTagline.value.trim() || undefined,
         websiteUrl: inputWebsite.value.trim() || undefined,
         twitterUrl: inputTwitter.value.trim() || undefined,
@@ -1062,6 +1247,7 @@ import SupportModal from '../components/SupportModal.astro';
         citizenId: res.citizen.id,
         displayName: res.citizen.displayName,
         avatarId: res.citizen.avatarId,
+        customAvatarData: res.citizen.customAvatarData,
         tagline: res.citizen.tagline,
         websiteUrl: res.citizen.websiteUrl,
         twitterUrl: res.citizen.twitterUrl,
@@ -1107,7 +1293,6 @@ import SupportModal from '../components/SupportModal.astro';
       activeSSE = null;
     }
 
-    const sessionToken = localStorage.getItem('spot_session_token') || '';
     let tabId = sessionStorage.getItem('spot_tab_id');
     if (!tabId) {
       tabId = Math.random().toString(36).substring(2, 9);
