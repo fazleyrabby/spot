@@ -27,3 +27,9 @@ Thumbs.db
 .vscode/
 .idea/
 .vercel
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Screenshots
+live-home.png
