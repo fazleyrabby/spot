@@ -44,6 +44,9 @@ import TransferModal from '../components/TransferModal.astro';
     transform: translateX(-50%);
     color: #cbd5e1;
     font-size: 0.78rem;
+    /* Do not let the full-width details layer steal taps from the HUD
+       controls underneath it. The interactive children opt back in below. */
+    pointer-events: none;
   }
 
   .seo-guide summary {
@@ -56,6 +59,7 @@ import TransferModal from '../components/TransferModal.astro';
     color: #94a3b8;
     cursor: pointer;
     list-style: none;
+    pointer-events: auto;
   }
 
   .seo-guide summary::-webkit-details-marker { display: none; }
@@ -67,6 +71,7 @@ import TransferModal from '../components/TransferModal.astro';
     border-radius: 14px;
     background: rgba(13, 17, 28, 0.96);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
   }
 
   .seo-guide h1 { margin: 0 0 7px; color: #f8fafc; font-size: 1rem; line-height: 1.25; }
