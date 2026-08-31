@@ -22,7 +22,8 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Only allow the app's own origin (no third-party origins)
-      if (!origin || origin.startsWith('http://localhost') || origin === config.corsOrigin) {
+      const isLocalOrigin = config.appEnv === 'local' && origin?.startsWith('http://localhost');
+      if (!origin || isLocalOrigin || origin === config.corsOrigin) {
         callback(null, true);
       } else {
         callback(null, false);

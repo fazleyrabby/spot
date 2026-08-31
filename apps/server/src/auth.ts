@@ -48,6 +48,12 @@ export async function resolveCitizen(token: string): Promise<Citizen | null> {
             created_at as "createdAt", updated_at as "updatedAt"
      FROM citizens
      WHERE session_token_hash = $1
+        OR EXISTS (
+          SELECT 1 FROM citizen_sessions s
+          WHERE s.citizen_id = citizens.id
+            AND s.token_hash = $1
+            AND s.expires_at > NOW()
+        )
      LIMIT 1`,
     [tokenHash]
   );

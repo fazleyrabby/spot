@@ -18827,6 +18827,12 @@ async function resolveCitizen(token) {
             created_at as "createdAt", updated_at as "updatedAt"
      FROM citizens
      WHERE session_token_hash = $1
+        OR EXISTS (
+          SELECT 1 FROM citizen_sessions s
+          WHERE s.citizen_id = citizens.id
+            AND s.token_hash = $1
+            AND s.expires_at > NOW()
+        )
      LIMIT 1`,
     [tokenHash]
   );
@@ -27417,7 +27423,11 @@ apiRouter.post("/auth/passkey/authenticate/verify", async (req, res) => {
       return;
     }
     const token = generateSessionToken();
-    await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [hashToken(token), citizen.id]);
+    await query(
+      `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+       ON CONFLICT (token_hash) DO NOTHING`,
+      [citizen.id, hashToken(token)]
+    );
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
     const spotRes = await query(`SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`, [citizen.id]);
     res.json({ success: true, citizen, ownedSpot: spotRes.rows[0] || null, sessionToken: token });
@@ -27675,6 +27685,8 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
   }
   let citizen = req.citizen;
   let rawToken = req.rawSessionToken;
+  let createdCitizenId = null;
+  let claimSucceeded = false;
   const deviceFingerprint = typeof req.headers["x-spot-device-fingerprint"] === "string" ? req.headers["x-spot-device-fingerprint"] : null;
   if (!citizen && input.githubId) {
     const gitRes = await query(
@@ -27709,6 +27721,23 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
     }
   }
   if (!citizen) {
+    if (!input.githubId) {
+      const ip = clientIp(req);
+      if (ip) {
+        const recentGuestRes = await query(
+          `SELECT COUNT(*)::text AS count
+           FROM citizens
+           WHERE github_id IS NULL
+             AND ip_address = $1
+             AND created_at > NOW() - INTERVAL '24 hours'`,
+          [ip]
+        );
+        if (Number(recentGuestRes.rows[0]?.count || 0) >= 5) {
+          res.status(429).json({ error: "RateLimitExceeded", message: "Maximum citizen registration limit reached for this IP today." });
+          return;
+        }
+      }
+    }
     const newRawToken = generateSessionToken();
     const tokenHash = hashToken(newRawToken);
     const citizenId = `c_${crypto3.randomBytes(12).toString("hex")}`;
@@ -27743,6 +27772,7 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
         ]
       );
       citizen = citizenRes.rows[0];
+      createdCitizenId = citizenRes.rows[0].id;
       rawToken = newRawToken;
       res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
     } catch (err) {
@@ -27800,7 +27830,9 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
       [citizen.id, spotId]
     );
     if (updateRes.rows.length === 0) {
-      const currentOwner = await query(`SELECT owner_id FROM spots WHERE id = $1`, [spotId]);
+      if (createdCitizenId) {
+        await query(`DELETE FROM citizens WHERE id = $1`, [createdCitizenId]);
+      }
       res.status(409).json({
         error: "SpotAlreadyOccupied",
         message: "This spot was already claimed by another citizen.",
@@ -27809,6 +27841,7 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
       return;
     }
     const claimedSpot = updateRes.rows[0];
+    claimSucceeded = true;
     const neighborRes = await query(
       `SELECT DISTINCT owner_id
        FROM spots
@@ -27853,6 +27886,10 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
     invalidateWorldCache();
   } catch (err) {
     if (err?.code === "23505" || String(err?.message || "").includes("duplicate key")) {
+      if (createdCitizenId && !claimSucceeded) {
+        await query(`DELETE FROM citizens WHERE id = $1`, [createdCitizenId]).catch(() => {
+        });
+      }
       res.status(409).json({
         error: "CitizenAlreadyOwnsSpot",
         message: "You already own a spot \u2014 each citizen gets exactly one."
@@ -27905,7 +27942,7 @@ apiRouter.post("/spots/:spotId/comments", spotCommentLimiter, optionalAuthMiddle
     return;
   }
   try {
-    const spot = await query(`SELECT owner_id FROM spots WHERE id = $1`, [spotId]);
+    const spot = await query(`SELECT owner_id, wall_visibility as "visibility" FROM spots WHERE id = $1`, [spotId]);
     if (!spot.rows[0]?.owner_id) {
       res.status(409).json({ error: "SpotUnavailable", message: "Only claimed spots have walls." });
       return;
@@ -27914,7 +27951,7 @@ apiRouter.post("/spots/:spotId/comments", spotCommentLimiter, optionalAuthMiddle
       res.status(403).json({ error: "OwnSpotComment", message: "You cannot post on your own spot wall." });
       return;
     }
-    if (spot.rows[0].wall_visibility !== "open") {
+    if (spot.rows[0].visibility !== "open") {
       res.status(403).json({ error: "WallReadOnly", message: "This wall is currently read-only." });
       return;
     }
@@ -28199,7 +28236,8 @@ app.use((req, _res, next) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || origin.startsWith("http://localhost") || origin === config.corsOrigin) {
+      const isLocalOrigin = config.appEnv === "local" && origin?.startsWith("http://localhost");
+      if (!origin || isLocalOrigin || origin === config.corsOrigin) {
         callback(null, true);
       } else {
         callback(null, false);
