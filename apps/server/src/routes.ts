@@ -11,7 +11,7 @@ import {
   optionalAuthMiddleware,
   resolveCitizen,
 } from './auth.js';
-import { citizenCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
+import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
 import {
   CreateCitizenSchema,
   UpdateCitizenSchema,
@@ -419,7 +419,16 @@ apiRouter.post('/auth/github/sync', async (req, res) => {
  * POST /api/spots/claim
  * Atomic, idempotent spot claim transaction
  */
-apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: AuthenticatedRequest, res, next) => {
+  if (!req.citizen) {
+    citizenCreationLimiter(req, res, (err?: any) => {
+      if (err) return next(err);
+      deviceFingerprintCreationLimiter(req, res, next);
+    });
+    return;
+  }
+  next();
+}, async (req: AuthenticatedRequest, res) => {
   const parsed = CreateCitizenSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'ValidationError', details: parsed.error.format() });
@@ -474,9 +483,9 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
         `INSERT INTO citizens (
            id, session_token_hash, display_name, avatar_id, custom_avatar_data,
            tagline, website_url, github_url, twitter_url, facebook_url,
-           instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address
+           instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address, device_fingerprint
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
          RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
         [
           citizenId,
@@ -496,6 +505,7 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, async (
           input.email || null,
           input.avatarUrl || null,
           clientIp(req),
+          typeof req.headers['x-spot-device-fingerprint'] === 'string' ? req.headers['x-spot-device-fingerprint'] : null,
         ]
       );
       citizen = citizenRes.rows[0];
