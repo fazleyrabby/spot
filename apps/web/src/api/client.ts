@@ -14,7 +14,7 @@ import { getDeviceFingerprint } from './fingerprint.js';
 const configuredApiBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
 export const API_BASE = configuredApiBase
   ? (configuredApiBase.endsWith('/api') ? configuredApiBase : `${configuredApiBase}/api`)
-  : null;
+  : (import.meta.env.PROD ? '/api' : null);
 
 export interface MySessionResponse {
   authenticated: boolean;
@@ -218,7 +218,8 @@ export async function claimSpot(
       throw err;
     } catch (err: any) {
       if (err?.status) throw err; // real server error — do NOT fall back to direct mode
-      console.warn('API /spots/claim unreachable, falling back to direct mode:', err);
+      console.error('API /spots/claim unreachable; refusing direct Supabase fallback:', err);
+      throw err;
     }
   }
   return await claimSpotDirect(finalInput);
@@ -272,7 +273,8 @@ export async function updateMyProfile(
       throw err;
     } catch (err: any) {
       if (err?.status) throw err;
-      console.warn('API /citizens/me PATCH unreachable, falling back to direct mode:', err);
+      console.error('API /citizens/me PATCH unreachable; refusing direct Supabase fallback:', err);
+      throw err;
     }
   }
   return await updateProfileDirect(profile);
@@ -293,7 +295,8 @@ export async function deleteMyAccount(targetSpotId?: string, targetCitizenId?: s
       throw err;
     } catch (err: any) {
       if (err?.status) throw err;
-      console.warn('API /citizens/me DELETE unreachable, falling back to direct mode:', err);
+      console.error('API /citizens/me DELETE unreachable; refusing direct Supabase fallback:', err);
+      throw err;
     }
   }
   return await deleteAccountDirect(targetSpotId, targetCitizenId);

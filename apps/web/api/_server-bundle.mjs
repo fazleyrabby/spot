@@ -210,9 +210,9 @@ var citizenCreationLimiter = new SlidingWindowRateLimiter(
   "Maximum citizen registration limit reached for this IP today"
 ).middleware();
 var deviceFingerprintCreationLimiter = new SlidingWindowRateLimiter(
-  5,
+  1,
   24 * 60 * 60 * 1e3,
-  "Maximum anonymous citizen limit reached for this device today",
+  "This device already has an anonymous citizen",
   2e4
 ).middleware((req) => {
   const fingerprint = req.headers["x-spot-device-fingerprint"];
@@ -659,6 +659,7 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
   }
   let citizen = req.citizen;
   let rawToken = req.rawSessionToken;
+  const deviceFingerprint = typeof req.headers["x-spot-device-fingerprint"] === "string" ? req.headers["x-spot-device-fingerprint"] : null;
   if (!citizen && input.githubId) {
     const gitRes = await query(
       `SELECT ${CITIZEN_PROFILE_COLUMNS}
@@ -669,6 +670,26 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
     );
     if (gitRes.rows.length > 0) {
       citizen = gitRes.rows[0];
+    }
+  }
+  if (!citizen && deviceFingerprint) {
+    const deviceOwnerRes = await query(
+      `SELECT s.id, s.x, s.y
+       FROM citizens c
+       LEFT JOIN spots s ON s.owner_id = c.id
+       WHERE c.device_fingerprint = $1
+       ORDER BY c.created_at ASC
+       LIMIT 1`,
+      [deviceFingerprint]
+    );
+    if (deviceOwnerRes.rows[0]) {
+      const owner = deviceOwnerRes.rows[0];
+      res.status(409).json({
+        error: "DeviceAlreadyHasCitizen",
+        message: owner.id ? `This device already owns spot (${owner.x}, ${owner.y}). Use Sync Phone to access it here.` : "This device already has an anonymous citizen. Use Sync Phone to access it here.",
+        ownedSpotId: owner.id || null
+      });
+      return;
     }
   }
   if (!citizen) {
@@ -702,7 +723,7 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
           input.email || null,
           input.avatarUrl || null,
           clientIp(req),
-          typeof req.headers["x-spot-device-fingerprint"] === "string" ? req.headers["x-spot-device-fingerprint"] : null
+          deviceFingerprint
         ]
       );
       citizen = citizenRes.rows[0];
