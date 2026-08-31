@@ -290,7 +290,7 @@ import TransferModal from '../components/TransferModal.astro';
     height: 100,
     totalSpots: 10000,
     claimedCount: 0,
-    onlineCount: 1,
+    onlineCount: 0,
     occupied: [],
   };
 
@@ -1853,7 +1853,7 @@ import TransferModal from '../components/TransferModal.astro';
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'presence') {
-          if (hudOnlineCount) hudOnlineCount.textContent = String(data.onlineCount || 1);
+          if (hudOnlineCount) hudOnlineCount.textContent = String(data.onlineCount ?? 0);
           const onlineIds = new Set<string>(data.onlineCitizenIds || []);
           worldSnapshot.occupied.forEach((spot) => {
             spot.isOnline = onlineIds.has(spot.citizenId);
@@ -1889,10 +1889,10 @@ import TransferModal from '../components/TransferModal.astro';
     return true;
   }
   function connectRealtimeStream() {
-    let tabId = sessionStorage.getItem('spot_tab_id');
+    let tabId = localStorage.getItem('spot_presence_id');
     if (!tabId) {
       tabId = Math.random().toString(36).substring(2, 9);
-      sessionStorage.setItem('spot_tab_id', tabId);
+      localStorage.setItem('spot_presence_id', tabId);
     }
 
     if (connectApiActivityStream(tabId)) return;
@@ -1915,7 +1915,7 @@ import TransferModal from '../components/TransferModal.astro';
         })
         .on('presence', { event: 'sync' }, () => {
           const state = supabaseChannel.presenceState();
-          const count = Math.max(1, Object.keys(state).length);
+          const count = Object.keys(state).length;
           const onlineCountEl = document.getElementById('hud-online-count');
           if (onlineCountEl) onlineCountEl.textContent = String(count);
         })

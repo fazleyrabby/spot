@@ -125,11 +125,19 @@ export async function updateSpotWall(spotId: string, visibility: 'open' | 'reado
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
   if (API_BASE) {
     try {
+      const visitRes = await fetch(`${API_BASE}/analytics/visit`, {
+        credentials: 'include',
+      });
+      const visitData = visitRes.ok ? await visitRes.json() : null;
       const res = await fetch(`${API_BASE}/world`, {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const snapshot = await res.json();
+        if (visitData?.totalVisitors != null) snapshot.totalVisitors = visitData.totalVisitors;
+        return snapshot;
+      }
       throw new Error(`World API returned ${res.status}`);
     } catch (err) {
       // Never fall back to direct Supabase reads when the authoritative API is configured.

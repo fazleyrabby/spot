@@ -8,7 +8,7 @@ interface Props {
 const {
   totalSpots = 10000,
   claimedCount = 0,
-  onlineCount = 1,
+  onlineCount = 0,
 } = Astro.props;
 
 const pct = Math.round((claimedCount / totalSpots) * 100);
