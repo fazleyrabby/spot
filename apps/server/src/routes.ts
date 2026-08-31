@@ -293,7 +293,11 @@ apiRouter.post('/auth/passkey/authenticate/verify', async (req, res) => {
       return;
     }
     const token = generateSessionToken();
-    await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [hashToken(token), citizen.id]);
+    await query(
+      `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+       ON CONFLICT (token_hash) DO NOTHING`,
+      [citizen.id, hashToken(token)]
+    );
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
     const spotRes = await query<any>(`SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`, [citizen.id]);
     res.json({ success: true, citizen, ownedSpot: spotRes.rows[0] || null, sessionToken: token });
@@ -613,6 +617,8 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
 
   let citizen = req.citizen;
   let rawToken = req.rawSessionToken;
+  let createdCitizenId: string | null = null;
+  let claimSucceeded = false;
   const deviceFingerprint = typeof req.headers['x-spot-device-fingerprint'] === 'string'
     ? req.headers['x-spot-device-fingerprint']
     : null;
@@ -659,6 +665,25 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
 
   // If citizen is not yet registered, create them on the fly
   if (!citizen) {
+    // Keep the anonymous-account cap durable across serverless instances. The
+    // in-memory limiter above is still useful for bursts, but is not a store.
+    if (!input.githubId) {
+      const ip = clientIp(req);
+      if (ip) {
+        const recentGuestRes = await query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count
+           FROM citizens
+           WHERE github_id IS NULL
+             AND ip_address = $1
+             AND created_at > NOW() - INTERVAL '24 hours'`,
+          [ip]
+        );
+        if (Number(recentGuestRes.rows[0]?.count || 0) >= 5) {
+          res.status(429).json({ error: 'RateLimitExceeded', message: 'Maximum citizen registration limit reached for this IP today.' });
+          return;
+        }
+      }
+    }
     const newRawToken = generateSessionToken();
     const tokenHash = hashToken(newRawToken);
     const citizenId = `c_${crypto.randomBytes(12).toString('hex')}`;
@@ -694,6 +719,7 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
         ]
       );
       citizen = citizenRes.rows[0];
+      createdCitizenId = citizenRes.rows[0].id;
       rawToken = newRawToken;
       res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
     } catch (err: any) {
@@ -760,7 +786,9 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
 
     if (updateRes.rows.length === 0) {
       // Spot was already taken by someone else
-      const currentOwner = await query<any>(`SELECT owner_id FROM spots WHERE id = $1`, [spotId]);
+      if (createdCitizenId) {
+        await query(`DELETE FROM citizens WHERE id = $1`, [createdCitizenId]);
+      }
       res.status(409).json({
         error: 'SpotAlreadyOccupied',
         message: 'This spot was already claimed by another citizen.',
@@ -770,6 +798,7 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
     }
 
     const claimedSpot = updateRes.rows[0];
+    claimSucceeded = true;
 
     const neighborRes = await query<any>(
       `SELECT DISTINCT owner_id
@@ -819,6 +848,9 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
   } catch (err: any) {
     // 23505 = unique_violation (spots_owner_id_unique) when citizen races to claim 2 spots at once
     if (err?.code === '23505' || String(err?.message || '').includes('duplicate key')) {
+      if (createdCitizenId && !claimSucceeded) {
+        await query(`DELETE FROM citizens WHERE id = $1`, [createdCitizenId]).catch(() => {});
+      }
       res.status(409).json({
         error: 'CitizenAlreadyOwnsSpot',
         message: 'You already own a spot — each citizen gets exactly one.',
@@ -883,7 +915,7 @@ apiRouter.post('/spots/:spotId/comments', spotCommentLimiter, optionalAuthMiddle
   }
 
   try {
-    const spot = await query<any>(`SELECT owner_id FROM spots WHERE id = $1`, [spotId]);
+    const spot = await query<any>(`SELECT owner_id, wall_visibility as "visibility" FROM spots WHERE id = $1`, [spotId]);
     if (!spot.rows[0]?.owner_id) {
       res.status(409).json({ error: 'SpotUnavailable', message: 'Only claimed spots have walls.' });
       return;
@@ -892,7 +924,7 @@ apiRouter.post('/spots/:spotId/comments', spotCommentLimiter, optionalAuthMiddle
       res.status(403).json({ error: 'OwnSpotComment', message: 'You cannot post on your own spot wall.' });
       return;
     }
-    if (spot.rows[0].wall_visibility !== 'open') {
+    if (spot.rows[0].visibility !== 'open') {
       res.status(403).json({ error: 'WallReadOnly', message: 'This wall is currently read-only.' });
       return;
     }
