@@ -86,7 +86,7 @@ export class CanvasInputHandler {
         const isUiControl = releaseTarget instanceof Element && Boolean(
           releaseTarget.closest('button, a, input, select, textarea, summary, [role="button"]'),
         );
-        if (isUiControl) return;
+        if (isUiControl || (e.target !== canvas && !canvas.hasPointerCapture(e.pointerId))) return;
 
         // If moved less than 5px, treat as a click / tap
         if (this.dragDistance < 6) {
@@ -103,6 +103,12 @@ export class CanvasInputHandler {
           }
         }
       }
+    };
+
+    const onPointerCancel = () => {
+      this.isDragging = false;
+      this.dragDistance = 0;
+      this.initialPinchDist = 0;
     };
 
     // 2. Wheel zoom
@@ -144,6 +150,7 @@ export class CanvasInputHandler {
     canvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
@@ -153,6 +160,7 @@ export class CanvasInputHandler {
       canvas.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
