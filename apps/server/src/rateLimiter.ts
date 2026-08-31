@@ -39,25 +39,26 @@ export class SlidingWindowRateLimiter {
     }
   }
 
-  middleware() {
+  middleware(keyResolver?: (req: Request) => string) {
     return (req: Request, res: Response, next: NextFunction): void => {
       const ip =
         (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
         req.socket.remoteAddress ||
         'unknown_ip';
+      const key = keyResolver?.(req) || ip;
 
       const now = Date.now();
-      let entry = this.windows.get(ip);
+      let entry = this.windows.get(key);
 
       if (!entry) {
         // LRU cap: prevent unbounded Map growth from IP spoofing
         if (this.windows.size >= this.maxKeys) this.evictOldest();
         entry = { timestamps: [] };
-        this.windows.set(ip, entry);
+        this.windows.set(key, entry);
       } else {
         // Refresh LRU order on hit
-        this.windows.delete(ip);
-        this.windows.set(ip, entry);
+        this.windows.delete(key);
+        this.windows.set(key, entry);
       }
 
       // Filter out timestamps outside current window
@@ -87,6 +88,20 @@ export const citizenCreationLimiter = new SlidingWindowRateLimiter(
   24 * 60 * 60 * 1000,
   'Maximum citizen registration limit reached for this IP today'
 ).middleware();
+
+// A browser fingerprint is only an abuse signal, never an ownership credential.
+// Use it alongside the IP limit to make anonymous account multiplication harder.
+export const deviceFingerprintCreationLimiter = new SlidingWindowRateLimiter(
+  5,
+  24 * 60 * 60 * 1000,
+  'Maximum anonymous citizen limit reached for this device today',
+  20000
+).middleware((req) => {
+  const fingerprint = req.headers['x-spot-device-fingerprint'];
+  return typeof fingerprint === 'string' && fingerprint.startsWith('dfp_')
+    ? `fp:${fingerprint}`
+    : `ip:${(req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown_ip'}`;
+});
 
 // 2. Spot claim limiter: Max 3 claim attempts per IP per minute
 export const spotClaimLimiter = new SlidingWindowRateLimiter(

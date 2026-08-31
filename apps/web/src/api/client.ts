@@ -7,6 +7,7 @@ import {
   deleteAccountDirect,
   searchCitizensDirect,
 } from './supabase.js';
+import { getDeviceFingerprint } from './fingerprint.js';
 
 // All writes go through the authoritative server when PUBLIC_API_BASE is set.
 // Leave unset for local dev without the server (falls back to direct Supabase mode).
@@ -197,9 +198,10 @@ export async function claimSpot(
 
   if (API_BASE) {
     try {
+      const deviceFingerprint = await getDeviceFingerprint();
       const res = await fetch(`${API_BASE}/spots/claim`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { ...getAuthHeaders(), 'x-spot-device-fingerprint': deviceFingerprint },
         credentials: 'include',
         body: JSON.stringify(finalInput),
       });
