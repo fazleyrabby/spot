@@ -78,6 +78,16 @@ export class CanvasInputHandler {
           canvas.releasePointerCapture(e.pointerId);
         } catch (_) {}
 
+        // HUD controls sit over the canvas and pointerup is handled on the
+        // window so drags can finish outside the canvas. On touch devices,
+        // that global handler can otherwise interpret a control tap as a map
+        // tap and select the spot underneath it.
+        const releaseTarget = document.elementFromPoint(e.clientX, e.clientY);
+        const isUiControl = releaseTarget instanceof Element && Boolean(
+          releaseTarget.closest('button, a, input, select, textarea, summary, [role="button"]'),
+        );
+        if (isUiControl) return;
+
         // If moved less than 5px, treat as a click / tap
         if (this.dragDistance < 6) {
           const rect = canvas.getBoundingClientRect();
