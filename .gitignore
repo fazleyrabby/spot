@@ -33,3 +33,7 @@ Thumbs.db
 
 # Screenshots
 live-home.png
+
+# Local-only Remotion Product Hunt video project
+video/
+nohup.out
