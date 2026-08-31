@@ -108,7 +108,17 @@ A curated showcase outside the canvas for indie SaaS, developer tools, studios,
  and internet-native brands. Listings should be clearly marked as sponsored,
  sold for fixed durations, and kept separate from permanent citizen spots. No
  intrusive ads, popups, or tracking-heavy ad network. Validate with direct
- sponsorships once SPOT has meaningful traffic.
+ sponsorships once SPOT has meaningful traffic. The MVP uses a request form,
+ manual availability review, Payoneer invoice/payment request, and manual
+ payment confirmation before activation. Automated payment-provider checkout
+ remains isolated from the main product until a provider explicitly supports
+ advertising inventory.
+
+Manual sponsorship workflow:
+
+```
+inquiry → awaiting_payment → paid_pending_review → approved → inactive
+```
 
 ---
 

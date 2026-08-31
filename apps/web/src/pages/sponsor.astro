@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Sponsor a Spot — SPOT" description="Request a curated sponsorship placement in the SPOT Internet City.">
+  <main class="sponsor-page">
+    <section class="sponsor-shell">
+      <a class="back-link" href="/">← Back to the city</a>
+      <p class="eyebrow">City Showcase / Direct sponsorship</p>
+      <h1>Put your work on the map.</h1>
+      <p class="lede">Request a featured placement for your business, SaaS, studio, or internet project. We review each listing and send an invoice manually.</p>
+
+      <form id="sponsor-form" class="request-form">
+        <div class="form-heading"><h2>Request an ad spot</h2><span>Usually replies within 1–2 days</span></div>
+        <div class="field-grid">
+          <label>Contact name<input name="contactName" required maxlength="80" autocomplete="name" placeholder="Your name" /></label>
+          <label>Work email<input name="email" type="email" required maxlength="254" autocomplete="email" placeholder="you@company.com" /></label>
+        </div>
+        <label>Business or product name<input name="name" required maxlength="80" placeholder="Acme Studio" /></label>
+        <label>Website URL<input name="websiteUrl" type="url" required placeholder="https://example.com" /></label>
+        <label>What are you promoting?<textarea name="description" required maxlength="500" rows="4" placeholder="Tell us briefly what your project does."></textarea></label>
+        <div class="field-grid">
+          <label>Placement tier<select name="tier"><option value="basic">Basic · from $4/mo</option><option value="featured">Featured · from $9/mo</option><option value="premium">Premium · from $12/mo</option></select></label>
+          <label>Preferred location<select name="adSlotKey"><option value="">Let SPOT choose</option><option value="premium-1">Premium · upper left</option><option value="premium-2">Premium · lower left</option><option value="featured-1">Featured · upper right</option><option value="featured-2">Featured · lower right</option></select></label>
+        </div>
+        <label>Logo URL <span>(optional)</span><input name="logoUrl" type="url" placeholder="https://example.com/logo.png" /></label>
+        <p class="fine-print">By submitting, you’re requesting availability—not authorizing a charge. We’ll confirm the placement and send payment instructions separately.</p>
+        <button type="submit" id="submit-button">Send sponsorship request</button>
+        <p id="form-message" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .sponsor-page { min-height: 100vh; padding: clamp(28px, 7vw, 86px) 20px; background: #0c0e14; color: #f8fafc; }
+  .sponsor-shell { width: min(720px, 100%); margin: 0 auto; }
+  .back-link { color: #94a3b8; font-size: .82rem; text-decoration: none; }
+  .back-link:hover { color: #fbbf24; }
+  .eyebrow { margin: 54px 0 12px; color: #f59e0b; font: 700 .7rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; }
+  h1 { max-width: 620px; margin: 0; font-size: clamp(2.5rem, 7vw, 5.4rem); line-height: .95; letter-spacing: -.06em; }
+  .lede { max-width: 590px; margin: 20px 0 34px; color: #a6b0c2; font-size: 1.02rem; line-height: 1.6; }
+  .request-form { display: grid; gap: 17px; padding: clamp(20px, 4vw, 34px); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; background: #171a27; box-shadow: 0 18px 50px rgba(0,0,0,.24); }
+  .form-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  h2 { margin: 0; font-size: 1.2rem; letter-spacing: -.02em; }
+  .form-heading span, label span, .fine-print { color: #8993a8; font-size: .76rem; }
+  label { display: grid; gap: 7px; color: #cbd5e1; font-size: .78rem; font-weight: 700; }
+  input, select, textarea { width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.13); border-radius: 9px; background: #0e1119; color: #f8fafc; padding: 12px; font: inherit; outline: none; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: rgba(245,158,11,.75); box-shadow: 0 0 0 3px rgba(245,158,11,.12); }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fine-print { margin: -3px 0 0; line-height: 1.5; }
+  button { border: 0; border-radius: 9px; padding: 13px 16px; background: #f59e0b; color: #17120a; font: 800 .82rem/1 inherit; cursor: pointer; }
+  button:hover { background: #fbbf24; }
+  button:disabled { cursor: wait; opacity: .65; }
+  .message { min-height: 18px; margin: 0; color: #34d399; font-size: .82rem; }
+  .message.error { color: #fca5a5; }
+  @media (max-width: 620px) { .eyebrow { margin-top: 38px; } .field-grid { grid-template-columns: 1fr; } .form-heading { align-items: flex-start; flex-direction: column; } }
+</style>
+
+<script is:inline>
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5050/api' : '/api';
+  const form = document.getElementById('sponsor-form');
+  const button = document.getElementById('submit-button');
+  const message = document.getElementById('form-message');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    button.disabled = true;
+    message.className = 'message';
+    message.textContent = 'Sending request…';
+    try {
+      const response = await fetch(`${apiBase}/sponsorship-requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message || 'Could not send request.');
+      form.reset();
+      message.textContent = 'Request received. We’ll email you with availability and invoice details.';
+    } catch (error) {
+      message.className = 'message error';
+      message.textContent = error.message || 'Could not send request.';
+    } finally { button.disabled = false; }
+  });
+</script>

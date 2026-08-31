@@ -70,6 +70,8 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       <kbd class="search-shortcut">⌘K</kbd>
     </button>
 
+    <a class="sponsor-link" href="/sponsor">Sponsor</a>
+
     <button class="cta-claim-btn" id="header-claim-btn" type="button">
       <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -288,6 +290,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     gap: 8px;
     flex-shrink: 0;
   }
+
+  .sponsor-link {
+    color: #fbbf24;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .sponsor-link:hover { color: #fde68a; }
 
   .hud-search-btn {
     display: inline-flex;

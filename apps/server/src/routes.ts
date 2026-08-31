@@ -13,7 +13,7 @@ import {
   resolveCitizenById,
 } from './auth.js';
 import { config } from './config.js';
-import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
+import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter, sponsorshipRequestLimiter } from './rateLimiter.js';
 import {
   CreateCitizenSchema,
   UpdateCitizenSchema,
@@ -21,6 +21,7 @@ import {
   sanitizeDisplayName,
 } from '@spot/shared';
 import crypto from 'crypto';
+import net from 'net';
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -64,6 +65,22 @@ function validSpotId(spotId: string): boolean {
   if (!spotIdPattern.test(spotId)) return false;
   const [x, y] = spotId.split(',').map(Number);
   return x >= 0 && x <= 99 && y >= 0 && y <= 99;
+}
+
+const sponsorshipTiers = new Set(['basic', 'featured', 'premium']);
+const sponsorshipSlots = new Set(['premium-1', 'premium-2', 'featured-1', 'featured-2']);
+
+function cleanText(value: unknown, maxLength: number): string {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
+function validHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !['localhost', '127.0.0.1', '::1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function escapeXml(value: unknown): string {
@@ -1270,6 +1287,99 @@ apiRouter.get('/share', async (req, res) => {
   } catch (err) {
     console.error('Share page error:', err);
     res.status(500).type('text').send('Failed to generate share page');
+  }
+});
+
+/**
+ * POST /api/sponsorship-requests
+ * Public inquiry form for manually invoiced City Showcase placements.
+ * This intentionally does not create an ad or activate a placement.
+ */
+apiRouter.post('/sponsorship-requests', sponsorshipRequestLimiter, async (req, res) => {
+  const name = cleanText(req.body?.name, 80);
+  const contactName = cleanText(req.body?.contactName, 80);
+  const email = cleanText(req.body?.email, 254).toLowerCase();
+  const websiteUrl = cleanText(req.body?.websiteUrl, 512);
+  const description = cleanText(req.body?.description, 500);
+  const logoUrl = cleanText(req.body?.logoUrl, 512) || null;
+  const tier = cleanText(req.body?.tier, 20);
+  const adSlotKey = cleanText(req.body?.adSlotKey, 32) || null;
+
+  if (!name || !contactName || !description || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ error: 'ValidationError', message: 'Name, contact name, valid email, and description are required.' });
+    return;
+  }
+  if (!validHttpsUrl(websiteUrl) || (logoUrl && !validHttpsUrl(logoUrl))) {
+    res.status(400).json({ error: 'ValidationError', message: 'Website and logo URLs must use HTTPS.' });
+    return;
+  }
+  if (!sponsorshipTiers.has(tier) || (adSlotKey && (!sponsorshipSlots.has(adSlotKey) || adSlotKey.split('-')[0] !== tier))) {
+    res.status(400).json({ error: 'ValidationError', message: 'Choose a valid sponsorship tier and ad location.' });
+    return;
+  }
+
+  try {
+    const id = `sreq_${crypto.randomBytes(12).toString('hex')}`;
+    const requestIp = clientIp(req);
+    const safeIp = requestIp && net.isIP(requestIp) ? requestIp : null;
+    const result = await query<any>(
+      `INSERT INTO sponsorship_requests
+         (id, contact_name, email, business_name, website_url, description, logo_url, tier, ad_slot_key, status, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'inquiry', $10)
+       RETURNING id, status, created_at as "createdAt"`,
+      [id, contactName, email, name, websiteUrl, description, logoUrl, tier, adSlotKey, safeIp]
+    );
+    res.status(201).json({ request: result.rows[0], message: 'Request received. We will email you with availability and invoice details.' });
+  } catch (err) {
+    console.error('Sponsorship request error:', err);
+    res.status(500).json({ error: 'InternalServerError', message: 'Could not save sponsorship request.' });
+  }
+});
+
+/** Admin-only list for the manual invoice workflow. */
+apiRouter.get('/sponsorship-requests', async (req, res) => {
+  if (!config.sponsorshipAdminToken || req.headers['x-sponsorship-admin-token'] !== config.sponsorshipAdminToken) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  try {
+    const result = await query<any>(
+      `SELECT id, contact_name as "contactName", email, business_name as "businessName",
+              website_url as "websiteUrl", description, logo_url as "logoUrl", tier,
+              ad_slot_key as "adSlotKey", status, invoice_reference as "invoiceReference",
+              created_at as "createdAt", updated_at as "updatedAt"
+       FROM sponsorship_requests ORDER BY created_at DESC LIMIT 200`
+    );
+    res.json({ requests: result.rows });
+  } catch (err) {
+    console.error('Sponsorship request list error:', err);
+    res.status(500).json({ error: 'InternalServerError' });
+  }
+});
+
+/** Admin-only status transition after an invoice or Payoneer payment update. */
+apiRouter.patch('/sponsorship-requests/:id', async (req, res) => {
+  if (!config.sponsorshipAdminToken || req.headers['x-sponsorship-admin-token'] !== config.sponsorshipAdminToken) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  const status = cleanText(req.body?.status, 24);
+  const invoiceReference = cleanText(req.body?.invoiceReference, 128) || null;
+  if (!['inquiry', 'awaiting_payment', 'paid_pending_review', 'approved', 'inactive', 'rejected', 'closed'].includes(status)) {
+    res.status(400).json({ error: 'ValidationError', message: 'Invalid sponsorship status.' });
+    return;
+  }
+  try {
+    const result = await query<any>(
+      `UPDATE sponsorship_requests SET status = $1, invoice_reference = COALESCE($2, invoice_reference), updated_at = NOW()
+       WHERE id = $3 RETURNING id, status, invoice_reference as "invoiceReference", updated_at as "updatedAt"`,
+      [status, invoiceReference, String(req.params.id)]
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'RequestNotFound' }); return; }
+    res.json({ request: result.rows[0] });
+  } catch (err) {
+    console.error('Sponsorship request update error:', err);
+    res.status(500).json({ error: 'InternalServerError' });
   }
 });
 

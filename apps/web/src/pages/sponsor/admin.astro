@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Sponsorship Requests — SPOT" description="Review SPOT sponsorship inquiries.">
+  <main class="admin-page"><section class="admin-shell">
+    <a href="/sponsor" class="back">← Sponsorship page</a>
+    <p class="eyebrow">Private operations</p><h1>Sponsorship requests</h1>
+    <form id="login-form" class="login-form"><label>Admin token<input id="token" type="password" required autocomplete="current-password" /></label><button>Load requests</button></form>
+    <p id="message" class="message" role="status"></p>
+    <section id="requests" class="requests" hidden></section>
+  </section></main>
+</Layout>
+
+<style>
+  .admin-page { min-height: 100vh; padding: clamp(28px, 7vw, 80px) 20px; background: #0c0e14; color: #f8fafc; }
+  .admin-shell { width: min(1000px, 100%); margin: 0 auto; }
+  .back { color: #94a3b8; text-decoration: none; font-size: .82rem; }.back:hover { color: #fbbf24; }
+  .eyebrow { margin: 48px 0 10px; color: #f59e0b; font: 700 .7rem ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+  h1 { margin: 0 0 28px; font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -.06em; }
+  .login-form { display: flex; gap: 10px; align-items: end; max-width: 620px; padding: 18px; border: 1px solid rgba(255,255,255,.11); border-radius: 14px; background: #171a27; }
+  label { flex: 1; display: grid; gap: 7px; color: #cbd5e1; font-size: .78rem; font-weight: 700; }
+  input, select { width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; background: #0e1119; color: #f8fafc; padding: 11px; font: inherit; }
+  button { border: 0; border-radius: 8px; padding: 12px 15px; background: #f59e0b; color: #17120a; font-weight: 800; cursor: pointer; }
+  .message { min-height: 20px; color: #34d399; font-size: .82rem; }.message.error { color: #fca5a5; }
+  .requests { display: grid; gap: 10px; margin-top: 22px; }
+  .request { display: grid; grid-template-columns: 1.4fr 1fr 180px; gap: 18px; align-items: center; padding: 18px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: #171a27; }
+  .request strong, .request small { display: block; }.request small { margin-top: 5px; color: #8993a8; line-height: 1.45; }.request a { color: #fbbf24; }
+  .request-actions { display: grid; gap: 7px; }.request-actions button { background: #10b981; }.request-actions button:disabled { opacity: .6; }
+  @media (max-width: 720px) { .login-form { align-items: stretch; flex-direction: column; }.request { grid-template-columns: 1fr; }.request-actions { max-width: 280px; } }
+</style>
+
+<script is:inline>
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5050/api' : '/api';
+  const loginForm = document.getElementById('login-form'); const tokenInput = document.getElementById('token');
+  const message = document.getElementById('message'); const requests = document.getElementById('requests');
+  const statuses = ['inquiry', 'awaiting_payment', 'paid_pending_review', 'approved', 'inactive', 'rejected', 'closed'];
+  const esc = (value) => String(value || '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  async function load() {
+    const response = await fetch(`${apiBase}/sponsorship-requests`, { headers: { 'x-sponsorship-admin-token': tokenInput.value.trim() } });
+    const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || body.error || 'Could not load requests.');
+    requests.hidden = false; requests.innerHTML = body.requests.length ? body.requests.map((item) => `<article class="request"><div><strong>${esc(item.businessName)}</strong><small>${esc(item.contactName)} · <a href="mailto:${esc(item.email)}">${esc(item.email)}</a><br><a href="${esc(item.websiteUrl)}" target="_blank" rel="noopener">${esc(item.websiteUrl)}</a><br>${esc(item.description)}</small></div><div><strong>${esc(item.tier)}</strong><small>Preferred: ${esc(item.adSlotKey || 'Any location')}<br>${new Date(item.createdAt).toLocaleString()}</small></div><div class="request-actions"><select data-id="${esc(item.id)}">${statuses.map((status) => `<option value="${status}" ${status === item.status ? 'selected' : ''}>${status.replaceAll('_', ' ')}</option>`).join('')}</select><input data-ref="${esc(item.id)}" value="${esc(item.invoiceReference || '')}" placeholder="Invoice reference" /><button data-save="${esc(item.id)}">Save status</button></div></article>`).join('') : '<p>No sponsorship requests yet.</p>';
+  }
+  loginForm.addEventListener('submit', async (event) => { event.preventDefault(); message.className = 'message'; message.textContent = 'Loading…'; try { sessionStorage.setItem('spot_sponsor_admin_token', tokenInput.value.trim()); await load(); message.textContent = 'Connected.'; } catch (error) { message.className = 'message error'; message.textContent = error.message; } });
+  tokenInput.value = sessionStorage.getItem('spot_sponsor_admin_token') || '';
+  requests.addEventListener('click', async (event) => { const button = event.target.closest('[data-save]'); if (!button) return; const id = button.dataset.save; const select = requests.querySelector(`select[data-id="${id}"]`); const ref = requests.querySelector(`input[data-ref="${id}"]`); button.disabled = true; try { const response = await fetch(`${apiBase}/sponsorship-requests/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-sponsorship-admin-token': tokenInput.value.trim() }, body: JSON.stringify({ status: select.value, invoiceReference: ref.value }) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || body.error || 'Could not update request.'); message.className = 'message'; message.textContent = 'Request updated.'; } catch (error) { message.className = 'message error'; message.textContent = error.message; } finally { button.disabled = false; } });
+  if (tokenInput.value) loginForm.requestSubmit();
+</script>

@@ -116,3 +116,10 @@ export const spotCommentLimiter = new SlidingWindowRateLimiter(
   10 * 60 * 1000,
   'Spot wall rate limit exceeded. Please wait before posting again.'
 ).middleware();
+
+// Sponsorship inquiries are intentionally low-volume while payment is manual.
+export const sponsorshipRequestLimiter = new SlidingWindowRateLimiter(
+  3,
+  24 * 60 * 60 * 1000,
+  'You have submitted too many sponsorship requests today.'
+).middleware();
