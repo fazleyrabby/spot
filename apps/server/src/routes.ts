@@ -1225,6 +1225,54 @@ apiRouter.get('/og', async (req, res) => {
 });
 
 /**
+ * Dynamic share landing page. Social crawlers receive spot-specific metadata;
+ * people are redirected into the interactive canvas.
+ */
+apiRouter.get('/share', async (req, res) => {
+  const x = Number(req.query.x);
+  const y = Number(req.query.y);
+  const spotId = `${x},${y}`;
+  if (!Number.isInteger(x) || !Number.isInteger(y) || !validSpotId(spotId)) {
+    res.status(400).type('text').send('Use /api/share?x=50&y=50');
+    return;
+  }
+
+  try {
+    const result = await query<any>(
+      `SELECT c.display_name as "displayName", c.tagline
+       FROM spots s LEFT JOIN citizens c ON c.id = s.owner_id
+       WHERE s.id = $1 LIMIT 1`,
+      [spotId]
+    );
+    const spot = result.rows[0];
+    if (!spot?.displayName) {
+      res.status(404).type('text').send('Spot is available');
+      return;
+    }
+
+    const title = `${spot.displayName} · SPOT Internet City`;
+    const description = spot.tagline || `Visit ${spot.displayName}'s permanent spot at (${x}, ${y}) in SPOT.`;
+    const pageUrl = `https://www.claimyourspot.lol/?spot=${x},${y}`;
+    const imageUrl = `https://www.claimyourspot.lol/api/og?x=${x}&y=${y}`;
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+    res.type('html').send(`<!doctype html><html><head>
+      <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>${escapeXml(title)}</title><meta name="description" content="${escapeXml(description)}">
+      <meta property="og:type" content="website"><meta property="og:url" content="${pageUrl}">
+      <meta property="og:title" content="${escapeXml(title)}"><meta property="og:description" content="${escapeXml(description)}">
+      <meta property="og:image" content="${imageUrl}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+      <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeXml(title)}">
+      <meta name="twitter:description" content="${escapeXml(description)}"><meta name="twitter:image" content="${imageUrl}">
+      <link rel="canonical" href="${pageUrl}">
+      <meta http-equiv="refresh" content="0;url=${pageUrl}">
+    </head><body><p>Opening ${escapeXml(title)}…</p><script>location.replace(${JSON.stringify(pageUrl)})</script></body></html>`);
+  } catch (err) {
+    console.error('Share page error:', err);
+    res.status(500).type('text').send('Failed to generate share page');
+  }
+});
+
+/**
  * GET /api/stats
  */
 apiRouter.get('/stats', async (_req, res) => {
