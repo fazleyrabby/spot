@@ -457,6 +457,9 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
 
   let citizen = req.citizen;
   let rawToken = req.rawSessionToken;
+  const deviceFingerprint = typeof req.headers['x-spot-device-fingerprint'] === 'string'
+    ? req.headers['x-spot-device-fingerprint']
+    : null;
 
   // If citizen was not resolved from cookie/header, check by githubId if supplied
   if (!citizen && input.githubId) {
@@ -469,6 +472,32 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
     );
     if (gitRes.rows.length > 0) {
       citizen = gitRes.rows[0];
+    }
+  }
+
+  // Durable guest identity guard: a new browser session on the same device
+  // cannot create another anonymous citizen. Fingerprints are abuse signals,
+  // not authentication credentials, so existing sessions still use their token.
+  if (!citizen && deviceFingerprint) {
+    const deviceOwnerRes = await query<any>(
+      `SELECT s.id, s.x, s.y
+       FROM citizens c
+       LEFT JOIN spots s ON s.owner_id = c.id
+       WHERE c.device_fingerprint = $1
+       ORDER BY c.created_at ASC
+       LIMIT 1`,
+      [deviceFingerprint]
+    );
+    if (deviceOwnerRes.rows[0]) {
+      const owner = deviceOwnerRes.rows[0];
+      res.status(409).json({
+        error: 'DeviceAlreadyHasCitizen',
+        message: owner.id
+          ? `This device already owns spot (${owner.x}, ${owner.y}). Use Sync Phone to access it here.`
+          : 'This device already has an anonymous citizen. Use Sync Phone to access it here.',
+        ownedSpotId: owner.id || null,
+      });
+      return;
     }
   }
 
@@ -505,7 +534,7 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
           input.email || null,
           input.avatarUrl || null,
           clientIp(req),
-          typeof req.headers['x-spot-device-fingerprint'] === 'string' ? req.headers['x-spot-device-fingerprint'] : null,
+          deviceFingerprint,
         ]
       );
       citizen = citizenRes.rows[0];
