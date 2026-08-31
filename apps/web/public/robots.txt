@@ -2,4 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.claimyourspot.lol/sitemap-index.xml
-Sitemap: https://www.claimyourspot.lol/sitemap.xml
