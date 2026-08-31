@@ -28238,8 +28238,9 @@ apiRouter.get("/share", async (req, res) => {
       <title>${escapeXml(title)}</title><meta name="description" content="${escapeXml(description)}">
       <meta property="og:type" content="website"><meta property="og:url" content="${pageUrl}">
       <meta property="og:title" content="${escapeXml(title)}"><meta property="og:description" content="${escapeXml(description)}">
-      <meta property="og:image" content="${imageUrl}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-      <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeXml(title)}">
+      <meta property="og:image" content="${imageUrl}"><meta property="og:image:alt" content="${escapeXml(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+      <meta property="og:locale" content="en_US">
+      <meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@fazleyrabby"><meta name="twitter:title" content="${escapeXml(title)}">
       <meta name="twitter:description" content="${escapeXml(description)}"><meta name="twitter:image" content="${imageUrl}">
       <link rel="canonical" href="${pageUrl}">
       <meta http-equiv="refresh" content="0;url=${pageUrl}">
