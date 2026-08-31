@@ -28,5 +28,7 @@ export const config = {
   databaseUrl,
   cookieSecret: process.env.COOKIE_SECRET || 'spot_default_cookie_secret_at_least_32_chars',
   corsOrigin: process.env.CORS_ORIGIN || 'https://www.claimyourspot.lol',
+  rpId: process.env.WEBAUTHN_RP_ID || (appEnv === 'local' ? 'localhost' : 'www.claimyourspot.lol'),
+  rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://www.claimyourspot.lol'),
   isProd: process.env.NODE_ENV === 'production',
 };

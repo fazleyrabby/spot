@@ -8,6 +8,7 @@ import {
   searchCitizensDirect,
 } from './supabase.js';
 import { getDeviceFingerprint } from './fingerprint.js';
+import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 
 // All writes go through the authoritative server when PUBLIC_API_BASE is set.
 // Leave unset for local dev without the server (falls back to direct Supabase mode).
@@ -43,6 +44,35 @@ export interface SpotWallState {
   visibility: 'open' | 'readonly';
   canPost: boolean;
   isOwner: boolean;
+}
+
+export async function registerPasskey(): Promise<void> {
+  if (!API_BASE) throw new Error('Passkeys require the authoritative API');
+  const optionsRes = await fetch(`${API_BASE}/auth/passkey/register/options`, { method: 'POST', headers: getAuthHeaders(), credentials: 'include' });
+  const options = await optionsRes.json();
+  if (!optionsRes.ok) throw new Error(options.message || 'Could not start passkey setup');
+  const credential = await startRegistration({ optionsJSON: options });
+  const verifyRes = await fetch(`${API_BASE}/auth/passkey/register/verify`, {
+    method: 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(credential),
+  });
+  const result = await verifyRes.json().catch(() => ({}));
+  if (!verifyRes.ok) throw new Error(result.message || 'Could not save passkey');
+}
+
+export async function authenticateWithPasskey(): Promise<MySessionResponse> {
+  if (!API_BASE) throw new Error('Passkeys require the authoritative API');
+  const optionsRes = await fetch(`${API_BASE}/auth/passkey/authenticate/options`, { method: 'POST', headers: getAuthHeaders(), credentials: 'include' });
+  const options = await optionsRes.json();
+  if (!optionsRes.ok) throw new Error(options.message || 'Could not start passkey sign in');
+  const credential = await startAuthentication({ optionsJSON: options });
+  const verifyRes = await fetch(`${API_BASE}/auth/passkey/authenticate/verify`, {
+    method: 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(credential),
+  });
+  const result = await verifyRes.json().catch(() => ({}));
+  if (!verifyRes.ok) throw new Error(result.message || 'Could not verify passkey');
+  if (result.sessionToken) localStorage.setItem('spot_session_token', result.sessionToken);
+  if (result.citizen?.id) localStorage.setItem('spot_citizen_id', result.citizen.id);
+  return result;
 }
 
 function getAuthHeaders(): Record<string, string> {

@@ -9,6 +9,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^13.3.3",
     "@spot/shared": "workspace:*",
     "@spot/world": "workspace:*",
     "cookie-parser": "^1.4.7",

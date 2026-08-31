@@ -56,6 +56,20 @@ export async function resolveCitizen(token: string): Promise<Citizen | null> {
   return res.rows[0];
 }
 
+export async function resolveCitizenById(id: string): Promise<Citizen | null> {
+  const result = await query<any>(
+    `SELECT id, display_name as "displayName", avatar_id as "avatarId",
+            custom_avatar_data as "customAvatarData", tagline, bio,
+            website_url as "websiteUrl", github_url as "githubUrl",
+            twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+            instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+            linkedin_url as "linkedinUrl", created_at as "createdAt", updated_at as "updatedAt"
+     FROM citizens WHERE id = $1 LIMIT 1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 /**
  * Middleware: Optional session resolution
  */
