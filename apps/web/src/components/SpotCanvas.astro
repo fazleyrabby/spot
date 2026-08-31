@@ -133,8 +133,11 @@
     position: fixed;
     bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
     left: max(16px, calc(env(safe-area-inset-left, 0px) + 16px));
-    z-index: 30;
-    pointer-events: none;
+    z-index: 35;
+    /* Keep the whole control cluster in the touch hit-testing layer. Some
+       mobile browsers do not reliably retarget taps through a pointer-events
+       none parent to an interactive child. */
+    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -248,7 +251,7 @@
     position: fixed;
     bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
     right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px));
-    z-index: 30;
+    z-index: 35;
     pointer-events: auto;
   }
 
@@ -306,13 +309,19 @@
     }
 
     .support-btn {
-      padding: 5px 9px;
+      min-height: 44px;
+      padding: 8px 12px;
       font-size: 0.74rem;
     }
 
     .hud-bottom-right {
       bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 16px));
       right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px));
+    }
+
+    .nav-btn {
+      width: 44px;
+      height: 44px;
     }
   }
 
