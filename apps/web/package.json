@@ -9,6 +9,7 @@
     "check": "astro check"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.3.0",
     "@spot/shared": "workspace:*",
     "@spot/world": "workspace:*",
     "@supabase/supabase-js": "^2.112.4",

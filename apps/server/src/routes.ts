@@ -10,7 +10,9 @@ import {
   requireAuthMiddleware,
   optionalAuthMiddleware,
   resolveCitizen,
+  resolveCitizenById,
 } from './auth.js';
+import { config } from './config.js';
 import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
 import {
   CreateCitizenSchema,
@@ -19,12 +21,42 @@ import {
   sanitizeDisplayName,
 } from '@spot/shared';
 import crypto from 'crypto';
+import {
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
+} from '@simplewebauthn/server';
 
 import type { Request, Response } from 'express';
 
 export const apiRouter: ExpressRouter = Router();
 
 const MAX_PROFANITY_WARNINGS = 3;
+
+function cleanupWebAuthnChallenges(): void {
+  void query('DELETE FROM webauthn_challenges WHERE expires_at < NOW()').catch(() => {});
+}
+
+async function saveWebAuthnChallenge(citizenId: string | null, challenge: string, kind: 'register' | 'authenticate'): Promise<void> {
+  cleanupWebAuthnChallenges();
+  await query(
+    `INSERT INTO webauthn_challenges (citizen_id, challenge, kind, expires_at)
+     VALUES ($1, $2, $3, NOW() + INTERVAL '5 minutes')`,
+    [citizenId, challenge, kind]
+  );
+}
+
+async function consumeWebAuthnChallenge(citizenId: string | null, challenge: string, kind: 'register' | 'authenticate'): Promise<boolean> {
+  const result = await query<any>(
+    `DELETE FROM webauthn_challenges
+     WHERE challenge = $1 AND kind = $2 AND expires_at > NOW()
+       AND (citizen_id = $3 OR (citizen_id IS NULL AND $3 IS NULL))
+     RETURNING id`,
+    [challenge, kind, citizenId]
+  );
+  return result.rows.length > 0;
+}
 
 const spotIdPattern = /^\d{1,2},\d{1,2}$/;
 
@@ -146,6 +178,130 @@ let worldCache: { data: any; expiresAt: number } | null = null;
 export function invalidateWorldCache(): void {
   worldCache = null;
 }
+
+/** Passkey registration for an already identified citizen (guest or GitHub). */
+apiRouter.post('/auth/passkey/register/options', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const existing = await query<any>(
+      `SELECT credential_id as "credentialId", transports FROM citizen_passkeys WHERE citizen_id = $1`,
+      [req.citizen!.id]
+    );
+    const options = await generateRegistrationOptions({
+      rpName: 'SPOT',
+      rpID: config.rpId,
+      userName: req.citizen!.displayName,
+      userID: Buffer.from(req.citizen!.id),
+      userDisplayName: req.citizen!.displayName,
+      attestationType: 'none',
+      excludeCredentials: existing.rows.map((row) => ({ id: row.credentialId, transports: row.transports || [] })),
+      authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+    });
+    await saveWebAuthnChallenge(req.citizen!.id, options.challenge, 'register');
+    res.json(options);
+  } catch (err) {
+    console.error('Passkey registration options error:', err);
+    res.status(500).json({ error: 'PasskeyUnavailable', message: 'Passkeys are temporarily unavailable.' });
+  }
+});
+
+apiRouter.post('/auth/passkey/register/verify', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const verification = await verifyRegistrationResponse({
+      response: req.body,
+      expectedChallenge: async (challenge) => consumeWebAuthnChallenge(req.citizen!.id, challenge, 'register'),
+      expectedOrigin: config.rpOrigin,
+      expectedRPID: config.rpId,
+      requireUserVerification: false,
+    });
+    if (!verification.verified || !verification.registrationInfo) {
+      res.status(400).json({ error: 'PasskeyVerificationFailed', message: 'Passkey verification failed.' });
+      return;
+    }
+    const credential = verification.registrationInfo.credential;
+    await query(
+      `INSERT INTO citizen_passkeys (citizen_id, credential_id, public_key, counter, transports)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (credential_id) DO NOTHING`,
+      [req.citizen!.id, credential.id, Buffer.from(credential.publicKey), credential.counter, req.body.response?.transports || []]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Passkey registration verification error:', err);
+    res.status(400).json({ error: 'PasskeyVerificationFailed', message: 'Could not register this passkey.' });
+  }
+});
+
+apiRouter.post('/auth/passkey/authenticate/options', async (_req, res) => {
+  try {
+    const options = await generateAuthenticationOptions({
+      rpID: config.rpId,
+      userVerification: 'preferred',
+      // Omit allowCredentials to support discoverable passkeys in a new browser.
+    });
+    await saveWebAuthnChallenge(null, options.challenge, 'authenticate');
+    res.json(options);
+  } catch (err) {
+    console.error('Passkey authentication options error:', err);
+    res.status(500).json({ error: 'PasskeyUnavailable', message: 'Passkeys are temporarily unavailable.' });
+  }
+});
+
+apiRouter.post('/auth/passkey/authenticate/verify', async (req, res) => {
+  try {
+    const credentialId = req.body?.id;
+    const stored = await query<any>(
+      `SELECT p.credential_id as "credentialId", p.public_key as "publicKey", p.counter, p.transports,
+              c.id as "citizenId"
+       FROM citizen_passkeys p JOIN citizens c ON c.id = p.citizen_id
+       WHERE p.credential_id = $1 LIMIT 1`,
+      [credentialId]
+    );
+    const row = stored.rows[0];
+    if (!row) {
+      res.status(400).json({ error: 'UnknownPasskey', message: 'That passkey is not registered with SPOT.' });
+      return;
+    }
+    const challengeRows = await query<any>(
+      `SELECT challenge FROM webauthn_challenges WHERE kind = 'authenticate' AND citizen_id IS NULL AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1`
+    );
+    const challenge = challengeRows.rows[0]?.challenge;
+    if (!challenge) {
+      res.status(400).json({ error: 'ChallengeExpired', message: 'The passkey request expired. Try again.' });
+      return;
+    }
+    const verification = await verifyAuthenticationResponse({
+      response: req.body,
+      expectedChallenge: async (value) => consumeWebAuthnChallenge(null, value, 'authenticate'),
+      expectedOrigin: config.rpOrigin,
+      expectedRPID: config.rpId,
+      credential: {
+        id: row.credentialId,
+        publicKey: new Uint8Array(row.publicKey),
+        counter: Number(row.counter),
+        transports: row.transports || [],
+      },
+      requireUserVerification: false,
+    });
+    if (!verification.verified) {
+      res.status(400).json({ error: 'PasskeyVerificationFailed', message: 'Passkey verification failed.' });
+      return;
+    }
+    await query(`UPDATE citizen_passkeys SET counter = $1 WHERE credential_id = $2`, [verification.authenticationInfo.newCounter, credentialId]);
+    const citizen = await resolveCitizenById(row.citizenId);
+    if (!citizen) {
+      res.status(404).json({ error: 'CitizenNotFound' });
+      return;
+    }
+    const token = generateSessionToken();
+    await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [hashToken(token), citizen.id]);
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+    const spotRes = await query<any>(`SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`, [citizen.id]);
+    res.json({ success: true, citizen, ownedSpot: spotRes.rows[0] || null, sessionToken: token });
+  } catch (err) {
+    console.error('Passkey authentication verification error:', err);
+    res.status(400).json({ error: 'PasskeyVerificationFailed', message: 'Could not verify this passkey.' });
+  }
+});
 
 export function getUniqueOnlineCount(): number {
   const uniqueIds = new Set<string>();
