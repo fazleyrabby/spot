@@ -92,9 +92,9 @@ export const citizenCreationLimiter = new SlidingWindowRateLimiter(
 // A browser fingerprint is only an abuse signal, never an ownership credential.
 // Use it alongside the IP limit to make anonymous account multiplication harder.
 export const deviceFingerprintCreationLimiter = new SlidingWindowRateLimiter(
-  5,
+  1,
   24 * 60 * 60 * 1000,
-  'Maximum anonymous citizen limit reached for this device today',
+  'This device already has an anonymous citizen',
   20000
 ).middleware((req) => {
   const fingerprint = req.headers['x-spot-device-fingerprint'];
