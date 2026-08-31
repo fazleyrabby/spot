@@ -18773,7 +18773,10 @@ function getPool() {
     _pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: needsSsl ? { rejectUnauthorized: false } : void 0,
-      max: 10,
+      // Vercel can keep several function instances warm at once. Supabase's
+      // session pool has a small connection ceiling, so never let one
+      // serverless instance consume the whole pool.
+      max: process.env.VERCEL ? 1 : 10,
       idleTimeoutMillis: 3e4,
       connectionTimeoutMillis: 5e3
     });
