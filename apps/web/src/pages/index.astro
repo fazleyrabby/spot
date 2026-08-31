@@ -60,6 +60,7 @@ import TransferModal from '../components/TransferModal.astro';
   const hudOnlineCount = document.getElementById('hud-online-count');
   const hudVisitorsCount = document.getElementById('hud-visitors-count');
   const activityText = document.getElementById('activity-text');
+  const worldLoader = document.getElementById('world-loader');
   const headerClaimBtn = document.getElementById('header-claim-btn') as HTMLButtonElement;
   const headerSearchBtn = document.getElementById('header-search-btn') as HTMLButtonElement;
 
@@ -338,6 +339,7 @@ import TransferModal from '../components/TransferModal.astro';
       const snapshot = await fetchWorldSnapshot();
       worldSnapshot = snapshot;
       renderer.setSnapshot(snapshot);
+      worldLoader?.classList.add('is-hidden');
       const latest = snapshot.occupied
         .filter((spot) => spot.claimedAt && Date.now() - new Date(spot.claimedAt).getTime() <= 24 * 60 * 60 * 1000)
         .sort((a, b) => new Date(b.claimedAt || 0).getTime() - new Date(a.claimedAt || 0).getTime())[0];
@@ -353,6 +355,7 @@ import TransferModal from '../components/TransferModal.astro';
       }
     } catch (err) {
       console.warn('Backend API snapshot load fallback:', err);
+      worldLoader?.classList.add('is-hidden');
     }
 
     try {

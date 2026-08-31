@@ -4,6 +4,11 @@
 <div class="canvas-container" id="canvas-container">
   <canvas id="spot-canvas" class="spot-canvas"></canvas>
 
+  <div class="world-loader" id="world-loader" role="status" aria-live="polite">
+    <span class="world-loader-mark" aria-hidden="true"></span>
+    <span>Mapping the city…</span>
+  </div>
+
   <!-- Bottom-Left Hover/Coordinate Pill & Support Button -->
   <div class="hud-bottom-left" id="hud-bottom-left">
     <div class="coord-pill glass-panel" id="coord-pill">
@@ -83,6 +88,45 @@
     height: 100%;
     display: block;
     cursor: crosshair;
+  }
+
+  .world-loader {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: var(--radius-full);
+    background: rgba(13, 17, 28, 0.94);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+  }
+
+  .world-loader.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .world-loader-mark {
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(16, 185, 129, 0.28);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: world-loader-spin 0.8s linear infinite;
+  }
+
+  @keyframes world-loader-spin {
+    to { transform: rotate(360deg); }
   }
 
   .hud-bottom-left {
