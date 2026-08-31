@@ -312,7 +312,7 @@ export function getUniqueOnlineCount(): number {
   for (const conn of sseConnections) {
     uniqueIds.add(conn.clientId);
   }
-  return Math.max(1, uniqueIds.size);
+  return uniqueIds.size;
 }
 
 function getOnlineCitizenIds(): string[] {
@@ -393,6 +393,39 @@ if (enableSSE) {
 }
 
 /**
+ * GET /api/analytics/visit
+ * Count one unique browser visitor per 24 hours without being affected by the
+ * cached world snapshot response.
+ */
+apiRouter.get('/analytics/visit', async (req, res) => {
+  try {
+    const isLocalhost = req.hostname === 'localhost' || req.ip === '127.0.0.1' || req.ip === '::1';
+    const hasVisitedCookie = req.cookies?.spot_visited;
+    let totalVisitors: number;
+
+    if (!isLocalhost && !hasVisitedCookie) {
+      const visitorRes = await query<any>(
+        `UPDATE site_stats SET value = value + 1 WHERE key = 'total_visitors' RETURNING value;`
+      );
+      totalVisitors = parseInt(visitorRes.rows[0]?.value, 10) || 1;
+      res.cookie('spot_visited', '1', {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'lax',
+      });
+    } else {
+      const currentRes = await query<any>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
+      totalVisitors = parseInt(currentRes.rows[0]?.value, 10) || 1;
+    }
+
+    res.json({ totalVisitors });
+  } catch (err: any) {
+    console.error('Error recording visitor:', err);
+    res.status(500).json({ error: 'InternalServerError', message: 'Failed to record visitor' });
+  }
+});
+
+/**
  * GET /api/world
  * Full snapshot of the world grid & occupied spots for Canvas rendering
  */
@@ -427,27 +460,8 @@ apiRouter.get('/world', async (req, res) => {
     const totalSpots = parseInt(statsRes.rows[0]?.total_spots, 10) || 10000;
     const claimedCount = parseInt(statsRes.rows[0]?.claimed_count, 10) || spotsRes.rows.length;
 
-    // Check if local dev or existing session cookie
-    const isLocalhost = req.hostname === 'localhost' || req.ip === '127.0.0.1' || req.ip === '::1';
-    const hasVisitedCookie = req.cookies?.spot_visited;
-
-    let totalVisitors = 1;
-    if (!isLocalhost && !hasVisitedCookie) {
-      // New unique visitor in production
-      const visitorRes = await query<any>(
-        `UPDATE site_stats SET value = value + 1 WHERE key = 'total_visitors' RETURNING value;`
-      );
-      totalVisitors = parseInt(visitorRes.rows[0]?.value, 10) || 1;
-      res.cookie('spot_visited', '1', {
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        httpOnly: true,
-        sameSite: 'lax',
-      });
-    } else {
-      // Read current total without incrementing
-      const readRes = await query<any>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
-      totalVisitors = parseInt(readRes.rows[0]?.value, 10) || 1;
-    }
+    const readRes = await query<any>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
+    const totalVisitors = parseInt(readRes.rows[0]?.value, 10) || 1;
 
     const data = {
       width: 100,
