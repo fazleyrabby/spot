@@ -10,14 +10,21 @@ import { fileURLToPath } from "url";
 try {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+  const projectRoot = path.resolve(__dirname, "../../../");
+  dotenv.config({ path: path.join(projectRoot, ".env.local") });
+  dotenv.config({ path: path.join(projectRoot, ".env") });
 } catch {
 }
 dotenv.config();
+var appEnv = process.env.APP_ENV || (process.env.NODE_ENV === "production" ? "production" : "local");
+var defaultLocalDatabaseUrl = "postgresql://spot_user:spot_secret_password@localhost:55432/spot_db";
+var configuredDatabaseUrl = process.env.DATABASE_URL || "";
+var databaseUrl = appEnv === "local" && configuredDatabaseUrl.includes("supabase") ? defaultLocalDatabaseUrl : configuredDatabaseUrl || (appEnv === "local" ? defaultLocalDatabaseUrl : "");
 var config = {
   port: parseInt(process.env.PORT || "5050", 10),
   nodeEnv: process.env.NODE_ENV || "development",
-  databaseUrl: process.env.DATABASE_URL || "postgresql://localhost:5432/spot_db",
+  appEnv,
+  databaseUrl,
   cookieSecret: process.env.COOKIE_SECRET || "spot_default_cookie_secret_at_least_32_chars",
   corsOrigin: process.env.CORS_ORIGIN || "https://www.claimyourspot.lol",
   isProd: process.env.NODE_ENV === "production"
@@ -82,7 +89,7 @@ async function resolveCitizen(token) {
   const tokenHash = hashToken(token);
   const res = await query(
     `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
-            custom_avatar_data as "customAvatarData", tagline,
+            custom_avatar_data as "customAvatarData", tagline, bio,
             website_url as "websiteUrl", github_url as "githubUrl",
             twitter_url as "twitterUrl", facebook_url as "facebookUrl",
             instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
@@ -166,18 +173,19 @@ var SlidingWindowRateLimiter = class {
       }
     }
   }
-  middleware() {
+  middleware(keyResolver) {
     return (req, res, next) => {
       const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress || "unknown_ip";
+      const key = keyResolver?.(req) || ip;
       const now = Date.now();
-      let entry = this.windows.get(ip);
+      let entry = this.windows.get(key);
       if (!entry) {
         if (this.windows.size >= this.maxKeys) this.evictOldest();
         entry = { timestamps: [] };
-        this.windows.set(ip, entry);
+        this.windows.set(key, entry);
       } else {
-        this.windows.delete(ip);
-        this.windows.set(ip, entry);
+        this.windows.delete(key);
+        this.windows.set(key, entry);
       }
       entry.timestamps = entry.timestamps.filter((ts) => now - ts < this.windowMs);
       if (entry.timestamps.length >= this.maxRequests) {
@@ -201,10 +209,24 @@ var citizenCreationLimiter = new SlidingWindowRateLimiter(
   24 * 60 * 60 * 1e3,
   "Maximum citizen registration limit reached for this IP today"
 ).middleware();
+var deviceFingerprintCreationLimiter = new SlidingWindowRateLimiter(
+  5,
+  24 * 60 * 60 * 1e3,
+  "Maximum anonymous citizen limit reached for this device today",
+  2e4
+).middleware((req) => {
+  const fingerprint = req.headers["x-spot-device-fingerprint"];
+  return typeof fingerprint === "string" && fingerprint.startsWith("dfp_") ? `fp:${fingerprint}` : `ip:${req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress || "unknown_ip"}`;
+});
 var spotClaimLimiter = new SlidingWindowRateLimiter(
   3,
   60 * 1e3,
   "Spot claim rate limit exceeded. Please wait a minute before trying again."
+).middleware();
+var spotCommentLimiter = new SlidingWindowRateLimiter(
+  5,
+  10 * 60 * 1e3,
+  "Spot wall rate limit exceeded. Please wait before posting again."
 ).middleware();
 
 // ../../packages/shared/src/schemas.ts
@@ -267,6 +289,7 @@ var CreateCitizenSchema = z.object({
   avatarId: z.string().min(1, "Avatar selection is required").max(32, "Avatar ID must not exceed 32 characters").trim(),
   customAvatarData: z.string().max(65536).optional().or(z.literal("")),
   tagline: z.string().max(80, "Tagline must not exceed 80 characters").trim().optional().or(z.literal("")),
+  bio: z.string().max(280, "Bio must not exceed 280 characters").trim().optional().or(z.literal("")),
   websiteUrl: SafeUrlSchema,
   githubUrl: z.string().max(128, "GitHub handle or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
   twitterUrl: z.string().max(128, "X / Twitter handle or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
@@ -289,6 +312,7 @@ var UpdateCitizenSchema = z.object({
   avatarId: z.string().min(1).max(32).trim().optional(),
   customAvatarData: z.string().max(65536).optional().or(z.literal("")),
   tagline: z.string().max(80).trim().optional(),
+  bio: z.string().max(280).trim().optional(),
   websiteUrl: SafeUrlSchema,
   githubUrl: z.string().max(128).trim().optional(),
   twitterUrl: z.string().max(128).trim().optional(),
@@ -302,6 +326,15 @@ var UpdateCitizenSchema = z.object({
 import crypto2 from "crypto";
 var apiRouter = Router();
 var MAX_PROFANITY_WARNINGS = 3;
+var spotIdPattern = /^\d{1,2},\d{1,2}$/;
+function validSpotId(spotId) {
+  if (!spotIdPattern.test(spotId)) return false;
+  const [x, y] = spotId.split(",").map(Number);
+  return x >= 0 && x <= 99 && y >= 0 && y <= 99;
+}
+function escapeXml(value) {
+  return String(value ?? "").replace(/[<>&'\"]/g, (char) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[char] || char);
+}
 function clientIp(req) {
   const fwd = req.headers["x-forwarded-for"]?.split(",")[0].trim();
   return fwd || req.socket?.remoteAddress || req.ip || null;
@@ -343,6 +376,7 @@ function buildCitizenProfileUpdate(fields) {
     ["avatarId", "avatar_id"],
     ["customAvatarData", "custom_avatar_data"],
     ["tagline", "tagline"],
+    ["bio", "bio"],
     ["websiteUrl", "website_url"],
     ["githubUrl", "github_url"],
     ["twitterUrl", "twitter_url"],
@@ -363,7 +397,7 @@ function buildCitizenProfileUpdate(fields) {
 }
 var CITIZEN_PROFILE_COLUMNS = `
   id, display_name as "displayName", avatar_id as "avatarId",
-  custom_avatar_data as "customAvatarData", tagline,
+  custom_avatar_data as "customAvatarData", tagline, bio,
   website_url as "websiteUrl", github_url as "githubUrl",
   twitter_url as "twitterUrl", facebook_url as "facebookUrl",
   instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
@@ -382,6 +416,9 @@ function getUniqueOnlineCount() {
     uniqueIds.add(conn.clientId);
   }
   return Math.max(1, uniqueIds.size);
+}
+function getOnlineCitizenIds() {
+  return [...new Set([...sseConnections].map((conn) => conn.citizenId).filter(Boolean))];
 }
 function broadcastRealtimeEvent(event) {
   const data = `data: ${JSON.stringify(event)}
@@ -410,17 +447,17 @@ var sseHandler = async (req, res) => {
     if (resolved) citizenId = resolved.id;
   }
   const clientId = citizenId || (rawToken ? `tok_${rawToken.substring(0, 12)}` : tabParam ? `tab_${tabParam}` : `ip_${req.ip || "local"}`);
-  const conn = { res, clientId };
+  const conn = { res, clientId, citizenId };
   sseConnections.add(conn);
   const initialCount = getUniqueOnlineCount();
-  res.write(`data: ${JSON.stringify({ type: "connected", onlineCount: initialCount })}
+  res.write(`data: ${JSON.stringify({ type: "connected", onlineCount: initialCount, onlineCitizenIds: getOnlineCitizenIds() })}
 
 `);
-  broadcastRealtimeEvent({ type: "presence", onlineCount: initialCount });
+  broadcastRealtimeEvent({ type: "presence", onlineCount: initialCount, onlineCitizenIds: getOnlineCitizenIds() });
   const cleanup = () => {
     if (sseConnections.has(conn)) {
       sseConnections.delete(conn);
-      broadcastRealtimeEvent({ type: "presence", onlineCount: getUniqueOnlineCount() });
+      broadcastRealtimeEvent({ type: "presence", onlineCount: getUniqueOnlineCount(), onlineCitizenIds: getOnlineCitizenIds() });
     }
   };
   req.on("close", cleanup);
@@ -438,7 +475,7 @@ if (enableSSE) {
         conn.res.write(": ping\n\n");
       } catch {
         sseConnections.delete(conn);
-        broadcastRealtimeEvent({ type: "presence", onlineCount: getUniqueOnlineCount() });
+        broadcastRealtimeEvent({ type: "presence", onlineCount: getUniqueOnlineCount(), onlineCitizenIds: getOnlineCitizenIds() });
       }
     }
   }, 15e3);
@@ -451,8 +488,9 @@ apiRouter.get("/world", async (req, res) => {
     const spotsRes = await query(`
       SELECT 
         s.id as "spotId", s.x, s.y, s.owner_id as "citizenId",
+        s.claimed_at as "claimedAt",
         c.display_name as "displayName", c.avatar_id as "avatarId",
-        c.custom_avatar_data as "customAvatarData", c.tagline,
+        c.custom_avatar_data as "customAvatarData", c.tagline, c.bio,
         c.website_url as "websiteUrl", c.github_url as "githubUrl",
         c.twitter_url as "twitterUrl", c.facebook_url as "facebookUrl",
         c.instagram_url as "instagramUrl", c.youtube_url as "youtubeUrl",
@@ -587,7 +625,16 @@ apiRouter.post("/auth/github/sync", async (req, res) => {
     res.status(500).json({ error: "InternalServerError", message: "Failed to sync GitHub user" });
   }
 });
-apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (req, res) => {
+apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, res, next) => {
+  if (!req.citizen) {
+    citizenCreationLimiter(req, res, (err) => {
+      if (err) return next(err);
+      deviceFingerprintCreationLimiter(req, res, next);
+    });
+    return;
+  }
+  next();
+}, async (req, res) => {
   const parsed = CreateCitizenSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "ValidationError", details: parsed.error.format() });
@@ -633,9 +680,9 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
         `INSERT INTO citizens (
            id, session_token_hash, display_name, avatar_id, custom_avatar_data,
            tagline, website_url, github_url, twitter_url, facebook_url,
-           instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address
+           instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address, device_fingerprint
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
          RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
         [
           citizenId,
@@ -654,7 +701,8 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
           input.githubId || null,
           input.email || null,
           input.avatarUrl || null,
-          clientIp(req)
+          clientIp(req),
+          typeof req.headers["x-spot-device-fingerprint"] === "string" ? req.headers["x-spot-device-fingerprint"] : null
         ]
       );
       citizen = citizenRes.rows[0];
@@ -724,6 +772,28 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
       return;
     }
     const claimedSpot = updateRes.rows[0];
+    const neighborRes = await query(
+      `SELECT DISTINCT owner_id
+       FROM spots
+       WHERE x BETWEEN $1 - 1 AND $1 + 1
+         AND y BETWEEN $2 - 1 AND $2 + 1
+         AND owner_id IS NOT NULL
+         AND owner_id <> $3`,
+      [Number(x), Number(y), citizen.id]
+    );
+    const neighborCitizenIds = neighborRes.rows.map((row) => row.owner_id);
+    const referrerSpotId = typeof req.body?.referrerSpotId === "string" ? req.body.referrerSpotId : null;
+    if (referrerSpotId && validSpotId(referrerSpotId)) {
+      const [refX, refY] = referrerSpotId.split(",").map(Number);
+      if (Math.abs(refX - Number(x)) <= 1 && Math.abs(refY - Number(y)) <= 1 && (refX !== Number(x) || refY !== Number(y))) {
+        await query(
+          `INSERT INTO referrals (referrer_spot_id, referred_spot_id, referrer_id, referred_id)
+           SELECT $1::varchar, $2::varchar, owner_id, $3::varchar FROM spots WHERE id = $1::varchar
+           ON CONFLICT (referred_spot_id) DO NOTHING`,
+          [referrerSpotId, spotId, citizen.id]
+        );
+      }
+    }
     broadcastRealtimeEvent({
       type: "spot_claimed",
       spot: claimedSpot,
@@ -734,7 +804,8 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
         tagline: citizen.tagline,
         websiteUrl: citizen.websiteUrl,
         githubUrl: citizen.githubUrl
-      }
+      },
+      neighborCitizenIds
     });
     res.status(200).json({
       success: true,
@@ -754,6 +825,94 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, async (
     console.error("Error executing claim query:", err);
     res.status(500).json({ error: "InternalServerError", message: "Failed to claim spot" });
   }
+});
+apiRouter.get("/spots/:spotId/comments", optionalAuthMiddleware, async (req, res) => {
+  const spotId = String(req.params.spotId);
+  if (!validSpotId(spotId)) {
+    res.status(400).json({ error: "InvalidSpotId" });
+    return;
+  }
+  try {
+    const spot = await query(`SELECT owner_id, wall_visibility as "visibility" FROM spots WHERE id = $1`, [spotId]);
+    if (!spot.rows[0]) {
+      res.status(404).json({ error: "NotFound" });
+      return;
+    }
+    const comments = await query(
+      `SELECT id, author_name as "authorName", body, created_at as "createdAt"
+       FROM spot_comments WHERE spot_id = $1
+       ORDER BY created_at DESC LIMIT 5`,
+      [spotId]
+    );
+    res.json({
+      comments: comments.rows,
+      visibility: spot.rows[0].visibility,
+      canPost: spot.rows[0].visibility === "open" && req.citizen?.id !== spot.rows[0].owner_id,
+      isOwner: req.citizen?.id === spot.rows[0].owner_id
+    });
+  } catch (err) {
+    console.error("Comments read error:", err);
+    res.status(500).json({ error: "InternalServerError" });
+  }
+});
+apiRouter.post("/spots/:spotId/comments", spotCommentLimiter, optionalAuthMiddleware, async (req, res) => {
+  const spotId = String(req.params.spotId);
+  const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+  const requestedName = typeof req.body?.authorName === "string" ? req.body.authorName.trim() : "";
+  if (!validSpotId(spotId) || !body || body.length > 180 || requestedName && requestedName.length > 32) {
+    res.status(400).json({ error: "ValidationError", message: "A message up to 180 characters is required." });
+    return;
+  }
+  if (containsBlockedWord(body) || containsBlockedWord(requestedName)) {
+    res.status(400).json({ error: "BlockedContent", message: "Please keep the spot wall welcoming." });
+    return;
+  }
+  try {
+    const spot = await query(`SELECT owner_id FROM spots WHERE id = $1`, [spotId]);
+    if (!spot.rows[0]?.owner_id) {
+      res.status(409).json({ error: "SpotUnavailable", message: "Only claimed spots have walls." });
+      return;
+    }
+    if (req.citizen?.id === spot.rows[0].owner_id) {
+      res.status(403).json({ error: "OwnSpotComment", message: "You cannot post on your own spot wall." });
+      return;
+    }
+    if (spot.rows[0].wall_visibility !== "open") {
+      res.status(403).json({ error: "WallReadOnly", message: "This wall is currently read-only." });
+      return;
+    }
+    const authorName = req.citizen?.displayName || sanitizeDisplayName(requestedName || "Visitor");
+    const inserted = await query(
+      `INSERT INTO spot_comments (spot_id, author_id, author_name, body)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, author_name as "authorName", body, created_at as "createdAt"`,
+      [spotId, req.citizen?.id || null, authorName, body]
+    );
+    const comment = inserted.rows[0];
+    broadcastRealtimeEvent({ type: "comment_posted", spotId, comment });
+    res.status(201).json({ comment });
+  } catch (err) {
+    console.error("Comments write error:", err);
+    res.status(500).json({ error: "InternalServerError", message: "Failed to post comment" });
+  }
+});
+apiRouter.patch("/spots/:spotId/wall", requireAuthMiddleware, async (req, res) => {
+  const spotId = String(req.params.spotId);
+  const visibility = req.body?.visibility === "open" ? "open" : "readonly";
+  if (!validSpotId(spotId)) {
+    res.status(400).json({ error: "InvalidSpotId" });
+    return;
+  }
+  const result = await query(
+    `UPDATE spots SET wall_visibility = $1 WHERE id = $2 AND owner_id = $3 RETURNING wall_visibility as "visibility"`,
+    [visibility, spotId, req.citizen.id]
+  );
+  if (!result.rows[0]) {
+    res.status(403).json({ error: "NotSpotOwner" });
+    return;
+  }
+  broadcastRealtimeEvent({ type: "wall_updated", spotId, visibility });
+  res.json({ visibility });
 });
 apiRouter.get("/citizens/search", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
@@ -826,6 +985,7 @@ apiRouter.patch("/citizens/me", requireAuthMiddleware, async (req, res) => {
     avatarId,
     customAvatarData,
     tagline,
+    bio,
     websiteUrl,
     githubUrl,
     twitterUrl,
@@ -853,6 +1013,7 @@ apiRouter.patch("/citizens/me", requireAuthMiddleware, async (req, res) => {
       avatarId,
       customAvatarData,
       tagline: tagline !== void 0 ? tagline : void 0,
+      bio: bio !== void 0 ? bio : void 0,
       websiteUrl: websiteUrl !== void 0 ? websiteUrl : void 0,
       githubUrl: githubUrl !== void 0 ? githubUrl : void 0,
       twitterUrl: twitterUrl !== void 0 ? twitterUrl : void 0,
@@ -909,6 +1070,65 @@ apiRouter.delete("/citizens/me", requireAuthMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Error deleting citizen account:", err);
     res.status(500).json({ error: "InternalServerError", message: "Failed to delete account" });
+  }
+});
+apiRouter.get("/og", async (req, res) => {
+  const x = Number(req.query.x);
+  const y = Number(req.query.y);
+  const spotId = `${x},${y}`;
+  if (!Number.isInteger(x) || !Number.isInteger(y) || !validSpotId(spotId)) {
+    res.status(400).type("text").send("Use /api/og?x=50&y=50");
+    return;
+  }
+  try {
+    const result = await query(
+      `SELECT s.x, s.y, c.display_name as "displayName", c.tagline, c.avatar_id as "avatarId",
+              c.github_url as "githubUrl"
+       FROM spots s LEFT JOIN citizens c ON c.id = s.owner_id
+       WHERE s.id = $1 LIMIT 1`,
+      [spotId]
+    );
+    const spot = result.rows[0];
+    if (!spot?.displayName) {
+      res.status(404).type("text").send("Spot is available");
+      return;
+    }
+    const district = Math.floor(y / 10) * 10 + Math.floor(x / 10) + 1;
+    const glyphs = {
+      astronaut: "\u2726",
+      hacker: "\u2301",
+      pixel_wizard: "\u2727",
+      bot_9000: "\u25C8",
+      retro_cat: "\u25C6",
+      ghosty: "\u25CC",
+      pixel_knight: "\u2B1F",
+      neon_ninja: "\u273A",
+      pixel_alien: "\u25CE",
+      golden_knight: "\u2B22",
+      cyber_samurai: "\u2694",
+      pixel_dino: "\u25C9"
+    };
+    const displayName = escapeXml(spot.displayName);
+    const tagline = escapeXml(spot.tagline || "A permanent place on the Internet.");
+    const glyph = escapeXml(glyphs[spot.avatarId] || "\u2726");
+    const verified = Boolean(spot.githubUrl);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0c0e14"/><stop offset="1" stop-color="#182238"/></linearGradient><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#ffffff" stroke-opacity=".06"/></pattern></defs>
+      <rect width="1200" height="630" fill="url(#bg)"/><rect width="1200" height="630" fill="url(#grid)"/>
+      <rect x="72" y="72" width="1056" height="486" rx="28" fill="#111722" fill-opacity=".92" stroke="#334155"/>
+      <rect x="116" y="118" width="210" height="210" rx="24" fill="#1d293b" stroke="#f59e0b" stroke-width="3"/>
+      <text x="221" y="253" text-anchor="middle" font-size="120" fill="#38bdf8">${glyph}</text>
+      <text x="382" y="150" font-family="Arial,sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="#f59e0b">SPOT \xB7 INTERNET CITY</text>
+      <text x="382" y="238" font-family="Arial,sans-serif" font-size="62" font-weight="800" fill="#f8fafc">@${displayName}</text>
+      <text x="382" y="286" font-family="monospace" font-size="24" fill="#94a3b8">Spot (${x}, ${y}) \xB7 Sector ${district}</text>
+      <text x="116" y="430" font-family="Arial,sans-serif" font-size="30" fill="#cbd5e1">${tagline}</text>
+      <text x="116" y="500" font-family="monospace" font-size="20" fill="#64748b">${verified ? "\u2713 VERIFIED CITIZEN" : "\u25CF CITIZEN"}  \xB7  A permanent place on the Internet</text>
+    </svg>`;
+    res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300");
+    res.type("image/svg+xml").send(svg);
+  } catch (err) {
+    console.error("OG card error:", err);
+    res.status(500).type("text").send("Failed to generate card");
   }
 });
 apiRouter.get("/stats", async (_req, res) => {
