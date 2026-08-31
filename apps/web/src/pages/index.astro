@@ -18,9 +18,61 @@ import TransferModal from '../components/TransferModal.astro';
     <SearchModal />
     <SupportModal />
     <TransferModal />
+    <details class="seo-guide">
+      <summary>How SPOT works</summary>
+      <div class="seo-guide-content">
+        <h1>Claim your permanent place on the internet</h1>
+        <p>SPOT is a 10,000-tile digital world where every citizen gets a permanent coordinate, a retro pixel avatar, and a small corner to call their own.</p>
+        <ol>
+          <li>Discover an open tile on the canvas.</li>
+          <li>Claim it and customize your citizen profile.</li>
+          <li>Share your spot and meet nearby citizens.</li>
+        </ol>
+      </div>
+    </details>
     <div id="toast-container" class="toast-container"></div>
   </main>
 </Layout>
+
+<style>
+  .seo-guide {
+    position: fixed;
+    left: 50%;
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+    z-index: 25;
+    width: min(390px, calc(100vw - 32px));
+    transform: translateX(-50%);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+  }
+
+  .seo-guide summary {
+    width: fit-content;
+    margin: 0 auto;
+    padding: 7px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 999px;
+    background: rgba(13, 17, 28, 0.9);
+    color: #94a3b8;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .seo-guide summary::-webkit-details-marker { display: none; }
+
+  .seo-guide-content {
+    margin-bottom: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    background: rgba(13, 17, 28, 0.96);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  }
+
+  .seo-guide h1 { margin: 0 0 7px; color: #f8fafc; font-size: 1rem; line-height: 1.25; }
+  .seo-guide p { margin: 0 0 8px; line-height: 1.45; }
+  .seo-guide ol { margin: 0; padding-left: 18px; line-height: 1.5; }
+</style>
 
 <script>
   import QRCode from 'qrcode';
