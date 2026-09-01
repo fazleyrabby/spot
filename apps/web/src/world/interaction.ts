@@ -47,6 +47,13 @@ export class InteractionHandler {
     this.bindEvents();
   }
 
+  private isUiElement(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false;
+    return Boolean(
+      target.closest('button, a, input, select, textarea, summary, [role="button"], #world-hud, .world-hud, .modal-card, #profile-modal-backdrop')
+    );
+  }
+
   private screenToWorld(clientX: number, clientY: number) {
     const rect = this.canvas.getBoundingClientRect();
     const sx = clientX - rect.left;
@@ -60,15 +67,18 @@ export class InteractionHandler {
     // ── 1. Pointer Down / Move / Up (Pan & Hover) ──────────────────────────
 
     const onPointerDown = (e: PointerEvent) => {
-      // Don't drag if clicking a UI button overlaid on canvas
-      const target = e.target as HTMLElement;
-      if (target !== canvas) return;
+      // Don't drag or capture if clicking on HUD or Modal UI
+      if (this.isUiElement(e.target) || e.target !== canvas) {
+        return;
+      }
 
       this.isDragging = true;
       this.lastX = e.clientX;
       this.lastY = e.clientY;
       this.dragDistance = 0;
-      canvas.setPointerCapture(e.pointerId);
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -80,7 +90,14 @@ export class InteractionHandler {
         this.lastY = e.clientY;
         this.camera.panBy(dx, dy);
       } else {
-        // Hover state
+        // If hovered over a UI element, clear canvas hover
+        if (this.isUiElement(e.target)) {
+          this.renderer.hoveredGrid = null;
+          this.renderer.hoveredPlot = null;
+          canvas.style.cursor = 'default';
+          return;
+        }
+
         const world = this.screenToWorld(e.clientX, e.clientY);
         const grid = worldToGrid(world.x, world.y);
 
@@ -107,10 +124,16 @@ export class InteractionHandler {
 
       // Click / Tap (dragged less than 6 pixels)
       if (this.dragDistance < 6) {
+        // Verify release point wasn't over a HUD or modal element
+        const releaseTarget = document.elementFromPoint(e.clientX, e.clientY);
+        if (this.isUiElement(releaseTarget)) {
+          return;
+        }
+
         const world = this.screenToWorld(e.clientX, e.clientY);
         const grid = worldToGrid(world.x, world.y);
 
-        // 1. Check if clicked a citizen house / monument
+        // 1. Check if clicked a citizen
         const citizen = this.monuments.hitTest(world.x, world.y);
         if (citizen) {
           const plot = this.plots.getPlotByCenter(citizen.x, citizen.y);
@@ -144,6 +167,7 @@ export class InteractionHandler {
     // ── 2. Wheel Zoom ──────────────────────────────────────────────────────
 
     const onWheel = (e: WheelEvent) => {
+      if (this.isUiElement(e.target)) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       this.camera.zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY);

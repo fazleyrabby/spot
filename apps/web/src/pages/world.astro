@@ -166,9 +166,11 @@ import ProfileModal from '../components/ProfileModal.astro';
 
   // ── Profile modal population ──────────────────────────────────────────────
   function openProfileModal(spot: OccupiedSpotSummary) {
+    if (!profileBackdrop) return;
+
     const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
-    const avatarCtx = profileAvatarCanvas.getContext('2d');
-    if (avatarCtx) {
+    const avatarCtx = profileAvatarCanvas?.getContext('2d');
+    if (avatarCtx && profileAvatarCanvas) {
       avatarCtx.clearRect(0, 0, 64, 64);
       if (spot.customAvatarData) {
         drawCustomAvatarOnCanvas(avatarCtx, spot.customAvatarData, 0, 0, 64);
@@ -215,16 +217,14 @@ import ProfileModal from '../components/ProfileModal.astro';
     if (editBtn)   editBtn.style.display = 'none';
     if (deleteBtn) deleteBtn.style.display = 'none';
 
-    profileBackdrop?.removeAttribute('aria-hidden');
-    profileBackdrop?.classList.add('visible');
-    document.body.style.pointerEvents = 'none';
-    profileBackdrop!.style.pointerEvents = 'auto';
+    profileBackdrop.classList.add('open');
+    profileBackdrop.setAttribute('aria-hidden', 'false');
   }
 
   function closeProfileModal() {
-    profileBackdrop?.setAttribute('aria-hidden', 'true');
-    profileBackdrop?.classList.remove('visible');
-    document.body.style.pointerEvents = '';
+    if (!profileBackdrop) return;
+    profileBackdrop.classList.remove('open');
+    profileBackdrop.setAttribute('aria-hidden', 'true');
   }
 
   profileModalClose?.addEventListener('click', closeProfileModal);
@@ -299,19 +299,22 @@ import ProfileModal from '../components/ProfileModal.astro';
   }
 
   // ── HUD button handlers ───────────────────────────────────────────────────
-  btnZoomIn?.addEventListener('click', () => {
+  btnZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!engine) return;
     const newZ = Math.min(engine.camera.maxZoom, engine.camera.targetZoom * 1.3);
     engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
   });
 
-  btnZoomOut?.addEventListener('click', () => {
+  btnZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!engine) return;
     const newZ = Math.max(engine.camera.minZoom, engine.camera.targetZoom / 1.3);
     engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
   });
 
-  btnRecenter?.addEventListener('click', () => {
+  btnRecenter?.addEventListener('click', (e) => {
+    e.stopPropagation();
     engine?.flyTo(52, 60, 1.0);
   });
 
