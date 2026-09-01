@@ -37,6 +37,27 @@
 </div>
 
 <style>
+  .search-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 250;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+  }
+
+  .search-modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .search-card {
     position: relative;
     width: 92vw;
