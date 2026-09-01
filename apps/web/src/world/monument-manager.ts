@@ -147,7 +147,7 @@ export class MonumentManager {
           state: initialMode,
           frame: 0,
           animTimer: 0,
-          pauseTimer: Math.floor(Math.random() * 200),
+          pauseTimer: 1500 + Math.floor(Math.random() * 2500),
           isMoving: false,
           sleepParticles: [],
           emote: null,
@@ -244,11 +244,11 @@ export class MonumentManager {
     ent.pauseTimer--;
     if (ent.pauseTimer <= 0) {
       const roll = Math.random();
-      if (roll < 0.35) {
+      if (roll < 0.25) {
         // Start walking around their home plot area
         const baseWx = ent.spot.x * TILE_WIDTH + TILE_WIDTH / 2;
         const baseWy = ent.spot.y * TILE_HEIGHT + TILE_HEIGHT;
-        const wanderR = 28;
+        const wanderR = 24;
         const targetX = baseWx + (Math.random() * wanderR * 2 - wanderR);
         const targetY = baseWy + (Math.random() * wanderR * 2 - wanderR);
 
@@ -257,11 +257,11 @@ export class MonumentManager {
         ent.isMoving = true;
         ent.state = 'walking';
       } else {
-        // Switch activity mode
+        // Switch activity mode (calm, long duration ~35-75 seconds)
         const randomMode = MODES[Math.floor(Math.random() * MODES.length)];
         ent.state = randomMode;
-        ent.pauseTimer = 300 + Math.floor(Math.random() * 400);
-        if (Math.random() < 0.4) {
+        ent.pauseTimer = 2000 + Math.floor(Math.random() * 2400);
+        if (Math.random() < 0.3) {
           ent.direction = ['down', 'up', 'left', 'right'][Math.floor(Math.random() * 4)] as any;
         }
       }
