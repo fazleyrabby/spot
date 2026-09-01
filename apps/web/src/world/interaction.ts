@@ -105,11 +105,8 @@ export class InteractionHandler {
           this.renderer.hoveredCitizen = citizen;
           canvas.style.cursor = 'pointer';
         } else {
-          // Check if hovering near a citizen's plot center
-          const grid = worldToGrid(world.x, world.y);
-          const plot = grid ? this.plots.getPlotAt(grid.gx, grid.gy) : null;
-          this.renderer.hoveredCitizen = plot ? plot.owner : null;
-          canvas.style.cursor = plot ? 'pointer' : 'default';
+          this.renderer.hoveredCitizen = null;
+          canvas.style.cursor = 'default';
         }
       }
     };
