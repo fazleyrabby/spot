@@ -1,8 +1,13 @@
 /**
- * Renderer — Canvas2D top-down renderer for Spot World (Stardew Valley / RPG Maker style).
+ * Renderer — Top-Down City & Urban District Canvas2D Renderer for Spot World.
  *
- * All citizens are rendered as cute animated chibi characters.
- * Each plot features a homey landmark prop at its center (lantern, bench, garden, campfire, signpost).
+ * Visual Features:
+ *  - Dark asphalt streets with white lane stripes and zebra crosswalks.
+ *  - Paved sidewalks, urban plazas, and green park squares.
+ *  - Streetlamps with warm ambient golden light halos on the dark streets.
+ *  - Urban furniture: Benches, vending machines, tree planters, cafe tables.
+ *  - Chibi citizens and player walking along sidewalks and pedestrian plazas.
+ *  - Unified depth sorting (Y-sort) for all entities.
  */
 
 import { Camera } from './camera.js';
@@ -12,50 +17,47 @@ import {
   getVisibleGridRange,
 } from '@spot/world';
 import {
-  getTileBaseTerrain,
-  getTileNatureObject,
-  type NatureObject,
+  getCityTileType,
+  getCityProp,
+  type CityProp,
+  type UrbanTileType,
 } from './terrain-generator.js';
-import { SpriteManager } from './sprite-manager.js';
+import { SpriteManager, URBAN_TILES } from './sprite-manager.js';
 import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager, type Plot } from './plot-manager.js';
 
 // ---------------------------------------------------------------------------
-// Colors & Palettes (Stardew Valley lush nature warmth)
+// Urban Palette (Sleek Dark Asphalt, Amber Lighting, Jade Accents)
 // ---------------------------------------------------------------------------
 
-const PALETTE = {
-  // Ground tiles (lush natural greens)
-  grass_1: '#2c5d23',
-  grass_2: '#336a29',
-  grass_3: '#26511e',
-  grass_4: '#39782f',
+const CITY_PALETTE = {
+  // Asphalt & Streets
+  asphalt_base: '#171b21',
+  asphalt_edge: '#12151a',
+  lane_white: 'rgba(248, 250, 252, 0.85)',
+  lane_yellow: '#f59e0b',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.90)',
 
-  // Plot interior
-  plot_lawn: '#35752b',
-  plot_center: '#3b8230',
-  plot_stone_dot: 'rgba(203, 213, 225, 0.35)',
+  // Sidewalks & Plazas
+  sidewalk_base: '#27313f',
+  sidewalk_edge: '#1e2632',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.06)',
+  plaza_base: '#222a36',
+  plaza_accent: '#2a3443',
+  park_grass: '#1b3822',
+  park_accent: '#23472c',
 
-  // Nature props
-  trunk: '#5c3a1e',
-  canopy_oak: '#22c55e',
-  canopy_oak_shadow: '#15803d',
-  canopy_pine: '#047857',
-  canopy_pine_shadow: '#064e3b',
-  bush: '#16a34a',
-  flower_stem: '#4ade80',
-  flower_petal_1: '#f43f5e',
-  flower_petal_2: '#fbbf24',
-  flower_petal_3: '#38bdf8',
-  rock_body: '#64748b',
-  rock_shadow: '#334155',
+  // Lighting
+  lamp_glow_inner: 'rgba(251, 191, 36, 0.32)',
+  lamp_glow_outer: 'rgba(251, 191, 36, 0.0)',
+  neon_vending_glow: 'rgba(56, 189, 248, 0.28)',
 
-  // Selection / hover
-  hover_border: 'rgba(245, 158, 11, 0.85)',
-  hover_fill: 'rgba(245, 158, 11, 0.10)',
-  select_border: '#f59e0b',
-  select_fill: 'rgba(245, 158, 11, 0.18)',
+  // Overlays
+  hover_border: '#f59e0b',
+  hover_fill: 'rgba(245, 158, 11, 0.12)',
+  select_border: '#38bdf8',
+  select_fill: 'rgba(56, 189, 248, 0.18)',
 };
 
 interface RenderableEntity {
@@ -63,7 +65,14 @@ interface RenderableEntity {
   render: (ctx: CanvasRenderingContext2D, z: number) => void;
 }
 
-interface AmbientParticle {
+interface LightSource {
+  wx: number;
+  wy: number;
+  radius: number;
+  color: string;
+}
+
+interface CityParticle {
   x: number;
   y: number;
   vx: number;
@@ -82,13 +91,11 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
 
-  // Interaction highlights
   hoveredGrid: { gx: number; gy: number } | null = null;
   hoveredPlot: Plot | null = null;
   selectedPlot: Plot | null = null;
 
-  // Ambient floating particles
-  private ambientParticles: AmbientParticle[] = [];
+  private cityParticles: CityParticle[] = [];
   private animFrameId: number | null = null;
   private tick = 0;
 
@@ -110,19 +117,19 @@ export class Renderer {
     this.monuments = monuments;
     this.plots = plots;
 
-    this.initAmbientParticles();
+    this.initCityParticles();
   }
 
-  private initAmbientParticles(): void {
-    const colors = ['#86efac', '#fef08a', '#fbcfe8', '#bae6fd'];
-    for (let i = 0; i < 30; i++) {
-      this.ambientParticles.push({
+  private initCityParticles(): void {
+    const colors = ['#fef08a', '#bae6fd', '#86efac', '#fbcfe8'];
+    for (let i = 0; i < 25; i++) {
+      this.cityParticles.push({
         x: Math.random() * (this.canvas.width || 800),
         y: Math.random() * (this.canvas.height || 600),
-        vx: (Math.random() - 0.3) * 0.35 + 0.15,
-        vy: (Math.random() - 0.5) * 0.2 + 0.1,
-        size: 1.5 + Math.random() * 2,
-        alpha: 0.15 + Math.random() * 0.4,
+        vx: (Math.random() - 0.5) * 0.3 + 0.15,
+        vy: -0.1 - Math.random() * 0.25,
+        size: 1 + Math.random() * 1.8,
+        alpha: 0.15 + Math.random() * 0.45,
         color: colors[Math.floor(Math.random() * colors.length)],
       });
     }
@@ -168,27 +175,25 @@ export class Renderer {
     const H = camera.viewportHeight;
     const z = camera.zoom;
 
-    // 1. Dark forest background
-    ctx.fillStyle = '#0f1710';
+    // 1. Dark city night sky clear
+    ctx.fillStyle = '#0b0e13';
     ctx.fillRect(0, 0, W, H);
 
     // 2. Visible grid bounds
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
 
-    // 3. Ground Layer (Lush Green Meadow)
-    this.drawGroundTiles(ctx, range, z);
+    // 3. Ground Layer (Asphalt, Crosswalks, Sidewalks, Plazas)
+    this.drawCityGround(ctx, range, z);
 
-    // 4. Collect Depth-Sorted Entities
+    // 4. Collect Depth-Sorted Entities & Street Lights
     const entities: RenderableEntity[] = [];
+    const lights: LightSource[] = [];
 
-    // 4a. Nature props on empty land
-    this.collectNatureEntities(range, entities);
+    // 4a. Urban Props & Street Lamps
+    this.collectCityProps(range, entities, lights);
 
-    // 4b. Plot Center Props (Lamp, Bench, Garden Bed, Campfire)
-    this.collectPlotProps(range, entities);
-
-    // 4c. Citizen Chibi Characters
+    // 4b. Citizen Chibi Characters
     const allCitizens = this.monuments.getAllEntities();
     for (const ent of allCitizens) {
       const screen = camera.worldToScreen(ent.wx, ent.wy);
@@ -209,7 +214,7 @@ export class Renderer {
       });
     }
 
-    // 4d. Player Character
+    // 4c. Player Character
     const playerScreen = camera.worldToScreen(this.player.wx, this.player.wy);
     entities.push({
       depth: this.player.wy,
@@ -218,26 +223,29 @@ export class Renderer {
       },
     });
 
-    // 5. Unified Depth Sort (Y ascending)
+    // 5. Draw Ambient Radial Light Glows on the streets under entities
+    this.drawStreetLighting(ctx, lights, z);
+
+    // 6. Unified Depth Sort (Y ascending)
     entities.sort((a, b) => a.depth - b.depth);
 
-    // 6. Draw all sorted entities
+    // 7. Draw all sorted physical entities
     for (const entity of entities) {
       entity.render(ctx, z);
     }
 
-    // 7. Hover & Selection Overlays
+    // 8. Hover & Selection Overlays
     this.drawOverlays(ctx, z);
 
-    // 8. Ambient drifting particles
-    this.drawAmbientParticles(ctx);
+    // 9. Floating particles (night motes & sparks)
+    this.drawCityParticles(ctx);
   }
 
   // ---------------------------------------------------------------------------
-  // Ground Layer
+  // City Ground Rendering
   // ---------------------------------------------------------------------------
 
-  private drawGroundTiles(
+  private drawCityGround(
     ctx: CanvasRenderingContext2D,
     range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
     z: number,
@@ -250,38 +258,77 @@ export class Renderer {
         const wx = gx * TILE_WIDTH;
         const wy = gy * TILE_HEIGHT;
         const screen = this.camera.worldToScreen(wx, wy);
+        const tileType = getCityTileType(gx, gy);
 
-        const plot = this.plots.getPlotAt(gx, gy);
-        const { isBorder } = this.plots.isPlotBorder(gx, gy);
+        const dx = Math.floor(screen.x);
+        const dy = Math.floor(screen.y);
+        const dw = Math.ceil(tw);
+        const dh = Math.ceil(th);
 
-        if (plot) {
-          const isCenter = gx === plot.centerX && gy === plot.centerY;
-          ctx.fillStyle = isCenter ? PALETTE.plot_center : PALETTE.plot_lawn;
-          ctx.fillRect(Math.floor(screen.x), Math.floor(screen.y), Math.ceil(tw), Math.ceil(th));
-
-          // Subtle stone border dot on perimeter edges
-          if (isBorder && (gx + gy) % 2 === 0) {
-            ctx.fillStyle = PALETTE.plot_stone_dot;
-            ctx.fillRect(
-              Math.floor(screen.x + tw * 0.4),
-              Math.floor(screen.y + th * 0.4),
-              Math.max(1, Math.round(2 * z)),
-              Math.max(1, Math.round(2 * z)),
-            );
+        switch (tileType) {
+          case 'road_asphalt': {
+            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
           }
-        } else {
-          const baseType = getTileBaseTerrain(gx, gy);
-          ctx.fillStyle = PALETTE[baseType];
-          ctx.fillRect(Math.floor(screen.x), Math.floor(screen.y), Math.ceil(tw), Math.ceil(th));
 
-          if ((gx * 7 + gy * 13) % 7 === 0 && z >= 0.75) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(
-              Math.floor(screen.x + tw * 0.4),
-              Math.floor(screen.y + th * 0.3),
-              Math.max(1, Math.round(2 * z)),
-              Math.max(1, Math.round(3 * z)),
-            );
+          case 'road_h_stripe': {
+            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillRect(dx, dy, dw, dh);
+            // Dashed center line
+            if (gx % 2 === 0) {
+              ctx.fillStyle = CITY_PALETTE.lane_white;
+              ctx.fillRect(dx + dw * 0.15, dy + dh * 0.45, dw * 0.7, Math.max(1, 2 * z));
+            }
+            break;
+          }
+
+          case 'road_v_stripe': {
+            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillRect(dx, dy, dw, dh);
+            // Dashed vertical center line
+            if (gy % 2 === 0) {
+              ctx.fillStyle = CITY_PALETTE.lane_white;
+              ctx.fillRect(dx + dw * 0.45, dy + dh * 0.15, Math.max(1, 2 * z), dh * 0.7);
+            }
+            break;
+          }
+
+          case 'crosswalk': {
+            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillRect(dx, dy, dw, dh);
+            // Zebra bars
+            ctx.fillStyle = CITY_PALETTE.crosswalk_bar;
+            const barCount = 4;
+            const barW = dw / (barCount * 2);
+            for (let b = 0; b < barCount; b++) {
+              ctx.fillRect(dx + (b * 2 + 0.5) * barW, dy + dh * 0.1, barW, dh * 0.8);
+            }
+            break;
+          }
+
+          case 'sidewalk': {
+            ctx.fillStyle = CITY_PALETTE.sidewalk_base;
+            ctx.fillRect(dx, dy, dw, dh);
+            // Pavement seams
+            ctx.fillStyle = CITY_PALETTE.sidewalk_seam;
+            ctx.fillRect(dx, dy, dw, 1);
+            ctx.fillRect(dx, dy, 1, dh);
+            break;
+          }
+
+          case 'plaza_paving': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? CITY_PALETTE.plaza_base : CITY_PALETTE.plaza_accent;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'park_grass': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? CITY_PALETTE.park_grass : CITY_PALETTE.park_accent;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
           }
         }
       }
@@ -289,314 +336,229 @@ export class Renderer {
   }
 
   // ---------------------------------------------------------------------------
-  // Plot Props Collection
+  // City Props & Street Lights Collection
   // ---------------------------------------------------------------------------
 
-  private collectPlotProps(
+  private collectCityProps(
     range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
     entities: RenderableEntity[],
-  ): void {
-    const W = this.camera.viewportWidth;
-    const H = this.camera.viewportHeight;
-
-    const allPlots = this.plots.getAllPlots();
-    for (const plot of allPlots) {
-      if (
-        plot.centerX < range.minGx ||
-        plot.centerX > range.maxGx ||
-        plot.centerY < range.minGy ||
-        plot.centerY > range.maxGy
-      ) {
-        continue;
-      }
-
-      const screen = this.camera.worldToScreen(plot.worldCenterX, plot.worldCenterY);
-      if (screen.x < -60 || screen.x > W + 60 || screen.y < -60 || screen.y > H + 60) continue;
-
-      // Hash prop type from plot owner name
-      const propType = this.getPropTypeForName(plot.owner.displayName);
-
-      entities.push({
-        depth: plot.worldCenterY,
-        render: (ctx, z) => {
-          this.drawPlotProp(ctx, propType, screen.x, screen.y, z);
-        },
-      });
-    }
-  }
-
-  private getPropTypeForName(name: string): 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire' {
-    const props: ('lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire')[] = ['lamp', 'bench', 'flowers', 'sign', 'bonfire'];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = (hash << 5) - hash + name.charCodeAt(i);
-      hash |= 0;
-    }
-    return props[Math.abs(hash) % props.length];
-  }
-
-  private drawPlotProp(
-    ctx: CanvasRenderingContext2D,
-    type: 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire',
-    sx: number,
-    sy: number,
-    z: number,
-  ): void {
-    switch (type) {
-      case 'lamp': {
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Pole
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(sx - 1.5 * z, sy - 18 * z, 3 * z, 18 * z);
-
-        // Lantern head with warm glow
-        ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 19 * z, 8 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#fde047';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 19 * z, 3 * z, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-
-      case 'bench': {
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 8 * z, 3 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#78350f';
-        // Legs
-        ctx.fillRect(sx - 6 * z, sy - 4 * z, 2 * z, 4 * z);
-        ctx.fillRect(sx + 4 * z, sy - 4 * z, 2 * z, 4 * z);
-        // Seat
-        ctx.fillRect(sx - 7 * z, sy - 6 * z, 14 * z, 3 * z);
-        // Backrest
-        ctx.fillRect(sx - 7 * z, sy - 10 * z, 14 * z, 2.5 * z);
-        break;
-      }
-
-      case 'flowers': {
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Stone circle
-        ctx.fillStyle = '#64748b';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 2 * z, 6 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#4ade80';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 2.5 * z, 4.5 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Blossoms
-        ctx.fillStyle = '#f43f5e';
-        ctx.fillRect(sx - 2 * z, sy - 4 * z, 2 * z, 2 * z);
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(sx + 1 * z, sy - 3 * z, 2 * z, 2 * z);
-        break;
-      }
-
-      case 'sign': {
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Post
-        ctx.fillStyle = '#78350f';
-        ctx.fillRect(sx - 1.5 * z, sy - 12 * z, 3 * z, 12 * z);
-        // Signboard
-        ctx.fillStyle = '#b45309';
-        ctx.fillRect(sx - 6 * z, sy - 14 * z, 12 * z, 6 * z);
-        ctx.strokeStyle = '#451a03';
-        ctx.lineWidth = 1 * z;
-        ctx.strokeRect(sx - 6 * z, sy - 14 * z, 12 * z, 6 * z);
-        break;
-      }
-
-      case 'bonfire': {
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 6 * z, 3 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Stones
-        ctx.fillStyle = '#475569';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 1 * z, 5 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Flickering fire
-        const flicker = Math.sin(this.tick * 0.2) * 1.5 * z;
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 4 * z, 6 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f97316';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 4 * z + flicker, 3 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#fde047';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 5 * z + flicker * 0.5, 1.8 * z, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Nature Props Collection
-  // ---------------------------------------------------------------------------
-
-  private collectNatureEntities(
-    range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
-    entities: RenderableEntity[],
+    lights: LightSource[],
   ): void {
     const W = this.camera.viewportWidth;
     const H = this.camera.viewportHeight;
 
     for (let gy = range.minGy; gy <= range.maxGy; gy++) {
       for (let gx = range.minGx; gx <= range.maxGx; gx++) {
-        const plot = this.plots.getPlotAt(gx, gy);
-        if (plot) continue;
+        const prop = getCityProp(gx, gy, false);
+        if (!prop) continue;
 
-        const nature = getTileNatureObject(gx, gy, false);
-        if (!nature) continue;
-
-        const screen = this.camera.worldToScreen(nature.wx, nature.wy);
+        const screen = this.camera.worldToScreen(prop.wx, prop.wy);
         if (screen.x < -60 || screen.x > W + 60 || screen.y < -60 || screen.y > H + 60) continue;
 
+        // Streetlight glow
+        if (prop.hasLight) {
+          lights.push({
+            wx: prop.wx,
+            wy: prop.wy - 18,
+            radius: prop.type === 'street_lamp' ? 64 : 32,
+            color: prop.type === 'street_lamp' ? 'rgba(251, 191, 36, 0.28)' : 'rgba(56, 189, 248, 0.22)',
+          });
+        }
+
         entities.push({
-          depth: nature.wy,
+          depth: prop.wy,
           render: (ctx, z) => {
-            this.drawNatureObject(ctx, nature, screen.x, screen.y, z);
+            this.drawCityProp(ctx, prop, screen.x, screen.y, z);
           },
         });
       }
     }
   }
 
-  private drawNatureObject(
+  private drawCityProp(
     ctx: CanvasRenderingContext2D,
-    nature: NatureObject,
+    prop: CityProp,
     sx: number,
     sy: number,
     z: number,
   ): void {
-    switch (nature.type) {
-      case 'tree_oak': {
+    switch (prop.type) {
+      case 'street_lamp': {
+        // Base shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pole
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 1.5 * z, sy - 24 * z, 3 * z, 24 * z);
+
+        // Lamp head
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 4 * z, sy - 26 * z, 8 * z, 3 * z);
+
+        // Warm glowing bulb
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 23 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'bench': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 8 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Metal / Wood Bench
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(sx - 6 * z, sy - 4 * z, 2 * z, 4 * z);
+        ctx.fillRect(sx + 4 * z, sy - 4 * z, 2 * z, 4 * z);
+
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(sx - 7 * z, sy - 6 * z, 14 * z, 3 * z);
+        ctx.fillRect(sx - 7 * z, sy - 10 * z, 14 * z, 2.5 * z);
+        break;
+      }
+
+      case 'vending_machine': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Machine body
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.roundRect(sx - 6 * z, sy - 18 * z, 12 * z, 18 * z, 2 * z);
+        ctx.fill();
+
+        // Glass display window with glowing beverages
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 4.5 * z, sy - 16 * z, 9 * z, 9 * z);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(sx - 3.5 * z, sy - 15 * z, 2 * z, 3 * z);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(sx - 0.5 * z, sy - 15 * z, 2 * z, 3 * z);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(sx + 2 * z, sy - 15 * z, 2 * z, 3 * z);
+
+        // Coin slot & drink dispenser
+        ctx.fillStyle = '#0369a1';
+        ctx.fillRect(sx - 4 * z, sy - 5 * z, 8 * z, 3 * z);
+        break;
+      }
+
+      case 'tree_planter': {
+        // Square curb planter box
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(sx - 8 * z, sy - 4 * z, 16 * z, 6 * z, 1.5 * z);
+        ctx.fill();
+
+        // Dark mulch
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 6.5 * z, sy - 3.5 * z, 13 * z, 4 * z);
+
+        // Trunk
+        ctx.fillStyle = '#5c3a1e';
+        ctx.fillRect(sx - 2 * z, sy - 16 * z, 4 * z, 14 * z);
+
+        // Round city foliage canopy
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 22 * z, 12 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(sx - 1.5 * z, sy - 24 * z, 10 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'bush_box': {
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - 6 * z, sy - 3 * z, 12 * z, 4 * z);
+
+        ctx.fillStyle = '#16a34a';
+        ctx.beginPath();
+        ctx.arc(sx - 2 * z, sy - 6 * z, 5 * z, 0, Math.PI * 2);
+        ctx.arc(sx + 2 * z, sy - 6 * z, 5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'fire_hydrant': {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(sx - 2.5 * z, sy - 8 * z, 5 * z, 8 * z);
+        ctx.fillRect(sx - 4 * z, sy - 5 * z, 8 * z, 2.5 * z);
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 8 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'trash_can': {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 3.5 * z, sy - 8 * z, 7 * z, 8 * z);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - 4.5 * z, sy - 9 * z, 9 * z, 2 * z);
+        break;
+      }
+
+      case 'cafe_table': {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy - 2 * z, 12 * z, 5 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = PALETTE.trunk;
-        ctx.fillRect(sx - 2.5 * z, sy - 16 * z, 5 * z, 16 * z);
-
-        const cy = sy - 24 * z;
-        ctx.fillStyle = PALETTE.canopy_oak_shadow;
-        ctx.beginPath();
-        ctx.arc(sx, cy + 2 * z, 15 * z, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = PALETTE.canopy_oak;
-        ctx.beginPath();
-        ctx.arc(sx - 1.5 * z, cy - 2 * z, 13.5 * z, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-
-      case 'tree_pine': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy - 2 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = PALETTE.trunk;
-        ctx.fillRect(sx - 2 * z, sy - 10 * z, 4 * z, 10 * z);
-
-        const p1 = sy - 10 * z;
-        ctx.fillStyle = PALETTE.canopy_pine_shadow;
-        ctx.beginPath();
-        ctx.moveTo(sx - 12 * z, p1);
-        ctx.lineTo(sx, p1 - 14 * z);
-        ctx.lineTo(sx + 12 * z, p1);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = PALETTE.canopy_pine;
-        ctx.beginPath();
-        ctx.moveTo(sx - 9 * z, p1 - 8 * z);
-        ctx.lineTo(sx, p1 - 24 * z);
-        ctx.lineTo(sx + 9 * z, p1 - 8 * z);
-        ctx.closePath();
-        ctx.fill();
-        break;
-      }
-
-      case 'bush': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy - 1 * z, 8 * z, 3.5 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = PALETTE.bush;
-        ctx.beginPath();
-        ctx.arc(sx - 2.5 * z, sy - 5 * z, 5 * z, 0, Math.PI * 2);
-        ctx.arc(sx + 2.5 * z, sy - 5 * z, 5 * z, 0, Math.PI * 2);
-        ctx.arc(sx, sy - 7 * z, 5.5 * z, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-
-      case 'flowers': {
-        const colors = [PALETTE.flower_petal_1, PALETTE.flower_petal_2, PALETTE.flower_petal_3];
-        const color = colors[nature.variant % colors.length];
-
-        ctx.fillStyle = PALETTE.flower_stem;
-        ctx.fillRect(sx - 1 * z, sy - 5 * z, 1.5 * z, 5 * z);
-
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(sx, sy - 6 * z, 2.5 * z, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-
-      case 'rock': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 7 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = PALETTE.rock_shadow;
+        // Table
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(sx - 1 * z, sy - 7 * z, 2 * z, 7 * z);
+        ctx.fillStyle = '#cbd5e1';
         ctx.beginPath();
-        ctx.arc(sx + 1 * z, sy - 3.5 * z, 5 * z, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy - 7 * z, 6 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = PALETTE.rock_body;
+        // Parasol
+        ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
-        ctx.arc(sx - 1 * z, sy - 4.5 * z, 4.5 * z, 0, Math.PI * 2);
+        ctx.arc(sx, sy - 16 * z, 10 * z, Math.PI, 0);
         ctx.fill();
         break;
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Street Ambient Lighting Engine
+  // ---------------------------------------------------------------------------
+
+  private drawStreetLighting(
+    ctx: CanvasRenderingContext2D,
+    lights: LightSource[],
+    z: number,
+  ): void {
+    ctx.save();
+    for (const light of lights) {
+      const s = this.camera.worldToScreen(light.wx, light.wy);
+      const rad = light.radius * z;
+
+      const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, rad);
+      grad.addColorStop(0, light.color);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   // ---------------------------------------------------------------------------
@@ -611,10 +573,10 @@ export class Renderer {
       const h = (p.worldMaxY - p.worldMinY) * z;
 
       ctx.save();
-      ctx.fillStyle = PALETTE.hover_fill;
+      ctx.fillStyle = CITY_PALETTE.hover_fill;
       ctx.fillRect(sMin.x, sMin.y, w, h);
 
-      ctx.strokeStyle = PALETTE.hover_border;
+      ctx.strokeStyle = CITY_PALETTE.hover_border;
       ctx.lineWidth = 1.8;
       ctx.setLineDash([5, 3]);
       ctx.strokeRect(sMin.x, sMin.y, w, h);
@@ -626,7 +588,7 @@ export class Renderer {
 
       ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
       ctx.fillRect(s.x, s.y, TILE_WIDTH * z, TILE_HEIGHT * z);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 1;
       ctx.strokeRect(s.x, s.y, TILE_WIDTH * z, TILE_HEIGHT * z);
     }
@@ -638,27 +600,27 @@ export class Renderer {
       const h = (p.worldMaxY - p.worldMinY) * z;
 
       ctx.save();
-      ctx.fillStyle = PALETTE.select_fill;
+      ctx.fillStyle = CITY_PALETTE.select_fill;
       ctx.fillRect(sMin.x, sMin.y, w, h);
 
-      ctx.strokeStyle = PALETTE.select_border;
+      ctx.strokeStyle = CITY_PALETTE.select_border;
       ctx.lineWidth = 2.2;
       ctx.strokeRect(sMin.x, sMin.y, w, h);
       ctx.restore();
     }
   }
 
-  private drawAmbientParticles(ctx: CanvasRenderingContext2D): void {
+  private drawCityParticles(ctx: CanvasRenderingContext2D): void {
     const W = this.camera.viewportWidth;
     const H = this.camera.viewportHeight;
 
     ctx.save();
-    for (const p of this.ambientParticles) {
+    for (const p of this.cityParticles) {
       p.x += p.vx;
       p.y += p.vy;
 
       if (p.x > W + 10) p.x = -10;
-      if (p.y > H + 10) p.y = -10;
+      if (p.y < -10) p.y = H + 10;
 
       ctx.fillStyle = p.color;
       ctx.globalAlpha = p.alpha;
