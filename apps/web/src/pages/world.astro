@@ -128,6 +128,7 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   import { Engine } from '../world/engine.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
+  import { containsBlockedWord } from '@spot/shared';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
   const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
@@ -315,6 +316,13 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
 
     try {
       const authorName = spotWallAuthor?.value.trim() || 'Visitor';
+
+      if (containsBlockedWord(body) || containsBlockedWord(authorName)) {
+        showToast('Please keep spot wall messages kind & welcoming! 🌸', 'error');
+        if (spotWallSubmit) spotWallSubmit.disabled = false;
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/api/spots/${currentViewingSpotId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -542,6 +550,11 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
         if (!chatInput || !engine) return;
         const msg = chatInput.value.trim();
         if (!msg) return;
+
+        if (containsBlockedWord(msg)) {
+          showToast('Please keep chat messages kind & friendly! 🌸', 'error');
+          return;
+        }
 
         engine.player.say(msg, 360);
         chatInput.value = '';
