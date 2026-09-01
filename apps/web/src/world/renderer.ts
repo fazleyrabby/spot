@@ -463,6 +463,25 @@ export class Renderer {
             ctx.fillStyle = PALETTES.rail_shine;
             ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 0.8 * z));
             ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 0.8 * z));
+
+            // Southern Perimeter Safety Guardrail (gy === 6)
+            if (gy === 6) {
+              ctx.fillStyle = '#0f172a';
+              ctx.fillRect(dx, dy + dh - 4 * z, dw, 4 * z);
+
+              ctx.fillStyle = '#475569';
+              ctx.fillRect(dx, dy + dh - 7 * z, dw, 3 * z);
+
+              // Hazard warning stripes
+              ctx.fillStyle = '#f59e0b';
+              ctx.fillRect(dx + 2 * z, dy + dh - 6.5 * z, 4 * z, 2 * z);
+              ctx.fillRect(dx + dw * 0.5, dy + dh - 6.5 * z, 4 * z, 2 * z);
+
+              // Heavy security fence posts
+              ctx.fillStyle = '#1e293b';
+              ctx.fillRect(dx, dy + dh - 9 * z, 2.5 * z, 9 * z);
+              ctx.fillRect(dx + dw - 2.5 * z, dy + dh - 9 * z, 2.5 * z, 9 * z);
+            }
             break;
           }
 
