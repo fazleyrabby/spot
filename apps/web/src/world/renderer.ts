@@ -90,6 +90,7 @@ export class Renderer {
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
+  gpsTarget: { name: string; wx: number; wy: number } | null = null;
 
   private cityParticles: CityParticle[] = [];
   private animFrameId: number | null = null;
@@ -253,6 +254,80 @@ export class Renderer {
 
     // 8. Floating ambient night motes & cherry blossoms
     this.drawCityParticles(ctx);
+
+    // 9. On-Screen GPS Waypoint Indicator
+    this.drawGpsWaypoint(ctx);
+  }
+
+  private drawGpsWaypoint(ctx: CanvasRenderingContext2D): void {
+    if (!this.gpsTarget) return;
+
+    const W = this.camera.viewportWidth;
+    const H = this.camera.viewportHeight;
+    const screenTarget = this.camera.worldToScreen(this.gpsTarget.wx, this.gpsTarget.wy);
+
+    // Calculate distance from player in tiles
+    const distTiles = Math.round(
+      Math.hypot(this.player.wx - this.gpsTarget.wx, this.player.wy - this.gpsTarget.wy) / TILE_WIDTH
+    );
+
+    // If target is centered on screen and within 3 tiles, no indicator needed
+    if (screenTarget.x > 80 && screenTarget.x < W - 80 && screenTarget.y > 80 && screenTarget.y < H - 80 && distTiles <= 2) {
+      return;
+    }
+
+    const margin = 48;
+    const cx = W / 2;
+    const cy = H / 2;
+    const angle = Math.atan2(screenTarget.y - cy, screenTarget.x - cx);
+
+    // Clamp indicator to screen perimeter
+    let ix = cx + Math.cos(angle) * (W / 2 - margin);
+    let iy = cy + Math.sin(angle) * (H / 2 - margin);
+    ix = Math.max(margin, Math.min(W - margin, ix));
+    iy = Math.max(margin + 40, Math.min(H - margin - 50, iy));
+
+    ctx.save();
+
+    // Floating Pill Card
+    const text = `🧭 ${this.gpsTarget.name} • ${distTiles} tiles`;
+    ctx.font = `bold 11px 'Outfit', sans-serif`;
+    const textW = ctx.measureText(text).width;
+    const pillW = textW + 24;
+    const pillH = 28;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.beginPath();
+    ctx.roundRect(ix - pillW / 2, iy - pillH / 2, pillW, pillH, 14);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Subtle amber glow
+    ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+    ctx.shadowBlur = 10;
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, ix, iy);
+
+    // Pointer arrow along border
+    ctx.save();
+    ctx.translate(ix, iy);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.moveTo(pillW / 2 + 2, -4);
+    ctx.lineTo(pillW / 2 + 9, 0);
+    ctx.lineTo(pillW / 2 + 2, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
   }
 
   // ---------------------------------------------------------------------------

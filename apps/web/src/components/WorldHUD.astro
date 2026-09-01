@@ -38,13 +38,23 @@
     <span id="world-coord-text">—</span>
   </div>
 
-  <div class="hud-divider"></div>
-
   <!-- Discoveries & Easter Eggs Counter -->
   <div class="hud-secrets" id="hud-secrets-pill" title="World Discoveries & Secrets Found">
     <span class="hud-secrets-icon">✨</span>
     <span id="hud-secrets-count">0/6</span>
   </div>
+
+  <div class="hud-divider"></div>
+
+  <!-- Search / Find Citizen Button -->
+  <button class="hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <span>Find</span>
+    <kbd class="hud-kbd">⌘K</kbd>
+  </button>
 
   <div class="hud-divider hud-divider-right"></div>
 
@@ -188,6 +198,36 @@
 
   .hud-secrets-icon {
     font-size: 0.85rem;
+  }
+
+  .hud-search-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 9999px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-search-btn:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    color: #f8fafc;
+  }
+
+  .hud-kbd {
+    font-size: 0.65rem;
+    font-family: var(--font-mono, monospace);
+    background: rgba(0, 0, 0, 0.35);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #94a3b8;
   }
 
   .hud-coord svg {
