@@ -255,7 +255,7 @@ export class Renderer {
       const isHovered = this.hoveredCitizen?.x === ent.spot.x && this.hoveredCitizen?.y === ent.spot.y;
       const isSelected = this.selectedCitizen?.x === ent.spot.x && this.selectedCitizen?.y === ent.spot.y;
       const distToPlayer = Math.hypot(ent.wx - this.player.wx, ent.wy - this.player.wy);
-      const isNearby = z >= 1.1 && distToPlayer < 120;
+      const isNearby = z >= 1.25 && distToPlayer < 40;
 
       const showNameTag = isHovered || isSelected || isNearby;
 
@@ -263,17 +263,17 @@ export class Renderer {
         entities.push({
           depth: ent.wy - 0.1,
           render: (c, currentZoom) => {
-            const ringRadius = 10 * currentZoom;
+            const ringRadius = 7 * currentZoom;
             c.save();
             c.fillStyle = isSelected ? PALETTES.select_glow : PALETTES.hover_glow;
             c.beginPath();
-            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
+            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.45, 0, 0, Math.PI * 2);
             c.fill();
 
             c.strokeStyle = isSelected ? PALETTES.select_ring : PALETTES.hover_ring;
-            c.lineWidth = 1.6;
+            c.lineWidth = 1.4;
             c.beginPath();
-            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
+            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.45, 0, 0, Math.PI * 2);
             c.stroke();
             c.restore();
           },
