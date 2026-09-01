@@ -220,9 +220,11 @@ export class PlayerManager {
         this.direction = dx > 0 ? 'right' : 'left';
       }
 
+      const isSprint = this.keys.has('shift');
+      const speed = isSprint ? 5.6 : 3.8;
       const len = Math.hypot(dx, dy);
-      const moveX = (dx / len) * MOVE_SPEED;
-      const moveY = (dy / len) * MOVE_SPEED;
+      const moveX = (dx / len) * speed;
+      const moveY = (dy / len) * speed;
 
       this.wx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, this.wx + moveX));
       this.wy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, this.wy + moveY));
@@ -230,7 +232,7 @@ export class PlayerManager {
       this.updateCurrentPlot();
 
       this.animTimer++;
-      if (this.animTimer >= WALK_FRAME_INTERVAL) {
+      if (this.animTimer >= (isSprint ? 5 : WALK_FRAME_INTERVAL)) {
         this.animTimer = 0;
         this.frame = (this.frame + 1) % 4;
         if (this.frame === 1 || this.frame === 3) {

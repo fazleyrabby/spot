@@ -64,6 +64,7 @@ export interface CitizenEntity {
   sleepParticles: SleepZ[];
   emote: EmoteBubble | null;
   emoteTimer: number;
+  liveSpeech?: { text: string; age: number; maxAge: number } | null;
 }
 
 const MODES: CitizenActivityMode[] = [
@@ -110,6 +111,74 @@ export class MonumentManager {
 
   update(spots: OccupiedSpotSummary[]): void {
     this.syncOccupiedSpots(spots);
+  }
+
+  syncLivePlayer(data: {
+    citizenId: string;
+    displayName: string;
+    avatarId: string;
+    wx: number;
+    wy: number;
+    direction: 'down' | 'up' | 'left' | 'right';
+    state: string;
+    speech?: string | null;
+  }): void {
+    if (!data.citizenId || data.citizenId === this.excludeCitizenId) return;
+
+    let found = false;
+    for (const ent of this.entities.values()) {
+      if (ent.spot.citizenId === data.citizenId) {
+        ent.targetWx = data.wx;
+        ent.targetWy = data.wy;
+        ent.direction = data.direction;
+        ent.state = data.state as CitizenActivityMode;
+        ent.isMoving = data.state === 'walking';
+        ent.spot.isOnline = true;
+        ent.pauseTimer = 600; // Keep alive under player control
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      const key = `live_${data.citizenId}`;
+      if (!this.entities.has(key)) {
+        const liveEnt: CitizenEntity = {
+          spot: {
+            spotId: '0,0',
+            x: Math.floor(data.wx / TILE_WIDTH),
+            y: Math.floor(data.wy / TILE_HEIGHT),
+            citizenId: data.citizenId,
+            displayName: data.displayName,
+            avatarId: data.avatarId || 'astronaut',
+            isOnline: true,
+            claimedAt: new Date().toISOString(),
+          },
+          wx: data.wx,
+          wy: data.wy,
+          targetWx: data.wx,
+          targetWy: data.wy,
+          direction: data.direction,
+          state: data.state as CitizenActivityMode,
+          frame: 0,
+          animTimer: 0,
+          pauseTimer: 600,
+          isMoving: data.state === 'walking',
+          sleepParticles: [],
+          emote: null,
+          emoteTimer: 0,
+        };
+        this.entities.set(key, liveEnt);
+      } else {
+        const liveEnt = this.entities.get(key)!;
+        liveEnt.targetWx = data.wx;
+        liveEnt.targetWy = data.wy;
+        liveEnt.direction = data.direction;
+        liveEnt.state = data.state as CitizenActivityMode;
+        liveEnt.isMoving = data.state === 'walking';
+        liveEnt.pauseTimer = 600;
+      }
+    }
   }
 
   syncOccupiedSpots(spots: OccupiedSpotSummary[]): void {
@@ -205,7 +274,43 @@ export class MonumentManager {
       return;
     }
 
-    // Walking movement logic
+    if (ent.liveSpeech) {
+      ent.liveSpeech.age++;
+      if (ent.liveSpeech.age >= ent.liveSpeech.maxAge) {
+        ent.liveSpeech = null;
+      }
+    }
+
+    // 1. Live remote multiplayer player fast interpolation
+    if (ent.spot.isOnline && (Math.abs(ent.wx - ent.targetWx) > 0.5 || Math.abs(ent.wy - ent.targetWy) > 0.5)) {
+      const dx = ent.targetWx - ent.wx;
+      const dy = ent.targetWy - ent.wy;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 180) {
+        ent.wx = ent.targetWx;
+        ent.wy = ent.targetWy;
+        ent.isMoving = false;
+      } else if (dist > 1.2) {
+        const step = Math.min(dist, Math.max(3.8, dist * 0.45));
+        ent.wx += (dx / dist) * step;
+        ent.wy += (dy / dist) * step;
+        ent.isMoving = true;
+      } else {
+        ent.wx = ent.targetWx;
+        ent.wy = ent.targetWy;
+        ent.isMoving = false;
+      }
+
+      ent.animTimer++;
+      if (ent.animTimer >= 6) {
+        ent.animTimer = 0;
+        ent.frame = (ent.frame + 1) % 4;
+      }
+      return;
+    }
+
+    // 2. Offline AI Walking movement logic
     if (ent.isMoving && ent.state === 'walking') {
       const dx = ent.targetWx - ent.wx;
       const dy = ent.targetWy - ent.wy;

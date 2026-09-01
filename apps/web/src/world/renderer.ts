@@ -116,6 +116,7 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
   readonly train: TrainManager;
+  multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
@@ -194,6 +195,13 @@ export class Renderer {
     this.player.update();
     this.monuments.updateTick();
     this.train.tick(this.player.wy);
+    this.multiplayer?.broadcastMovement(
+      this.player.wx,
+      this.player.wy,
+      this.player.direction,
+      this.player.state,
+      this.player.chatBubble?.text,
+    );
 
     this.draw();
   };
