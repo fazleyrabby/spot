@@ -7,6 +7,7 @@
  *  - Streetlamps with warm ambient golden light halos on the dark streets.
  *  - Urban furniture: Benches, vending machines, tree planters, cafe tables.
  *  - Chibi citizens and player walking along sidewalks and pedestrian plazas.
+ *  - Clean RPG selection rings under hovered/clicked citizens (no giant square boxes).
  *  - Unified depth sorting (Y-sort) for all entities.
  */
 
@@ -25,7 +26,8 @@ import {
 import { SpriteManager, URBAN_TILES } from './sprite-manager.js';
 import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
-import { PlotManager, type Plot } from './plot-manager.js';
+import { PlotManager } from './plot-manager.js';
+import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
 // Urban Palette (Sleek Dark Asphalt, Amber Lighting, Jade Accents)
@@ -53,11 +55,11 @@ const CITY_PALETTE = {
   lamp_glow_outer: 'rgba(251, 191, 36, 0.0)',
   neon_vending_glow: 'rgba(56, 189, 248, 0.28)',
 
-  // Overlays
-  hover_border: '#f59e0b',
-  hover_fill: 'rgba(245, 158, 11, 0.12)',
-  select_border: '#38bdf8',
-  select_fill: 'rgba(56, 189, 248, 0.18)',
+  // Citizen Selection Rings
+  hover_ring: 'rgba(245, 158, 11, 0.75)',
+  hover_glow: 'rgba(245, 158, 11, 0.20)',
+  select_ring: '#38bdf8',
+  select_glow: 'rgba(56, 189, 248, 0.25)',
 };
 
 interface RenderableEntity {
@@ -91,9 +93,9 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
 
-  hoveredGrid: { gx: number; gy: number } | null = null;
-  hoveredPlot: Plot | null = null;
-  selectedPlot: Plot | null = null;
+  // Interaction highlights
+  hoveredCitizen: OccupiedSpotSummary | null = null;
+  selectedCitizen: OccupiedSpotSummary | null = null;
 
   private cityParticles: CityParticle[] = [];
   private animFrameId: number | null = null;
@@ -199,12 +201,34 @@ export class Renderer {
       const screen = camera.worldToScreen(ent.wx, ent.wy);
       if (screen.x < -80 || screen.x > W + 80 || screen.y < -80 || screen.y > H + 80) continue;
 
-      const isHovered = this.hoveredPlot?.centerX === ent.spot.x && this.hoveredPlot?.centerY === ent.spot.y;
-      const isSelected = this.selectedPlot?.centerX === ent.spot.x && this.selectedPlot?.centerY === ent.spot.y;
+      const isHovered = this.hoveredCitizen?.x === ent.spot.x && this.hoveredCitizen?.y === ent.spot.y;
+      const isSelected = this.selectedCitizen?.x === ent.spot.x && this.selectedCitizen?.y === ent.spot.y;
       const distToPlayer = Math.hypot(ent.wx - this.player.wx, ent.wy - this.player.wy);
       const isNearby = z >= 1.1 && distToPlayer < 120;
 
       const showNameTag = isHovered || isSelected || isNearby;
+
+      // Draw subtle circular target ring under hovered/selected citizen
+      if (isHovered || isSelected) {
+        entities.push({
+          depth: ent.wy - 0.1,
+          render: (c, currentZoom) => {
+            const ringRadius = 10 * currentZoom;
+            c.save();
+            c.fillStyle = isSelected ? CITY_PALETTE.select_glow : CITY_PALETTE.hover_glow;
+            c.beginPath();
+            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
+            c.fill();
+
+            c.strokeStyle = isSelected ? CITY_PALETTE.select_ring : CITY_PALETTE.hover_ring;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
+            c.stroke();
+            c.restore();
+          },
+        });
+      }
 
       entities.push({
         depth: ent.wy,
@@ -234,10 +258,7 @@ export class Renderer {
       entity.render(ctx, z);
     }
 
-    // 8. Hover & Selection Overlays
-    this.drawOverlays(ctx, z);
-
-    // 9. Floating particles (night motes & sparks)
+    // 8. Floating particles (night motes & sparks)
     this.drawCityParticles(ctx);
   }
 
@@ -384,21 +405,17 @@ export class Renderer {
   ): void {
     switch (prop.type) {
       case 'street_lamp': {
-        // Base shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Pole
         ctx.fillStyle = '#475569';
         ctx.fillRect(sx - 1.5 * z, sy - 24 * z, 3 * z, 24 * z);
 
-        // Lamp head
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(sx - 4 * z, sy - 26 * z, 8 * z, 3 * z);
 
-        // Warm glowing bulb
         ctx.fillStyle = '#fbbf24';
         ctx.beginPath();
         ctx.arc(sx, sy - 23 * z, 2.5 * z, 0, Math.PI * 2);
@@ -412,7 +429,6 @@ export class Renderer {
         ctx.ellipse(sx, sy, 8 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Metal / Wood Bench
         ctx.fillStyle = '#64748b';
         ctx.fillRect(sx - 6 * z, sy - 4 * z, 2 * z, 4 * z);
         ctx.fillRect(sx + 4 * z, sy - 4 * z, 2 * z, 4 * z);
@@ -429,13 +445,11 @@ export class Renderer {
         ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Machine body
         ctx.fillStyle = '#0284c7';
         ctx.beginPath();
         ctx.roundRect(sx - 6 * z, sy - 18 * z, 12 * z, 18 * z, 2 * z);
         ctx.fill();
 
-        // Glass display window with glowing beverages
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(sx - 4.5 * z, sy - 16 * z, 9 * z, 9 * z);
 
@@ -446,28 +460,23 @@ export class Renderer {
         ctx.fillStyle = '#10b981';
         ctx.fillRect(sx + 2 * z, sy - 15 * z, 2 * z, 3 * z);
 
-        // Coin slot & drink dispenser
         ctx.fillStyle = '#0369a1';
         ctx.fillRect(sx - 4 * z, sy - 5 * z, 8 * z, 3 * z);
         break;
       }
 
       case 'tree_planter': {
-        // Square curb planter box
         ctx.fillStyle = '#334155';
         ctx.beginPath();
         ctx.roundRect(sx - 8 * z, sy - 4 * z, 16 * z, 6 * z, 1.5 * z);
         ctx.fill();
 
-        // Dark mulch
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(sx - 6.5 * z, sy - 3.5 * z, 13 * z, 4 * z);
 
-        // Trunk
         ctx.fillStyle = '#5c3a1e';
         ctx.fillRect(sx - 2 * z, sy - 16 * z, 4 * z, 14 * z);
 
-        // Round city foliage canopy
         ctx.fillStyle = '#15803d';
         ctx.beginPath();
         ctx.arc(sx, sy - 22 * z, 12 * z, 0, Math.PI * 2);
@@ -517,7 +526,6 @@ export class Renderer {
         ctx.ellipse(sx, sy, 7 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Table
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(sx - 1 * z, sy - 7 * z, 2 * z, 7 * z);
         ctx.fillStyle = '#cbd5e1';
@@ -525,7 +533,6 @@ export class Renderer {
         ctx.ellipse(sx, sy - 7 * z, 6 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Parasol
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.arc(sx, sy - 16 * z, 10 * z, Math.PI, 0);
@@ -559,55 +566,6 @@ export class Renderer {
       ctx.fill();
     }
     ctx.restore();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Overlays (Hover & Selection)
-  // ---------------------------------------------------------------------------
-
-  private drawOverlays(ctx: CanvasRenderingContext2D, z: number): void {
-    if (this.hoveredPlot) {
-      const p = this.hoveredPlot;
-      const sMin = this.camera.worldToScreen(p.worldMinX, p.worldMinY);
-      const w = (p.worldMaxX - p.worldMinX) * z;
-      const h = (p.worldMaxY - p.worldMinY) * z;
-
-      ctx.save();
-      ctx.fillStyle = CITY_PALETTE.hover_fill;
-      ctx.fillRect(sMin.x, sMin.y, w, h);
-
-      ctx.strokeStyle = CITY_PALETTE.hover_border;
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([5, 3]);
-      ctx.strokeRect(sMin.x, sMin.y, w, h);
-      ctx.restore();
-    } else if (this.hoveredGrid) {
-      const wx = this.hoveredGrid.gx * TILE_WIDTH;
-      const wy = this.hoveredGrid.gy * TILE_HEIGHT;
-      const s = this.camera.worldToScreen(wx, wy);
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(s.x, s.y, TILE_WIDTH * z, TILE_HEIGHT * z);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(s.x, s.y, TILE_WIDTH * z, TILE_HEIGHT * z);
-    }
-
-    if (this.selectedPlot) {
-      const p = this.selectedPlot;
-      const sMin = this.camera.worldToScreen(p.worldMinX, p.worldMinY);
-      const w = (p.worldMaxX - p.worldMinX) * z;
-      const h = (p.worldMaxY - p.worldMinY) * z;
-
-      ctx.save();
-      ctx.fillStyle = CITY_PALETTE.select_fill;
-      ctx.fillRect(sMin.x, sMin.y, w, h);
-
-      ctx.strokeStyle = CITY_PALETTE.select_border;
-      ctx.lineWidth = 2.2;
-      ctx.strokeRect(sMin.x, sMin.y, w, h);
-      ctx.restore();
-    }
   }
 
   private drawCityParticles(ctx: CanvasRenderingContext2D): void {
