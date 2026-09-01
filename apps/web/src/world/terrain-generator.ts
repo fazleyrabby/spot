@@ -1,17 +1,29 @@
 /**
- * City & District Layout Generator for Spot World (100x100 Grid).
+ * City & Surroundings Terrain Generator for Spot World.
  *
- * Geographical Structure:
- *  1. Northern Mountain Ridge (gy: 0..4) — Snow-capped peaks & mountain pines.
- *  2. Northern Railway & Metro (gy: 5..6) — High-speed cyber bullet train track.
- *  3. Central Grand Plaza (gx: 36..60, gy: 36..60) — Grand stone plaza, fountain square, study kiosk.
- *  4. Central Park & Lake (gx: 55..85, gy: 8..35) — Lush park, lake with mystic duck, genesis monolith.
- *  5. Downtown Cyber District (gx: 8..36, gy: 8..36) — Asphalt avenues, neon vending machines, bus stops.
- *  6. Cafe Promenade (gx: 8..36, gy: 52..86) — Terracotta brick, cafe parasols, Midnight Whiskers cat.
- *  7. Zen Gardens & Courtyards (gx: 55..88, gy: 52..86) — Stepping stones, whispering stone lanterns, cherry trees.
- *  8. Coastal Timber Boardwalk (gy: 89..90) — Dark teak wood decking with nautical lanterns.
- *  9. Southern Moonlit Beach (gy: 91..94) — Deep warm sand, palm trees, beach bonfire, loungers.
- *  10. Southern Midnight Ocean (gy: 95..99) — Deep oceanic navy with glowing bioluminescent surf waves.
+ * Architecture & Clean Geographic Separation:
+ *
+ * 1. 🏙️ THE SPOT WORLD CITY (gx: 0..99, gy: 0..99 — 10,000 Pure Citizen Plots):
+ *    - Central Grand Plaza (gx: 36..64, gy: 36..64) — Polished granite, fountains, study kiosk.
+ *    - Central Park & Lake (gx: 55..92, gy: 8..36) — Verdant parklands, pond, Genesis Monolith, Mystic Duck.
+ *    - Downtown Cyber District (gx: 8..36, gy: 8..36) — Neon avenues, vending machines, transit shelters.
+ *    - Cafe Promenade (gx: 8..36, gy: 55..92) — Terracotta brick, cafe parasols, Midnight Whiskers cat.
+ *    - Zen Gardens & Courtyards (gx: 55..92, gy: 55..92) — Stepping stones, whispering lanterns, cherry blossoms.
+ *    - Complete road grid with sidewalks, streetlamps, and tree planters throughout.
+ *    - NO citizen ever spawns on a mountain, railway track, or in the ocean!
+ *
+ * 2. 🌲 NORTHERN MOUNTAINS & RAILWAY (gy < 0 — External Wilderness):
+ *    - Mountain Rock & Snow Peaks (gy: -16 .. -4)
+ *    - High-Speed Cyber Railway Track (gy: -3 .. -2)
+ *    - Security Buffer Boulevard & Guardrail (gy: -1)
+ *
+ * 3. 🌊 SOUTHERN COASTAL SHORELINE (gy >= 100 — External Coast):
+ *    - Coastal Timber Boardwalk (gy: 100 .. 101) with nautical amber lanterns.
+ *    - Moonlit Beach (gy: 102 .. 106) with warm sand, palm trees, loungers, and bonfire.
+ *    - Midnight Bioluminescent Ocean Surf (gy: 107 .. 120) with animated waves.
+ *
+ * 4. 🌊 EASTERN & WESTERN SEAWALLS (gx < 0 || gx >= 100):
+ *    - Deep oceanic waters surrounding the island.
  */
 
 import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
@@ -86,14 +98,14 @@ function spatialHash(gx: number, gy: number, salt = 0): number {
 // Road & Boulevard Grid Definitions
 // ---------------------------------------------------------------------------
 
-const MAJOR_ROADS_X = [48, 49];
-const MAJOR_ROADS_Y = [48, 49];
+const MAJOR_ROADS_X = [20, 50, 80];
+const MAJOR_ROADS_Y = [20, 50, 80];
 
-const SECONDARY_ROADS_X = [14, 32, 68, 86];
-const SECONDARY_ROADS_Y = [14, 32, 68, 86];
+const SECONDARY_ROADS_X = [8, 35, 65, 92];
+const SECONDARY_ROADS_Y = [8, 35, 65, 92];
 
 function isRoad(gx: number, gy: number): boolean {
-  if (gy < 8 || gy > 88) return false;
+  if (gy < 0 || gy > 99 || gx < 0 || gx > 99) return false;
   return (
     MAJOR_ROADS_X.includes(gx) ||
     MAJOR_ROADS_Y.includes(gy) ||
@@ -103,7 +115,7 @@ function isRoad(gx: number, gy: number): boolean {
 }
 
 function isSidewalk(gx: number, gy: number): boolean {
-  if (gy < 8 || gy > 88) return false;
+  if (gy < 0 || gy > 99 || gx < 0 || gx > 99) return false;
   if (isRoad(gx, gy)) return false;
   for (const rx of [...MAJOR_ROADS_X, ...SECONDARY_ROADS_X]) {
     if (Math.abs(gx - rx) === 1) return true;
@@ -131,22 +143,24 @@ export type DistrictType =
   | 'ocean';
 
 export function getDistrict(gx: number, gy: number): DistrictType {
-  if (gy <= 4) return 'mountains';
-  if (gy <= 6) return 'railway';
-  if (gy >= 95) return 'ocean';
-  if (gy >= 91) return 'beach';
-  if (gy >= 89) return 'boardwalk';
+  // External surroundings
+  if (gy <= -4) return 'mountains';
+  if (gy <= -2) return 'railway';
+  if (gy >= 107 || gx < 0 || gx >= 100) return 'ocean';
+  if (gy >= 102) return 'beach';
+  if (gy >= 100) return 'boardwalk';
 
-  if (gx >= 36 && gx <= 60 && gy >= 36 && gy <= 60) {
+  // Internal City (0..99, 0..99)
+  if (gx >= 36 && gx <= 64 && gy >= 36 && gy <= 64) {
     return 'grand_plaza';
   }
   if (gx >= 55 && gy <= 36) {
     return 'central_park';
   }
-  if (gx <= 45 && gy >= 52) {
+  if (gx <= 45 && gy >= 55) {
     return 'promenade';
   }
-  if (gx >= 55 && gy >= 52) {
+  if (gx >= 55 && gy >= 55) {
     return 'zen_garden';
   }
   return 'downtown';
@@ -157,77 +171,91 @@ export function getDistrict(gx: number, gy: number): DistrictType {
 // ---------------------------------------------------------------------------
 
 export function getCityTileType(gx: number, gy: number): UrbanTileType {
-  // 1. Northern Mountains (gy: 0..4)
-  if (gy <= 4) {
-    return gy <= 2 && (gx % 3 === 0 || gx % 5 === 0) ? 'mountain_snow' : 'mountain_rock';
+  // ── 1. External Northern Wilderness (gy < 0) ─────────────────────────────
+  if (gy <= -4) {
+    const r = spatialHash(gx, gy, 101);
+    return r > 0.45 ? 'mountain_snow' : 'mountain_rock';
   }
-
-  // 2. Northern Railway Track (gy: 5..6)
-  if (gy === 5 || gy === 6) {
+  if (gy === -3 || gy === -2) {
     return 'railway_ballast';
   }
-
-  // 3. Southern Midnight Ocean (gy: 95..99)
-  if (gy >= 96) {
-    return 'ocean_deep';
-  }
-  if (gy === 95) {
-    return 'ocean_surf';
+  if (gy === -1) {
+    return 'road_asphalt';
   }
 
-  // 4. Southern Moonlit Beach (gy: 91..94)
-  if (gy >= 91) {
-    return 'beach_sand';
-  }
-
-  // 5. Coastal Timber Boardwalk (gy: 89..90)
-  if (gy >= 89) {
+  // ── 2. External Southern Coast (gy >= 100) ──────────────────────────────
+  if (gy === 100 || gy === 101) {
     return 'boardwalk';
   }
+  if (gy >= 102 && gy <= 106) {
+    return 'beach_sand';
+  }
+  if (gy >= 107) {
+    return gy <= 108 ? 'ocean_surf' : 'ocean_deep';
+  }
 
-  // 6. Urban Roads & Sidewalks
-  const isRX = MAJOR_ROADS_X.includes(gx) || SECONDARY_ROADS_X.includes(gx);
-  const isRY = MAJOR_ROADS_Y.includes(gy) || SECONDARY_ROADS_Y.includes(gy);
+  // ── 3. External East / West Ocean Waters ─────────────────────────────────
+  if (gx < 0 || gx >= 100) {
+    return 'ocean_deep';
+  }
 
-  if (isRX && isRY) {
+  // ── 4. Pure Spot World City (0..99, 0..99) ───────────────────────────────
+  const isMajorX = MAJOR_ROADS_X.includes(gx);
+  const isMajorY = MAJOR_ROADS_Y.includes(gy);
+  const isSecX = SECONDARY_ROADS_X.includes(gx);
+  const isSecY = SECONDARY_ROADS_Y.includes(gy);
+
+  // Crosswalks at intersections
+  if ((isMajorX || isSecX) && (isMajorY || isSecY)) {
     return 'crosswalk';
   }
-  if (isRX) {
-    return MAJOR_ROADS_X.includes(gx) ? 'road_v_stripe' : 'road_asphalt';
+
+  // Road lanes & stripes
+  if (isMajorX || isSecX) {
+    return 'road_v_stripe';
   }
-  if (isRY) {
-    return MAJOR_ROADS_Y.includes(gy) ? 'road_h_stripe' : 'road_asphalt';
+  if (isMajorY || isSecY) {
+    return 'road_h_stripe';
+  }
+  if (isRoad(gx, gy)) {
+    return 'road_asphalt';
   }
 
+  // Sidewalks
   if (isSidewalk(gx, gy)) {
     return 'sidewalk';
   }
 
+  // District-specific urban terrain
   const district = getDistrict(gx, gy);
 
   switch (district) {
+    case 'grand_plaza': {
+      return 'plaza_grand';
+    }
+
     case 'central_park': {
-      const dx = gx - 70;
-      const dy = gy - 22;
-      const dist = (dx * dx) / 45 + (dy * dy) / 20;
-      if (dist < 1.0) {
+      // Lake pond in central park
+      const dx = gx - 72;
+      const dy = gy - 20;
+      if (dx * dx * 0.7 + dy * dy < 50) {
         return 'water_pond';
       }
       return 'park_grass';
     }
 
-    case 'grand_plaza':
-      return 'plaza_grand';
-
-    case 'promenade':
+    case 'promenade': {
       return 'plaza_terracotta';
+    }
 
-    case 'zen_garden':
+    case 'zen_garden': {
       return 'plaza_zen';
+    }
 
     case 'downtown':
-    default:
-      return 'plaza_grand';
+    default: {
+      return 'sidewalk';
+    }
   }
 }
 
@@ -235,230 +263,149 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
 // Prop & Landmark Generator
 // ---------------------------------------------------------------------------
 
-export function getCityProp(gx: number, gy: number, isOccupiedCitizen: boolean): CityProp | null {
-  if (isOccupiedCitizen || isRoad(gx, gy)) return null;
+export function getCityProp(gx: number, gy: number): CityProp | null {
+  const wx = gx * TILE_WIDTH + TILE_WIDTH / 2;
+  const wy = gy * TILE_HEIGHT + TILE_HEIGHT / 2;
 
-  const tileType = getCityTileType(gx, gy);
-  const district = getDistrict(gx, gy);
-  const r = spatialHash(gx, gy, 505);
+  // ── 1. Northern Mountains & Railway Props (gy < 0) ───────────────────────
+  if (gy <= -4) {
+    const r = spatialHash(gx, gy, 202);
+    if (r > 0.65) {
+      return { gx, gy, type: 'mountain_pine', wx, wy, hasLight: false };
+    }
+    return null;
+  }
 
-  let type: UrbanPropType = null;
-  let hasLight = false;
-  let lightColor = 'rgba(251, 191, 36, 0.28)';
-  let lightRadius = 60;
-
-  // ── SPECIAL EASTER EGG & STUDY LANDMARKS ───────────────────────────────────
-
-  // Center Landmark Fountain (48, 47)
-  if (gx === 48 && gy === 47) {
+  if (gy === -3 && (gx % 12 === 0)) {
     return {
-      gx,
-      gy,
-      type: 'fountain',
-      wx: gx * TILE_WIDTH + TILE_WIDTH,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(56, 189, 248, 0.35)',
-      lightRadius: 90,
+      gx, gy, type: 'railway_signal', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 65,
     };
   }
 
-  // Genesis Monolith in Central Park Grove (64, 16)
+  // ── 2. Southern Boardwalk & Beach Props (gy >= 100) ──────────────────────
+  if (gy === 100 && (gx % 8 === 0)) {
+    return {
+      gx, gy, type: 'boardwalk_lamp', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.40)', lightRadius: 85,
+    };
+  }
+
+  if (gx === 50 && gy === 104) {
+    return {
+      gx, gy, type: 'beach_bonfire', wx, wy,
+      hasLight: true, lightColor: 'rgba(249, 115, 22, 0.65)', lightRadius: 130,
+    };
+  }
+
+  if (gy === 103 && (gx === 46 || gx === 54 || gx === 34 || gx === 66)) {
+    return { gx, gy, type: 'beach_lounger', wx, wy, hasLight: false };
+  }
+
+  if (gy === 102 && (gx % 10 === 4)) {
+    return { gx, gy, type: 'palm_tree', wx, wy, hasLight: false };
+  }
+
+  if (gy >= 106 || gx < 0 || gx >= 100) {
+    return null;
+  }
+
+  // ── 3. Internal City World Secrets & Lore Landmarks (0..99, 0..99) ───────
   if (gx === 64 && gy === 16) {
     return {
-      gx,
-      gy,
-      type: 'genesis_monolith',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(245, 158, 11, 0.45)',
-      lightRadius: 80,
+      gx, gy, type: 'genesis_monolith', wx, wy,
+      hasLight: true, lightColor: 'rgba(245, 158, 11, 0.55)', lightRadius: 110,
     };
   }
 
-  // Open Developer Study Kiosk in Grand Plaza (44, 52)
   if (gx === 44 && gy === 52) {
     return {
-      gx,
-      gy,
-      type: 'dev_library',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(129, 140, 248, 0.38)',
-      lightRadius: 75,
+      gx, gy, type: 'dev_library', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 95,
     };
   }
 
-  // Mystic Lake Duck (72, 22)
   if (gx === 72 && gy === 22) {
     return {
-      gx,
-      gy,
-      type: 'mystic_duck',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT / 2,
-      hasLight: true,
-      lightColor: 'rgba(56, 189, 248, 0.25)',
-      lightRadius: 40,
+      gx, gy, type: 'mystic_duck', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.35)', lightRadius: 75,
     };
   }
 
-  // Midnight Whiskers Cafe Cat (22, 70)
-  if (gx === 22 && gy === 70) {
+  if (gx === 22 && gy === 68) {
     return {
-      gx,
-      gy,
-      type: 'cafe_cat',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(244, 114, 182, 0.30)',
-      lightRadius: 45,
+      gx, gy, type: 'cafe_cat', wx, wy,
+      hasLight: true, lightColor: 'rgba(244, 114, 182, 0.35)', lightRadius: 75,
     };
   }
 
-  // Interactive Cyber Vending Machine in Downtown (18, 24)
   if (gx === 18 && gy === 24) {
     return {
-      gx,
-      gy,
-      type: 'vending_machine',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(56, 189, 248, 0.38)',
-      lightRadius: 55,
+      gx, gy, type: 'vending_machine', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 85,
     };
   }
 
-  // Whispering Stone Lantern in Zen Garden (78, 74)
-  if (gx === 78 && gy === 74) {
+  if (gx === 50 && gy === 50) {
     return {
-      gx,
-      gy,
-      type: 'stone_lantern',
-      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
-      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
-      hasLight: true,
-      lightColor: 'rgba(251, 146, 60, 0.40)',
-      lightRadius: 65,
+      gx, gy, type: 'fountain', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 100,
     };
   }
 
-  // ── GEOGRAPHY PROPS (Mountains, Railway, Boardwalk, Beach) ─────────────────
+  // ── 4. Street Furniture & Environment in City ────────────────────────────
+  const r = spatialHash(gx, gy, 42);
 
-  if (district === 'mountains') {
-    if (r < 0.22) {
-      type = 'mountain_pine';
+  // Streetlamps along sidewalks
+  if (isSidewalk(gx, gy) && (gx + gy) % 9 === 0) {
+    return {
+      gx, gy, type: 'street_lamp', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.42)', lightRadius: 90,
+    };
+  }
+
+  // District-specific ambient props
+  const district = getDistrict(gx, gy);
+
+  if (district === 'central_park') {
+    const tile = getCityTileType(gx, gy);
+    if (tile === 'park_grass' && r > 0.82) {
+      return { gx, gy, type: 'park_tree', wx, wy, hasLight: false };
     }
-  } else if (district === 'railway') {
-    if (gx % 12 === 0 && gy === 5) {
-      type = 'railway_signal';
-      hasLight = true;
-      lightColor = 'rgba(16, 185, 129, 0.35)';
-      lightRadius = 40;
-    }
-  } else if (district === 'boardwalk') {
-    if (gx % 5 === 0 && gy === 89) {
-      type = 'boardwalk_lamp';
-      hasLight = true;
-      lightColor = 'rgba(251, 191, 36, 0.35)';
-      lightRadius = 50;
-    } else if (r < 0.12) {
-      type = 'bench';
-    }
-  } else if (district === 'beach') {
-    // Cozy beach bonfire in center of beach
-    if (gx === 48 && gy === 92) {
-      type = 'beach_bonfire';
-      hasLight = true;
-      lightColor = 'rgba(249, 115, 22, 0.55)';
-      lightRadius = 95;
-    } else if (r < 0.07) {
-      type = 'palm_tree';
-    } else if (r < 0.13) {
-      type = 'beach_lounger';
-    } else if (r < 0.18) {
-      type = 'beach_umbrella';
-    } else if (r < 0.22) {
-      type = 'starfish';
+    if (tile === 'park_grass' && r > 0.74) {
+      return { gx, gy, type: 'bench', wx, wy, hasLight: false };
     }
   }
 
-  // ── Standard District Props ───────────────────────────────────────────────
-
-  if (tileType === 'sidewalk') {
-    if ((gx % 4 === 1 && gy % 2 === 0) || (gy % 4 === 1 && gx % 2 === 0)) {
-      type = 'street_lamp';
-      hasLight = true;
-    } else if (r < 0.08) {
-      type = 'bench';
-    } else if (r < 0.13) {
-      type = 'tree_planter';
-    } else if (r < 0.17 && district === 'downtown') {
-      type = 'vending_machine';
-      hasLight = true;
-      lightColor = 'rgba(56, 189, 248, 0.28)';
-      lightRadius = 36;
-    } else if (r < 0.20) {
-      type = 'trash_can';
-    } else if (r < 0.22) {
-      type = 'fire_hydrant';
+  if (district === 'zen_garden') {
+    if (r > 0.80) {
+      return { gx, gy, type: 'cherry_tree', wx, wy, hasLight: false };
     }
-  } else if (district === 'central_park' && tileType === 'park_grass') {
-    if (r < 0.09) {
-      type = 'park_tree';
-    } else if (r < 0.16) {
-      type = 'flower_bed';
-    } else if (r < 0.20) {
-      type = 'bench';
-    }
-  } else if (district === 'promenade') {
-    if (r < 0.08) {
-      type = 'cafe_table';
-    } else if (r < 0.13) {
-      type = 'flower_bed';
-    } else if (r < 0.18) {
-      type = 'street_lamp';
-      hasLight = true;
-      lightColor = 'rgba(251, 191, 36, 0.35)';
-    }
-  } else if (district === 'zen_garden') {
-    if (r < 0.08) {
-      type = 'cherry_tree';
-    } else if (r < 0.14) {
-      type = 'stone_lantern';
-      hasLight = true;
-      lightColor = 'rgba(251, 146, 60, 0.30)';
-      lightRadius = 45;
-    } else if (r < 0.19) {
-      type = 'bench';
-    }
-  } else if (district === 'grand_plaza') {
-    if (r < 0.06) {
-      type = 'cafe_table';
-    } else if (r < 0.12) {
-      type = 'tree_planter';
-    } else if (r < 0.16) {
-      type = 'bench';
+    if (r > 0.70) {
+      return {
+        gx, gy, type: 'stone_lantern', wx, wy,
+        hasLight: true, lightColor: 'rgba(251, 191, 36, 0.30)', lightRadius: 70,
+      };
     }
   }
 
-  if (!type) return null;
+  if (district === 'promenade') {
+    if (r > 0.82) {
+      return { gx, gy, type: 'cafe_table', wx, wy, hasLight: false };
+    }
+    if (r > 0.72) {
+      return { gx, gy, type: 'bench', wx, wy, hasLight: false };
+    }
+  }
 
-  const wx = gx * TILE_WIDTH + TILE_WIDTH / 2;
-  const wy = gy * TILE_HEIGHT + TILE_HEIGHT;
+  if (district === 'downtown') {
+    if (r > 0.90) {
+      return { gx, gy, type: 'tree_planter', wx, wy, hasLight: false };
+    }
+    if (r > 0.84) {
+      return { gx, gy, type: 'fire_hydrant', wx, wy, hasLight: false };
+    }
+  }
 
-  return {
-    gx,
-    gy,
-    type,
-    wx,
-    wy,
-    hasLight,
-    lightColor,
-    lightRadius,
-  };
+  return null;
 }

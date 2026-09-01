@@ -698,6 +698,8 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
 
       function openSearchModal(): void {
         if (!searchBackdrop) return;
+        closeSecretModal();
+        closeProfileModal();
         searchBackdrop.classList.add('open');
         searchBackdrop.setAttribute('aria-hidden', 'false');
         searchInput?.focus();
@@ -736,9 +738,24 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
         searchResultsList.replaceChildren();
 
         const q = query.trim().toLowerCase();
-        const allCitizens = engine.monuments.getAllEntities().map((e) => e.spot);
+        const allPlots = engine.plots.getAllPlots();
+        const allEntities = engine.monuments.getAllEntities();
 
-        const filtered = allCitizens.filter((s) => {
+        // Build list of unique citizens from plots and entities
+        const citizenMap = new Map<string, OccupiedSpotSummary>();
+        for (const p of allPlots) {
+          if (p.owner?.citizenId) {
+            citizenMap.set(p.owner.citizenId, p.owner);
+          }
+        }
+        for (const ent of allEntities) {
+          if (ent.spot?.citizenId && !citizenMap.has(ent.spot.citizenId)) {
+            citizenMap.set(ent.spot.citizenId, ent.spot);
+          }
+        }
+        const citizensList = Array.from(citizenMap.values());
+
+        const filtered = citizensList.filter((s) => {
           if (!q) return true;
           const matchName = s.displayName?.toLowerCase().includes(q);
           const matchTagline = s.tagline?.toLowerCase().includes(q);
@@ -758,20 +775,28 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
           const item = document.createElement('div');
           item.className = 'search-result-item';
 
+          // Click whole item to fly to citizen
+          item.onclick = () => {
+            if (engine) {
+              engine.flyTo(spot.x, spot.y, 1.25);
+              closeSearchModal();
+            }
+          };
+
           const left = document.createElement('div');
           left.className = 'search-result-left';
 
           const avatarCanvas = document.createElement('canvas');
           avatarCanvas.className = 'search-result-avatar';
-          avatarCanvas.width = 38;
-          avatarCanvas.height = 38;
+          avatarCanvas.width = 40;
+          avatarCanvas.height = 40;
           const actx = avatarCanvas.getContext('2d');
           if (actx) {
             const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
             if (spot.customAvatarData) {
-              drawCustomAvatarOnCanvas(actx, spot.customAvatarData, 0, 0, 38);
+              drawCustomAvatarOnCanvas(actx, spot.customAvatarData, 0, 0, 40);
             } else {
-              drawAvatarOnCanvas(actx, def, 0, 0, 38);
+              drawAvatarOnCanvas(actx, def, 0, 0, 40);
             }
           }
 
@@ -793,9 +818,14 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
             nameRow.appendChild(badge);
           }
 
+          const coordsChip = document.createElement('span');
+          coordsChip.className = 'search-result-coords-chip';
+          coordsChip.textContent = `(${spot.x}, ${spot.y})`;
+          nameRow.appendChild(coordsChip);
+
           const sub = document.createElement('span');
           sub.className = 'search-result-tagline';
-          sub.textContent = spot.tagline || `Spot (${spot.x}, ${spot.y})`;
+          sub.textContent = spot.tagline || (spot.isOnline ? 'Active Online Citizen' : 'Citizen of Spot World');
 
           info.append(nameRow, sub);
           left.append(avatarCanvas, info);
@@ -804,16 +834,17 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
           actions.className = 'search-result-actions';
 
           const btnGps = document.createElement('button');
+          btnGps.type = 'button';
           btnGps.className = 'btn-search-gps';
           btnGps.textContent = '🧭 GPS';
-          btnGps.title = 'Set compass waypoint arrow';
+          btnGps.title = 'Lock compass waypoint';
           btnGps.onclick = (e) => {
             e.stopPropagation();
             if (engine) {
               engine.renderer.gpsTarget = {
                 name: spot.displayName,
-                wx: spot.x * 48 + 24,
-                wy: spot.y * 32 + 16,
+                wx: spot.x * 16 + 8,
+                wy: spot.y * 16 + 8,
               };
               showToast(`🧭 Compass locked to @${spot.displayName}`, 'success');
               closeSearchModal();
@@ -821,13 +852,14 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
           };
 
           const btnFly = document.createElement('button');
+          btnFly.type = 'button';
           btnFly.className = 'btn-search-fly';
           btnFly.textContent = '🚀 Fly';
-          btnFly.title = 'Pan camera to citizen plot';
+          btnFly.title = 'Fly camera to citizen plot';
           btnFly.onclick = (e) => {
             e.stopPropagation();
             if (engine) {
-              engine.flyTo(spot.x, spot.y, 1.2);
+              engine.flyTo(spot.x, spot.y, 1.25);
               closeSearchModal();
             }
           };
