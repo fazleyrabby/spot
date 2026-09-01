@@ -79,10 +79,10 @@ export function getVisibleGridRange(
   worldBottom: number,
   margin = 3,
 ): { minGx: number; maxGx: number; minGy: number; maxGy: number } {
-  const minGx = Math.max(0, Math.floor(worldLeft / TILE_WIDTH) - margin);
-  const maxGx = Math.min(WORLD_COLS - 1, Math.ceil(worldRight / TILE_WIDTH) + margin);
-  const minGy = Math.max(0, Math.floor(worldTop / TILE_HEIGHT) - margin);
-  const maxGy = Math.min(WORLD_ROWS - 1, Math.ceil(worldBottom / TILE_HEIGHT) + margin);
+  const minGx = Math.max(-12, Math.floor(worldLeft / TILE_WIDTH) - margin);
+  const maxGx = Math.min(WORLD_COLS + 12, Math.ceil(worldRight / TILE_WIDTH) + margin);
+  const minGy = Math.max(-16, Math.floor(worldTop / TILE_HEIGHT) - margin);
+  const maxGy = Math.min(WORLD_ROWS + 20, Math.ceil(worldBottom / TILE_HEIGHT) + margin);
 
   return { minGx, maxGx, minGy, maxGy };
 }

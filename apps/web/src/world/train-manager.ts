@@ -14,8 +14,8 @@
 import { TILE_HEIGHT, TOTAL_WORLD_WIDTH } from '@spot/world';
 
 export class TrainManager {
-  readonly trackGy = 5.5; // gy coordinate of the northern track
-  readonly trackWy = 5.5 * TILE_HEIGHT;
+  readonly trackGy = -2.5; // gy coordinate of the northern track outside city
+  readonly trackWy = -2.5 * TILE_HEIGHT;
 
   active = false;
   x = -800; // current train front x in world coordinates

@@ -462,8 +462,8 @@ export class Renderer {
             ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 0.8 * z));
             ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 0.8 * z));
 
-            // Southern Perimeter Safety Guardrail (gy === 6)
-            if (gy === 6) {
+            // Southern Perimeter Safety Guardrail (gy === -2)
+            if (gy === -2) {
               ctx.fillStyle = '#0f172a';
               ctx.fillRect(dx, dy + dh - 4 * z, dw, 4 * z);
 

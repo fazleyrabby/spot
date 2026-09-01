@@ -28,10 +28,10 @@ import type { Plot, PlotManager } from './plot-manager.js';
 export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
-export const MIN_WALKABLE_WY = 7.5 * TILE_HEIGHT; // Strictly south of railway safety perimeter fence (~120px)
-export const MAX_WALKABLE_WY = 95.0 * TILE_HEIGHT; // Strictly north of deep ocean tide (~1520px)
-export const MIN_WALKABLE_WX = 1.0 * TILE_WIDTH;
-export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 1.0 * TILE_WIDTH;
+export const MIN_WALKABLE_WY = -1.0 * TILE_HEIGHT; // South of northern railway safety fence
+export const MAX_WALKABLE_WY = 106.0 * TILE_HEIGHT; // Southern beach surf limit (encompasses city 0..99, boardwalk 100..101, and beach 102..106)
+export const MIN_WALKABLE_WX = 0.5 * TILE_WIDTH;
+export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 0.5 * TILE_WIDTH;
 
 const MOVE_SPEED = 2.6; // smooth continuous speed
 const WALK_FRAME_INTERVAL = 7;
