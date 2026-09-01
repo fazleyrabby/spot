@@ -175,7 +175,7 @@ import SearchModal from '../components/SearchModal.astro';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
   import { containsBlockedWord } from '@spot/shared';
-  import { fetchMySession, syncGithubAuth, searchCitizens } from '../api/client.js';
+  import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
@@ -283,6 +283,19 @@ import SearchModal from '../components/SearchModal.astro';
     if (editBtn)   editBtn.style.display = 'none';
     if (deleteBtn) deleteBtn.style.display = 'none';
 
+    // Reset Spot Wall to closed/clean state by default
+    if (spotWallForm) {
+      spotWallForm.hidden = true;
+      spotWallForm.style.display = 'none';
+    }
+    if (spotWallSelfNote) {
+      spotWallSelfNote.style.display = 'block';
+      spotWallSelfNote.textContent = 'This wall is read-only until the owner opens it.';
+    }
+    if (spotWallComments) {
+      spotWallComments.textContent = 'Loading messages…';
+    }
+
     const spotId = `${spot.x},${spot.y}`;
     void loadSpotComments(spotId, spot);
 
@@ -328,18 +341,14 @@ import SearchModal from '../components/SearchModal.astro';
     });
   }
 
-  async function loadSpotComments(spotId: string, spot: OccupiedSpotSummary): Promise<void> {
+  async function loadSpotComments(spotId: string, _spot: OccupiedSpotSummary): Promise<void> {
     currentViewingSpotId = spotId;
-    if (!spotWallComments) return;
-    spotWallComments.textContent = 'Loading messages…';
 
     try {
-      const res = await fetch(`${API_BASE}/api/spots/${spotId}/comments`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchSpotComments(spotId);
       renderSpotComments(data.comments || []);
 
-      const canPost = Boolean(data.canPost);
+      const canPost = Boolean(data.canPost && data.visibility === 'open' && !data.isOwner);
       if (spotWallForm) {
         spotWallForm.hidden = !canPost;
         spotWallForm.style.display = canPost ? 'grid' : 'none';
@@ -348,13 +357,17 @@ import SearchModal from '../components/SearchModal.astro';
         spotWallSelfNote.style.display = canPost ? 'none' : 'block';
         spotWallSelfNote.textContent = data.isOwner
           ? 'This is your spot. Visitors can leave notes here.'
-          : (data.visibility === 'open' ? 'Leave a note on this spot wall.' : 'This wall is currently read-only.');
+          : (data.visibility === 'open' ? 'Leave a note on this spot wall.' : 'This wall is read-only until the owner opens it.');
       }
     } catch (_) {
       if (spotWallComments) spotWallComments.textContent = 'No messages yet.';
       if (spotWallForm) {
-        spotWallForm.hidden = false;
-        spotWallForm.style.display = 'grid';
+        spotWallForm.hidden = true;
+        spotWallForm.style.display = 'none';
+      }
+      if (spotWallSelfNote) {
+        spotWallSelfNote.style.display = 'block';
+        spotWallSelfNote.textContent = 'This wall is read-only until the owner opens it.';
       }
     }
   }
