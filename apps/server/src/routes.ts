@@ -377,6 +377,7 @@ const sseHandler = async (req: AuthenticatedRequest, res: Response) => {
 
 if (enableSSE) {
   apiRouter.get('/realtime/stream', optionalAuthMiddleware, sseHandler as any);
+  apiRouter.get('/events', optionalAuthMiddleware, sseHandler as any);
 }
 
 /**

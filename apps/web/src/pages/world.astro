@@ -4,7 +4,7 @@ import WorldHUD from '../components/WorldHUD.astro';
 import ProfileModal from '../components/ProfileModal.astro';
 import SecretModal from '../components/SecretModal.astro';
 import WorldChatBar from '../components/WorldChatBar.astro';
-import CitizenSearchModal from '../components/CitizenSearchModal.astro';
+import SearchModal from '../components/SearchModal.astro';
 ---
 
 <Layout
@@ -37,7 +37,7 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
     <WorldChatBar />
 
     <!-- Citizen Search & GPS Modal -->
-    <CitizenSearchModal />
+    <SearchModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -689,10 +689,10 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
         }
       });
 
-      // ── Citizen Search & GPS Modal Wiring (Identical to Main Page) ─────
+      // ── Search Modal Wiring (Uses identical SearchModal.astro component) ─
       const searchBackdrop = document.getElementById('search-modal-backdrop');
-      const searchCloseBtn = document.getElementById('search-modal-close');
-      const searchInput = document.getElementById('citizen-search-input') as HTMLInputElement | null;
+      const searchCloseBtn = document.querySelector('.search-kbd') || document.getElementById('search-modal-close');
+      const searchInput = (document.getElementById('search-input') || document.getElementById('citizen-search-input')) as HTMLInputElement | null;
       const searchStatus = document.getElementById('search-status');
       const searchResultsList = document.getElementById('search-results-list');
       const btnWorldSearch = document.getElementById('world-search-btn');
@@ -852,17 +852,52 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
 
               row.append(left, spotBadge);
 
-              // Click to Jump & Lock GPS
-              row.addEventListener('click', () => {
+              // Click to Jump to Citizen & Inspect
+              row.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const gx = Number(item.x);
+                const gy = Number(item.y);
+                if (isNaN(gx) || isNaN(gy)) return;
+
+                closeSearchModal();
+
                 if (engine) {
-                  engine.flyTo(item.x, item.y, 1.25);
+                  engine.flyTo(gx, gy, 1.4);
                   engine.renderer.gpsTarget = {
                     name: item.displayName,
-                    wx: item.x * 16 + 8,
-                    wy: item.y * 16 + 8,
+                    wx: gx * 48 + 24,
+                    wy: gy * 32 + 16,
                   };
-                  showToast(`🧭 Flying to @${item.displayName} (${item.x}, ${item.y})`, 'success');
-                  closeSearchModal();
+                }
+
+                const targetSpot: OccupiedSpotSummary = (engine ? engine.plots.getSpotAt(gx, gy) : null) || {
+                  spotId: item.spotId || item.id || `${gx},${gy}`,
+                  x: gx,
+                  y: gy,
+                  citizenId: item.id || item.citizenId || '',
+                  displayName: item.displayName,
+                  tagline: item.tagline,
+                  avatarId: item.avatarId || 'astronaut',
+                  customAvatarData: item.customAvatarData,
+                  websiteUrl: item.websiteUrl,
+                  twitterHandle: item.twitterHandle,
+                  facebookHandle: item.facebookHandle,
+                  instagramHandle: item.instagramHandle,
+                  linkedinHandle: item.linkedinHandle,
+                  youtubeHandle: item.youtubeHandle,
+                  githubUrl: item.githubUrl,
+                  isVerified: item.isVerified,
+                  claimedAt: item.claimedAt || new Date().toISOString(),
+                };
+
+                if (engine) {
+                  engine.renderer.selectedCitizen = targetSpot;
+                }
+
+                try {
+                  openProfileModal(targetSpot);
+                } catch (err) {
+                  console.error('Failed to open profile modal:', err);
                 }
               });
 

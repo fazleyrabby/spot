@@ -33,6 +33,7 @@ export class MultiplayerSync {
   private supabaseChannel: any = null;
   private onRemotePlayerMove: (data: LivePlayerPayload) => void;
 
+  private isSupabaseSubscribed = false;
   private lastSentWx = -9999;
   private lastSentWy = -9999;
   private lastSentState = '';
@@ -81,7 +82,13 @@ export class MultiplayerSync {
               this.onRemotePlayerMove(payload);
             }
           })
-          .subscribe();
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              this.isSupabaseSubscribed = true;
+            } else {
+              this.isSupabaseSubscribed = false;
+            }
+          });
 
         this.supabaseChannel = channel;
       } catch (err) {
@@ -163,8 +170,8 @@ export class MultiplayerSync {
       timestamp: now,
     };
 
-    // Broadcast via Supabase WebSockets if active
-    if (this.supabaseChannel) {
+    // Broadcast via Supabase WebSockets if active & connected
+    if (this.supabaseChannel && this.isSupabaseSubscribed) {
       try {
         this.supabaseChannel.send({
           type: 'broadcast',

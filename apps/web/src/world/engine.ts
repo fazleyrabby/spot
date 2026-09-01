@@ -262,7 +262,7 @@ export class Engine {
   // ---------------------------------------------------------------------------
 
   private connectSSE(): void {
-    const url = `${this.options.apiBase}/api/events`;
+    const url = `${this.options.apiBase}/api/realtime/stream`;
     try {
       const source = new EventSource(url, { withCredentials: true });
       this.sseSource = source;
