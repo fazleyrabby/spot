@@ -9,8 +9,9 @@
  *  5. Downtown Cyber District (gx: 8..36, gy: 8..36) — Asphalt avenues, neon vending machines, bus stops.
  *  6. Cafe Promenade (gx: 8..36, gy: 52..86) — Terracotta brick, cafe parasols, Midnight Whiskers cat.
  *  7. Zen Gardens & Courtyards (gx: 55..88, gy: 52..86) — Stepping stones, whispering stone lanterns, cherry trees.
- *  8. Southern Golden Beach (gy: 90..93) — Warm sands, palm trees, beach umbrellas, starfish.
- *  9. Southern Living Ocean (gy: 94..99) — Deep azure ocean with rolling foam surf waves.
+ *  8. Coastal Timber Boardwalk (gy: 89..90) — Dark teak wood decking with nautical lanterns.
+ *  9. Southern Moonlit Beach (gy: 91..94) — Deep warm sand, palm trees, beach bonfire, loungers.
+ *  10. Southern Midnight Ocean (gy: 95..99) — Deep oceanic navy with glowing bioluminescent surf waves.
  */
 
 import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
@@ -29,6 +30,7 @@ export type UrbanTileType =
   | 'plaza_zen'
   | 'park_grass'
   | 'water_pond'
+  | 'boardwalk'
   | 'beach_sand'
   | 'ocean_deep'
   | 'ocean_surf';
@@ -53,6 +55,9 @@ export type UrbanPropType =
   | 'cafe_cat'
   | 'palm_tree'
   | 'beach_umbrella'
+  | 'beach_bonfire'
+  | 'boardwalk_lamp'
+  | 'beach_lounger'
   | 'starfish'
   | 'mountain_pine'
   | 'railway_signal'
@@ -78,7 +83,7 @@ function spatialHash(gx: number, gy: number, salt = 0): number {
 }
 
 // ---------------------------------------------------------------------------
-// Road & Boulevard Grid Definitions (Asymmetric & Hierarchical)
+// Road & Boulevard Grid Definitions
 // ---------------------------------------------------------------------------
 
 const MAJOR_ROADS_X = [48, 49];
@@ -88,7 +93,6 @@ const SECONDARY_ROADS_X = [14, 32, 68, 86];
 const SECONDARY_ROADS_Y = [14, 32, 68, 86];
 
 function isRoad(gx: number, gy: number): boolean {
-  // Road limits: between gy 8 and 88
   if (gy < 8 || gy > 88) return false;
   return (
     MAJOR_ROADS_X.includes(gx) ||
@@ -122,14 +126,16 @@ export type DistrictType =
   | 'downtown'
   | 'promenade'
   | 'zen_garden'
+  | 'boardwalk'
   | 'beach'
   | 'ocean';
 
 export function getDistrict(gx: number, gy: number): DistrictType {
   if (gy <= 4) return 'mountains';
   if (gy <= 6) return 'railway';
-  if (gy >= 94) return 'ocean';
-  if (gy >= 90) return 'beach';
+  if (gy >= 95) return 'ocean';
+  if (gy >= 91) return 'beach';
+  if (gy >= 89) return 'boardwalk';
 
   if (gx >= 36 && gx <= 60 && gy >= 36 && gy <= 60) {
     return 'grand_plaza';
@@ -161,20 +167,25 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
     return 'railway_ballast';
   }
 
-  // 3. Southern Living Ocean (gy: 94..99)
-  if (gy >= 95) {
+  // 3. Southern Midnight Ocean (gy: 95..99)
+  if (gy >= 96) {
     return 'ocean_deep';
   }
-  if (gy === 94) {
+  if (gy === 95) {
     return 'ocean_surf';
   }
 
-  // 4. Southern Golden Beach (gy: 90..93)
-  if (gy >= 90) {
+  // 4. Southern Moonlit Beach (gy: 91..94)
+  if (gy >= 91) {
     return 'beach_sand';
   }
 
-  // 5. Urban Roads & Sidewalks
+  // 5. Coastal Timber Boardwalk (gy: 89..90)
+  if (gy >= 89) {
+    return 'boardwalk';
+  }
+
+  // 6. Urban Roads & Sidewalks
   const isRX = MAJOR_ROADS_X.includes(gx) || SECONDARY_ROADS_X.includes(gx);
   const isRY = MAJOR_ROADS_Y.includes(gy) || SECONDARY_ROADS_Y.includes(gy);
 
@@ -336,7 +347,7 @@ export function getCityProp(gx: number, gy: number, isOccupiedCitizen: boolean):
     };
   }
 
-  // ── GEOGRAPHY PROPS (Mountains, Railway, Beach) ───────────────────────────
+  // ── GEOGRAPHY PROPS (Mountains, Railway, Boardwalk, Beach) ─────────────────
 
   if (district === 'mountains') {
     if (r < 0.22) {
@@ -349,12 +360,29 @@ export function getCityProp(gx: number, gy: number, isOccupiedCitizen: boolean):
       lightColor = 'rgba(16, 185, 129, 0.35)';
       lightRadius = 40;
     }
+  } else if (district === 'boardwalk') {
+    if (gx % 5 === 0 && gy === 89) {
+      type = 'boardwalk_lamp';
+      hasLight = true;
+      lightColor = 'rgba(251, 191, 36, 0.35)';
+      lightRadius = 50;
+    } else if (r < 0.12) {
+      type = 'bench';
+    }
   } else if (district === 'beach') {
-    if (r < 0.08) {
+    // Cozy beach bonfire in center of beach
+    if (gx === 48 && gy === 92) {
+      type = 'beach_bonfire';
+      hasLight = true;
+      lightColor = 'rgba(249, 115, 22, 0.55)';
+      lightRadius = 95;
+    } else if (r < 0.07) {
       type = 'palm_tree';
-    } else if (r < 0.15) {
+    } else if (r < 0.13) {
+      type = 'beach_lounger';
+    } else if (r < 0.18) {
       type = 'beach_umbrella';
-    } else if (r < 0.20) {
+    } else if (r < 0.22) {
       type = 'starfish';
     }
   }

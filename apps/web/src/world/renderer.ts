@@ -1,11 +1,13 @@
 /**
- * Renderer — Top-Down Diverse City, Mountain Ridge, Railway, and Beach Canvas2D Renderer.
+ * Renderer — Top-Down Diverse City, Mountain Ridge, Railway, Coastal Boardwalk & Moonlit Ocean Canvas2D Renderer.
  *
  * Geographical Structure:
  * - Northern Mountain Ridge (snow peaks & pines)
  * - Northern High-Speed Cyber Railway (autonomous bullet train with headlights)
  * - 5 Urban Districts (Grand Plaza, Central Park & Lake, Downtown, Cafe Promenade, Zen Gardens)
- * - Southern Golden Coast & Living Ocean with animated rolling surf waves
+ * - Coastal Timber Boardwalk (gy: 89..90) with nautical lanterns
+ * - Southern Moonlit Beach (gy: 91..94) with bonfire, loungers & palms
+ * - Southern Midnight Ocean (gy: 95..99) with bioluminescent surf waves
  */
 
 import { Camera } from './camera.js';
@@ -27,7 +29,7 @@ import { TrainManager } from './train-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
-// Palette Definitions
+// Cohesive Retro/Cyber Palette Definitions
 // ---------------------------------------------------------------------------
 
 const PALETTES = {
@@ -65,12 +67,16 @@ const PALETTES = {
   park_grass_2: '#1c4226',
   water_pond: '#0c4a6e',
 
-  // Beach & Ocean
-  beach_sand_1: '#d4a359',
-  beach_sand_2: '#e2c275',
-  ocean_deep: '#0369a1',
-  ocean_surf: '#0284c7',
-  wave_foam: 'rgba(255, 255, 255, 0.9)',
+  // Coastal Boardwalk & Moonlit Beach (Cohesive with Terracotta & Slate)
+  boardwalk_1: '#2e1c14',
+  boardwalk_2: '#382319',
+  boardwalk_seam: 'rgba(0, 0, 0, 0.35)',
+
+  beach_sand_1: '#26201b',
+  beach_sand_2: '#2e2722',
+  ocean_deep: '#06101d',
+  ocean_surf: '#0a1c30',
+  wave_foam: 'rgba(186, 230, 253, 0.75)',
 
   // Target Selection Rings
   hover_ring: 'rgba(245, 158, 11, 0.85)',
@@ -198,13 +204,13 @@ export class Renderer {
     const H = camera.viewportHeight;
     const z = camera.zoom;
 
-    // 1. Sky clear based on timeOfDay
+    // 1. Sky / World background
     if (this.timeOfDay === 'day') {
       ctx.fillStyle = '#0f172a';
     } else if (this.timeOfDay === 'twilight') {
       ctx.fillStyle = '#1e1b4b';
     } else {
-      ctx.fillStyle = '#080b0f';
+      ctx.fillStyle = '#060a0f';
     }
     ctx.fillRect(0, 0, W, H);
 
@@ -212,7 +218,7 @@ export class Renderer {
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
 
-    // 3. Ground Layer (Mountains, Railway, Districts, Beach, Ocean)
+    // 3. Ground Layer (Mountains, Railway, Districts, Boardwalk, Beach, Ocean)
     this.drawCityGround(ctx, range, z);
 
     // 4. Collect Depth-Sorted Entities & Street Lights
@@ -420,7 +426,6 @@ export class Renderer {
           case 'mountain_snow': {
             ctx.fillStyle = PALETTES.mountain_rock_1;
             ctx.fillRect(dx, dy, dw, dh);
-            // Snow peak triangle
             ctx.fillStyle = PALETTES.mountain_snow;
             ctx.beginPath();
             ctx.moveTo(dx, dy + dh);
@@ -433,11 +438,9 @@ export class Renderer {
 
           // ── Northern Railway Track ────────────────────────────────────────
           case 'railway_ballast': {
-            // Ballast stone bed
             ctx.fillStyle = PALETTES.rail_ballast;
             ctx.fillRect(dx, dy, dw, dh);
 
-            // Wooden sleepers every few pixels
             const sleeperCount = 3;
             const slW = dw / sleeperCount;
             ctx.fillStyle = PALETTES.rail_sleeper;
@@ -445,19 +448,30 @@ export class Renderer {
               ctx.fillRect(dx + s * slW + 2 * z, dy + 2 * z, slW - 4 * z, dh - 4 * z);
             }
 
-            // Twin Steel Rails
             ctx.fillStyle = PALETTES.rail_steel;
             ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 2.5 * z));
             ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 2.5 * z));
 
-            // Metallic shine
             ctx.fillStyle = PALETTES.rail_shine;
             ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 0.8 * z));
             ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 0.8 * z));
             break;
           }
 
-          // ── Southern Beach & Living Ocean ─────────────────────────────────
+          // ── Coastal Timber Boardwalk (gy: 89..90) ─────────────────────────
+          case 'boardwalk': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? PALETTES.boardwalk_1 : PALETTES.boardwalk_2;
+            ctx.fillRect(dx, dy, dw, dh);
+
+            // Horizontal wood plank seams
+            ctx.fillStyle = PALETTES.boardwalk_seam;
+            ctx.fillRect(dx, dy + dh * 0.33, dw, 1);
+            ctx.fillRect(dx, dy + dh * 0.66, dw, 1);
+            break;
+          }
+
+          // ── Moonlit Beach & Midnight Ocean (Cohesive & Atmospheric) ────────
           case 'beach_sand': {
             const isAlt = (gx + gy) % 2 === 0;
             ctx.fillStyle = isAlt ? PALETTES.beach_sand_1 : PALETTES.beach_sand_2;
@@ -466,20 +480,20 @@ export class Renderer {
           }
 
           case 'ocean_surf': {
-            // Wet Sand background
+            // Wet Sand base
             ctx.fillStyle = PALETTES.beach_sand_1;
             ctx.fillRect(dx, dy, dw, dh);
 
             // Rolling animated wave tide
-            const wave = Math.sin(this.tick * 0.05 + gx * 0.4) * 0.3;
-            const waterHeight = (0.5 + wave) * dh;
+            const wave = Math.sin(this.tick * 0.045 + gx * 0.4) * 0.35;
+            const waterHeight = (0.55 + wave) * dh;
 
             ctx.fillStyle = PALETTES.ocean_surf;
             ctx.fillRect(dx, dy + dh - waterHeight, dw, waterHeight);
 
-            // White wave foam crest
+            // Soft translucent wave foam
             ctx.fillStyle = PALETTES.wave_foam;
-            ctx.fillRect(dx, dy + dh - waterHeight, dw, Math.max(1.5, 3 * z));
+            ctx.fillRect(dx, dy + dh - waterHeight, dw, Math.max(1.5, 2.8 * z));
             break;
           }
 
@@ -487,11 +501,11 @@ export class Renderer {
             ctx.fillStyle = PALETTES.ocean_deep;
             ctx.fillRect(dx, dy, dw, dh);
 
-            // Ocean water sparkle highlights
+            // Bioluminescent oceanic ripple sparkles
             const sparkle = Math.sin(this.tick * 0.04 + gx * 0.6 + gy * 0.6);
-            if (sparkle > 0.4) {
-              ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
-              ctx.fillRect(dx + dw * 0.25, dy + dh * 0.4, dw * 0.5, Math.max(1, 1.8 * z));
+            if (sparkle > 0.45) {
+              ctx.fillStyle = 'rgba(56, 189, 248, 0.32)';
+              ctx.fillRect(dx + dw * 0.25, dy + dh * 0.4, dw * 0.5, Math.max(1, 1.6 * z));
             }
             break;
           }
@@ -635,62 +649,129 @@ export class Renderer {
     const windSway = Math.sin(this.tick * 0.04 + prop.wx * 0.1) * 1.6 * z;
 
     switch (prop.type) {
+      case 'beach_bonfire': {
+        // Glowing Beach Bonfire with warm radial light and crackling embers
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 14 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Firewood logs
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx - 8 * z, sy - 4 * z, 16 * z, 4 * z);
+        ctx.fillRect(sx - 4 * z, sy - 6 * z, 8 * z, 4 * z);
+
+        // Dancing flame
+        const flameFlicker = Math.sin(this.tick * 0.25) * 2 * z;
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 8 * z + flameFlicker, 7 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 10 * z + flameFlicker, 5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 11 * z + flameFlicker, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boardwalk_lamp': {
+        // Nautical timber lamp post with warm lantern
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 5 * z, 2.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(sx - 1.5 * z, sy - 22 * z, 3 * z, 22 * z);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(sx - 3.5 * z, sy - 24 * z, 7 * z, 6 * z, 1.5 * z);
+        ctx.fill();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 21 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'beach_lounger': {
+        // Teak wood beach recliner
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 10 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx - 8 * z, sy - 4 * z, 16 * z, 4 * z);
+
+        // White cushioned headrest
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.roundRect(sx - 8 * z, sy - 7 * z, 6 * z, 5 * z, 1.5 * z);
+        ctx.fill();
+        break;
+      }
+
       case 'palm_tree': {
-        // Tropical Coconut Palm
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        // Volumetric Moonlit Palm Tree
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 12 * z, 5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Curved trunk
-        ctx.strokeStyle = '#78350f';
-        ctx.lineWidth = 5 * z;
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 4.5 * z;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
-        ctx.quadraticCurveTo(sx + 8 * z, sy - 16 * z, sx + 5 * z + windSway, sy - 30 * z);
+        ctx.quadraticCurveTo(sx + 7 * z, sy - 16 * z, sx + 4 * z + windSway, sy - 28 * z);
         ctx.stroke();
 
-        const topX = sx + 5 * z + windSway;
-        const topY = sy - 30 * z;
+        const topX = sx + 4 * z + windSway;
+        const topY = sy - 28 * z;
 
-        // Drooping palm fronds
-        const frondColors = ['#15803d', '#16a34a', '#22c55e'];
+        const frondColors = ['#064e3b', '#047857', '#059669'];
         for (let f = 0; f < 6; f++) {
           const angle = (f * Math.PI) / 3 + windSway * 0.05;
           ctx.strokeStyle = frondColors[f % 3];
-          ctx.lineWidth = 3.5 * z;
+          ctx.lineWidth = 3.2 * z;
           ctx.beginPath();
           ctx.moveTo(topX, topY);
-          const endX = topX + Math.cos(angle) * 18 * z;
-          const endY = topY + Math.sin(angle) * 12 * z + 6 * z;
-          ctx.quadraticCurveTo(topX + Math.cos(angle) * 12 * z, topY - 4 * z, endX, endY);
+          const endX = topX + Math.cos(angle) * 16 * z;
+          const endY = topY + Math.sin(angle) * 10 * z + 5 * z;
+          ctx.quadraticCurveTo(topX + Math.cos(angle) * 10 * z, topY - 3 * z, endX, endY);
           ctx.stroke();
         }
         break;
       }
 
       case 'beach_umbrella': {
-        // Striped Beach Parasol
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        // Nautical Navy & Cream Striped Beach Parasol
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
         ctx.beginPath();
-        ctx.ellipse(sx + 3 * z, sy + 2 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx + 2 * z, sy + 2 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Pole
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 2 * z;
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.8 * z;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(sx - 2 * z, sy - 18 * z);
         ctx.stroke();
 
-        // Canopy
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = '#1e3a8a'; // Navy
         ctx.beginPath();
         ctx.arc(sx - 2 * z, sy - 18 * z, 12 * z, Math.PI, 0);
         ctx.fill();
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#f8fafc'; // Cream
         ctx.beginPath();
         ctx.moveTo(sx - 2 * z, sy - 18 * z);
         ctx.arc(sx - 2 * z, sy - 18 * z, 12 * z, Math.PI + 0.6, Math.PI + 1.4);
@@ -700,25 +781,22 @@ export class Renderer {
       }
 
       case 'starfish': {
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = '#ea580c';
         ctx.beginPath();
-        ctx.arc(sx, sy, 3.5 * z, 0, Math.PI * 2);
+        ctx.arc(sx, sy, 3 * z, 0, Math.PI * 2);
         ctx.fill();
         break;
       }
 
       case 'mountain_pine': {
-        // Evergreen Pine
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 10 * z, 4.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Trunk
         ctx.fillStyle = '#451a03';
         ctx.fillRect(sx - 2 * z, sy - 8 * z, 4 * z, 8 * z);
 
-        // 3-tiered pine foliage
         const pineColors = ['#064e3b', '#065f46', '#047857'];
         for (let t = 0; t < 3; t++) {
           ctx.fillStyle = pineColors[t];
@@ -735,7 +813,6 @@ export class Renderer {
       }
 
       case 'railway_signal': {
-        // Signal Post
         ctx.fillStyle = '#475569';
         ctx.fillRect(sx - 1.5 * z, sy - 20 * z, 3 * z, 20 * z);
 
@@ -744,7 +821,6 @@ export class Renderer {
         ctx.roundRect(sx - 4 * z, sy - 22 * z, 8 * z, 10 * z, 2 * z);
         ctx.fill();
 
-        // Green LED lamp
         ctx.fillStyle = '#10b981';
         ctx.beginPath();
         ctx.arc(sx, sy - 18 * z, 2.5 * z, 0, Math.PI * 2);
