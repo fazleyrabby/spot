@@ -14,10 +14,11 @@ try {
 } catch { /* ignore in serverless */ }
 dotenv.config();
 
+const useLiveDb = process.env.USE_LIVE_DB === 'true';
 const appEnv = process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'local');
 const defaultLocalDatabaseUrl = 'postgresql://spot_user:spot_secret_password@localhost:55432/spot_db';
 const configuredDatabaseUrl = process.env.DATABASE_URL || '';
-const databaseUrl = appEnv === 'local' && configuredDatabaseUrl.includes('supabase')
+const databaseUrl = (!useLiveDb && appEnv === 'local' && configuredDatabaseUrl.includes('supabase'))
   ? defaultLocalDatabaseUrl
   : configuredDatabaseUrl || (appEnv === 'local' ? defaultLocalDatabaseUrl : '');
 

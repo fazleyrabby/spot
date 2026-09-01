@@ -1,34 +1,90 @@
 import { z } from 'zod';
 
-// Lightweight profanity blocklist — extend as needed or swap for a library like `bad-words`
+// Robust profanity, slurs, and hate-speech blocklist
 export const BLOCKED_WORDS = [
-  'fuck', 'fucker', 'fucking', 'shit', 'bitch', 'bastard', 'asshole',
-  'nigger', 'nigga', 'cunt', 'dick', 'pussy', 'slut', 'whore',
-  'motherfucker', 'bullshit', 'douche',
+  // Profanities & Vulgarities
+  'fuck', 'fucker', 'fucking', 'fuk', 'fucc', 'fck', 'fuxk',
+  'shit', 'shite', 'sh!t', 'bullshit', 'shitty',
+  'bitch', 'b!tch', 'bitches', 'bastard', 'asshole', 'a$$hole', 'a$$', 'asshat', 'asswipe',
+  'dick', 'd!ck', 'dickhead', 'cock', 'c0ck', 'pussy', 'pussies', 'cunt', 'c*nt',
+  'slut', 'sluts', 'whore', 'whores', 'motherfucker', 'douche', 'douchebag',
+  'jackass', 'prick', 'twat', 'wanker',
+
+  // Hate Speech & Slurs
+  'nigger', 'nigga', 'n1gger', 'n1gga', 'chink', 'gook', 'kike', 'kyke',
+  'spic', 'faggot', 'fag', 'f@g', 'f@ggot', 'dyke', 'tranny', 'retard',
+  'retarded', 'pedophile', 'pedo', 'hitler', 'nazi', 'terrorist',
 ];
+
+/**
+ * Normalizes l33tspeak, zero-width characters, and spaced-out letters.
+ * e.g., "f.u.c.k" -> "fuck", "b!tch" -> "bitch", "a$$hole" -> "asshole"
+ */
+function normalizeText(text: string): string {
+  let s = text.toLowerCase();
+  // Remove zero-width spaces and soft hyphens
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '');
+  // Common character substitutions
+  s = s.replace(/[@]/g, 'a')
+       .replace(/[$]/g, 's')
+       .replace(/[!|1]/g, 'i')
+       .replace(/[0]/g, 'o')
+       .replace(/[3]/g, 'e')
+       .replace(/[5]/g, 's')
+       .replace(/[+]/g, 't')
+       .replace(/[*_~`]/g, '');
+  return s;
+}
 
 export function containsBlockedWord(text?: string | null): boolean {
   if (!text) return false;
-  const lower = text.toLowerCase();
-  return BLOCKED_WORDS.some((w) => {
-    const re = new RegExp(`\\b${w}\\b`, 'i');
-    return re.test(lower) || (w.length > 4 && lower.includes(w));
-  });
+  const rawLower = text.toLowerCase();
+  const normalized = normalizeText(text);
+
+  // Check against raw and normalized strings
+  for (const w of BLOCKED_WORDS) {
+    const wordPattern = w.toLowerCase();
+
+    // 1. Direct word boundary match
+    const re1 = new RegExp(`\\b${escapeRegExp(wordPattern)}\\b`, 'i');
+    if (re1.test(rawLower) || re1.test(normalized)) {
+      return true;
+    }
+
+    // 2. Continuous substring match for longer words
+    if (wordPattern.length >= 4 && (rawLower.includes(wordPattern) || normalized.includes(wordPattern))) {
+      return true;
+    }
+
+    // 3. Spaced-out / dotted bypass check (e.g. "f u c k" or "f.u.c.k")
+    const spacedPattern = wordPattern.split('').map(escapeRegExp).join('[\\s._-]*');
+    const reSpaced = new RegExp(`\\b${spacedPattern}\\b`, 'i');
+    if (reSpaced.test(rawLower) || reSpaced.test(normalized)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Censors blocked words with asterisks
+export function censorProfanity(text: string): string {
+  let clean = text;
+  for (const w of BLOCKED_WORDS) {
+    const spacedPattern = w.split('').map(escapeRegExp).join('[\\s._-]*');
+    const re = new RegExp(`\\b${spacedPattern}\\b`, 'gi');
+    clean = clean.replace(re, (m) => '*'.repeat(m.length));
+  }
+  return clean;
+}
+
 // Replace blocked words with asterisks of the same length; fall back to "Citizen"
 export function sanitizeDisplayName(name: string): string {
-  let clean = name.trim();
-  for (const w of BLOCKED_WORDS) {
-    if (w.length >= 3) {
-      const re = new RegExp(`\\b${escapeRegExp(w)}\\b`, 'gi');
-      clean = clean.replace(re, (m) => '*'.repeat(m.length));
-    }
-  }
+  let clean = censorProfanity(name.trim());
   clean = clean.replace(/\s{2,}/g, ' ').trim();
   return (clean.slice(0, 32) || 'Citizen').trim();
 }
