@@ -1,0 +1,154 @@
+---
+/**
+ * WorldChatBar — Floating quick emote & chat action bar in Spot World.
+ */
+---
+
+<div class="world-chat-dock" id="world-chat-dock">
+  <!-- Quick Emotes Pill -->
+  <div class="emote-bar glass-panel">
+    <button type="button" class="emote-btn" data-emote="👋" title="Wave (1)">👋</button>
+    <button type="button" class="emote-btn" data-emote="☕" title="Coffee (2)">☕</button>
+    <button type="button" class="emote-btn" data-emote="✨" title="Sparkle (3)">✨</button>
+    <button type="button" class="emote-btn" data-emote="❤️" title="Love (4)">❤️</button>
+    <button type="button" class="emote-btn" data-emote="🚀" title="Rocket (5)">🚀</button>
+    <button type="button" class="emote-btn" data-emote="🎮" title="Game (6)">🎮</button>
+  </div>
+
+  <!-- Chat Input Form -->
+  <form class="chat-form glass-panel" id="world-chat-form">
+    <input
+      type="text"
+      id="world-chat-input"
+      class="chat-input"
+      maxlength="60"
+      placeholder="Type a message or press 1-6 for emotes… (Enter to speak)"
+      autocomplete="off"
+    />
+    <button type="submit" class="chat-send-btn" id="world-chat-send" title="Send message">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<style>
+  .world-chat-dock {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 50;
+    pointer-events: auto;
+    width: 90vw;
+    max-width: 520px;
+    user-select: none;
+  }
+
+  .emote-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+  }
+
+  .emote-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 1.15rem;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+  }
+
+  .emote-btn:hover {
+    transform: scale(1.25) translateY(-2px);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .emote-btn:active {
+    transform: scale(0.95);
+  }
+
+  .chat-form {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    padding: 4px 6px 4px 14px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(14px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .chat-form:focus-within {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 12px 36px rgba(0, 0, 0, 0.7);
+  }
+
+  .chat-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: #f8fafc;
+    font-size: 0.84rem;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .chat-input::placeholder {
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+
+  .chat-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #0f172a;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .chat-send-btn:hover {
+    transform: scale(1.08);
+    background: #fbbf24;
+  }
+
+  .chat-send-btn:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 600px) {
+    .world-chat-dock {
+      bottom: 12px;
+      max-width: calc(100vw - 24px);
+    }
+  }
+</style>

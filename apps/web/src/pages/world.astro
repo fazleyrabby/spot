@@ -1,0 +1,893 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WorldHUD from '../components/WorldHUD.astro';
+import ProfileModal from '../components/ProfileModal.astro';
+import SecretModal from '../components/SecretModal.astro';
+import WorldChatBar from '../components/WorldChatBar.astro';
+import CitizenSearchModal from '../components/CitizenSearchModal.astro';
+---
+
+<Layout
+  title="Spot World — Explore the Living City"
+  description="Walk through the top-down Spot World in cozy Stardew style. Discover citizens, explore their plots, and see who lives next door."
+  url="https://www.claimyourspot.lol/world"
+>
+  <main class="world-app" id="world-app">
+    <WorldHUD />
+
+    <!-- Full-screen top-down canvas -->
+    <canvas id="world-canvas" class="world-canvas"></canvas>
+
+    <!-- Loading overlay (shown until first render) -->
+    <div class="world-loader" id="world-loader" aria-live="polite">
+      <div class="loader-inner">
+        <div class="loader-spinner"></div>
+        <p class="loader-text">Building the world…</p>
+        <p class="loader-sub" id="loader-sub">Loading terrain & citizens</p>
+      </div>
+    </div>
+
+    <!-- Reuse the existing profile modal for click-to-inspect -->
+    <ProfileModal />
+
+    <!-- Secret discovery modal -->
+    <SecretModal />
+
+    <!-- Quick Emote & Chat Dock -->
+    <WorldChatBar />
+
+    <!-- Citizen Search & GPS Modal -->
+    <CitizenSearchModal />
+
+    <!-- Toast container -->
+    <div id="world-toast-container" class="toast-container"></div>
+  </main>
+</Layout>
+
+<style>
+  .world-app {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: #0f1710;
+  }
+
+  .world-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: default;
+  }
+
+  /* ── Loading Overlay ─────────────────────────────────────────────────── */
+  .world-loader {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f1710;
+    z-index: 100;
+    transition: opacity 0.5s ease;
+  }
+
+  .world-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loader-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .loader-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(16, 185, 129, 0.2);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loader-text {
+    color: #f8fafc;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .loader-sub {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Toast ───────────────────────────────────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 300;
+    pointer-events: none;
+  }
+
+  .toast {
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.12);
+    animation: toastSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: auto;
+    white-space: nowrap;
+  }
+
+  .toast-error {
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(239, 68, 68, 0.2);
+  }
+
+  .toast-success {
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #86efac;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(34, 197, 94, 0.2);
+  }
+
+  .toast.fade-out {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  @keyframes toastSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+</style>
+
+<script>
+  import { Engine } from '../world/engine.js';
+  import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
+  import type { OccupiedSpotSummary } from '@spot/shared';
+  import { containsBlockedWord } from '@spot/shared';
+
+  // ── Resolve API base ──────────────────────────────────────────────────────
+  const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
+  const API_BASE: string = configuredBase
+    ? (configuredBase.endsWith('/api') ? configuredBase.replace(/\/api$/, '') : configuredBase)
+    : (import.meta.env.PROD ? '' : 'http://localhost:5050');
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const canvas       = document.getElementById('world-canvas') as HTMLCanvasElement;
+  const loader       = document.getElementById('world-loader') as HTMLDivElement;
+  const loaderSub    = document.getElementById('loader-sub') as HTMLParagraphElement;
+  const coordText    = document.getElementById('world-coord-text') as HTMLSpanElement;
+  const zoomLevel    = document.getElementById('world-zoom-level') as HTMLSpanElement;
+  const btnZoomIn    = document.getElementById('world-zoom-in') as HTMLButtonElement;
+  const btnZoomOut   = document.getElementById('world-zoom-out') as HTMLButtonElement;
+  const btnRecenter  = document.getElementById('world-recenter') as HTMLButtonElement;
+
+  // Profile modal elements (reused from ProfileModal.astro)
+  const profileBackdrop = document.getElementById('profile-modal-backdrop') as HTMLElement;
+  const profileModalClose = document.getElementById('profile-modal-close') as HTMLButtonElement;
+  const profileAvatarCanvas = document.getElementById('profile-avatar-canvas') as HTMLCanvasElement;
+  const profileSpotId   = document.getElementById('profile-spot-id') as HTMLElement;
+  const profileName     = document.getElementById('profile-name') as HTMLElement;
+  const profileTagline  = document.getElementById('profile-tagline') as HTMLElement;
+  const profileVerifiedBadge = document.getElementById('profile-verified-badge') as HTMLElement;
+  const linkWebsite     = document.getElementById('link-website') as HTMLAnchorElement;
+  const linkWebsiteText = document.getElementById('link-website-text') as HTMLElement;
+  const linkTwitter     = document.getElementById('link-twitter') as HTMLAnchorElement;
+  const linkFacebook    = document.getElementById('link-facebook') as HTMLAnchorElement;
+  const linkInstagram   = document.getElementById('link-instagram') as HTMLAnchorElement;
+  const linkLinkedin    = document.getElementById('link-linkedin') as HTMLAnchorElement;
+  const linkYoutube     = document.getElementById('link-youtube') as HTMLAnchorElement;
+  const linkGithub      = document.getElementById('link-github') as HTMLAnchorElement;
+
+  // ── Toast helper ─────────────────────────────────────────────────────────
+  function showToast(message: string, type: 'error' | 'info' | 'success' = 'info') {
+    const container = document.getElementById('world-toast-container');
+    if (!container) return;
+
+    while (container.children.length >= 2) {
+      container.firstChild?.remove();
+    }
+
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('fade-out');
+      setTimeout(() => el.remove(), 250);
+    }, 2800);
+  }
+
+  // ── Profile modal population ──────────────────────────────────────────────
+  function openProfileModal(spot: OccupiedSpotSummary) {
+    if (!profileBackdrop) return;
+
+    const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
+    const avatarCtx = profileAvatarCanvas?.getContext('2d');
+    if (avatarCtx && profileAvatarCanvas) {
+      avatarCtx.clearRect(0, 0, 64, 64);
+      if (spot.customAvatarData) {
+        drawCustomAvatarOnCanvas(avatarCtx, spot.customAvatarData, 0, 0, 64);
+      } else {
+        drawAvatarOnCanvas(avatarCtx, def, 0, 0, 64);
+      }
+    }
+
+    if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
+    if (profileName)    profileName.textContent     = spot.displayName;
+    if (profileTagline) profileTagline.textContent  = spot.tagline || '';
+
+    if (profileVerifiedBadge) {
+      profileVerifiedBadge.style.display = spot.isVerified ? '' : 'none';
+    }
+
+    const setLink = (el: HTMLAnchorElement | null, url?: string | null) => {
+      if (!el) return;
+      if (url) { el.href = url; el.style.display = ''; }
+      else      { el.style.display = 'none'; }
+    };
+    if (linkWebsite) {
+      setLink(linkWebsite, spot.websiteUrl);
+      if (linkWebsiteText && spot.websiteUrl) {
+        try {
+          linkWebsiteText.textContent = new URL(spot.websiteUrl).hostname;
+        } catch { linkWebsiteText.textContent = 'Website'; }
+      }
+    }
+    setLink(linkTwitter,   spot.twitterUrl);
+    setLink(linkFacebook,  spot.facebookUrl);
+    setLink(linkInstagram, spot.instagramUrl);
+    setLink(linkLinkedin,  spot.linkedinUrl);
+    setLink(linkYoutube,   spot.youtubeUrl);
+    setLink(linkGithub,    spot.githubUrl);
+
+    const viewSec = document.getElementById('profile-view-section');
+    const editSec = document.getElementById('profile-edit-section');
+    if (viewSec) viewSec.style.display = '';
+    if (editSec) editSec.style.display = 'none';
+
+    const editBtn = document.getElementById('profile-edit-btn');
+    const deleteBtn = document.getElementById('profile-delete-btn');
+    if (editBtn)   editBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    const spotId = `${spot.x},${spot.y}`;
+    void loadSpotComments(spotId, spot);
+
+    profileBackdrop.classList.add('open');
+    profileBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  // ── Spot Wall / Guestbook Comments ─────────────────────────────────────────
+  const spotWallComments = document.getElementById('spot-wall-comments');
+  const spotWallForm = document.getElementById('spot-wall-form') as HTMLFormElement | null;
+  const spotWallAuthor = document.getElementById('spot-wall-author') as HTMLInputElement | null;
+  const spotWallBody = document.getElementById('spot-wall-body') as HTMLInputElement | null;
+  const spotWallSubmit = document.getElementById('spot-wall-submit') as HTMLButtonElement | null;
+  const spotWallSelfNote = document.getElementById('spot-wall-self-note');
+  let currentViewingSpotId = '';
+
+  function renderSpotComments(comments: Array<{ authorName: string; body: string; createdAt: string }>): void {
+    if (!spotWallComments) return;
+    spotWallComments.replaceChildren();
+    if (comments.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'spot-wall-empty';
+      empty.textContent = 'Be the first to leave a note.';
+      spotWallComments.appendChild(empty);
+      return;
+    }
+    comments.forEach((comment) => {
+      const item = document.createElement('article');
+      item.className = 'spot-wall-comment';
+      const meta = document.createElement('div');
+      meta.className = 'spot-wall-comment-meta';
+      const author = document.createElement('span');
+      author.className = 'spot-wall-comment-author';
+      author.textContent = `@${comment.authorName}`;
+      const time = document.createElement('time');
+      time.textContent = ` • ${new Date(comment.createdAt).toLocaleDateString()}`;
+      meta.append(author, time);
+      const body = document.createElement('p');
+      body.className = 'spot-wall-comment-body';
+      body.textContent = comment.body;
+      item.append(meta, body);
+      spotWallComments.appendChild(item);
+    });
+  }
+
+  async function loadSpotComments(spotId: string, spot: OccupiedSpotSummary): Promise<void> {
+    currentViewingSpotId = spotId;
+    if (!spotWallComments) return;
+    spotWallComments.textContent = 'Loading messages…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/spots/${spotId}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderSpotComments(data.comments || []);
+
+      const canPost = Boolean(data.canPost);
+      if (spotWallForm) {
+        spotWallForm.hidden = !canPost;
+        spotWallForm.style.display = canPost ? 'grid' : 'none';
+      }
+      if (spotWallSelfNote) {
+        spotWallSelfNote.style.display = canPost ? 'none' : 'block';
+        spotWallSelfNote.textContent = data.isOwner
+          ? 'This is your spot. Visitors can leave notes here.'
+          : (data.visibility === 'open' ? 'Leave a note on this spot wall.' : 'This wall is currently read-only.');
+      }
+    } catch (_) {
+      if (spotWallComments) spotWallComments.textContent = 'No messages yet.';
+      if (spotWallForm) {
+        spotWallForm.hidden = false;
+        spotWallForm.style.display = 'grid';
+      }
+    }
+  }
+
+  spotWallForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentViewingSpotId || !spotWallBody) return;
+    const body = spotWallBody.value.trim();
+    if (!body) return;
+
+    if (spotWallSubmit) spotWallSubmit.disabled = true;
+
+    try {
+      const authorName = spotWallAuthor?.value.trim() || 'Visitor';
+
+      if (containsBlockedWord(body) || containsBlockedWord(authorName)) {
+        showToast('Please keep spot wall messages kind & welcoming! 🌸', 'error');
+        if (spotWallSubmit) spotWallSubmit.disabled = false;
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/spots/${currentViewingSpotId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body, authorName }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.message || 'Could not post message.', 'error');
+        return;
+      }
+
+      const data = await res.json();
+      spotWallBody.value = '';
+      showToast('Note posted to spot wall!', 'success');
+
+      // Refresh comments
+      const refreshRes = await fetch(`${API_BASE}/api/spots/${currentViewingSpotId}/comments`, { credentials: 'include' });
+      if (refreshRes.ok) {
+        const wall = await refreshRes.json();
+        renderSpotComments(wall.comments || []);
+      }
+    } catch (err) {
+      showToast('Failed to post message. Please try again.', 'error');
+    } finally {
+      if (spotWallSubmit) spotWallSubmit.disabled = false;
+    }
+  });
+
+  function closeProfileModal() {
+    if (!profileBackdrop) return;
+    profileBackdrop.classList.remove('open');
+    profileBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  profileModalClose?.addEventListener('click', closeProfileModal);
+  profileBackdrop?.addEventListener('click', (e) => {
+    if (e.target === profileBackdrop) closeProfileModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProfileModal();
+  });
+
+  // ── Secret Discovery Modal Wiring ─────────────────────────────────────────
+  const secretBackdrop = document.getElementById('secret-modal-backdrop');
+  const secretCloseBtn = document.getElementById('secret-modal-close');
+  const secretDismissBtn = document.getElementById('secret-dismiss-btn');
+  const secretIcon = document.getElementById('secret-icon');
+  const secretDistrict = document.getElementById('secret-district');
+  const secretTitle = document.getElementById('secret-title');
+  const secretSubtitle = document.getElementById('secret-subtitle');
+  const secretQuoteBox = document.getElementById('secret-quote-box');
+  const secretQuote = document.getElementById('secret-quote');
+  const secretDesc = document.getElementById('secret-desc');
+  const secretRewardBadge = document.getElementById('secret-reward-badge');
+  const secretRewardText = document.getElementById('secret-reward-text');
+  const secretActionBtn = document.getElementById('secret-action-btn') as HTMLAnchorElement | null;
+  const hudSecretsCount = document.getElementById('hud-secrets-count');
+
+  const TOTAL_SECRETS = 6;
+
+  function getDiscoveredSecrets(): Set<string> {
+    try {
+      const raw = localStorage.getItem('spot_world_secrets') || '[]';
+      return new Set(JSON.parse(raw));
+    } catch {
+      return new Set();
+    }
+  }
+
+  function updateSecretsHUD(): void {
+    const discovered = getDiscoveredSecrets();
+    if (hudSecretsCount) {
+      hudSecretsCount.textContent = `${discovered.size}/${TOTAL_SECRETS}`;
+    }
+  }
+
+  function openSecretModal(secret: import('../world/secrets.js').WorldSecret): void {
+    if (!secretBackdrop) return;
+
+    if (secretIcon) secretIcon.textContent = secret.icon;
+    if (secretDistrict) secretDistrict.textContent = secret.district;
+    if (secretTitle) secretTitle.textContent = secret.title;
+    if (secretSubtitle) secretSubtitle.textContent = secret.subtitle;
+    if (secretDesc) secretDesc.textContent = secret.description;
+
+    if (secretQuoteBox && secretQuote) {
+      if (secret.quote) {
+        secretQuoteBox.style.display = 'block';
+        secretQuote.textContent = secret.quote;
+      } else {
+        secretQuoteBox.style.display = 'none';
+      }
+    }
+
+    if (secretRewardBadge && secretRewardText) {
+      if (secret.reward) {
+        secretRewardBadge.style.display = 'inline-flex';
+        secretRewardText.textContent = secret.reward;
+      } else {
+        secretRewardBadge.style.display = 'none';
+      }
+    }
+
+    if (secretActionBtn) {
+      if (secret.actionUrl && secret.actionLabel) {
+        secretActionBtn.style.display = 'inline-flex';
+        secretActionBtn.href = secret.actionUrl;
+        secretActionBtn.firstElementChild!.textContent = secret.actionLabel;
+      } else if (secret.actionLabel) {
+        secretActionBtn.style.display = 'inline-flex';
+        secretActionBtn.href = '#';
+        secretActionBtn.firstElementChild!.textContent = secret.actionLabel;
+        secretActionBtn.onclick = (e) => {
+          e.preventDefault();
+          const fortunes = [
+            '“Glitch Cola: Your next commit will have 0 merge conflicts.”',
+            '“Cyber Matcha: Fullstack clarity +100. Write clean code.”',
+            '“Overclocked Cold Brew: Fast compilation & instant hot-reloads.”',
+          ];
+          if (secretQuote) secretQuote.textContent = fortunes[Math.floor(Math.random() * fortunes.length)];
+          if (secretQuoteBox) secretQuoteBox.style.display = 'block';
+        };
+      } else {
+        secretActionBtn.style.display = 'none';
+      }
+    }
+
+    // Play contextual discovery SFX
+    if (engine) {
+      if (secret.id === 'mystic_duck') engine.audio.playDuckQuack();
+      else if (secret.id === 'cafe_cat') engine.audio.playCatPurr();
+      else engine.audio.playFanfare();
+    }
+
+    // Save to discovered secrets
+    const discovered = getDiscoveredSecrets();
+    const isNew = !discovered.has(secret.id);
+    if (isNew) {
+      discovered.add(secret.id);
+      localStorage.setItem('spot_world_secrets', JSON.stringify(Array.from(discovered)));
+      updateSecretsHUD();
+      showToast(`✨ Discovered: ${secret.name} (${discovered.size}/${TOTAL_SECRETS})`, 'success');
+    }
+
+    secretBackdrop.classList.add('open');
+    secretBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeSecretModal(): void {
+    if (!secretBackdrop) return;
+    secretBackdrop.classList.remove('open');
+    secretBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  secretCloseBtn?.addEventListener('click', closeSecretModal);
+  secretDismissBtn?.addEventListener('click', closeSecretModal);
+  secretBackdrop?.addEventListener('click', (e) => {
+    if (e.target === secretBackdrop) closeSecretModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSecretModal();
+  });
+
+  // ── Engine ────────────────────────────────────────────────────────────────
+  let engine: InstanceType<typeof Engine> | null = null;
+
+  async function boot() {
+    loaderSub.textContent = 'Fetching citizen data…';
+    updateSecretsHUD();
+
+    try {
+      let avatarId = 'astronaut';
+      let citizenId = '';
+      let displayName = 'Visitor';
+      let isVerified = false;
+
+      try {
+        const meRes = await fetch(`${API_BASE}/api/citizens/me`, { credentials: 'include' });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData?.citizen?.avatarId) avatarId = meData.citizen.avatarId;
+          if (meData?.citizen?.id) citizenId = meData.citizen.id;
+          if (meData?.citizen?.displayName) displayName = meData.citizen.displayName;
+          if (meData?.citizen?.isVerified) isVerified = meData.citizen.isVerified;
+        }
+      } catch (_) {}
+
+      engine = new Engine({
+        canvas,
+        apiBase: API_BASE,
+        citizenId,
+        avatarId,
+        displayName,
+        isVerified,
+        onCitizenClick: (spot) => openProfileModal(spot),
+        onSecretClick: (secret) => openSecretModal(secret),
+        onEmptyClick: (_gx, _gy) => {
+          closeProfileModal();
+          closeSecretModal();
+        },
+      });
+
+      loaderSub.textContent = 'Rendering Stardew World…';
+      await engine.init();
+
+      // Sync initial HUD audio icon
+      if (worldAudioIcon) {
+        worldAudioIcon.textContent = engine.audio.muted ? '🔇' : '🔊';
+      }
+
+      // ── Chat & Emote Dock Wiring ──────────────────────────────────────────
+      const chatForm = document.getElementById('world-chat-form') as HTMLFormElement | null;
+      const chatInput = document.getElementById('world-chat-input') as HTMLInputElement | null;
+      const emoteBtns = document.querySelectorAll('.emote-btn');
+
+      emoteBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const emote = (btn as HTMLElement).dataset.emote;
+          if (emote && engine) {
+            engine.player.say(emote, 240);
+          }
+        });
+      });
+
+      chatForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!chatInput || !engine) return;
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        if (containsBlockedWord(msg)) {
+          showToast('Please keep chat messages kind & friendly! 🌸', 'error');
+          return;
+        }
+
+        engine.player.say(msg, 360);
+        chatInput.value = '';
+        chatInput.blur();
+      });
+
+      // Emote numeric hotkeys (1-6) and Enter to focus chat
+      window.addEventListener('keydown', (e) => {
+        if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+          return;
+        }
+
+        const key = e.key;
+        const emoteMap: Record<string, string> = {
+          '1': '👋',
+          '2': '☕',
+          '3': '✨',
+          '4': '❤️',
+          '5': '🚀',
+          '6': '🎮',
+        };
+
+        if (emoteMap[key] && engine) {
+          engine.player.say(emoteMap[key], 240);
+        } else if (key === 't' || key === '/') {
+          e.preventDefault();
+          chatInput?.focus();
+        }
+      });
+
+      // ── Citizen Search & GPS Modal Wiring ────────────────────────────────
+      const searchBackdrop = document.getElementById('search-modal-backdrop');
+      const searchCloseBtn = document.getElementById('search-modal-close');
+      const searchInput = document.getElementById('citizen-search-input') as HTMLInputElement | null;
+      const searchResultsList = document.getElementById('search-results-list');
+      const btnWorldSearch = document.getElementById('world-search-btn');
+
+      function openSearchModal(): void {
+        if (!searchBackdrop) return;
+        searchBackdrop.classList.add('open');
+        searchBackdrop.setAttribute('aria-hidden', 'false');
+        searchInput?.focus();
+        renderSearchResults(searchInput?.value || '');
+      }
+
+      function closeSearchModal(): void {
+        if (!searchBackdrop) return;
+        searchBackdrop.classList.remove('open');
+        searchBackdrop.setAttribute('aria-hidden', 'true');
+      }
+
+      btnWorldSearch?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSearchModal();
+      });
+
+      searchCloseBtn?.addEventListener('click', closeSearchModal);
+      searchBackdrop?.addEventListener('click', (e) => {
+        if (e.target === searchBackdrop) closeSearchModal();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (searchBackdrop?.classList.contains('open')) {
+            closeSearchModal();
+          } else {
+            openSearchModal();
+          }
+        }
+      });
+
+      function renderSearchResults(query: string): void {
+        if (!searchResultsList || !engine) return;
+        searchResultsList.replaceChildren();
+
+        const q = query.trim().toLowerCase();
+        const allCitizens = engine.monuments.getAllEntities().map((e) => e.spot);
+
+        const filtered = allCitizens.filter((s) => {
+          if (!q) return true;
+          const matchName = s.displayName?.toLowerCase().includes(q);
+          const matchTagline = s.tagline?.toLowerCase().includes(q);
+          const matchCoords = `${s.x},${s.y}`.includes(q) || `${s.x}, ${s.y}`.includes(q);
+          return matchName || matchTagline || matchCoords;
+        });
+
+        if (filtered.length === 0) {
+          const empty = document.createElement('p');
+          empty.className = 'search-empty-state';
+          empty.textContent = `No citizens found matching "${query}".`;
+          searchResultsList.appendChild(empty);
+          return;
+        }
+
+        filtered.slice(0, 15).forEach((spot) => {
+          const item = document.createElement('div');
+          item.className = 'search-result-item';
+
+          const left = document.createElement('div');
+          left.className = 'search-result-left';
+
+          const avatarCanvas = document.createElement('canvas');
+          avatarCanvas.className = 'search-result-avatar';
+          avatarCanvas.width = 38;
+          avatarCanvas.height = 38;
+          const actx = avatarCanvas.getContext('2d');
+          if (actx) {
+            const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
+            if (spot.customAvatarData) {
+              drawCustomAvatarOnCanvas(actx, spot.customAvatarData, 0, 0, 38);
+            } else {
+              drawAvatarOnCanvas(actx, def, 0, 0, 38);
+            }
+          }
+
+          const info = document.createElement('div');
+          info.className = 'search-result-info';
+
+          const nameRow = document.createElement('div');
+          nameRow.className = 'search-result-name-row';
+          const name = document.createElement('span');
+          name.className = 'search-result-name';
+          name.textContent = spot.displayName;
+          nameRow.appendChild(name);
+
+          if (spot.isVerified) {
+            const badge = document.createElement('span');
+            badge.textContent = ' ✓';
+            badge.style.color = '#38bdf8';
+            badge.style.fontSize = '0.8rem';
+            nameRow.appendChild(badge);
+          }
+
+          const sub = document.createElement('span');
+          sub.className = 'search-result-tagline';
+          sub.textContent = spot.tagline || `Spot (${spot.x}, ${spot.y})`;
+
+          info.append(nameRow, sub);
+          left.append(avatarCanvas, info);
+
+          const actions = document.createElement('div');
+          actions.className = 'search-result-actions';
+
+          const btnGps = document.createElement('button');
+          btnGps.className = 'btn-search-gps';
+          btnGps.textContent = '🧭 GPS';
+          btnGps.title = 'Set compass waypoint arrow';
+          btnGps.onclick = (e) => {
+            e.stopPropagation();
+            if (engine) {
+              engine.renderer.gpsTarget = {
+                name: spot.displayName,
+                wx: spot.x * 48 + 24,
+                wy: spot.y * 32 + 16,
+              };
+              showToast(`🧭 Compass locked to @${spot.displayName}`, 'success');
+              closeSearchModal();
+            }
+          };
+
+          const btnFly = document.createElement('button');
+          btnFly.className = 'btn-search-fly';
+          btnFly.textContent = '🚀 Fly';
+          btnFly.title = 'Pan camera to citizen plot';
+          btnFly.onclick = (e) => {
+            e.stopPropagation();
+            if (engine) {
+              engine.flyTo(spot.x, spot.y, 1.2);
+              closeSearchModal();
+            }
+          };
+
+          actions.append(btnGps, btnFly);
+          item.append(left, actions);
+          searchResultsList.appendChild(item);
+        });
+      }
+
+      searchInput?.addEventListener('input', (e) => {
+        renderSearchResults((e.target as HTMLInputElement).value);
+      });
+
+      // Update HUD coordinate & zoom display
+      setInterval(() => {
+        if (!engine) return;
+
+        const pct = Math.round(engine.camera.zoom * 100);
+        if (zoomLevel) zoomLevel.textContent = `${pct}%`;
+
+        const hov = engine.renderer.hoveredGrid;
+        if (coordText) {
+          coordText.textContent = hov ? `(${hov.gx}, ${hov.gy})` : '—';
+        }
+      }, 100);
+
+      // Hide loader
+      loader.classList.add('hidden');
+      setTimeout(() => { loader.style.display = 'none'; }, 500);
+
+    } catch (err) {
+      console.error('[SpotWorld] Boot failed:', err);
+      loaderSub.textContent = 'Failed to load world. Please refresh.';
+      showToast('Could not load Spot World. Check your connection.', 'error');
+    }
+  }
+
+  // ── HUD button handlers ───────────────────────────────────────────────────
+  btnZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const newZ = Math.min(engine.camera.maxZoom, engine.camera.targetZoom * 1.3);
+    engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
+  });
+
+  btnZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const newZ = Math.max(engine.camera.minZoom, engine.camera.targetZoom / 1.3);
+    engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
+  });
+
+  btnRecenter?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    engine?.flyTo(52, 60, 1.0);
+  });
+
+  // ── Audio Ambience Toggle ────────────────────────────────────────────────
+  const btnWorldAudio = document.getElementById('world-audio-btn');
+  const worldAudioIcon = document.getElementById('world-audio-icon');
+
+  btnWorldAudio?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const isMuted = await engine.audio.toggleMute();
+    if (worldAudioIcon) {
+      worldAudioIcon.textContent = isMuted ? '🔇' : '🔊';
+    }
+    showToast(isMuted ? 'Environmental sound muted' : '🍃 Natural air, breeze & birds enabled', 'info');
+  });
+
+  // ── Time of Day Switcher ─────────────────────────────────────────────────
+  const btnWorldTod = document.getElementById('world-tod-btn');
+  const worldTodIcon = document.getElementById('world-tod-icon');
+
+  const TOD_MODES: Array<'night' | 'day' | 'twilight'> = ['night', 'day', 'twilight'];
+  const TOD_ICONS: Record<'night' | 'day' | 'twilight', string> = {
+    night: '🌙',
+    day: '☀️',
+    twilight: '🌆',
+  };
+  const TOD_LABELS: Record<'night' | 'day' | 'twilight', string> = {
+    night: '🌙 Cozy Neon Night',
+    day: '☀️ Sunlit Daytime',
+    twilight: '🌆 Golden Sunset Twilight',
+  };
+
+  btnWorldTod?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+
+    const current = engine.renderer.timeOfDay;
+    const nextIdx = (TOD_MODES.indexOf(current) + 1) % TOD_MODES.length;
+    const next = TOD_MODES[nextIdx];
+
+    engine.renderer.timeOfDay = next;
+    if (worldTodIcon) {
+      worldTodIcon.textContent = TOD_ICONS[next];
+    }
+    showToast(TOD_LABELS[next], 'info');
+  });
+
+  // ── Boot ─────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => { void boot(); });
+
+  document.addEventListener('astro:before-swap', () => {
+    engine?.destroy();
+    engine = null;
+  });
+</script>

@@ -379,6 +379,40 @@ if (enableSSE) {
   apiRouter.get('/realtime/stream', optionalAuthMiddleware, sseHandler as any);
 }
 
+/**
+ * POST /api/realtime/position
+ * Broadcast live player position, state, and speech bubble to all connected world viewers.
+ */
+apiRouter.post('/realtime/position', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  const { wx, wy, direction, state, speech, displayName, avatarId, guestId } = req.body || {};
+  if (typeof wx !== 'number' || typeof wy !== 'number') {
+    res.status(400).json({ error: 'InvalidCoordinates' });
+    return;
+  }
+
+  const citizenId = req.citizen?.id || (typeof guestId === 'string' ? guestId : `guest_${req.ip || 'anon'}`);
+  const finalName = req.citizen?.displayName || (typeof displayName === 'string' ? displayName.slice(0, 24) : 'Visitor');
+  const finalAvatar = req.citizen?.avatarId || (typeof avatarId === 'string' ? avatarId : 'astronaut');
+  const finalDir = ['down', 'up', 'left', 'right'].includes(direction) ? direction : 'down';
+  const finalState = typeof state === 'string' ? state : 'idle';
+  const finalSpeech = typeof speech === 'string' ? speech.slice(0, 100) : null;
+
+  broadcastRealtimeEvent({
+    type: 'player-position',
+    citizenId,
+    displayName: finalName,
+    avatarId: finalAvatar,
+    wx,
+    wy,
+    direction: finalDir,
+    state: finalState,
+    speech: finalSpeech,
+    timestamp: Date.now(),
+  });
+
+  res.json({ ok: true });
+});
+
 // Periodic heartbeat every 15s to prune stale socket connections (long-running hosts only)
 if (enableSSE) {
   setInterval(() => {
@@ -497,6 +531,13 @@ apiRouter.get('/citizens/me', optionalAuthMiddleware, async (req: AuthenticatedR
       `SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`,
       [req.citizen.id]
     );
+
+    if (config.appEnv === 'local' && !req.cookies?.[COOKIE_NAME]) {
+      const devToken = generateSessionToken();
+      const tokenHash = hashToken(devToken);
+      await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [tokenHash, req.citizen.id]);
+      res.cookie(COOKIE_NAME, devToken, COOKIE_OPTIONS);
+    }
 
     res.json({
       authenticated: true,
