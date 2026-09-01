@@ -91,6 +91,7 @@ export class Renderer {
   hoveredCitizen: OccupiedSpotSummary | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
   gpsTarget: { name: string; wx: number; wy: number } | null = null;
+  timeOfDay: 'day' | 'twilight' | 'night' = 'night';
 
   private cityParticles: CityParticle[] = [];
   private animFrameId: number | null = null;
@@ -172,8 +173,14 @@ export class Renderer {
     const H = camera.viewportHeight;
     const z = camera.zoom;
 
-    // 1. Dark city night sky clear
-    ctx.fillStyle = '#080b0f';
+    // 1. Sky clear based on timeOfDay
+    if (this.timeOfDay === 'day') {
+      ctx.fillStyle = '#0f172a';
+    } else if (this.timeOfDay === 'twilight') {
+      ctx.fillStyle = '#1e1b4b';
+    } else {
+      ctx.fillStyle = '#080b0f';
+    }
     ctx.fillRect(0, 0, W, H);
 
     // 2. Visible grid bounds
@@ -242,7 +249,9 @@ export class Renderer {
     });
 
     // 5. Draw Ambient Radial Light Glows on the ground
-    this.drawStreetLighting(ctx, lights, z);
+    if (this.timeOfDay !== 'day') {
+      this.drawStreetLighting(ctx, lights, z);
+    }
 
     // 6. Unified Depth Sort (Y ascending)
     entities.sort((a, b) => a.depth - b.depth);
@@ -252,10 +261,26 @@ export class Renderer {
       entity.render(ctx, z);
     }
 
-    // 8. Floating ambient night motes & cherry blossoms
+    // 8. Time of Day Atmospheric Wash
+    if (this.timeOfDay === 'day') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.06)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    } else if (this.timeOfDay === 'twilight') {
+      ctx.save();
+      const sunsetGrad = ctx.createLinearGradient(0, 0, 0, H);
+      sunsetGrad.addColorStop(0, 'rgba(244, 63, 94, 0.14)');
+      sunsetGrad.addColorStop(1, 'rgba(147, 51, 234, 0.12)');
+      ctx.fillStyle = sunsetGrad;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    // 9. Floating ambient particles
     this.drawCityParticles(ctx);
 
-    // 9. On-Screen GPS Waypoint Indicator
+    // 10. On-Screen GPS Waypoint Indicator
     this.drawGpsWaypoint(ctx);
   }
 
