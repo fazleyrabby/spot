@@ -1,13 +1,12 @@
 /**
- * PlayerManager — WASD / Arrow key controlled chibi citizen in Spot World (Stardew Valley / Harvest Moon style).
+ * PlayerManager — WASD / Arrow key controlled chibi citizen in Spot World (Stardew Valley / RPG style).
  *
  * Visual & Gameplay features:
  * - 4-direction movement (down, up, left, right)
  * - 4-frame walk animation with head bob and foot steps
- * - Chibi proportions (large head ~40%, cute body, stubby feet)
+ * - Archetype accessories (astronaut helmet, hacker cyber visor, wizard hat, golden crown)
  * - Sleep mode after 3 seconds of idle (snooze pose + floating 'z' particles)
- * - "You" name badge with amber accent
- * - Constrained to 5x5 plot with edge transition support
+ * - "You" name badge with glowing amber accent
  */
 
 import {
@@ -29,9 +28,9 @@ import type { Plot, PlotManager } from './plot-manager.js';
 export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
-const MOVE_SPEED = 2.4; // pixels per frame at 60fps
-const WALK_FRAME_INTERVAL = 7; // frames per step
-const IDLE_SLEEP_TIMEOUT = 180; // 3 seconds at 60fps
+const MOVE_SPEED = 2.6; // smooth continuous speed
+const WALK_FRAME_INTERVAL = 7;
+const IDLE_SLEEP_TIMEOUT = 180; // 3 seconds
 
 interface SleepParticle {
   x: number;
@@ -43,36 +42,30 @@ interface SleepParticle {
 }
 
 export class PlayerManager {
-  // World space continuous pixel position (feet anchor)
   wx: number = 50 * TILE_WIDTH + TILE_WIDTH / 2;
   wy: number = 50 * TILE_HEIGHT + TILE_HEIGHT / 2;
 
-  // Grid coordinates
   gx: number = 50;
   gy: number = 50;
 
-  // State
   state: PlayerState = 'idle';
   direction: Direction = 'down';
   frame = 0;
   private animTimer = 0;
   private idleTimer = 0;
+  private tick = 0;
 
-  // Visuals & avatar
   avatar: AvatarDefinition;
+  avatarId: string;
   displayName: string = 'You';
   isFounder: boolean = false;
   isVerified: boolean = false;
 
-  // Plot navigation & containment
   private plotManager: PlotManager | null = null;
   currentPlot: Plot | null = null;
   private onPlotChange?: (plot: Plot) => void;
 
-  // Sleep floating particles
   private sleepParticles: SleepParticle[] = [];
-
-  // Key tracking
   private keys = new Set<string>();
 
   constructor(
@@ -80,12 +73,14 @@ export class PlayerManager {
     plotManager?: PlotManager,
     onPlotChange?: (plot: Plot) => void,
   ) {
+    this.avatarId = avatarId;
     this.avatar = AVATAR_CATALOG[avatarId] ?? AVATAR_CATALOG.astronaut;
     this.plotManager = plotManager ?? null;
     this.onPlotChange = onPlotChange;
   }
 
   setAvatar(avatarId: string): void {
+    this.avatarId = avatarId;
     this.avatar = AVATAR_CATALOG[avatarId] ?? AVATAR_CATALOG.astronaut;
   }
 
@@ -94,9 +89,6 @@ export class PlayerManager {
     this.updateCurrentPlot();
   }
 
-  /**
-   * Set player position by grid coordinate (e.g. at claimed spot center).
-   */
   setPosition(gx: number, gy: number): void {
     this.gx = gx;
     this.gy = gy;
@@ -106,9 +98,6 @@ export class PlayerManager {
     this.updateCurrentPlot();
   }
 
-  /**
-   * Teleport player to a target grid tile.
-   */
   teleport(gx: number, gy: number): void {
     this.setPosition(gx, gy);
     this.state = 'idle';
@@ -128,10 +117,6 @@ export class PlayerManager {
       this.onPlotChange?.(plot);
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Input Handling
-  // ---------------------------------------------------------------------------
 
   bindInput(): void {
     window.addEventListener('keydown', (e) => {
@@ -158,11 +143,8 @@ export class PlayerManager {
     this.idleTimer = 0;
   }
 
-  // ---------------------------------------------------------------------------
-  // Frame Update (Physics & Animation)
-  // ---------------------------------------------------------------------------
-
   update(): void {
+    this.tick++;
     let dx = 0;
     let dy = 0;
 
@@ -180,47 +162,21 @@ export class PlayerManager {
       this.state = 'walking';
       this.idleTimer = 0;
 
-      // 4-direction priority
       if (Math.abs(dy) >= Math.abs(dx)) {
         this.direction = dy > 0 ? 'down' : 'up';
       } else {
         this.direction = dx > 0 ? 'right' : 'left';
       }
 
-      // Normalize diagonal vector
       const len = Math.hypot(dx, dy);
       const moveX = (dx / len) * MOVE_SPEED;
       const moveY = (dy / len) * MOVE_SPEED;
 
-      let nextWx = this.wx + moveX;
-      let nextWy = this.wy + moveY;
-
-      // Plot boundary constraint (keep inside current plot or allow seamless neighbor transition)
-      if (this.currentPlot) {
-        const margin = 12;
-        const minX = this.currentPlot.worldMinX + margin;
-        const maxX = this.currentPlot.worldMaxX - margin;
-        const minY = this.currentPlot.worldMinY + margin;
-        const maxY = this.currentPlot.worldMaxY - margin;
-
-        // Check if there is an adjacent plot in the moving direction
-        const gridAhead = worldToGrid(nextWx, nextWy);
-        const plotAhead = gridAhead ? this.plotManager?.getPlotAt(gridAhead.gx, gridAhead.gy) : null;
-
-        if (!plotAhead) {
-          // Constrain to current plot boundaries
-          nextWx = Math.max(minX, Math.min(maxX, nextWx));
-          nextWy = Math.max(minY, Math.min(maxY, nextWy));
-        }
-      }
-
-      // World edge bounds
-      this.wx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, nextWx));
-      this.wy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, nextWy));
+      this.wx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, this.wx + moveX));
+      this.wy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, this.wy + moveY));
 
       this.updateCurrentPlot();
 
-      // Walk cycle timer (4 frames: 0=idle, 1=left-step, 2=idle, 3=right-step)
       this.animTimer++;
       if (this.animTimer >= WALK_FRAME_INTERVAL) {
         this.animTimer = 0;
@@ -242,7 +198,6 @@ export class PlayerManager {
   }
 
   private updateSleepParticles(): void {
-    // Spawn new particle occasionally
     if (Math.random() < 0.05 && this.sleepParticles.length < 5) {
       this.sleepParticles.push({
         x: this.wx + 8 + (Math.random() - 0.5) * 6,
@@ -254,7 +209,6 @@ export class PlayerManager {
       });
     }
 
-    // Update existing particles
     for (let i = this.sleepParticles.length - 1; i >= 0; i--) {
       const p = this.sleepParticles[i];
       p.age++;
@@ -268,10 +222,6 @@ export class PlayerManager {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Canvas2D Chibi Rendering
-  // ---------------------------------------------------------------------------
-
   render(ctx: CanvasRenderingContext2D, sx: number, sy: number, zoom: number): void {
     const z = zoom;
     const colors = {
@@ -281,9 +231,9 @@ export class PlayerManager {
       skin: this.avatar.colors.skin || '#fde047',
     };
 
-    // 1. Soft ground shadow under feet
+    // Soft ground shadow
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
     ctx.beginPath();
     ctx.ellipse(sx, sy, 10 * z, 4.5 * z, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -291,16 +241,11 @@ export class PlayerManager {
 
     if (this.state === 'sleeping') {
       this.renderSleeping(ctx, sx, sy, z, colors);
+      this.renderSleepParticles(ctx, sx, sy, z);
     } else {
       this.renderChibi(ctx, sx, sy, z, colors);
     }
 
-    // Floating Sleep 'Z' particles
-    if (this.state === 'sleeping') {
-      this.renderSleepParticles(ctx, sx, sy, z);
-    }
-
-    // "You" name tag above head
     this.renderNameBadge(ctx, sx, sy, z);
   }
 
@@ -313,20 +258,17 @@ export class PlayerManager {
   ): void {
     const isSteppingLeft = this.state === 'walking' && this.frame === 1;
     const isSteppingRight = this.state === 'walking' && this.frame === 3;
-    const headBob = (isSteppingLeft || isSteppingRight) ? -1.5 * z : 0;
+    const breathe = this.state === 'idle' ? Math.sin(this.tick * 0.08) * 0.7 * z : 0;
+    const headBob = (isSteppingLeft || isSteppingRight) ? -1.5 * z : breathe;
 
     const dir = this.direction;
 
-    // --- Feet / Shoes ---
-    const footColor = c.accent || '#334155';
-    ctx.fillStyle = footColor;
-
+    // --- Feet ---
+    ctx.fillStyle = c.accent || '#334155';
     if (dir === 'down' || dir === 'up') {
       const leftFootY = sy - 2 * z + (isSteppingLeft ? -2.5 * z : 0);
       const rightFootY = sy - 2 * z + (isSteppingRight ? -2.5 * z : 0);
-      // Left foot
       ctx.fillRect(sx - 5.5 * z, leftFootY, 4 * z, 3 * z);
-      // Right foot
       ctx.fillRect(sx + 1.5 * z, rightFootY, 4 * z, 3 * z);
     } else if (dir === 'left') {
       const footY = sy - 2 * z + (isSteppingLeft ? -2 * z : 0);
@@ -343,11 +285,11 @@ export class PlayerManager {
     ctx.roundRect(sx - 6 * z, bodyY, 12 * z, 10 * z, 3 * z);
     ctx.fill();
 
-    // Belt / shirt accent line
+    // Belt accent
     ctx.fillStyle = c.accent;
     ctx.fillRect(sx - 5 * z, sy - 4.5 * z, 10 * z, 1.5 * z);
 
-    // Hands / Arms
+    // Hands
     ctx.fillStyle = c.skin;
     if (dir === 'down' || dir === 'up') {
       ctx.fillRect(sx - 7.5 * z, bodyY + 3 * z, 2.2 * z, 4 * z);
@@ -358,82 +300,110 @@ export class PlayerManager {
       ctx.fillRect(sx + 3.5 * z, bodyY + 3 * z, 3 * z, 4 * z);
     }
 
-    // --- Big Chibi Round Head ---
-    const headCenterX = sx;
-    const headCenterY = sy - 18 * z + headBob;
+    // --- Round Chibi Head ---
+    const headX = sx;
+    const headY = sy - 18 * z + headBob;
     const headRadius = 9 * z;
 
-    // Face / Skin base
+    // Skin
     ctx.fillStyle = c.skin;
     ctx.beginPath();
-    ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
+    ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hair / Hood (secondary color)
+    // Hair / Hood
     ctx.fillStyle = c.secondary;
     ctx.beginPath();
     if (dir === 'up') {
-      // Full back hair
-      ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
+      ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
       ctx.fill();
     } else if (dir === 'down') {
-      // Bangs / hair top
-      ctx.arc(headCenterX, headCenterY - 1.5 * z, headRadius, Math.PI * 0.85, Math.PI * 2.15);
-      ctx.lineTo(headCenterX + 7 * z, headCenterY - 2 * z);
-      ctx.lineTo(headCenterX, headCenterY - 4 * z);
-      ctx.lineTo(headCenterX - 7 * z, headCenterY - 2 * z);
+      ctx.arc(headX, headY - 1.5 * z, headRadius, Math.PI * 0.85, Math.PI * 2.15);
+      ctx.lineTo(headCenterX(sx), headY - 4 * z);
       ctx.closePath();
       ctx.fill();
     } else if (dir === 'left') {
-      // Side hair
-      ctx.arc(headCenterX + 1.5 * z, headCenterY, headRadius, Math.PI * 0.6, Math.PI * 1.8);
+      ctx.arc(headX + 1.5 * z, headY, headRadius, Math.PI * 0.6, Math.PI * 1.8);
       ctx.fill();
     } else if (dir === 'right') {
-      // Side hair
-      ctx.arc(headCenterX - 1.5 * z, headCenterY, headRadius, -Math.PI * 0.4, Math.PI * 0.8);
+      ctx.arc(headX - 1.5 * z, headY, headRadius, -Math.PI * 0.4, Math.PI * 0.8);
       ctx.fill();
     }
 
-    // --- Face Details (Eyes & Cheeks) ---
+    // Archetype Headgear
+    this.renderPlayerHeadgear(ctx, headX, headY, z, dir, c);
+
+    // --- Face Details ---
     if (dir !== 'up') {
-      // Cute blush
       ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+      ctx.beginPath();
       if (dir === 'down') {
-        ctx.beginPath();
-        ctx.arc(headCenterX - 5 * z, headCenterY + 2.5 * z, 2 * z, 0, Math.PI * 2);
-        ctx.arc(headCenterX + 5 * z, headCenterY + 2.5 * z, 2 * z, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(headX - 5 * z, headY + 2.5 * z, 2 * z, 0, Math.PI * 2);
+        ctx.arc(headCenterX(sx) + 5 * z, headY + 2.5 * z, 2 * z, 0, Math.PI * 2);
       } else if (dir === 'left') {
-        ctx.beginPath();
-        ctx.arc(headCenterX - 4 * z, headCenterY + 2.5 * z, 2 * z, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(headX - 4 * z, headY + 2.5 * z, 2 * z, 0, Math.PI * 2);
       } else if (dir === 'right') {
-        ctx.beginPath();
-        ctx.arc(headCenterX + 4 * z, headCenterY + 2.5 * z, 2 * z, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(headX + 4 * z, headY + 2.5 * z, 2 * z, 0, Math.PI * 2);
       }
+      ctx.fill();
 
-      // Expressive chibi eyes
-      ctx.fillStyle = '#0f172a';
-      if (dir === 'down') {
-        // Left eye
-        ctx.fillRect(headCenterX - 4.5 * z, headCenterY - 1 * z, 2.2 * z, 3.5 * z);
-        // Right eye
-        ctx.fillRect(headCenterX + 2.3 * z, headCenterY - 1 * z, 2.2 * z, 3.5 * z);
-
-        // Eye glint
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headCenterX - 4.5 * z, headCenterY - 1 * z, 1.2 * z, 1.2 * z);
-        ctx.fillRect(headCenterX + 2.3 * z, headCenterY - 1 * z, 1.2 * z, 1.2 * z);
-      } else if (dir === 'left') {
-        ctx.fillRect(headCenterX - 6 * z, headCenterY - 1 * z, 2.2 * z, 3.5 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headCenterX - 6 * z, headCenterY - 1 * z, 1.2 * z, 1.2 * z);
-      } else if (dir === 'right') {
-        ctx.fillRect(headCenterX + 3.8 * z, headCenterY - 1 * z, 2.2 * z, 3.5 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headCenterX + 3.8 * z, headCenterY - 1 * z, 1.2 * z, 1.2 * z);
+      // Eyes
+      if (this.avatarId !== 'hacker') {
+        ctx.fillStyle = '#0f172a';
+        if (dir === 'down') {
+          ctx.fillRect(headX - 4.5 * z, headY - 1 * z, 2.2 * z, 3.5 * z);
+          ctx.fillRect(headX + 2.3 * z, headY - 1 * z, 2.2 * z, 3.5 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX - 4.5 * z, headY - 1 * z, 1.2 * z, 1.2 * z);
+          ctx.fillRect(headX + 2.3 * z, headY - 1 * z, 1.2 * z, 1.2 * z);
+        } else if (dir === 'left') {
+          ctx.fillRect(headX - 6 * z, headY - 1 * z, 2.2 * z, 3.5 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX - 6 * z, headY - 1 * z, 1.2 * z, 1.2 * z);
+        } else if (dir === 'right') {
+          ctx.fillRect(headX + 3.8 * z, headY - 1 * z, 2.2 * z, 3.5 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX + 3.8 * z, headY - 1 * z, 1.2 * z, 1.2 * z);
+        }
       }
+    }
+  }
+
+  private renderPlayerHeadgear(
+    ctx: CanvasRenderingContext2D,
+    hx: number,
+    hy: number,
+    z: number,
+    dir: string,
+    c: { primary: string; secondary: string; accent: string; skin: string },
+  ): void {
+    if (this.avatarId === 'astronaut' && dir !== 'up') {
+      ctx.fillStyle = 'rgba(2, 132, 199, 0.8)';
+      ctx.beginPath();
+      ctx.roundRect(hx - 6 * z, hy - 2.5 * z, 12 * z, 5.5 * z, 2.5 * z);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fillRect(hx - 4.5 * z, hy - 2 * z, 3.5 * z, 1.5 * z);
+    } else if (this.avatarId === 'hacker') {
+      if (dir !== 'up') {
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(hx - 6 * z, hy - 1 * z, 12 * z, 2.5 * z);
+        ctx.fillStyle = '#34d399';
+        ctx.fillRect(hx - 2 * z, hy - 1 * z, 4 * z, 2.5 * z);
+      }
+      ctx.fillStyle = c.secondary;
+      ctx.beginPath();
+      ctx.moveTo(hx - 7 * z, hy - 7 * z);
+      ctx.lineTo(hx - 9 * z, hy - 12 * z);
+      ctx.lineTo(hx - 4 * z, hy - 8 * z);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(hx + 7 * z, hy - 7 * z);
+      ctx.lineTo(hx + 9 * z, hy - 12 * z);
+      ctx.lineTo(hx + 4 * z, hy - 8 * z);
+      ctx.fill();
     }
   }
 
@@ -444,16 +414,13 @@ export class PlayerManager {
     z: number,
     c: { primary: string; secondary: string; accent: string; skin: string },
   ): void {
-    // Cozy sitting / sleeping pose with blanket
     const bodyY = sy - 8 * z;
 
-    // Blanket / cozy pillow
     ctx.fillStyle = c.accent || '#f59e0b';
     ctx.beginPath();
     ctx.roundRect(sx - 10 * z, bodyY - 2 * z, 20 * z, 10 * z, 4 * z);
     ctx.fill();
 
-    // Sleeping tilted head
     const headX = sx - 3 * z;
     const headY = bodyY - 8 * z;
     ctx.fillStyle = c.skin;
@@ -461,13 +428,11 @@ export class PlayerManager {
     ctx.arc(headX, headY, 7.5 * z, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hair
     ctx.fillStyle = c.secondary;
     ctx.beginPath();
     ctx.arc(headX, headY - 1.5 * z, 7.5 * z, Math.PI * 0.8, Math.PI * 2.2);
     ctx.fill();
 
-    // Closed relaxed sleeping eye lines (^ ^)
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 1.4 * z;
     ctx.beginPath();
@@ -506,17 +471,20 @@ export class PlayerManager {
     const badgeW = textW + padX * 2;
     const badgeH = fontSize + padY * 2;
 
-    // Glowing amber pill for player
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
     ctx.beginPath();
     ctx.roundRect(sx - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 6 * z);
     ctx.fill();
 
     ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.6;
     ctx.stroke();
 
     ctx.fillStyle = '#fbbf24';
     ctx.fillText(text, sx, badgeY);
   }
+}
+
+function headCenterX(sx: number): number {
+  return sx;
 }

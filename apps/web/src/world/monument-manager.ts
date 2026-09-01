@@ -1,11 +1,11 @@
 /**
- * MonumentManager / CitizenNPCManager — Renders all other citizens as cute animated chibi characters in Spot World.
+ * MonumentManager / CitizenNPCManager — Renders all other citizens as highly detailed animated chibi characters.
  *
- * Rules:
- * - Every citizen is represented by their unique chibi character (with their archetype colors and animations).
- * - Citizens roam within their 5x5 plot, pause to look around, or sit/sleep cozily.
- * - Online citizens show a live jade online indicator.
- * - Clicking any citizen opens their profile modal.
+ * Features:
+ * - Archetype Headgear & Outfits (Astronaut helmet, Wizard hat, Cyber visor, Ninja headband, Golden crown).
+ * - Animated micro-bounce and walking step cycles.
+ * - Cute floating thought/emote bubbles (❤️, ☕, ✨, 🎵, 💡).
+ * - Sleeping cozy poses with floating 'z' particles when offline.
  */
 
 import {
@@ -30,6 +30,12 @@ interface SleepZ {
   age: number;
 }
 
+interface EmoteBubble {
+  type: 'heart' | 'coffee' | 'sparkle' | 'music' | 'bulb';
+  age: number;
+  maxAge: number;
+}
+
 export interface CitizenEntity {
   spot: OccupiedSpotSummary;
   wx: number;
@@ -43,22 +49,14 @@ export interface CitizenEntity {
   pauseTimer: number;
   isMoving: boolean;
   sleepParticles: SleepZ[];
-  propType: 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire';
-}
-
-function getPlotPropType(name: string): 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire' {
-  const props: ('lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire')[] = ['lamp', 'bench', 'flowers', 'sign', 'bonfire'];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash << 5) - hash + name.charCodeAt(i);
-    hash |= 0;
-  }
-  return props[Math.abs(hash) % props.length];
+  emote: EmoteBubble | null;
+  emoteTimer: number;
 }
 
 export class MonumentManager {
   private entities = new Map<string, CitizenEntity>();
   private excludeCitizenId = '';
+  private tick = 0;
 
   constructor(_onClick?: (spot: OccupiedSpotSummary) => void) {}
 
@@ -77,9 +75,8 @@ export class MonumentManager {
       const center = gridToWorldCenter(spot.x, spot.y);
 
       if (!this.entities.has(key)) {
-        // Initial random sub-tile offset
-        const initOffsetWx = (Math.random() - 0.5) * TILE_WIDTH * 1.5;
-        const initOffsetWy = (Math.random() - 0.5) * TILE_HEIGHT * 1.2;
+        const initOffsetWx = (Math.random() - 0.5) * TILE_WIDTH * 1.2;
+        const initOffsetWy = (Math.random() - 0.5) * TILE_HEIGHT * 1.0;
 
         this.entities.set(key, {
           spot,
@@ -88,13 +85,14 @@ export class MonumentManager {
           targetWx: center.wx + initOffsetWx,
           targetWy: center.wy + initOffsetWy,
           direction: Math.random() > 0.5 ? 'down' : 'right',
-          state: Math.random() < 0.25 ? 'sleeping' : 'idle',
+          state: Math.random() < 0.2 ? 'sleeping' : 'idle',
           frame: 0,
           animTimer: 0,
           pauseTimer: Math.floor(Math.random() * 120),
           isMoving: false,
           sleepParticles: [],
-          propType: getPlotPropType(spot.displayName),
+          emote: null,
+          emoteTimer: Math.floor(Math.random() * 300),
         });
       } else {
         const ent = this.entities.get(key)!;
@@ -110,15 +108,36 @@ export class MonumentManager {
   }
 
   updateTick(): void {
+    this.tick++;
     for (const ent of this.entities.values()) {
       this.updateCitizenAI(ent);
+      this.updateEmote(ent);
+    }
+  }
+
+  private updateEmote(ent: CitizenEntity): void {
+    if (ent.emote) {
+      ent.emote.age++;
+      if (ent.emote.age >= ent.emote.maxAge) {
+        ent.emote = null;
+      }
+    } else if (ent.state !== 'sleeping') {
+      ent.emoteTimer++;
+      if (ent.emoteTimer > 400 + Math.random() * 400) {
+        ent.emoteTimer = 0;
+        const emotes: ('heart' | 'coffee' | 'sparkle' | 'music' | 'bulb')[] = ['heart', 'coffee', 'sparkle', 'music', 'bulb'];
+        ent.emote = {
+          type: emotes[Math.floor(Math.random() * emotes.length)],
+          age: 0,
+          maxAge: 120,
+        };
+      }
     }
   }
 
   private updateCitizenAI(ent: CitizenEntity): void {
     if (ent.state === 'sleeping') {
       this.updateSleepParticles(ent);
-      // Occasionally wake up and walk around
       if (Math.random() < 0.002) {
         ent.state = 'idle';
         ent.pauseTimer = 60;
@@ -129,9 +148,7 @@ export class MonumentManager {
     if (ent.pauseTimer > 0) {
       ent.pauseTimer--;
       ent.isMoving = false;
-
-      // Small chance to take a nap if offline
-      if (!ent.spot.isOnline && Math.random() < 0.003) {
+      if (!ent.spot.isOnline && Math.random() < 0.002) {
         ent.state = 'sleeping';
       }
       return;
@@ -140,15 +157,13 @@ export class MonumentManager {
     const dist = Math.hypot(ent.targetWx - ent.wx, ent.targetWy - ent.wy);
 
     if (dist < 3) {
-      // Arrived at waypoint
       ent.isMoving = false;
       ent.state = 'idle';
       ent.pauseTimer = 80 + Math.floor(Math.random() * 160);
 
-      // Pick next waypoint within 5x5 plot bounds
       const center = gridToWorldCenter(ent.spot.x, ent.spot.y);
-      const roamRadiusX = TILE_WIDTH * 1.6;
-      const roamRadiusY = TILE_HEIGHT * 1.3;
+      const roamRadiusX = TILE_WIDTH * 1.5;
+      const roamRadiusY = TILE_HEIGHT * 1.2;
 
       ent.targetWx = center.wx + (Math.random() - 0.5) * roamRadiusX * 2;
       ent.targetWy = center.wy + (Math.random() - 0.5) * roamRadiusY * 2;
@@ -236,27 +251,31 @@ export class MonumentManager {
       skin: avatar.colors.skin || '#fde047',
     };
 
-    // Soft ground shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+    // Soft ground contact shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
     ctx.beginPath();
     ctx.ellipse(sx, sy, 8 * z, 4 * z, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (ent.state === 'sleeping') {
-      this.renderSleepingCitizen(ctx, sx, sy, z, colors);
+      this.renderSleepingCitizen(ctx, sx, sy, z, colors, ent.spot.avatarId);
       this.renderSleepParticles(ctx, ent, sx, sy, z);
     } else {
-      this.renderAwakeCitizen(ctx, ent, sx, sy, z, colors);
+      this.renderAwakeCitizen(ctx, ent, sx, sy, z, colors, ent.spot.avatarId);
     }
 
-    // Name badge / indicator
+    // Emote thought bubble (❤️, ☕, ✨, 🎵, 💡)
+    if (ent.emote) {
+      this.renderEmoteBubble(ctx, sx, sy - 34 * z, z, ent.emote);
+    }
+
+    // Name badge / online status
     if (showNameTag) {
-      this.renderCitizenBadge(ctx, sx, sy - 26 * z, z, ent.spot.displayName, ent.spot.isOnline ?? false);
+      this.renderCitizenBadge(ctx, sx, sy - 28 * z, z, ent.spot.displayName, ent.spot.isOnline ?? false);
     } else if (ent.spot.isOnline) {
-      // Small cute jade online dot
       ctx.fillStyle = '#10b981';
       ctx.beginPath();
-      ctx.arc(sx, sy - 24 * z, 2.5 * z, 0, Math.PI * 2);
+      ctx.arc(sx, sy - 25 * z, 2.5 * z, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -268,17 +287,19 @@ export class MonumentManager {
     sy: number,
     z: number,
     c: { primary: string; secondary: string; accent: string; skin: string },
+    avatarId: string,
   ): void {
     const isSteppingLeft = ent.isMoving && ent.frame === 1;
     const isSteppingRight = ent.isMoving && ent.frame === 3;
-    const headBob = (isSteppingLeft || isSteppingRight) ? -1.5 * z : 0;
+    const breathe = !ent.isMoving ? Math.sin(this.tick * 0.08 + ent.wx) * 0.7 * z : 0;
+    const headBob = (isSteppingLeft || isSteppingRight) ? -1.5 * z : breathe;
     const dir = ent.direction;
 
-    // --- Feet ---
+    // --- Feet & Shoes ---
     ctx.fillStyle = c.accent || '#334155';
     if (dir === 'down' || dir === 'up') {
-      const leftFootY = sy - 2 * z + (isSteppingLeft ? -2 * z : 0);
-      const rightFootY = sy - 2 * z + (isSteppingRight ? -2 * z : 0);
+      const leftFootY = sy - 2 * z + (isSteppingLeft ? -2.2 * z : 0);
+      const rightFootY = sy - 2 * z + (isSteppingRight ? -2.2 * z : 0);
       ctx.fillRect(sx - 5 * z, leftFootY, 3.5 * z, 2.5 * z);
       ctx.fillRect(sx + 1.5 * z, rightFootY, 3.5 * z, 2.5 * z);
     } else if (dir === 'left') {
@@ -289,14 +310,14 @@ export class MonumentManager {
       ctx.fillRect(sx - 1 * z, footY, 5 * z, 2.5 * z);
     }
 
-    // --- Body / Shirt ---
+    // --- Body / Outfit ---
     const bodyY = sy - 11 * z;
     ctx.fillStyle = c.primary;
     ctx.beginPath();
     ctx.roundRect(sx - 5.5 * z, bodyY, 11 * z, 9 * z, 2.5 * z);
     ctx.fill();
 
-    // Belt accent
+    // Belt / shirt stripe
     ctx.fillStyle = c.accent;
     ctx.fillRect(sx - 4.5 * z, sy - 4 * z, 9 * z, 1.2 * z);
 
@@ -312,13 +333,13 @@ export class MonumentManager {
     const headY = sy - 17 * z + headBob;
     const headRadius = 8 * z;
 
-    // Skin
+    // Face / Skin
     ctx.fillStyle = c.skin;
     ctx.beginPath();
     ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hair / Hood
+    // Hair / Base Hood
     ctx.fillStyle = c.secondary;
     ctx.beginPath();
     if (dir === 'up') {
@@ -339,10 +360,13 @@ export class MonumentManager {
       ctx.fill();
     }
 
-    // --- Expressive Face ---
+    // --- Archetype Headgear & Accessories ---
+    this.renderArchetypeAccessory(ctx, headX, headY, z, avatarId, dir, c);
+
+    // --- Face Eyes & Blush ---
     if (dir !== 'up') {
       // Cute blush
-      ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
       ctx.beginPath();
       if (dir === 'down') {
         ctx.arc(headX - 4.5 * z, headY + 2 * z, 1.8 * z, 0, Math.PI * 2);
@@ -354,22 +378,106 @@ export class MonumentManager {
       }
       ctx.fill();
 
-      // Eyes
-      ctx.fillStyle = '#0f172a';
-      if (dir === 'down') {
-        ctx.fillRect(headX - 4 * z, headY - 1 * z, 2 * z, 3 * z);
-        ctx.fillRect(headX + 2 * z, headY - 1 * z, 2 * z, 3 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headX - 4 * z, headY - 1 * z, 1 * z, 1 * z);
-        ctx.fillRect(headX + 2 * z, headY - 1 * z, 1 * z, 1 * z);
-      } else if (dir === 'left') {
-        ctx.fillRect(headX - 5 * z, headY - 1 * z, 2 * z, 3 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headX - 5 * z, headY - 1 * z, 1 * z, 1 * z);
-      } else if (dir === 'right') {
-        ctx.fillRect(headX + 3 * z, headY - 1 * z, 2 * z, 3 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(headX + 3 * z, headY - 1 * z, 1 * z, 1 * z);
+      // Sparkly eyes
+      if (avatarId !== 'hacker') {
+        ctx.fillStyle = '#0f172a';
+        if (dir === 'down') {
+          ctx.fillRect(headX - 4 * z, headY - 1 * z, 2 * z, 3 * z);
+          ctx.fillRect(headX + 2 * z, headY - 1 * z, 2 * z, 3 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX - 4 * z, headY - 1 * z, 1 * z, 1 * z);
+          ctx.fillRect(headX + 2 * z, headY - 1 * z, 1 * z, 1 * z);
+        } else if (dir === 'left') {
+          ctx.fillRect(headX - 5 * z, headY - 1 * z, 2 * z, 3 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX - 5 * z, headY - 1 * z, 1 * z, 1 * z);
+        } else if (dir === 'right') {
+          ctx.fillRect(headX + 3 * z, headY - 1 * z, 2 * z, 3 * z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(headX + 3 * z, headY - 1 * z, 1 * z, 1 * z);
+        }
+      }
+    }
+  }
+
+  private renderArchetypeAccessory(
+    ctx: CanvasRenderingContext2D,
+    hx: number,
+    hy: number,
+    z: number,
+    avatarId: string,
+    dir: string,
+    c: { primary: string; secondary: string; accent: string; skin: string },
+  ): void {
+    switch (avatarId) {
+      case 'astronaut': {
+        // Cyan Bubble Visor
+        if (dir !== 'up') {
+          ctx.fillStyle = 'rgba(2, 132, 199, 0.75)';
+          ctx.beginPath();
+          ctx.roundRect(hx - 5.5 * z, hy - 2 * z, 11 * z, 5 * z, 2.5 * z);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.fillRect(hx - 4 * z, hy - 1.5 * z, 3 * z, 1.2 * z);
+        }
+        break;
+      }
+
+      case 'hacker': {
+        // Glowing Cyber-Visor
+        if (dir !== 'up') {
+          ctx.fillStyle = '#10b981';
+          ctx.fillRect(hx - 5.5 * z, hy - 1 * z, 11 * z, 2 * z);
+          ctx.fillStyle = '#34d399';
+          ctx.fillRect(hx - 2 * z, hy - 1 * z, 4 * z, 2 * z);
+        }
+        // Cat / Demon Hood Horns
+        ctx.fillStyle = c.secondary;
+        ctx.beginPath();
+        ctx.moveTo(hx - 6 * z, hy - 6 * z);
+        ctx.lineTo(hx - 8 * z, hy - 11 * z);
+        ctx.lineTo(hx - 3 * z, hy - 7 * z);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(hx + 6 * z, hy - 6 * z);
+        ctx.lineTo(hx + 8 * z, hy - 11 * z);
+        ctx.lineTo(hx + 3 * z, hy - 7 * z);
+        ctx.fill();
+        break;
+      }
+
+      case 'pixel_wizard': {
+        // Pointed Wizard Hat
+        ctx.fillStyle = c.primary;
+        ctx.beginPath();
+        ctx.moveTo(hx - 9 * z, hy - 5 * z);
+        ctx.lineTo(hx, hy - 18 * z);
+        ctx.lineTo(hx + 9 * z, hy - 5 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Gold hat buckle
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(hx - 3 * z, hy - 6 * z, 6 * z, 2 * z);
+        break;
+      }
+
+      case 'solar_champion': {
+        // Golden Crown
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(hx - 5 * z, hy - 7 * z);
+        ctx.lineTo(hx - 5 * z, hy - 11 * z);
+        ctx.lineTo(hx - 2.5 * z, hy - 8.5 * z);
+        ctx.lineTo(hx, hy - 12 * z);
+        ctx.lineTo(hx + 2.5 * z, hy - 8.5 * z);
+        ctx.lineTo(hx + 5 * z, hy - 11 * z);
+        ctx.lineTo(hx + 5 * z, hy - 7 * z);
+        ctx.closePath();
+        ctx.fill();
+        break;
       }
     }
   }
@@ -380,6 +488,7 @@ export class MonumentManager {
     sy: number,
     z: number,
     c: { primary: string; secondary: string; accent: string; skin: string },
+    _avatarId: string,
   ): void {
     const bodyY = sy - 7 * z;
 
@@ -433,6 +542,53 @@ export class MonumentManager {
     ctx.restore();
   }
 
+  private renderEmoteBubble(
+    ctx: CanvasRenderingContext2D,
+    sx: number,
+    sy: number,
+    z: number,
+    emote: EmoteBubble,
+  ): void {
+    const floatY = sy - Math.min(6 * z, (emote.age / emote.maxAge) * 6 * z);
+    const alpha = emote.age > 90 ? (120 - emote.age) / 30 : 1;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha);
+
+    // Pill bubble
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.beginPath();
+    ctx.roundRect(sx - 7 * z, floatY - 6 * z, 14 * z, 12 * z, 4 * z);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Small tail
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.beginPath();
+    ctx.moveTo(sx - 2 * z, floatY + 6 * z);
+    ctx.lineTo(sx, floatY + 9 * z);
+    ctx.lineTo(sx + 2 * z, floatY + 6 * z);
+    ctx.fill();
+
+    // Emote icon
+    ctx.font = `${Math.round(8 * z)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const icons = {
+      heart: '❤️',
+      coffee: '☕',
+      sparkle: '✨',
+      music: '🎵',
+      bulb: '💡',
+    };
+    ctx.fillText(icons[emote.type], sx, floatY);
+    ctx.restore();
+  }
+
   private renderCitizenBadge(
     ctx: CanvasRenderingContext2D,
     bx: number,
@@ -451,7 +607,7 @@ export class MonumentManager {
     const badgeW = textW + 10 * z + dotSpace;
     const badgeH = fontSize + 5 * z;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.beginPath();
     ctx.roundRect(bx - badgeW / 2, by - badgeH / 2, badgeW, badgeH, 4 * z);
     ctx.fill();
