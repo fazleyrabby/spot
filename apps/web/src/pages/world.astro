@@ -5,14 +5,14 @@ import ProfileModal from '../components/ProfileModal.astro';
 ---
 
 <Layout
-  title="Spot World — Explore the Isometric City"
-  description="Walk through the isometric Spot World. Discover citizens, explore their plots, and see who lives next door."
+  title="Spot World — Explore the Living City"
+  description="Walk through the top-down Spot World in cozy Stardew style. Discover citizens, explore their plots, and see who lives next door."
   url="https://www.claimyourspot.lol/world"
 >
   <main class="world-app" id="world-app">
     <WorldHUD />
 
-    <!-- Full-screen isometric canvas -->
+    <!-- Full-screen top-down canvas -->
     <canvas id="world-canvas" class="world-canvas"></canvas>
 
     <!-- Loading overlay (shown until first render) -->
@@ -20,7 +20,7 @@ import ProfileModal from '../components/ProfileModal.astro';
       <div class="loader-inner">
         <div class="loader-spinner"></div>
         <p class="loader-text">Building the world…</p>
-        <p class="loader-sub" id="loader-sub">Loading terrain</p>
+        <p class="loader-sub" id="loader-sub">Loading terrain & citizens</p>
       </div>
     </div>
 
@@ -37,7 +37,7 @@ import ProfileModal from '../components/ProfileModal.astro';
     position: fixed;
     inset: 0;
     overflow: hidden;
-    background: #0f1a0f;
+    background: #0f1710;
   }
 
   .world-canvas {
@@ -55,7 +55,7 @@ import ProfileModal from '../components/ProfileModal.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f1a0f;
+    background: #0f1710;
     z-index: 100;
     transition: opacity 0.5s ease;
   }
@@ -113,11 +113,11 @@ import ProfileModal from '../components/ProfileModal.astro';
 </style>
 
 <script>
-  import { IsoEngine } from '../world/iso-engine.js';
+  import { Engine } from '../world/engine.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
 
-  // ── Resolve API base (same logic as client.ts) ──────────────────────────
+  // ── Resolve API base ──────────────────────────────────────────────────────
   const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
   const API_BASE: string = configuredBase
     ? (configuredBase.endsWith('/api') ? configuredBase.replace(/\/api$/, '') : configuredBase)
@@ -166,25 +166,25 @@ import ProfileModal from '../components/ProfileModal.astro';
 
   // ── Profile modal population ──────────────────────────────────────────────
   function openProfileModal(spot: OccupiedSpotSummary) {
-    // Avatar
-    const def = AVATAR_CATALOG.find((a) => a.id === spot.avatarId) ?? AVATAR_CATALOG[0];
-    if (spot.customAvatarData) {
-      drawCustomAvatarOnCanvas(profileAvatarCanvas, spot.customAvatarData, 64);
-    } else {
-      drawAvatarOnCanvas(profileAvatarCanvas, def, 64);
+    const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
+    const avatarCtx = profileAvatarCanvas.getContext('2d');
+    if (avatarCtx) {
+      avatarCtx.clearRect(0, 0, 64, 64);
+      if (spot.customAvatarData) {
+        drawCustomAvatarOnCanvas(avatarCtx, spot.customAvatarData, 0, 0, 64);
+      } else {
+        drawAvatarOnCanvas(avatarCtx, def, 0, 0, 64);
+      }
     }
 
-    // Text fields
     if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
     if (profileName)    profileName.textContent     = spot.displayName;
     if (profileTagline) profileTagline.textContent  = spot.tagline || '';
 
-    // Verified badge
     if (profileVerifiedBadge) {
       profileVerifiedBadge.style.display = spot.isVerified ? '' : 'none';
     }
 
-    // Links — show/hide each anchor
     const setLink = (el: HTMLAnchorElement | null, url?: string | null) => {
       if (!el) return;
       if (url) { el.href = url; el.style.display = ''; }
@@ -205,13 +205,11 @@ import ProfileModal from '../components/ProfileModal.astro';
     setLink(linkYoutube,   spot.youtubeUrl);
     setLink(linkGithub,    spot.githubUrl);
 
-    // Show view section, hide edit section
     const viewSec = document.getElementById('profile-view-section');
     const editSec = document.getElementById('profile-edit-section');
     if (viewSec) viewSec.style.display = '';
     if (editSec) editSec.style.display = 'none';
 
-    // Also hide the edit/manage buttons that only make sense in grid view
     const editBtn = document.getElementById('profile-edit-btn');
     const deleteBtn = document.getElementById('profile-delete-btn');
     if (editBtn)   editBtn.style.display = 'none';
@@ -238,36 +236,52 @@ import ProfileModal from '../components/ProfileModal.astro';
   });
 
   // ── Engine ────────────────────────────────────────────────────────────────
-  let engine: InstanceType<typeof IsoEngine> | null = null;
+  let engine: InstanceType<typeof Engine> | null = null;
 
   async function boot() {
-    loaderSub.textContent = 'Fetching world data…';
+    loaderSub.textContent = 'Fetching citizen data…';
 
     try {
-      engine = new IsoEngine({
+      let avatarId = 'astronaut';
+      let citizenId = '';
+      let displayName = 'You';
+      let isVerified = false;
+
+      try {
+        const meRes = await fetch(`${API_BASE}/api/citizens/me`, { credentials: 'include' });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData?.citizen?.avatarId) avatarId = meData.citizen.avatarId;
+          if (meData?.citizen?.id) citizenId = meData.citizen.id;
+          if (meData?.citizen?.displayName) displayName = meData.citizen.displayName;
+          if (meData?.citizen?.isVerified) isVerified = meData.citizen.isVerified;
+        }
+      } catch (_) {}
+
+      engine = new Engine({
         canvas,
         apiBase: API_BASE,
+        citizenId,
+        avatarId,
+        displayName,
+        isVerified,
         onCitizenClick: (spot) => openProfileModal(spot),
         onEmptyClick: (_gx, _gy) => {
-          // Empty plot clicked — close any open modal silently
           closeProfileModal();
         },
       });
 
-      loaderSub.textContent = 'Rendering terrain…';
+      loaderSub.textContent = 'Rendering Stardew World…';
       await engine.init();
 
-      // Wire up HUD coordinate display to hover events
-      // Poll camera + hovered tile for HUD updates
+      // Update HUD coordinate & zoom display
       setInterval(() => {
         if (!engine) return;
 
-        // Zoom level
         const pct = Math.round(engine.camera.zoom * 100);
         if (zoomLevel) zoomLevel.textContent = `${pct}%`;
 
-        // Hovered coordinate
-        const hov = engine.renderer.hoveredTile;
+        const hov = engine.renderer.hoveredGrid;
         if (coordText) {
           coordText.textContent = hov ? `(${hov.gx}, ${hov.gy})` : '—';
         }
@@ -298,13 +312,12 @@ import ProfileModal from '../components/ProfileModal.astro';
   });
 
   btnRecenter?.addEventListener('click', () => {
-    engine?.flyTo(50, 50, 0.55);
+    engine?.flyTo(52, 60, 1.0);
   });
 
   // ── Boot ─────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => { void boot(); });
 
-  // Cleanup on page leave (Astro view transitions / SPA navigation)
   document.addEventListener('astro:before-swap', () => {
     engine?.destroy();
     engine = null;

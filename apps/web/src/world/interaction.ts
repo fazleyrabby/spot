@@ -1,59 +1,69 @@
 /**
- * IsoInputHandler — pointer / wheel / touch event handling for Spot World.
- *
- * Mirrors the pattern of the existing CanvasInputHandler in canvas/input.ts
- * but adapted for the IsoRenderer's coordinate system.
+ * InteractionHandler — Pointer, wheel, and touch input for top-down Spot World.
  */
 
-import { IsoCamera } from './iso-camera.js';
-import { IsoRenderer } from './iso-renderer.js';
-import { worldToGrid, getWorldOrigin } from '@spot/world';
+import { Camera } from './camera.js';
+import { Renderer } from './renderer.js';
+import { PlotManager } from './plot-manager.js';
+import { MonumentManager } from './monument-manager.js';
+import { worldToGrid } from '@spot/world';
+import type { OccupiedSpotSummary } from '@spot/shared';
 
-export class IsoInputHandler {
-  private camera: IsoCamera;
-  private renderer: IsoRenderer;
+export interface InteractionEvents {
+  onCitizenClick?: (spot: OccupiedSpotSummary) => void;
+  onTileClick?: (gx: number, gy: number) => void;
+}
+
+export class InteractionHandler {
+  private renderer: Renderer;
+  private camera: Camera;
   private canvas: HTMLCanvasElement;
+  private plots: PlotManager;
+  private monuments: MonumentManager;
+  private events: InteractionEvents;
 
   private isDragging = false;
   private lastX = 0;
   private lastY = 0;
   private dragDistance = 0;
-
   private initialPinchDist = 0;
 
   private disposers: Array<() => void> = [];
 
-  /** Cached world origin (constant for a given grid size) */
-  private ox: number;
-  private oy: number;
-
-  constructor(renderer: IsoRenderer, camera: IsoCamera) {
+  constructor(
+    renderer: Renderer,
+    camera: Camera,
+    plots: PlotManager,
+    monuments: MonumentManager,
+    events: InteractionEvents = {},
+  ) {
     this.renderer = renderer;
     this.camera = camera;
     this.canvas = renderer.canvas;
-
-    const { ox, oy } = getWorldOrigin();
-    this.ox = ox;
-    this.oy = oy;
+    this.plots = plots;
+    this.monuments = monuments;
+    this.events = events;
 
     this.bindEvents();
   }
 
-  private screenToGrid(clientX: number, clientY: number) {
+  private screenToWorld(clientX: number, clientY: number) {
     const rect = this.canvas.getBoundingClientRect();
     const sx = clientX - rect.left;
     const sy = clientY - rect.top;
-    const world = this.camera.screenToWorld(sx, sy);
-    // Subtract world origin offset before inverse-projecting
-    return worldToGrid(world.x - this.ox, world.y - this.oy);
+    return this.camera.screenToWorld(sx, sy);
   }
 
   private bindEvents(): void {
     const { canvas } = this;
 
-    // ── Pointer drag (pan) ──────────────────────────────────────────────────
+    // ── 1. Pointer Down / Move / Up (Pan & Hover) ──────────────────────────
 
     const onPointerDown = (e: PointerEvent) => {
+      // Don't drag if clicking a UI button overlaid on canvas
+      const target = e.target as HTMLElement;
+      if (target !== canvas) return;
+
       this.isDragging = true;
       this.lastX = e.clientX;
       this.lastY = e.clientY;
@@ -70,21 +80,19 @@ export class IsoInputHandler {
         this.lastY = e.clientY;
         this.camera.panBy(dx, dy);
       } else {
-        // Hover — convert screen → iso grid
-        const grid = this.screenToGrid(e.clientX, e.clientY);
+        // Hover state
+        const world = this.screenToWorld(e.clientX, e.clientY);
+        const grid = worldToGrid(world.x, world.y);
+
         if (grid) {
-          if (
-            this.renderer.hoveredTile?.gx !== grid.gx ||
-            this.renderer.hoveredTile?.gy !== grid.gy
-          ) {
-            this.renderer.hoveredTile = grid;
-            canvas.style.cursor = 'pointer';
-          }
+          this.renderer.hoveredGrid = grid;
+          const plot = this.plots.getPlotAt(grid.gx, grid.gy);
+          this.renderer.hoveredPlot = plot;
+          canvas.style.cursor = plot ? 'pointer' : 'default';
         } else {
-          if (this.renderer.hoveredTile !== null) {
-            this.renderer.hoveredTile = null;
-            canvas.style.cursor = 'default';
-          }
+          this.renderer.hoveredGrid = null;
+          this.renderer.hoveredPlot = null;
+          canvas.style.cursor = 'default';
         }
       }
     };
@@ -93,18 +101,36 @@ export class IsoInputHandler {
       if (!this.isDragging) return;
       this.isDragging = false;
 
-      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
 
-      // Tap / click: treat as click if moved < 6px total
+      // Click / Tap (dragged less than 6 pixels)
       if (this.dragDistance < 6) {
-        const grid = this.screenToGrid(e.clientX, e.clientY);
+        const world = this.screenToWorld(e.clientX, e.clientY);
+        const grid = worldToGrid(world.x, world.y);
+
+        // 1. Check if clicked a citizen house / monument
+        const citizen = this.monuments.hitTest(world.x, world.y);
+        if (citizen) {
+          const plot = this.plots.getPlotByCenter(citizen.x, citizen.y);
+          this.renderer.selectedPlot = plot;
+          this.events.onCitizenClick?.(citizen);
+          return;
+        }
+
+        // 2. Check if clicked a plot
         if (grid) {
-          this.renderer.selectedTile = grid;
-          // Find occupied spot data and fire event
-          // (engine will wire up the actual map lookup)
-          this.renderer.events.onTileClick?.(grid.gx, grid.gy);
+          const plot = this.plots.getPlotAt(grid.gx, grid.gy);
+          if (plot) {
+            this.renderer.selectedPlot = plot;
+            this.events.onCitizenClick?.(plot.owner);
+          } else {
+            this.renderer.selectedPlot = null;
+            this.events.onTileClick?.(grid.gx, grid.gy);
+          }
         } else {
-          this.renderer.selectedTile = null;
+          this.renderer.selectedPlot = null;
         }
       }
     };
@@ -115,7 +141,7 @@ export class IsoInputHandler {
       this.initialPinchDist = 0;
     };
 
-    // ── Wheel zoom ──────────────────────────────────────────────────────────
+    // ── 2. Wheel Zoom ──────────────────────────────────────────────────────
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -123,7 +149,7 @@ export class IsoInputHandler {
       this.camera.zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY);
     };
 
-    // ── Pinch zoom (touch) ──────────────────────────────────────────────────
+    // ── 3. Touch Pinch Zoom ────────────────────────────────────────────────
 
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2) {
@@ -142,13 +168,13 @@ export class IsoInputHandler {
       }
     };
 
-    const onTouchEnd = () => { this.initialPinchDist = 0; };
+    const onTouchEnd = () => {
+      this.initialPinchDist = 0;
+    };
 
-    // ── Resize ──────────────────────────────────────────────────────────────
-
-    const onResize = () => { this.renderer.handleResize(); };
-
-    // ── Register ────────────────────────────────────────────────────────────
+    const onResize = () => {
+      this.renderer.handleResize();
+    };
 
     canvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);

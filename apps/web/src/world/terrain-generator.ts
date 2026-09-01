@@ -1,103 +1,79 @@
 /**
- * Deterministic procedural terrain generator for Spot World.
+ * Deterministic procedural terrain and nature generator for top-down Spot World.
  *
  * Rules:
- * - Every tile gets a base terrain type (grass_a or grass_b).
- * - Empty tiles may also receive vegetation (tree, bush, flower, rock).
- * - All results are pure functions of (gx, gy) — same output for all users.
- * - Occupied tiles only show the house + avatar; vegetation is suppressed.
+ * - Deterministic spatial hash for repeatable world generation.
+ * - Square grid tiles with lush green variations.
+ * - Empty land outside citizen plots receives nature props (trees, bushes, flowers, rocks).
+ * - 5x5 citizen plots are kept clean for player and buildings.
  */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { TILE_WIDTH, TILE_HEIGHT, WORLD_COLS, WORLD_ROWS } from '@spot/world';
 
-export type TerrainBase = 'grass_a' | 'grass_b';
+export type TerrainType = 'grass_1' | 'grass_2' | 'grass_3' | 'grass_4';
+export type NatureType = 'tree_oak' | 'tree_pine' | 'bush' | 'flowers' | 'rock' | null;
 
-export type VegetationType = 'tree_a' | 'tree_b' | 'bush' | 'flower' | 'rock' | null;
-
-export interface TileNature {
-  base: TerrainBase;
-  vegetation: VegetationType;
+export interface NatureObject {
+  gx: number;
+  gy: number;
+  type: NatureType;
+  // World space feet/base anchor position for depth sorting
+  wx: number;
+  wy: number;
+  variant: number;
 }
 
-// ---------------------------------------------------------------------------
-// Deterministic hash (LCG-style, no external deps)
-// ---------------------------------------------------------------------------
-
-/**
- * Cheap spatial hash that returns a pseudo-random number in [0, 1).
- * Prime multiplication avoids obvious grid patterns.
- */
 function spatialHash(gx: number, gy: number, salt = 0): number {
   let h = (gx * 73856093) ^ (gy * 19349663) ^ (salt * 83492791);
-  // Xorshift32
   h ^= h << 13;
   h ^= h >> 17;
   h ^= h << 5;
-  // Normalise to [0, 1)
   return (h >>> 0) / 0x100000000;
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+export function getTileBaseTerrain(gx: number, gy: number): TerrainType {
+  const r = spatialHash(gx, gy, 101);
+  if (r < 0.35) return 'grass_1';
+  if (r < 0.65) return 'grass_2';
+  if (r < 0.88) return 'grass_3';
+  return 'grass_4';
+}
 
 /**
- * Return the deterministic nature of a tile at grid (gx, gy).
- * Pass `isOccupied = true` to suppress vegetation on claimed plots.
+ * Returns nature object for a tile if it is outside all citizen plots.
  */
-export function getTileNature(gx: number, gy: number, isOccupied: boolean): TileNature {
-  const r0 = spatialHash(gx, gy, 0);
-  const r1 = spatialHash(gx, gy, 1);
+export function getTileNatureObject(gx: number, gy: number, isInsidePlot: boolean): NatureObject | null {
+  if (isInsidePlot) return null;
 
-  const base: TerrainBase = r0 < 0.55 ? 'grass_a' : 'grass_b';
+  const r = spatialHash(gx, gy, 202);
+  const v = spatialHash(gx, gy, 303);
 
-  let vegetation: VegetationType = null;
+  let type: NatureType = null;
 
-  if (!isOccupied) {
-    if (r1 < 0.12) {
-      // ~12% chance of tree
-      vegetation = r0 < 0.5 ? 'tree_a' : 'tree_b';
-    } else if (r1 < 0.20) {
-      vegetation = 'bush';
-    } else if (r1 < 0.27) {
-      vegetation = 'flower';
-    } else if (r1 < 0.31) {
-      vegetation = 'rock';
-    }
+  // Nature density: ~18% total nature density on empty land
+  if (r < 0.06) {
+    type = 'tree_oak';
+  } else if (r < 0.11) {
+    type = 'tree_pine';
+  } else if (r < 0.15) {
+    type = 'bush';
+  } else if (r < 0.18) {
+    type = 'flowers';
+  } else if (r < 0.20) {
+    type = 'rock';
   }
 
-  return { base, vegetation };
-}
+  if (!type) return null;
 
-/**
- * House archetype selector — maps an avatar ID to a house visual style.
- * Returns a colour palette key used by the renderer.
- */
-export type HouseStyle = 'tech' | 'magic' | 'explorer' | 'default';
+  const wx = gx * TILE_WIDTH + TILE_WIDTH / 2;
+  const wy = gy * TILE_HEIGHT + TILE_HEIGHT; // Base of tile for depth-sort
 
-const ARCHETYPE_MAP: Record<string, HouseStyle> = {
-  'cyber-hacker': 'tech',
-  'cyber-ronin': 'tech',
-  archmage: 'magic',
-  'solar-champion': 'magic',
-  astronaut: 'explorer',
-};
-
-export function getHouseStyle(avatarId: string): HouseStyle {
-  return ARCHETYPE_MAP[avatarId] ?? 'default';
-}
-
-/**
- * Deterministic sub-tile avatar idle position within a plot.
- * Returns an offset (0..1 range) so the avatar idles slightly off-centre.
- */
-export function getAvatarIdleOffset(gx: number, gy: number): { dx: number; dy: number } {
-  const rx = spatialHash(gx, gy, 42);
-  const ry = spatialHash(gx, gy, 43);
   return {
-    dx: (rx - 0.5) * 0.3, // ± 15% of tile width
-    dy: (ry - 0.5) * 0.2,
+    gx,
+    gy,
+    type,
+    wx,
+    wy,
+    variant: Math.floor(v * 10),
   };
 }
