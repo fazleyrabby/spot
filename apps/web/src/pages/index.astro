@@ -931,7 +931,21 @@ import TransferModal from '../components/TransferModal.astro';
 
     if (linkGithub) {
       if (occupied.githubUrl) {
-        linkGithub.href = occupied.githubUrl.startsWith('http') ? occupied.githubUrl : `https://github.com/${occupied.githubUrl}`;
+        // Sanitize: if it's already a full URL it must be http/https (SafeSocialUrlSchema enforces
+        // this server-side, but guard defensively on the client too). If it's a raw username, strip
+        // everything except safe GitHub username characters to prevent open redirect / XSS.
+        const ghRaw = occupied.githubUrl || '';
+        let ghHref: string;
+        if (/^https?:\/\//i.test(ghRaw)) {
+          try {
+            const parsed = new URL(ghRaw);
+            ghHref = (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? ghRaw : '#';
+          } catch { ghHref = '#'; }
+        } else {
+          const ghUser = ghRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 39);
+          ghHref = ghUser ? `https://github.com/${ghUser}` : '#';
+        }
+        linkGithub.href = ghHref;
         linkGithub.style.display = 'inline-flex';
       } else {
         linkGithub.style.display = 'none';
