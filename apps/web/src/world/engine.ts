@@ -262,6 +262,9 @@ export class Engine {
   // ---------------------------------------------------------------------------
 
   private connectSSE(): void {
+    const apiSseEnabled = (import.meta as any).env?.DEV || (import.meta as any).env?.PUBLIC_ENABLE_SSE === 'true';
+    if (!this.options.apiBase || !apiSseEnabled) return;
+
     const url = `${this.options.apiBase}/api/realtime/stream`;
     try {
       const source = new EventSource(url, { withCredentials: true });

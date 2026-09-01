@@ -96,21 +96,24 @@ export class MultiplayerSync {
       }
     }
 
-    // 2. Also connect SSE Stream (for local Express server & instant events)
-    const streamUrl = `${this.apiBase}/api/realtime/stream?tabId=${this.tabId}`;
-    try {
-      const source = new EventSource(streamUrl, { withCredentials: true });
-      this.sseSource = source;
+    // 2. Also connect SSE Stream (for local Express server & instant dev events)
+    const apiSseEnabled = (import.meta as any).env?.DEV || (import.meta as any).env?.PUBLIC_ENABLE_SSE === 'true';
+    if (this.apiBase && apiSseEnabled) {
+      const streamUrl = `${this.apiBase}/api/realtime/stream?tabId=${this.tabId}`;
+      try {
+        const source = new EventSource(streamUrl, { withCredentials: true });
+        this.sseSource = source;
 
-      source.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'player-position' && data.senderTabId !== this.tabId) {
-            this.onRemotePlayerMove(data);
-          }
-        } catch (_) {}
-      };
-    } catch (_) {}
+        source.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'player-position' && data.senderTabId !== this.tabId) {
+              this.onRemotePlayerMove(data);
+            }
+          } catch (_) {}
+        };
+      } catch (_) {}
+    }
   }
 
   stop(): void {
