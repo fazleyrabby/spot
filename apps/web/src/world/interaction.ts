@@ -90,26 +90,24 @@ export class InteractionHandler {
         this.lastY = e.clientY;
         this.camera.panBy(dx, dy);
       } else {
-        // If hovered over a UI element, clear canvas hover
         if (this.isUiElement(e.target)) {
-          this.renderer.hoveredGrid = null;
-          this.renderer.hoveredPlot = null;
+          this.renderer.hoveredCitizen = null;
           canvas.style.cursor = 'default';
           return;
         }
 
         const world = this.screenToWorld(e.clientX, e.clientY);
-        const grid = worldToGrid(world.x, world.y);
+        const citizen = this.monuments.hitTest(world.x, world.y);
 
-        if (grid) {
-          this.renderer.hoveredGrid = grid;
-          const plot = this.plots.getPlotAt(grid.gx, grid.gy);
-          this.renderer.hoveredPlot = plot;
-          canvas.style.cursor = plot ? 'pointer' : 'default';
+        if (citizen) {
+          this.renderer.hoveredCitizen = citizen;
+          canvas.style.cursor = 'pointer';
         } else {
-          this.renderer.hoveredGrid = null;
-          this.renderer.hoveredPlot = null;
-          canvas.style.cursor = 'default';
+          // Check if hovering near a citizen's plot center
+          const grid = worldToGrid(world.x, world.y);
+          const plot = grid ? this.plots.getPlotAt(grid.gx, grid.gy) : null;
+          this.renderer.hoveredCitizen = plot ? plot.owner : null;
+          canvas.style.cursor = plot ? 'pointer' : 'default';
         }
       }
     };
@@ -124,36 +122,34 @@ export class InteractionHandler {
 
       // Click / Tap (dragged less than 6 pixels)
       if (this.dragDistance < 6) {
-        // Verify release point wasn't over a HUD or modal element
         const releaseTarget = document.elementFromPoint(e.clientX, e.clientY);
         if (this.isUiElement(releaseTarget)) {
           return;
         }
 
         const world = this.screenToWorld(e.clientX, e.clientY);
-        const grid = worldToGrid(world.x, world.y);
 
-        // 1. Check if clicked a citizen
+        // 1. Check if clicked directly on a citizen character
         const citizen = this.monuments.hitTest(world.x, world.y);
         if (citizen) {
-          const plot = this.plots.getPlotByCenter(citizen.x, citizen.y);
-          this.renderer.selectedPlot = plot;
+          this.renderer.selectedCitizen = citizen;
           this.events.onCitizenClick?.(citizen);
           return;
         }
 
-        // 2. Check if clicked a plot
+        // 2. Check if clicked on a citizen's plot area
+        const grid = worldToGrid(world.x, world.y);
         if (grid) {
           const plot = this.plots.getPlotAt(grid.gx, grid.gy);
           if (plot) {
-            this.renderer.selectedPlot = plot;
+            this.renderer.selectedCitizen = plot.owner;
             this.events.onCitizenClick?.(plot.owner);
           } else {
-            this.renderer.selectedPlot = null;
+            this.renderer.selectedCitizen = null;
             this.events.onTileClick?.(grid.gx, grid.gy);
           }
         } else {
-          this.renderer.selectedPlot = null;
+          this.renderer.selectedCitizen = null;
         }
       }
     };
