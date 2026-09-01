@@ -175,6 +175,8 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
   import { containsBlockedWord } from '@spot/shared';
+  import { fetchMySession, syncGithubAuth } from '../api/client.js';
+  import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
   const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
@@ -553,13 +555,59 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
       let isVerified = false;
 
       try {
-        const meRes = await fetch(`${API_BASE}/api/citizens/me`, { credentials: 'include' });
-        if (meRes.ok) {
-          const meData = await meRes.json();
-          if (meData?.citizen?.avatarId) avatarId = meData.citizen.avatarId;
-          if (meData?.citizen?.id) citizenId = meData.citizen.id;
-          if (meData?.citizen?.displayName) displayName = meData.citizen.displayName;
-          if (meData?.citizen?.isVerified) isVerified = meData.citizen.isVerified;
+        let sessionCitizen: any = null;
+
+        // 1. Check Supabase OAuth session (if logged in with GitHub on live site)
+        if (supabase) {
+          try {
+            const { data: { session: sbSession } } = await supabase.auth.getSession();
+            if (sbSession?.user) {
+              const metadata = sbSession.user.user_metadata || {};
+              const syncRes = await syncGithubAuth({
+                githubId: sbSession.user.id,
+                username: metadata.user_name || metadata.preferred_username || metadata.name,
+                email: sbSession.user.email,
+                avatarUrl: metadata.avatar_url,
+                displayName: metadata.full_name || metadata.name || metadata.user_name,
+              });
+              if (syncRes.authenticated || syncRes.success) {
+                sessionCitizen = syncRes.citizen;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Check standard cookie / token session
+        if (!sessionCitizen) {
+          try {
+            const session = await fetchMySession();
+            if (session.authenticated || (session as any).success) {
+              sessionCitizen = session.citizen;
+            }
+          } catch (_) {}
+        }
+
+        // 3. Fallback to localStorage saved spot
+        if (!sessionCitizen) {
+          const savedOwned = localStorage.getItem('spot_my_owned');
+          if (savedOwned) {
+            try {
+              const parsed = JSON.parse(savedOwned);
+              if (parsed?.citizenId || parsed?.ownerId) {
+                citizenId = parsed.citizenId || parsed.ownerId;
+                if (parsed.displayName) displayName = parsed.displayName;
+                if (parsed.avatarId) avatarId = parsed.avatarId;
+                if (parsed.isVerified) isVerified = parsed.isVerified;
+              }
+            } catch (_) {}
+          }
+        }
+
+        if (sessionCitizen) {
+          if (sessionCitizen.id) citizenId = sessionCitizen.id;
+          if (sessionCitizen.displayName) displayName = sessionCitizen.displayName;
+          if (sessionCitizen.avatarId) avatarId = sessionCitizen.avatarId;
+          if (sessionCitizen.isVerified) isVerified = sessionCitizen.isVerified;
         }
       } catch (_) {}
 
