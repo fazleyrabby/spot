@@ -59,9 +59,13 @@ export class Engine {
     this.sprites = new SpriteManager();
     this.plots = new PlotManager();
 
-    this.monuments = new MonumentManager((spot) => {
-      this.options.onCitizenClick?.(spot);
-    });
+    this.monuments = new MonumentManager(
+      (spot) => {
+        this.options.onCitizenClick?.(spot);
+      },
+      options.citizenId,
+      options.citizenId ? options.displayName : undefined,
+    );
 
     this.player = new PlayerManager(
       options.avatarId ?? 'astronaut',
@@ -102,7 +106,7 @@ export class Engine {
 
     // 4. Position player
     if (this.options.citizenId) {
-      this.monuments.setExcludeCitizen(this.options.citizenId);
+      this.monuments.setExcludeCitizen(this.options.citizenId, this.options.displayName);
       const mySpot = snapshot.occupied.find((s) => s.citizenId === this.options.citizenId);
       if (mySpot) {
         this.player.setPosition(mySpot.x, mySpot.y);
