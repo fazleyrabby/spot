@@ -175,7 +175,7 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
   import { containsBlockedWord } from '@spot/shared';
-  import { fetchMySession, syncGithubAuth } from '../api/client.js';
+  import { fetchMySession, syncGithubAuth, searchCitizens } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
@@ -689,12 +689,15 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
         }
       });
 
-      // ── Citizen Search & GPS Modal Wiring ────────────────────────────────
+      // ── Citizen Search & GPS Modal Wiring (Identical to Main Page) ─────
       const searchBackdrop = document.getElementById('search-modal-backdrop');
       const searchCloseBtn = document.getElementById('search-modal-close');
       const searchInput = document.getElementById('citizen-search-input') as HTMLInputElement | null;
+      const searchStatus = document.getElementById('search-status');
       const searchResultsList = document.getElementById('search-results-list');
       const btnWorldSearch = document.getElementById('world-search-btn');
+
+      let searchDebounceTimer: number | undefined;
 
       function openSearchModal(): void {
         if (!searchBackdrop) return;
@@ -703,7 +706,15 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
         searchBackdrop.classList.add('open');
         searchBackdrop.setAttribute('aria-hidden', 'false');
         searchInput?.focus();
-        renderSearchResults(searchInput?.value || '');
+        if (searchInput && searchInput.value) {
+          triggerSearch(searchInput.value);
+        } else {
+          if (searchResultsList) searchResultsList.innerHTML = '';
+          if (searchStatus) {
+            searchStatus.style.display = 'block';
+            searchStatus.textContent = 'Type to search across citizens and spots...';
+          }
+        }
       }
 
       function closeSearchModal(): void {
@@ -731,147 +742,138 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
             openSearchModal();
           }
         }
+        if (e.key === 'Escape' && searchBackdrop?.classList.contains('open')) {
+          closeSearchModal();
+        }
       });
 
-      function renderSearchResults(query: string): void {
-        if (!searchResultsList || !engine) return;
-        searchResultsList.replaceChildren();
-
-        const q = query.trim().toLowerCase();
-        const allPlots = engine.plots.getAllPlots();
-        const allEntities = engine.monuments.getAllEntities();
-
-        // Build list of unique citizens from plots and entities
-        const citizenMap = new Map<string, OccupiedSpotSummary>();
-        for (const p of allPlots) {
-          if (p.owner?.citizenId) {
-            citizenMap.set(p.owner.citizenId, p.owner);
+      async function triggerSearch(rawQuery: string): Promise<void> {
+        const q = rawQuery.trim();
+        if (!q) {
+          if (searchResultsList) searchResultsList.innerHTML = '';
+          if (searchStatus) {
+            searchStatus.style.display = 'block';
+            searchStatus.textContent = 'Type to search across citizens and spots...';
           }
-        }
-        for (const ent of allEntities) {
-          if (ent.spot?.citizenId && !citizenMap.has(ent.spot.citizenId)) {
-            citizenMap.set(ent.spot.citizenId, ent.spot);
-          }
-        }
-        const citizensList = Array.from(citizenMap.values());
-
-        const filtered = citizensList.filter((s) => {
-          if (!q) return true;
-          const matchName = s.displayName?.toLowerCase().includes(q);
-          const matchTagline = s.tagline?.toLowerCase().includes(q);
-          const matchCoords = `${s.x},${s.y}`.includes(q) || `${s.x}, ${s.y}`.includes(q);
-          return matchName || matchTagline || matchCoords;
-        });
-
-        if (filtered.length === 0) {
-          const empty = document.createElement('p');
-          empty.className = 'search-empty-state';
-          empty.textContent = `No citizens found matching "${query}".`;
-          searchResultsList.appendChild(empty);
           return;
         }
 
-        filtered.slice(0, 15).forEach((spot) => {
-          const item = document.createElement('div');
-          item.className = 'search-result-item';
+        if (searchStatus) {
+          searchStatus.style.display = 'block';
+          searchStatus.textContent = 'Searching...';
+        }
 
-          // Click whole item to fly to citizen
-          item.onclick = () => {
-            if (engine) {
-              engine.flyTo(spot.x, spot.y, 1.25);
-              closeSearchModal();
-            }
-          };
+        if (searchDebounceTimer) window.clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = window.setTimeout(async () => {
+          if (!searchResultsList || !searchStatus || !engine) return;
 
-          const left = document.createElement('div');
-          left.className = 'search-result-left';
+          // 1. Fetch search results from database/API
+          let results = await searchCitizens(q).catch(() => []);
 
-          const avatarCanvas = document.createElement('canvas');
-          avatarCanvas.className = 'search-result-avatar';
-          avatarCanvas.width = 40;
-          avatarCanvas.height = 40;
-          const actx = avatarCanvas.getContext('2d');
-          if (actx) {
-            const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
-            if (spot.customAvatarData) {
-              drawCustomAvatarOnCanvas(actx, spot.customAvatarData, 0, 0, 40);
-            } else {
-              drawAvatarOnCanvas(actx, def, 0, 0, 40);
-            }
+          // 2. Also check local live entities in the engine
+          if (results.length === 0) {
+            const allPlots = engine.plots.getAllPlots();
+            const lower = q.toLowerCase();
+            const localMatches = allPlots
+              .filter((p) => {
+                const name = p.owner.displayName?.toLowerCase() || '';
+                const tag = p.owner.tagline?.toLowerCase() || '';
+                const coords = `${p.owner.x},${p.owner.y}`;
+                return name.includes(lower) || tag.includes(lower) || coords.includes(lower);
+              })
+              .map((p) => ({
+                id: p.owner.spotId,
+                x: p.owner.x,
+                y: p.owner.y,
+                avatarId: p.owner.avatarId,
+                displayName: p.owner.displayName,
+                tagline: p.owner.tagline,
+                isVerified: p.owner.isVerified,
+                githubUrl: p.owner.githubUrl,
+              }));
+            results = localMatches as any;
           }
 
-          const info = document.createElement('div');
-          info.className = 'search-result-info';
+          searchResultsList.innerHTML = '';
 
-          const nameRow = document.createElement('div');
-          nameRow.className = 'search-result-name-row';
-          const name = document.createElement('span');
-          name.className = 'search-result-name';
-          name.textContent = spot.displayName;
-          nameRow.appendChild(name);
+          if (results.length === 0) {
+            searchStatus.style.display = 'block';
+            searchStatus.textContent = `No citizens or spots found matching "${q}"`;
+          } else {
+            searchStatus.style.display = 'none';
 
-          if (spot.isVerified) {
-            const badge = document.createElement('span');
-            badge.textContent = ' ✓';
-            badge.style.color = '#38bdf8';
-            badge.style.fontSize = '0.8rem';
-            nameRow.appendChild(badge);
+            results.forEach((item: any) => {
+              const row = document.createElement('div');
+              row.className = 'search-result-item';
+
+              const avatarCanvas = document.createElement('canvas');
+              avatarCanvas.width = 32;
+              avatarCanvas.height = 32;
+              avatarCanvas.className = 'search-result-avatar';
+              const actx = avatarCanvas.getContext('2d');
+              if (actx) {
+                const def = AVATAR_CATALOG[item.avatarId] ?? AVATAR_CATALOG.astronaut;
+                if (item.customAvatarData) {
+                  drawCustomAvatarOnCanvas(actx, item.customAvatarData, 0, 0, 32);
+                } else {
+                  drawAvatarOnCanvas(actx, def, 0, 0, 32);
+                }
+              }
+
+              const left = document.createElement('div');
+              left.className = 'search-result-left';
+              left.appendChild(avatarCanvas);
+
+              const meta = document.createElement('div');
+              meta.className = 'search-result-meta';
+
+              const nameSpan = document.createElement('div');
+              nameSpan.className = 'search-result-name';
+              nameSpan.textContent = item.displayName;
+
+              if (item.isVerified || item.githubUrl) {
+                const badge = document.createElement('span');
+                badge.style.color = '#38bdf8';
+                badge.style.fontSize = '0.78rem';
+                badge.textContent = ' ✓';
+                nameSpan.appendChild(badge);
+              }
+
+              const taglineSpan = document.createElement('div');
+              taglineSpan.className = 'search-result-tagline';
+              taglineSpan.textContent = item.tagline || (item.githubUrl ? `@${item.githubUrl}` : 'Citizen of Spot World');
+
+              meta.append(nameSpan, taglineSpan);
+              left.appendChild(meta);
+
+              const spotBadge = document.createElement('div');
+              spotBadge.className = 'search-result-spot';
+              spotBadge.textContent = `(${item.x}, ${item.y})`;
+
+              row.append(left, spotBadge);
+
+              // Click to Jump & Lock GPS
+              row.addEventListener('click', () => {
+                if (engine) {
+                  engine.flyTo(item.x, item.y, 1.25);
+                  engine.renderer.gpsTarget = {
+                    name: item.displayName,
+                    wx: item.x * 16 + 8,
+                    wy: item.y * 16 + 8,
+                  };
+                  showToast(`🧭 Flying to @${item.displayName} (${item.x}, ${item.y})`, 'success');
+                  closeSearchModal();
+                }
+              });
+
+              searchResultsList.appendChild(row);
+            });
           }
-
-          const coordsChip = document.createElement('span');
-          coordsChip.className = 'search-result-coords-chip';
-          coordsChip.textContent = `(${spot.x}, ${spot.y})`;
-          nameRow.appendChild(coordsChip);
-
-          const sub = document.createElement('span');
-          sub.className = 'search-result-tagline';
-          sub.textContent = spot.tagline || (spot.isOnline ? 'Active Online Citizen' : 'Citizen of Spot World');
-
-          info.append(nameRow, sub);
-          left.append(avatarCanvas, info);
-
-          const actions = document.createElement('div');
-          actions.className = 'search-result-actions';
-
-          const btnGps = document.createElement('button');
-          btnGps.type = 'button';
-          btnGps.className = 'btn-search-gps';
-          btnGps.textContent = '🧭 GPS';
-          btnGps.title = 'Lock compass waypoint';
-          btnGps.onclick = (e) => {
-            e.stopPropagation();
-            if (engine) {
-              engine.renderer.gpsTarget = {
-                name: spot.displayName,
-                wx: spot.x * 16 + 8,
-                wy: spot.y * 16 + 8,
-              };
-              showToast(`🧭 Compass locked to @${spot.displayName}`, 'success');
-              closeSearchModal();
-            }
-          };
-
-          const btnFly = document.createElement('button');
-          btnFly.type = 'button';
-          btnFly.className = 'btn-search-fly';
-          btnFly.textContent = '🚀 Fly';
-          btnFly.title = 'Fly camera to citizen plot';
-          btnFly.onclick = (e) => {
-            e.stopPropagation();
-            if (engine) {
-              engine.flyTo(spot.x, spot.y, 1.25);
-              closeSearchModal();
-            }
-          };
-
-          actions.append(btnGps, btnFly);
-          item.append(left, actions);
-          searchResultsList.appendChild(item);
-        });
+        }, 220);
       }
 
       searchInput?.addEventListener('input', (e) => {
-        renderSearchResults((e.target as HTMLInputElement).value);
+        triggerSearch((e.target as HTMLInputElement).value);
       });
 
       // Update HUD coordinate & zoom display
