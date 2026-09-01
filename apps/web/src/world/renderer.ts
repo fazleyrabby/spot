@@ -1,12 +1,7 @@
 /**
  * Renderer — Top-Down Diverse City & Urban District Canvas2D Renderer for Spot World.
  *
- * 5 Unique Districts with Volumetric Wind-Swaying Trees & Animated Chibi Citizens:
- *  - Grand Central Plaza (Slate paving, central bubbling fountain, bistro cafes)
- *  - Central Park & Lake (Lush grass, animated water pond, multi-tiered park trees)
- *  - Downtown Cyber District (Asphalt boulevards, glowing vending machines, streetlamps)
- *  - Cafe Promenade (Warm terracotta brick, cafe parasols, flower planters)
- *  - Zen Gardens (Cobblestone courtyards, pink cherry blossoms, stone lanterns)
+ * 5 Unique Districts with Volumetric Wind-Swaying Trees, Easter Egg Landmarks & Animated Chibi Citizens.
  */
 
 import { Camera } from './camera.js';
@@ -423,6 +418,161 @@ export class Renderer {
     const windSway = Math.sin(this.tick * 0.04 + prop.wx * 0.1) * 1.6 * z;
 
     switch (prop.type) {
+      case 'genesis_monolith': {
+        // Obelisk base pedestal
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 16 * z, 8 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(sx - 12 * z, sy - 6 * z, 24 * z, 8 * z, 2 * z);
+        ctx.fill();
+
+        // Glowing Golden Monolith Body
+        const floatBob = Math.sin(this.tick * 0.08) * 1.5 * z;
+        const monoY = sy - 12 * z + floatBob;
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(sx - 8 * z, monoY);
+        ctx.lineTo(sx - 6 * z, monoY - 26 * z);
+        ctx.lineTo(sx, monoY - 34 * z);
+        ctx.lineTo(sx + 6 * z, monoY - 26 * z);
+        ctx.lineTo(sx + 8 * z, monoY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Shimmering gold crest
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.moveTo(sx - 3 * z, monoY - 22 * z);
+        ctx.lineTo(sx, monoY - 34 * z);
+        ctx.lineTo(sx + 3 * z, monoY - 22 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Runic glyph
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.round(9 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('#0', sx, monoY - 14 * z);
+        break;
+      }
+
+      case 'dev_library': {
+        // Study Kiosk
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 14 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wooden cabinet
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.roundRect(sx - 11 * z, sy - 22 * z, 22 * z, 22 * z, 3 * z);
+        ctx.fill();
+
+        // Book shelves
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx - 9 * z, sy - 19 * z, 18 * z, 8 * z);
+        ctx.fillRect(sx - 9 * z, sy - 9 * z, 18 * z, 7 * z);
+
+        // Books
+        const colors = ['#38bdf8', '#f43f5e', '#10b981', '#fbbf24', '#c084fc'];
+        for (let b = 0; b < 5; b++) {
+          ctx.fillStyle = colors[b % colors.length];
+          ctx.fillRect(sx - 8 * z + b * 3.2 * z, sy - 18 * z, 2.4 * z, 6.5 * z);
+          ctx.fillRect(sx - 8 * z + b * 3.2 * z, sy - 8 * z, 2.4 * z, 5.5 * z);
+        }
+
+        // Roof awning
+        ctx.fillStyle = '#6366f1';
+        ctx.beginPath();
+        ctx.moveTo(sx - 13 * z, sy - 22 * z);
+        ctx.lineTo(sx, sy - 27 * z);
+        ctx.lineTo(sx + 13 * z, sy - 22 * z);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+
+      case 'mystic_duck': {
+        // Water Ripple Trail
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2 * z, 9 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bob = Math.sin(this.tick * 0.1) * 1.5 * z;
+        const dy = sy + bob;
+
+        // Yellow Duck Body
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath();
+        ctx.ellipse(sx, dy - 3 * z, 7 * z, 4.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(sx + 4 * z, dy - 7 * z, 3.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Orange Bill
+        ctx.fillStyle = '#f97316';
+        ctx.fillRect(sx + 6.5 * z, dy - 7 * z, 3 * z, 1.8 * z);
+
+        // Eye
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx + 4.5 * z, dy - 8 * z, 1 * z, 1 * z);
+        break;
+      }
+
+      case 'cafe_cat': {
+        // Cafe Chair
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 8 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#be123c'; // Velvet cushion
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 4 * z, 8 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Black/White Cat Curled Up
+        const catY = sy - 6 * z;
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.ellipse(sx, catY, 6 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cat Head & Ears
+        ctx.beginPath();
+        ctx.arc(sx + 3 * z, catY - 2 * z, 3.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pink inner ears
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.moveTo(sx + 2 * z, catY - 5 * z);
+        ctx.lineTo(sx + 3 * z, catY - 8 * z);
+        ctx.lineTo(sx + 4.5 * z, catY - 5 * z);
+        ctx.fill();
+
+        // Animated tail twitch
+        const tailWag = Math.sin(this.tick * 0.1) * 2 * z;
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.8 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 4 * z, catY);
+        ctx.quadraticCurveTo(sx - 8 * z, catY - 2 * z + tailWag, sx - 6 * z, catY - 6 * z + tailWag);
+        ctx.stroke();
+        break;
+      }
+
       case 'fountain': {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
@@ -454,33 +604,28 @@ export class Renderer {
       }
 
       case 'cherry_tree': {
-        // Volumetric Pink Cherry Blossom with Wind Sway
         ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
         ctx.beginPath();
         ctx.ellipse(sx, sy - 2 * z, 14 * z, 6 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Dark gnarled bark
         ctx.fillStyle = '#451a03';
         ctx.fillRect(sx - 3 * z, sy - 18 * z, 6 * z, 17 * z);
 
         const cx = sx + windSway;
         const cy = sy - 26 * z;
 
-        // Shadow under-cloud
         ctx.fillStyle = '#db2777';
         ctx.beginPath();
         ctx.arc(cx, cy + 3 * z, 15 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Midtone pink blossom
         ctx.fillStyle = '#f472b6';
         ctx.beginPath();
         ctx.arc(cx - 3 * z, cy - 2 * z, 13 * z, 0, Math.PI * 2);
         ctx.arc(cx + 3 * z, cy - 1 * z, 12 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Sunlit highlight crest
         ctx.fillStyle = '#fbcfe8';
         ctx.beginPath();
         ctx.arc(cx - 1 * z, cy - 6 * z, 9 * z, 0, Math.PI * 2);
@@ -489,13 +634,11 @@ export class Renderer {
       }
 
       case 'park_tree': {
-        // Volumetric Park Oak with Multi-Layer Foliage
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
         ctx.ellipse(sx, sy - 2 * z, 15 * z, 6.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Trunk & root flares
         ctx.fillStyle = '#5c3a1e';
         ctx.fillRect(sx - 3.5 * z, sy - 20 * z, 7 * z, 18 * z);
         ctx.fillStyle = '#451a03';
@@ -504,20 +647,17 @@ export class Renderer {
         const tx = sx + windSway;
         const ty = sy - 28 * z;
 
-        // Deep foliage shadow
         ctx.fillStyle = '#14532d';
         ctx.beginPath();
         ctx.arc(tx, ty + 3 * z, 16 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Vibrant midtone foliage
         ctx.fillStyle = '#15803d';
         ctx.beginPath();
         ctx.arc(tx - 4 * z, ty - 2 * z, 14 * z, 0, Math.PI * 2);
         ctx.arc(tx + 4 * z, ty - 1 * z, 13 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Sunlit leaf highlight
         ctx.fillStyle = '#22c55e';
         ctx.beginPath();
         ctx.arc(tx - 1 * z, ty - 7 * z, 10 * z, 0, Math.PI * 2);
@@ -526,17 +666,14 @@ export class Renderer {
       }
 
       case 'tree_planter': {
-        // Curb planter box
         ctx.fillStyle = '#334155';
         ctx.beginPath();
         ctx.roundRect(sx - 8 * z, sy - 4 * z, 16 * z, 6 * z, 1.5 * z);
         ctx.fill();
 
-        // Soil
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(sx - 6.5 * z, sy - 3.5 * z, 13 * z, 4 * z);
 
-        // Trunk
         ctx.fillStyle = '#5c3a1e';
         ctx.fillRect(sx - 2.5 * z, sy - 18 * z, 5 * z, 15 * z);
 

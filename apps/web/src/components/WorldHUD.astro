@@ -38,6 +38,14 @@
     <span id="world-coord-text">—</span>
   </div>
 
+  <div class="hud-divider"></div>
+
+  <!-- Discoveries & Easter Eggs Counter -->
+  <div class="hud-secrets" id="hud-secrets-pill" title="World Discoveries & Secrets Found">
+    <span class="hud-secrets-icon">✨</span>
+    <span id="hud-secrets-count">0/6</span>
+  </div>
+
   <div class="hud-divider hud-divider-right"></div>
 
   <!-- Zoom controls -->
@@ -156,6 +164,30 @@
     font-family: var(--font-mono);
     color: var(--text-muted);
     min-width: 70px;
+  }
+
+  .hud-coord:hover {
+    color: #f8fafc;
+  }
+
+  .hud-secrets {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    font-family: var(--font-mono, monospace);
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 3px 8px;
+    border-radius: 9999px;
+    cursor: default;
+    user-select: none;
+  }
+
+  .hud-secrets-icon {
+    font-size: 0.85rem;
   }
 
   .hud-coord svg {

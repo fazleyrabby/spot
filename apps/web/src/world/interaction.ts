@@ -8,9 +8,11 @@ import { PlotManager } from './plot-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
+import { getSecretAt, type WorldSecret } from './secrets.js';
 
 export interface InteractionEvents {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
+  onSecretClick?: (secret: WorldSecret) => void;
   onTileClick?: (gx: number, gy: number) => void;
 }
 
@@ -137,9 +139,17 @@ export class InteractionHandler {
           return;
         }
 
-        // 2. Check if clicked on a citizen's plot area
         const grid = worldToGrid(world.x, world.y);
         if (grid) {
+          // 2. Check if clicked on a secret landmark or study kiosk
+          const secret = getSecretAt(grid.gx, grid.gy);
+          if (secret) {
+            this.renderer.selectedCitizen = null;
+            this.events.onSecretClick?.(secret);
+            return;
+          }
+
+          // 3. Check if clicked on a citizen's plot area
           const plot = this.plots.getPlotAt(grid.gx, grid.gy);
           if (plot) {
             this.renderer.selectedCitizen = plot.owner;
