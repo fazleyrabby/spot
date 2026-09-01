@@ -168,6 +168,9 @@ export class Engine {
     this.player.onStep = () => {
       this.audio.playFootstep();
     };
+    this.renderer.train.onTrainApproach = (proximity) => {
+      this.audio.playTrainSound(proximity);
+    };
     this.player.bindInput();
 
     // 6. Bind mouse/touch input handler

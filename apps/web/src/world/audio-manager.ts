@@ -357,4 +357,62 @@ export class AudioManager {
       osc.stop(now + 0.1);
     } catch (_) {}
   }
+
+  playTrainSound(proximity = 1.0): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const vol = Math.max(0.04, Math.min(0.22, 0.22 * proximity));
+
+      // 1. Distant Warm Two-Tone Train Horn Chime (A4 + C#5)
+      const hornNotes = [440, 554.37];
+      hornNotes.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol * 0.7, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 1.2);
+      });
+
+      // 2. Track Rumble (Low frequency filtered pink noise)
+      const dur = 2.4;
+      const bufferSize = Math.floor(ctx.sampleRate * dur);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.08;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(140, now);
+
+      const rGain = ctx.createGain();
+      rGain.gain.setValueAtTime(0.001, now);
+      rGain.gain.linearRampToValueAtTime(vol * 0.85, now + 0.4);
+      rGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+      noise.connect(filter);
+      filter.connect(rGain);
+      rGain.connect(ctx.destination);
+
+      noise.start(now);
+    } catch (_) {}
+  }
 }

@@ -113,14 +113,60 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   /* ── Toast ───────────────────────────────────────────────────────────── */
   .toast-container {
     position: fixed;
-    bottom: 24px;
+    top: 72px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 8px;
-    z-index: 200;
+    z-index: 300;
     pointer-events: none;
+  }
+
+  .toast {
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.12);
+    animation: toastSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: auto;
+    white-space: nowrap;
+  }
+
+  .toast-error {
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(239, 68, 68, 0.2);
+  }
+
+  .toast-success {
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #86efac;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(34, 197, 94, 0.2);
+  }
+
+  .toast.fade-out {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  @keyframes toastSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 </style>
 
@@ -164,17 +210,22 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   const linkGithub      = document.getElementById('link-github') as HTMLAnchorElement;
 
   // ── Toast helper ─────────────────────────────────────────────────────────
-  function showToast(message: string, type: 'error' | 'info' = 'info') {
+  function showToast(message: string, type: 'error' | 'info' | 'success' = 'info') {
     const container = document.getElementById('world-toast-container');
     if (!container) return;
+
+    while (container.children.length >= 2) {
+      container.firstChild?.remove();
+    }
+
     const el = document.createElement('div');
-    el.className = `toast toast-${type} glass-panel`;
+    el.className = `toast toast-${type}`;
     el.textContent = message;
     container.appendChild(el);
     setTimeout(() => {
       el.classList.add('fade-out');
-      setTimeout(() => el.remove(), 300);
-    }, 4000);
+      setTimeout(() => el.remove(), 250);
+    }, 2800);
   }
 
   // ── Profile modal population ──────────────────────────────────────────────

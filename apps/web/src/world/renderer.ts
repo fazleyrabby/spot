@@ -187,7 +187,7 @@ export class Renderer {
     this.camera.update();
     this.player.update();
     this.monuments.updateTick();
-    this.train.tick();
+    this.train.tick(this.player.wy);
 
     this.draw();
   };
