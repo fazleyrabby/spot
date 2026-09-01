@@ -245,7 +245,7 @@ export class MonumentManager {
   hitTest(wx: number, wy: number): OccupiedSpotSummary | null {
     for (const ent of this.entities.values()) {
       const dist = Math.hypot(wx - ent.wx, wy - ent.wy);
-      if (dist < 22) {
+      if (dist < 16) {
         return ent.spot;
       }
     }
