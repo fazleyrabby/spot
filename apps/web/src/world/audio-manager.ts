@@ -17,12 +17,7 @@ export class AudioManager {
   private ambientInterval: number | null = null;
 
   constructor() {
-    try {
-      const saved = localStorage.getItem('spot_world_muted');
-      this.isMuted = saved !== 'false'; // default muted until clicked
-    } catch {
-      this.isMuted = true;
-    }
+    this.isMuted = true; // Always start muted to respect browser autoplay policies
   }
 
   get muted(): boolean {

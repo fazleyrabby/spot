@@ -581,6 +581,11 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
       loaderSub.textContent = 'Rendering Stardew World…';
       await engine.init();
 
+      // Sync initial HUD audio icon
+      if (worldAudioIcon) {
+        worldAudioIcon.textContent = engine.audio.muted ? '🔇' : '🔊';
+      }
+
       // ── Chat & Emote Dock Wiring ──────────────────────────────────────────
       const chatForm = document.getElementById('world-chat-form') as HTMLFormElement | null;
       const chatInput = document.getElementById('world-chat-input') as HTMLInputElement | null;
