@@ -131,6 +131,7 @@ export class PlayerManager {
   }
 
   onInteract?: () => void;
+  onStep?: () => void;
 
   bindInput(): void {
     window.addEventListener('keydown', (e) => {
@@ -232,6 +233,9 @@ export class PlayerManager {
       if (this.animTimer >= WALK_FRAME_INTERVAL) {
         this.animTimer = 0;
         this.frame = (this.frame + 1) % 4;
+        if (this.frame === 1 || this.frame === 3) {
+          this.onStep?.();
+        }
       }
     } else {
       if (this.state === 'walking') {

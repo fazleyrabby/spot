@@ -165,6 +165,9 @@ export class Engine {
         this.options.onCitizenClick?.(nearestCitizen);
       }
     };
+    this.player.onStep = () => {
+      this.audio.playFootstep();
+    };
     this.player.bindInput();
 
     // 6. Bind mouse/touch input handler

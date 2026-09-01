@@ -786,14 +786,14 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   const btnWorldAudio = document.getElementById('world-audio-btn');
   const worldAudioIcon = document.getElementById('world-audio-icon');
 
-  btnWorldAudio?.addEventListener('click', (e) => {
+  btnWorldAudio?.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (!engine) return;
-    const isMuted = engine.audio.toggleMute();
+    const isMuted = await engine.audio.toggleMute();
     if (worldAudioIcon) {
       worldAudioIcon.textContent = isMuted ? '🔇' : '🔊';
     }
-    showToast(isMuted ? 'Environmental sound muted' : '🍃 Natural air, breeze & city sounds enabled', 'info');
+    showToast(isMuted ? 'Environmental sound muted' : '🍃 Natural air, breeze & birds enabled', 'info');
   });
 
   // ── Time of Day Switcher ─────────────────────────────────────────────────
