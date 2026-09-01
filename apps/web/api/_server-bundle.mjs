@@ -27643,6 +27643,7 @@ var sseHandler = async (req, res) => {
 };
 if (enableSSE) {
   apiRouter.get("/realtime/stream", optionalAuthMiddleware, sseHandler);
+  apiRouter.get("/events", optionalAuthMiddleware, sseHandler);
 }
 apiRouter.post("/realtime/position", optionalAuthMiddleware, async (req, res) => {
   const { wx, wy, direction, state, speech, displayName, avatarId, guestId } = req.body || {};
