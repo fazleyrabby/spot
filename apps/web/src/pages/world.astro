@@ -217,9 +217,121 @@ import ProfileModal from '../components/ProfileModal.astro';
     if (editBtn)   editBtn.style.display = 'none';
     if (deleteBtn) deleteBtn.style.display = 'none';
 
+    const spotId = `${spot.x},${spot.y}`;
+    void loadSpotComments(spotId, spot);
+
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');
   }
+
+  // ── Spot Wall / Guestbook Comments ─────────────────────────────────────────
+  const spotWallComments = document.getElementById('spot-wall-comments');
+  const spotWallForm = document.getElementById('spot-wall-form') as HTMLFormElement | null;
+  const spotWallAuthor = document.getElementById('spot-wall-author') as HTMLInputElement | null;
+  const spotWallBody = document.getElementById('spot-wall-body') as HTMLInputElement | null;
+  const spotWallSubmit = document.getElementById('spot-wall-submit') as HTMLButtonElement | null;
+  const spotWallSelfNote = document.getElementById('spot-wall-self-note');
+  let currentViewingSpotId = '';
+
+  function renderSpotComments(comments: Array<{ authorName: string; body: string; createdAt: string }>): void {
+    if (!spotWallComments) return;
+    spotWallComments.replaceChildren();
+    if (comments.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'spot-wall-empty';
+      empty.textContent = 'Be the first to leave a note.';
+      spotWallComments.appendChild(empty);
+      return;
+    }
+    comments.forEach((comment) => {
+      const item = document.createElement('article');
+      item.className = 'spot-wall-comment';
+      const meta = document.createElement('div');
+      meta.className = 'spot-wall-comment-meta';
+      const author = document.createElement('span');
+      author.className = 'spot-wall-comment-author';
+      author.textContent = `@${comment.authorName}`;
+      const time = document.createElement('time');
+      time.textContent = ` • ${new Date(comment.createdAt).toLocaleDateString()}`;
+      meta.append(author, time);
+      const body = document.createElement('p');
+      body.className = 'spot-wall-comment-body';
+      body.textContent = comment.body;
+      item.append(meta, body);
+      spotWallComments.appendChild(item);
+    });
+  }
+
+  async function loadSpotComments(spotId: string, spot: OccupiedSpotSummary): Promise<void> {
+    currentViewingSpotId = spotId;
+    if (!spotWallComments) return;
+    spotWallComments.textContent = 'Loading messages…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/spots/${spotId}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderSpotComments(data.comments || []);
+
+      const canPost = Boolean(data.canPost);
+      if (spotWallForm) {
+        spotWallForm.hidden = !canPost;
+        spotWallForm.style.display = canPost ? 'grid' : 'none';
+      }
+      if (spotWallSelfNote) {
+        spotWallSelfNote.style.display = canPost ? 'none' : 'block';
+        spotWallSelfNote.textContent = data.isOwner
+          ? 'This is your spot. Visitors can leave notes here.'
+          : (data.visibility === 'open' ? 'Leave a note on this spot wall.' : 'This wall is currently read-only.');
+      }
+    } catch (_) {
+      if (spotWallComments) spotWallComments.textContent = 'No messages yet.';
+      if (spotWallForm) {
+        spotWallForm.hidden = false;
+        spotWallForm.style.display = 'grid';
+      }
+    }
+  }
+
+  spotWallForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentViewingSpotId || !spotWallBody) return;
+    const body = spotWallBody.value.trim();
+    if (!body) return;
+
+    if (spotWallSubmit) spotWallSubmit.disabled = true;
+
+    try {
+      const authorName = spotWallAuthor?.value.trim() || 'Visitor';
+      const res = await fetch(`${API_BASE}/api/spots/${currentViewingSpotId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body, authorName }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.message || 'Could not post message.', 'error');
+        return;
+      }
+
+      const data = await res.json();
+      spotWallBody.value = '';
+      showToast('Note posted to spot wall!', 'success');
+
+      // Refresh comments
+      const refreshRes = await fetch(`${API_BASE}/api/spots/${currentViewingSpotId}/comments`, { credentials: 'include' });
+      if (refreshRes.ok) {
+        const wall = await refreshRes.json();
+        renderSpotComments(wall.comments || []);
+      }
+    } catch (err) {
+      showToast('Failed to post message. Please try again.', 'error');
+    } finally {
+      if (spotWallSubmit) spotWallSubmit.disabled = false;
+    }
+  });
 
   function closeProfileModal() {
     if (!profileBackdrop) return;
