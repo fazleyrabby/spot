@@ -11,6 +11,8 @@
 import {
   TILE_WIDTH,
   TILE_HEIGHT,
+  TOTAL_WORLD_WIDTH,
+  TOTAL_WORLD_HEIGHT,
   gridToWorldCenter,
 } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
@@ -96,12 +98,15 @@ export class MonumentManager {
         const initOffsetWx = (Math.random() - 0.5) * TILE_WIDTH * 1.2;
         const initOffsetWy = (Math.random() - 0.5) * TILE_HEIGHT * 1.0;
 
+        const clampedWx = Math.max(TILE_WIDTH * 0.5, Math.min(TOTAL_WORLD_WIDTH - TILE_WIDTH * 0.5, center.wx + initOffsetWx));
+        const clampedWy = Math.max(TILE_HEIGHT * 0.5, Math.min(TOTAL_WORLD_HEIGHT - TILE_HEIGHT * 0.5, center.wy + initOffsetWy));
+
         this.entities.set(key, {
           spot,
-          wx: center.wx + initOffsetWx,
-          wy: center.wy + initOffsetWy,
-          targetWx: center.wx + initOffsetWx,
-          targetWy: center.wy + initOffsetWy,
+          wx: clampedWx,
+          wy: clampedWy,
+          targetWx: clampedWx,
+          targetWy: clampedWy,
           direction: Math.random() > 0.5 ? 'down' : 'right',
           state: Math.random() < 0.2 ? 'sleeping' : 'idle',
           frame: 0,
@@ -183,8 +188,11 @@ export class MonumentManager {
       const roamRadiusX = TILE_WIDTH * 1.5;
       const roamRadiusY = TILE_HEIGHT * 1.2;
 
-      ent.targetWx = center.wx + (Math.random() - 0.5) * roamRadiusX * 2;
-      ent.targetWy = center.wy + (Math.random() - 0.5) * roamRadiusY * 2;
+      const rawTargetX = center.wx + (Math.random() - 0.5) * roamRadiusX * 2;
+      const rawTargetY = center.wy + (Math.random() - 0.5) * roamRadiusY * 2;
+
+      ent.targetWx = Math.max(TILE_WIDTH * 0.5, Math.min(TOTAL_WORLD_WIDTH - TILE_WIDTH * 0.5, rawTargetX));
+      ent.targetWy = Math.max(TILE_HEIGHT * 0.5, Math.min(TOTAL_WORLD_HEIGHT - TILE_HEIGHT * 0.5, rawTargetY));
     } else {
       ent.isMoving = true;
       ent.state = 'walking';
@@ -198,8 +206,8 @@ export class MonumentManager {
         ent.direction = dx > 0 ? 'right' : 'left';
       }
 
-      ent.wx += (dx / dist) * speed;
-      ent.wy += (dy / dist) * speed;
+      ent.wx = Math.max(TILE_WIDTH * 0.5, Math.min(TOTAL_WORLD_WIDTH - TILE_WIDTH * 0.5, ent.wx + (dx / dist) * speed));
+      ent.wy = Math.max(TILE_HEIGHT * 0.5, Math.min(TOTAL_WORLD_HEIGHT - TILE_HEIGHT * 0.5, ent.wy + (dy / dist) * speed));
 
       ent.animTimer++;
       if (ent.animTimer >= 8) {
