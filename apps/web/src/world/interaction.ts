@@ -156,6 +156,7 @@ export class InteractionHandler {
             this.events.onCitizenClick?.(plot.owner);
           } else {
             this.renderer.selectedCitizen = null;
+            this.renderer.player.walkTo(world.x, world.y);
             this.events.onTileClick?.(grid.gx, grid.gy);
           }
         } else {
