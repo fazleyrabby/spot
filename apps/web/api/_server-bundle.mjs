@@ -18872,6 +18872,23 @@ async function optionalAuthMiddleware(req, _res, next) {
     const citizen = await resolveCitizen(token);
     if (citizen) req.citizen = citizen;
   }
+  if (!req.citizen && config.appEnv === "local") {
+    const founderRes = await query(
+      `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
+              custom_avatar_data as "customAvatarData", tagline, bio,
+              website_url as "websiteUrl", github_url as "githubUrl",
+              twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+              instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+              linkedin_url as "linkedinUrl",
+              created_at as "createdAt", updated_at as "updatedAt"
+       FROM citizens
+       WHERE display_name ILIKE '%Fazley%'
+       LIMIT 1`
+    );
+    if (founderRes.rows[0]) {
+      req.citizen = founderRes.rows[0];
+    }
+  }
   next();
 }
 async function requireAuthMiddleware(req, res, next) {
@@ -27719,6 +27736,12 @@ apiRouter.get("/citizens/me", optionalAuthMiddleware, async (req, res) => {
       `SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`,
       [req.citizen.id]
     );
+    if (config.appEnv === "local" && !req.cookies?.[COOKIE_NAME]) {
+      const devToken = generateSessionToken();
+      const tokenHash = hashToken(devToken);
+      await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [tokenHash, req.citizen.id]);
+      res.cookie(COOKIE_NAME, devToken, COOKIE_OPTIONS);
+    }
     res.json({
       authenticated: true,
       citizen: req.citizen,

@@ -498,6 +498,13 @@ apiRouter.get('/citizens/me', optionalAuthMiddleware, async (req: AuthenticatedR
       [req.citizen.id]
     );
 
+    if (config.appEnv === 'local' && !req.cookies?.[COOKIE_NAME]) {
+      const devToken = generateSessionToken();
+      const tokenHash = hashToken(devToken);
+      await query(`UPDATE citizens SET session_token_hash = $1 WHERE id = $2`, [tokenHash, req.citizen.id]);
+      res.cookie(COOKIE_NAME, devToken, COOKIE_OPTIONS);
+    }
+
     res.json({
       authenticated: true,
       citizen: req.citizen,
