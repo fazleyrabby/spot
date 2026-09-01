@@ -1,0 +1,312 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WorldHUD from '../components/WorldHUD.astro';
+import ProfileModal from '../components/ProfileModal.astro';
+---
+
+<Layout
+  title="Spot World — Explore the Isometric City"
+  description="Walk through the isometric Spot World. Discover citizens, explore their plots, and see who lives next door."
+  url="https://www.claimyourspot.lol/world"
+>
+  <main class="world-app" id="world-app">
+    <WorldHUD />
+
+    <!-- Full-screen isometric canvas -->
+    <canvas id="world-canvas" class="world-canvas"></canvas>
+
+    <!-- Loading overlay (shown until first render) -->
+    <div class="world-loader" id="world-loader" aria-live="polite">
+      <div class="loader-inner">
+        <div class="loader-spinner"></div>
+        <p class="loader-text">Building the world…</p>
+        <p class="loader-sub" id="loader-sub">Loading terrain</p>
+      </div>
+    </div>
+
+    <!-- Reuse the existing profile modal for click-to-inspect -->
+    <ProfileModal />
+
+    <!-- Toast container -->
+    <div id="world-toast-container" class="toast-container"></div>
+  </main>
+</Layout>
+
+<style>
+  .world-app {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: #0f1a0f;
+  }
+
+  .world-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: default;
+  }
+
+  /* ── Loading Overlay ─────────────────────────────────────────────────── */
+  .world-loader {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f1a0f;
+    z-index: 100;
+    transition: opacity 0.5s ease;
+  }
+
+  .world-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loader-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .loader-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(16, 185, 129, 0.2);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loader-text {
+    color: #f8fafc;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .loader-sub {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Toast ───────────────────────────────────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 200;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  import { IsoEngine } from '../world/iso-engine.js';
+  import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
+  import type { OccupiedSpotSummary } from '@spot/shared';
+
+  // ── Resolve API base (same logic as client.ts) ──────────────────────────
+  const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
+  const API_BASE: string = configuredBase
+    ? (configuredBase.endsWith('/api') ? configuredBase.replace(/\/api$/, '') : configuredBase)
+    : (import.meta.env.PROD ? '' : 'http://localhost:5050');
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const canvas       = document.getElementById('world-canvas') as HTMLCanvasElement;
+  const loader       = document.getElementById('world-loader') as HTMLDivElement;
+  const loaderSub    = document.getElementById('loader-sub') as HTMLParagraphElement;
+  const coordText    = document.getElementById('world-coord-text') as HTMLSpanElement;
+  const zoomLevel    = document.getElementById('world-zoom-level') as HTMLSpanElement;
+  const btnZoomIn    = document.getElementById('world-zoom-in') as HTMLButtonElement;
+  const btnZoomOut   = document.getElementById('world-zoom-out') as HTMLButtonElement;
+  const btnRecenter  = document.getElementById('world-recenter') as HTMLButtonElement;
+
+  // Profile modal elements (reused from ProfileModal.astro)
+  const profileBackdrop = document.getElementById('profile-modal-backdrop') as HTMLElement;
+  const profileModalClose = document.getElementById('profile-modal-close') as HTMLButtonElement;
+  const profileAvatarCanvas = document.getElementById('profile-avatar-canvas') as HTMLCanvasElement;
+  const profileSpotId   = document.getElementById('profile-spot-id') as HTMLElement;
+  const profileName     = document.getElementById('profile-name') as HTMLElement;
+  const profileTagline  = document.getElementById('profile-tagline') as HTMLElement;
+  const profileVerifiedBadge = document.getElementById('profile-verified-badge') as HTMLElement;
+  const linkWebsite     = document.getElementById('link-website') as HTMLAnchorElement;
+  const linkWebsiteText = document.getElementById('link-website-text') as HTMLElement;
+  const linkTwitter     = document.getElementById('link-twitter') as HTMLAnchorElement;
+  const linkFacebook    = document.getElementById('link-facebook') as HTMLAnchorElement;
+  const linkInstagram   = document.getElementById('link-instagram') as HTMLAnchorElement;
+  const linkLinkedin    = document.getElementById('link-linkedin') as HTMLAnchorElement;
+  const linkYoutube     = document.getElementById('link-youtube') as HTMLAnchorElement;
+  const linkGithub      = document.getElementById('link-github') as HTMLAnchorElement;
+
+  // ── Toast helper ─────────────────────────────────────────────────────────
+  function showToast(message: string, type: 'error' | 'info' = 'info') {
+    const container = document.getElementById('world-toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = `toast toast-${type} glass-panel`;
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('fade-out');
+      setTimeout(() => el.remove(), 300);
+    }, 4000);
+  }
+
+  // ── Profile modal population ──────────────────────────────────────────────
+  function openProfileModal(spot: OccupiedSpotSummary) {
+    // Avatar
+    const def = AVATAR_CATALOG.find((a) => a.id === spot.avatarId) ?? AVATAR_CATALOG[0];
+    if (spot.customAvatarData) {
+      drawCustomAvatarOnCanvas(profileAvatarCanvas, spot.customAvatarData, 64);
+    } else {
+      drawAvatarOnCanvas(profileAvatarCanvas, def, 64);
+    }
+
+    // Text fields
+    if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
+    if (profileName)    profileName.textContent     = spot.displayName;
+    if (profileTagline) profileTagline.textContent  = spot.tagline || '';
+
+    // Verified badge
+    if (profileVerifiedBadge) {
+      profileVerifiedBadge.style.display = spot.isVerified ? '' : 'none';
+    }
+
+    // Links — show/hide each anchor
+    const setLink = (el: HTMLAnchorElement | null, url?: string | null) => {
+      if (!el) return;
+      if (url) { el.href = url; el.style.display = ''; }
+      else      { el.style.display = 'none'; }
+    };
+    if (linkWebsite) {
+      setLink(linkWebsite, spot.websiteUrl);
+      if (linkWebsiteText && spot.websiteUrl) {
+        try {
+          linkWebsiteText.textContent = new URL(spot.websiteUrl).hostname;
+        } catch { linkWebsiteText.textContent = 'Website'; }
+      }
+    }
+    setLink(linkTwitter,   spot.twitterUrl);
+    setLink(linkFacebook,  spot.facebookUrl);
+    setLink(linkInstagram, spot.instagramUrl);
+    setLink(linkLinkedin,  spot.linkedinUrl);
+    setLink(linkYoutube,   spot.youtubeUrl);
+    setLink(linkGithub,    spot.githubUrl);
+
+    // Show view section, hide edit section
+    const viewSec = document.getElementById('profile-view-section');
+    const editSec = document.getElementById('profile-edit-section');
+    if (viewSec) viewSec.style.display = '';
+    if (editSec) editSec.style.display = 'none';
+
+    // Also hide the edit/manage buttons that only make sense in grid view
+    const editBtn = document.getElementById('profile-edit-btn');
+    const deleteBtn = document.getElementById('profile-delete-btn');
+    if (editBtn)   editBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    profileBackdrop?.removeAttribute('aria-hidden');
+    profileBackdrop?.classList.add('visible');
+    document.body.style.pointerEvents = 'none';
+    profileBackdrop!.style.pointerEvents = 'auto';
+  }
+
+  function closeProfileModal() {
+    profileBackdrop?.setAttribute('aria-hidden', 'true');
+    profileBackdrop?.classList.remove('visible');
+    document.body.style.pointerEvents = '';
+  }
+
+  profileModalClose?.addEventListener('click', closeProfileModal);
+  profileBackdrop?.addEventListener('click', (e) => {
+    if (e.target === profileBackdrop) closeProfileModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProfileModal();
+  });
+
+  // ── Engine ────────────────────────────────────────────────────────────────
+  let engine: InstanceType<typeof IsoEngine> | null = null;
+
+  async function boot() {
+    loaderSub.textContent = 'Fetching world data…';
+
+    try {
+      engine = new IsoEngine({
+        canvas,
+        apiBase: API_BASE,
+        onCitizenClick: (spot) => openProfileModal(spot),
+        onEmptyClick: (_gx, _gy) => {
+          // Empty plot clicked — close any open modal silently
+          closeProfileModal();
+        },
+      });
+
+      loaderSub.textContent = 'Rendering terrain…';
+      await engine.init();
+
+      // Wire up HUD coordinate display to hover events
+      // Poll camera + hovered tile for HUD updates
+      setInterval(() => {
+        if (!engine) return;
+
+        // Zoom level
+        const pct = Math.round(engine.camera.zoom * 100);
+        if (zoomLevel) zoomLevel.textContent = `${pct}%`;
+
+        // Hovered coordinate
+        const hov = engine.renderer.hoveredTile;
+        if (coordText) {
+          coordText.textContent = hov ? `(${hov.gx}, ${hov.gy})` : '—';
+        }
+      }, 100);
+
+      // Hide loader
+      loader.classList.add('hidden');
+      setTimeout(() => { loader.style.display = 'none'; }, 500);
+
+    } catch (err) {
+      console.error('[SpotWorld] Boot failed:', err);
+      loaderSub.textContent = 'Failed to load world. Please refresh.';
+      showToast('Could not load Spot World. Check your connection.', 'error');
+    }
+  }
+
+  // ── HUD button handlers ───────────────────────────────────────────────────
+  btnZoomIn?.addEventListener('click', () => {
+    if (!engine) return;
+    const newZ = Math.min(engine.camera.maxZoom, engine.camera.targetZoom * 1.3);
+    engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
+  });
+
+  btnZoomOut?.addEventListener('click', () => {
+    if (!engine) return;
+    const newZ = Math.max(engine.camera.minZoom, engine.camera.targetZoom / 1.3);
+    engine.camera.centerOn(engine.camera.targetX, engine.camera.targetY, newZ);
+  });
+
+  btnRecenter?.addEventListener('click', () => {
+    engine?.flyTo(50, 50, 0.55);
+  });
+
+  // ── Boot ─────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => { void boot(); });
+
+  // Cleanup on page leave (Astro view transitions / SPA navigation)
+  document.addEventListener('astro:before-swap', () => {
+    engine?.destroy();
+    engine = null;
+  });
+</script>
