@@ -149,16 +149,10 @@ export class InteractionHandler {
             return;
           }
 
-          // 3. Check if clicked on a citizen's plot area
-          const plot = this.plots.getPlotAt(grid.gx, grid.gy);
-          if (plot) {
-            this.renderer.selectedCitizen = plot.owner;
-            this.events.onCitizenClick?.(plot.owner);
-          } else {
-            this.renderer.selectedCitizen = null;
-            this.renderer.player.walkTo(world.x, world.y);
-            this.events.onTileClick?.(grid.gx, grid.gy);
-          }
+          // 3. Tap on ground -> walk to destination
+          this.renderer.selectedCitizen = null;
+          this.renderer.player.walkTo(world.x, world.y);
+          this.events.onTileClick?.(grid.gx, grid.gy);
         } else {
           this.renderer.selectedCitizen = null;
         }
