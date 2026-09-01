@@ -99,6 +99,26 @@ export async function optionalAuthMiddleware(
     const citizen = await resolveCitizen(token);
     if (citizen) req.citizen = citizen;
   }
+
+  // Local Dev Auto-Login: In local dev, auto-authenticate as Founder (Fazley Rabbi)
+  if (!req.citizen && config.appEnv === 'local') {
+    const founderRes = await query<any>(
+      `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
+              custom_avatar_data as "customAvatarData", tagline, bio,
+              website_url as "websiteUrl", github_url as "githubUrl",
+              twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+              instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+              linkedin_url as "linkedinUrl",
+              created_at as "createdAt", updated_at as "updatedAt"
+       FROM citizens
+       WHERE display_name ILIKE '%Fazley%'
+       LIMIT 1`
+    );
+    if (founderRes.rows[0]) {
+      req.citizen = founderRes.rows[0];
+    }
+  }
+
   next();
 }
 
