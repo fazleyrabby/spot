@@ -21,6 +21,7 @@ import { gridToWorldCenter, worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
 import { getSecretAt } from './secrets.js';
 import { AudioManager } from './audio-manager.js';
+import { MultiplayerSync } from './multiplayer-sync.js';
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -39,17 +40,18 @@ export interface EngineOptions {
 }
 
 export class Engine {
+  readonly options: EngineOptions;
   readonly camera: Camera;
   readonly renderer: Renderer;
   readonly sprites: SpriteManager;
   readonly player: PlayerManager;
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
+  readonly input: InteractionHandler;
   readonly audio: AudioManager;
+  readonly multiplayer: MultiplayerSync;
 
-  private input!: InteractionHandler;
   private sseSource: EventSource | null = null;
-  private options: EngineOptions;
 
   constructor(options: EngineOptions) {
     this.options = options;
@@ -93,6 +95,17 @@ export class Engine {
       this.monuments,
       this.plots,
     );
+
+    this.multiplayer = new MultiplayerSync({
+      apiBase: options.apiBase,
+      citizenId: options.citizenId || '',
+      displayName: options.displayName || 'Visitor',
+      avatarId: options.avatarId || 'astronaut',
+      onRemotePlayerMove: (data) => {
+        this.monuments.syncLivePlayer(data);
+      },
+    });
+    this.renderer.multiplayer = this.multiplayer;
   }
 
   // ---------------------------------------------------------------------------
@@ -110,7 +123,10 @@ export class Engine {
     const snapshot = await this.fetchSnapshot();
     this.applySnapshot(snapshot);
 
-    // 4. Position player
+    // 4. Start Live Multiplayer Synchronization
+    this.multiplayer.start();
+
+    // 5. Position player
     if (this.options.citizenId) {
       this.monuments.setExcludeCitizen(this.options.citizenId, this.options.displayName);
       const mySpot = snapshot.occupied.find((s) => s.citizenId === this.options.citizenId);
@@ -195,6 +211,7 @@ export class Engine {
 
   destroy(): void {
     this.renderer.stop();
+    this.multiplayer?.stop();
     this.input?.destroy();
     this.sseSource?.close();
   }

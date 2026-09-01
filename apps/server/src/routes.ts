@@ -379,6 +379,40 @@ if (enableSSE) {
   apiRouter.get('/realtime/stream', optionalAuthMiddleware, sseHandler as any);
 }
 
+/**
+ * POST /api/realtime/position
+ * Broadcast live player position, state, and speech bubble to all connected world viewers.
+ */
+apiRouter.post('/realtime/position', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  const { wx, wy, direction, state, speech, displayName, avatarId, guestId } = req.body || {};
+  if (typeof wx !== 'number' || typeof wy !== 'number') {
+    res.status(400).json({ error: 'InvalidCoordinates' });
+    return;
+  }
+
+  const citizenId = req.citizen?.id || (typeof guestId === 'string' ? guestId : `guest_${req.ip || 'anon'}`);
+  const finalName = req.citizen?.displayName || (typeof displayName === 'string' ? displayName.slice(0, 24) : 'Visitor');
+  const finalAvatar = req.citizen?.avatarId || (typeof avatarId === 'string' ? avatarId : 'astronaut');
+  const finalDir = ['down', 'up', 'left', 'right'].includes(direction) ? direction : 'down';
+  const finalState = typeof state === 'string' ? state : 'idle';
+  const finalSpeech = typeof speech === 'string' ? speech.slice(0, 100) : null;
+
+  broadcastRealtimeEvent({
+    type: 'player-position',
+    citizenId,
+    displayName: finalName,
+    avatarId: finalAvatar,
+    wx,
+    wy,
+    direction: finalDir,
+    state: finalState,
+    speech: finalSpeech,
+    timestamp: Date.now(),
+  });
+
+  res.json({ ok: true });
+});
+
 // Periodic heartbeat every 15s to prune stale socket connections (long-running hosts only)
 if (enableSSE) {
   setInterval(() => {
