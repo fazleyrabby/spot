@@ -783,6 +783,37 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
     showToast(isMuted ? 'Environmental sound muted' : '🍃 Natural air, breeze & city sounds enabled', 'info');
   });
 
+  // ── Time of Day Switcher ─────────────────────────────────────────────────
+  const btnWorldTod = document.getElementById('world-tod-btn');
+  const worldTodIcon = document.getElementById('world-tod-icon');
+
+  const TOD_MODES: Array<'night' | 'day' | 'twilight'> = ['night', 'day', 'twilight'];
+  const TOD_ICONS: Record<'night' | 'day' | 'twilight', string> = {
+    night: '🌙',
+    day: '☀️',
+    twilight: '🌆',
+  };
+  const TOD_LABELS: Record<'night' | 'day' | 'twilight', string> = {
+    night: '🌙 Cozy Neon Night',
+    day: '☀️ Sunlit Daytime',
+    twilight: '🌆 Golden Sunset Twilight',
+  };
+
+  btnWorldTod?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+
+    const current = engine.renderer.timeOfDay;
+    const nextIdx = (TOD_MODES.indexOf(current) + 1) % TOD_MODES.length;
+    const next = TOD_MODES[nextIdx];
+
+    engine.renderer.timeOfDay = next;
+    if (worldTodIcon) {
+      worldTodIcon.textContent = TOD_ICONS[next];
+    }
+    showToast(TOD_LABELS[next], 'info');
+  });
+
   // ── Boot ─────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => { void boot(); });
 
