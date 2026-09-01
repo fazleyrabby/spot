@@ -4,6 +4,7 @@ import WorldHUD from '../components/WorldHUD.astro';
 import ProfileModal from '../components/ProfileModal.astro';
 import SecretModal from '../components/SecretModal.astro';
 import WorldChatBar from '../components/WorldChatBar.astro';
+import CitizenSearchModal from '../components/CitizenSearchModal.astro';
 ---
 
 <Layout
@@ -34,6 +35,9 @@ import WorldChatBar from '../components/WorldChatBar.astro';
 
     <!-- Quick Emote & Chat Dock -->
     <WorldChatBar />
+
+    <!-- Citizen Search & GPS Modal -->
+    <CitizenSearchModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -559,6 +563,159 @@ import WorldChatBar from '../components/WorldChatBar.astro';
           e.preventDefault();
           chatInput?.focus();
         }
+      });
+
+      // ── Citizen Search & GPS Modal Wiring ────────────────────────────────
+      const searchBackdrop = document.getElementById('search-modal-backdrop');
+      const searchCloseBtn = document.getElementById('search-modal-close');
+      const searchInput = document.getElementById('citizen-search-input') as HTMLInputElement | null;
+      const searchResultsList = document.getElementById('search-results-list');
+      const btnWorldSearch = document.getElementById('world-search-btn');
+
+      function openSearchModal(): void {
+        if (!searchBackdrop) return;
+        searchBackdrop.classList.add('open');
+        searchBackdrop.setAttribute('aria-hidden', 'false');
+        searchInput?.focus();
+        renderSearchResults(searchInput?.value || '');
+      }
+
+      function closeSearchModal(): void {
+        if (!searchBackdrop) return;
+        searchBackdrop.classList.remove('open');
+        searchBackdrop.setAttribute('aria-hidden', 'true');
+      }
+
+      btnWorldSearch?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSearchModal();
+      });
+
+      searchCloseBtn?.addEventListener('click', closeSearchModal);
+      searchBackdrop?.addEventListener('click', (e) => {
+        if (e.target === searchBackdrop) closeSearchModal();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (searchBackdrop?.classList.contains('open')) {
+            closeSearchModal();
+          } else {
+            openSearchModal();
+          }
+        }
+      });
+
+      function renderSearchResults(query: string): void {
+        if (!searchResultsList || !engine) return;
+        searchResultsList.replaceChildren();
+
+        const q = query.trim().toLowerCase();
+        const allCitizens = engine.monuments.getAllEntities().map((e) => e.spot);
+
+        const filtered = allCitizens.filter((s) => {
+          if (!q) return true;
+          const matchName = s.displayName?.toLowerCase().includes(q);
+          const matchTagline = s.tagline?.toLowerCase().includes(q);
+          const matchCoords = `${s.x},${s.y}`.includes(q) || `${s.x}, ${s.y}`.includes(q);
+          return matchName || matchTagline || matchCoords;
+        });
+
+        if (filtered.length === 0) {
+          const empty = document.createElement('p');
+          empty.className = 'search-empty-state';
+          empty.textContent = `No citizens found matching "${query}".`;
+          searchResultsList.appendChild(empty);
+          return;
+        }
+
+        filtered.slice(0, 15).forEach((spot) => {
+          const item = document.createElement('div');
+          item.className = 'search-result-item';
+
+          const left = document.createElement('div');
+          left.className = 'search-result-left';
+
+          const avatarCanvas = document.createElement('canvas');
+          avatarCanvas.className = 'search-result-avatar';
+          avatarCanvas.width = 38;
+          avatarCanvas.height = 38;
+          const actx = avatarCanvas.getContext('2d');
+          if (actx) {
+            const def = AVATAR_CATALOG[spot.avatarId] ?? AVATAR_CATALOG.astronaut;
+            if (spot.customAvatarData) {
+              drawCustomAvatarOnCanvas(actx, spot.customAvatarData, 0, 0, 38);
+            } else {
+              drawAvatarOnCanvas(actx, def, 0, 0, 38);
+            }
+          }
+
+          const info = document.createElement('div');
+          info.className = 'search-result-info';
+
+          const nameRow = document.createElement('div');
+          nameRow.className = 'search-result-name-row';
+          const name = document.createElement('span');
+          name.className = 'search-result-name';
+          name.textContent = spot.displayName;
+          nameRow.appendChild(name);
+
+          if (spot.isVerified) {
+            const badge = document.createElement('span');
+            badge.textContent = ' ✓';
+            badge.style.color = '#38bdf8';
+            badge.style.fontSize = '0.8rem';
+            nameRow.appendChild(badge);
+          }
+
+          const sub = document.createElement('span');
+          sub.className = 'search-result-tagline';
+          sub.textContent = spot.tagline || `Spot (${spot.x}, ${spot.y})`;
+
+          info.append(nameRow, sub);
+          left.append(avatarCanvas, info);
+
+          const actions = document.createElement('div');
+          actions.className = 'search-result-actions';
+
+          const btnGps = document.createElement('button');
+          btnGps.className = 'btn-search-gps';
+          btnGps.textContent = '🧭 GPS';
+          btnGps.title = 'Set compass waypoint arrow';
+          btnGps.onclick = (e) => {
+            e.stopPropagation();
+            if (engine) {
+              engine.renderer.gpsTarget = {
+                name: spot.displayName,
+                wx: spot.x * 48 + 24,
+                wy: spot.y * 32 + 16,
+              };
+              showToast(`🧭 Compass locked to @${spot.displayName}`, 'success');
+              closeSearchModal();
+            }
+          };
+
+          const btnFly = document.createElement('button');
+          btnFly.className = 'btn-search-fly';
+          btnFly.textContent = '🚀 Fly';
+          btnFly.title = 'Pan camera to citizen plot';
+          btnFly.onclick = (e) => {
+            e.stopPropagation();
+            if (engine) {
+              engine.flyTo(spot.x, spot.y, 1.2);
+              closeSearchModal();
+            }
+          };
+
+          actions.append(btnGps, btnFly);
+          item.append(left, actions);
+          searchResultsList.appendChild(item);
+        });
+      }
+
+      searchInput?.addEventListener('input', (e) => {
+        renderSearchResults((e.target as HTMLInputElement).value);
       });
 
       // Update HUD coordinate & zoom display
