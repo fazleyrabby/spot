@@ -1,7 +1,11 @@
 /**
- * Renderer — Top-Down Diverse City & Urban District Canvas2D Renderer for Spot World.
+ * Renderer — Top-Down Diverse City, Mountain Ridge, Railway, and Beach Canvas2D Renderer.
  *
- * 5 Unique Districts with Volumetric Wind-Swaying Trees, Easter Egg Landmarks & Animated Chibi Citizens.
+ * Geographical Structure:
+ * - Northern Mountain Ridge (snow peaks & pines)
+ * - Northern High-Speed Cyber Railway (autonomous bullet train with headlights)
+ * - 5 Urban Districts (Grand Plaza, Central Park & Lake, Downtown, Cafe Promenade, Zen Gardens)
+ * - Southern Golden Coast & Living Ocean with animated rolling surf waves
  */
 
 import { Camera } from './camera.js';
@@ -19,13 +23,25 @@ import { SpriteManager } from './sprite-manager.js';
 import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
+import { TrainManager } from './train-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
-// District Palettes
+// Palette Definitions
 // ---------------------------------------------------------------------------
 
 const PALETTES = {
+  // Mountains
+  mountain_rock_1: '#1e293b',
+  mountain_rock_2: '#334155',
+  mountain_snow: '#f1f5f9',
+
+  // Railway
+  rail_ballast: '#181e26',
+  rail_sleeper: '#451a03',
+  rail_steel: '#cbd5e1',
+  rail_shine: '#f8fafc',
+
   // Asphalt & Streets
   asphalt: '#151921',
   lane_white: 'rgba(248, 250, 252, 0.85)',
@@ -48,7 +64,13 @@ const PALETTES = {
   park_grass_1: '#16361e',
   park_grass_2: '#1c4226',
   water_pond: '#0c4a6e',
-  water_ripple: '#38bdf8',
+
+  // Beach & Ocean
+  beach_sand_1: '#d4a359',
+  beach_sand_2: '#e2c275',
+  ocean_deep: '#0369a1',
+  ocean_surf: '#0284c7',
+  wave_foam: 'rgba(255, 255, 255, 0.9)',
 
   // Target Selection Rings
   hover_ring: 'rgba(245, 158, 11, 0.85)',
@@ -87,6 +109,7 @@ export class Renderer {
   readonly player: PlayerManager;
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
+  readonly train: TrainManager;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
@@ -114,6 +137,7 @@ export class Renderer {
     this.player = player;
     this.monuments = monuments;
     this.plots = plots;
+    this.train = new TrainManager();
 
     this.initCityParticles();
   }
@@ -163,6 +187,7 @@ export class Renderer {
     this.camera.update();
     this.player.update();
     this.monuments.updateTick();
+    this.train.tick();
 
     this.draw();
   };
@@ -187,7 +212,7 @@ export class Renderer {
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
 
-    // 3. Ground Layer (Diverse District Tiles)
+    // 3. Ground Layer (Mountains, Railway, Districts, Beach, Ocean)
     this.drawCityGround(ctx, range, z);
 
     // 4. Collect Depth-Sorted Entities & Street Lights
@@ -197,7 +222,17 @@ export class Renderer {
     // 4a. Urban Props & Street Lamps
     this.collectCityProps(range, entities, lights);
 
-    // 4b. Citizen Chibi Characters
+    // 4b. Passing Cyber Bullet Train
+    if (this.train.active) {
+      entities.push({
+        depth: this.train.trackWy + 10,
+        render: (c, currentZoom) => {
+          this.train.render(c, 0, this.camera, currentZoom);
+        },
+      });
+    }
+
+    // 4c. Citizen Chibi Characters
     const allCitizens = this.monuments.getAllEntities();
     for (const ent of allCitizens) {
       const screen = camera.worldToScreen(ent.wx, ent.wy);
@@ -239,7 +274,7 @@ export class Renderer {
       });
     }
 
-    // 4c. Player Character
+    // 4d. Player Character
     const playerScreen = camera.worldToScreen(this.player.wx, this.player.wy);
     entities.push({
       depth: this.player.wy,
@@ -264,7 +299,7 @@ export class Renderer {
     // 8. Time of Day Atmospheric Wash
     if (this.timeOfDay === 'day') {
       ctx.save();
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.06)';
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     } else if (this.timeOfDay === 'twilight') {
@@ -291,12 +326,10 @@ export class Renderer {
     const H = this.camera.viewportHeight;
     const screenTarget = this.camera.worldToScreen(this.gpsTarget.wx, this.gpsTarget.wy);
 
-    // Calculate distance from player in tiles
     const distTiles = Math.round(
       Math.hypot(this.player.wx - this.gpsTarget.wx, this.player.wy - this.gpsTarget.wy) / TILE_WIDTH
     );
 
-    // If target is centered on screen and within 3 tiles, no indicator needed
     if (screenTarget.x > 80 && screenTarget.x < W - 80 && screenTarget.y > 80 && screenTarget.y < H - 80 && distTiles <= 2) {
       return;
     }
@@ -306,7 +339,6 @@ export class Renderer {
     const cy = H / 2;
     const angle = Math.atan2(screenTarget.y - cy, screenTarget.x - cx);
 
-    // Clamp indicator to screen perimeter
     let ix = cx + Math.cos(angle) * (W / 2 - margin);
     let iy = cy + Math.sin(angle) * (H / 2 - margin);
     ix = Math.max(margin, Math.min(W - margin, ix));
@@ -314,7 +346,6 @@ export class Renderer {
 
     ctx.save();
 
-    // Floating Pill Card
     const text = `🧭 ${this.gpsTarget.name} • ${distTiles} tiles`;
     ctx.font = `bold 11px 'Outfit', sans-serif`;
     const textW = ctx.measureText(text).width;
@@ -330,7 +361,6 @@ export class Renderer {
     ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    // Subtle amber glow
     ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
     ctx.shadowBlur = 10;
 
@@ -339,7 +369,6 @@ export class Renderer {
     ctx.textBaseline = 'middle';
     ctx.fillText(text, ix, iy);
 
-    // Pointer arrow along border
     ctx.save();
     ctx.translate(ix, iy);
     ctx.rotate(angle);
@@ -356,7 +385,7 @@ export class Renderer {
   }
 
   // ---------------------------------------------------------------------------
-  // City Ground Rendering
+  // City & Geography Ground Rendering
   // ---------------------------------------------------------------------------
 
   private drawCityGround(
@@ -380,6 +409,94 @@ export class Renderer {
         const dh = Math.ceil(th);
 
         switch (tileType) {
+          // ── Northern Mountains ─────────────────────────────────────────────
+          case 'mountain_rock': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? PALETTES.mountain_rock_1 : PALETTES.mountain_rock_2;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'mountain_snow': {
+            ctx.fillStyle = PALETTES.mountain_rock_1;
+            ctx.fillRect(dx, dy, dw, dh);
+            // Snow peak triangle
+            ctx.fillStyle = PALETTES.mountain_snow;
+            ctx.beginPath();
+            ctx.moveTo(dx, dy + dh);
+            ctx.lineTo(dx + dw / 2, dy);
+            ctx.lineTo(dx + dw, dy + dh);
+            ctx.closePath();
+            ctx.fill();
+            break;
+          }
+
+          // ── Northern Railway Track ────────────────────────────────────────
+          case 'railway_ballast': {
+            // Ballast stone bed
+            ctx.fillStyle = PALETTES.rail_ballast;
+            ctx.fillRect(dx, dy, dw, dh);
+
+            // Wooden sleepers every few pixels
+            const sleeperCount = 3;
+            const slW = dw / sleeperCount;
+            ctx.fillStyle = PALETTES.rail_sleeper;
+            for (let s = 0; s < sleeperCount; s++) {
+              ctx.fillRect(dx + s * slW + 2 * z, dy + 2 * z, slW - 4 * z, dh - 4 * z);
+            }
+
+            // Twin Steel Rails
+            ctx.fillStyle = PALETTES.rail_steel;
+            ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 2.5 * z));
+            ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 2.5 * z));
+
+            // Metallic shine
+            ctx.fillStyle = PALETTES.rail_shine;
+            ctx.fillRect(dx, dy + dh * 0.28, dw, Math.max(1, 0.8 * z));
+            ctx.fillRect(dx, dy + dh * 0.72, dw, Math.max(1, 0.8 * z));
+            break;
+          }
+
+          // ── Southern Beach & Living Ocean ─────────────────────────────────
+          case 'beach_sand': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? PALETTES.beach_sand_1 : PALETTES.beach_sand_2;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'ocean_surf': {
+            // Wet Sand background
+            ctx.fillStyle = PALETTES.beach_sand_1;
+            ctx.fillRect(dx, dy, dw, dh);
+
+            // Rolling animated wave tide
+            const wave = Math.sin(this.tick * 0.05 + gx * 0.4) * 0.3;
+            const waterHeight = (0.5 + wave) * dh;
+
+            ctx.fillStyle = PALETTES.ocean_surf;
+            ctx.fillRect(dx, dy + dh - waterHeight, dw, waterHeight);
+
+            // White wave foam crest
+            ctx.fillStyle = PALETTES.wave_foam;
+            ctx.fillRect(dx, dy + dh - waterHeight, dw, Math.max(1.5, 3 * z));
+            break;
+          }
+
+          case 'ocean_deep': {
+            ctx.fillStyle = PALETTES.ocean_deep;
+            ctx.fillRect(dx, dy, dw, dh);
+
+            // Ocean water sparkle highlights
+            const sparkle = Math.sin(this.tick * 0.04 + gx * 0.6 + gy * 0.6);
+            if (sparkle > 0.4) {
+              ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+              ctx.fillRect(dx + dw * 0.25, dy + dh * 0.4, dw * 0.5, Math.max(1, 1.8 * z));
+            }
+            break;
+          }
+
+          // ── Urban Roadways ────────────────────────────────────────────────
           case 'road_asphalt': {
             ctx.fillStyle = PALETTES.asphalt;
             ctx.fillRect(dx, dy, dw, dh);
@@ -470,7 +587,7 @@ export class Renderer {
   }
 
   // ---------------------------------------------------------------------------
-  // City Props & Street Lights Collection
+  // Props & Street Lighting Collection
   // ---------------------------------------------------------------------------
 
   private collectCityProps(
@@ -518,8 +635,124 @@ export class Renderer {
     const windSway = Math.sin(this.tick * 0.04 + prop.wx * 0.1) * 1.6 * z;
 
     switch (prop.type) {
+      case 'palm_tree': {
+        // Tropical Coconut Palm
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 12 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Curved trunk
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 5 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo(sx + 8 * z, sy - 16 * z, sx + 5 * z + windSway, sy - 30 * z);
+        ctx.stroke();
+
+        const topX = sx + 5 * z + windSway;
+        const topY = sy - 30 * z;
+
+        // Drooping palm fronds
+        const frondColors = ['#15803d', '#16a34a', '#22c55e'];
+        for (let f = 0; f < 6; f++) {
+          const angle = (f * Math.PI) / 3 + windSway * 0.05;
+          ctx.strokeStyle = frondColors[f % 3];
+          ctx.lineWidth = 3.5 * z;
+          ctx.beginPath();
+          ctx.moveTo(topX, topY);
+          const endX = topX + Math.cos(angle) * 18 * z;
+          const endY = topY + Math.sin(angle) * 12 * z + 6 * z;
+          ctx.quadraticCurveTo(topX + Math.cos(angle) * 12 * z, topY - 4 * z, endX, endY);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'beach_umbrella': {
+        // Striped Beach Parasol
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx + 3 * z, sy + 2 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pole
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx - 2 * z, sy - 18 * z);
+        ctx.stroke();
+
+        // Canopy
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(sx - 2 * z, sy - 18 * z, 12 * z, Math.PI, 0);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(sx - 2 * z, sy - 18 * z);
+        ctx.arc(sx - 2 * z, sy - 18 * z, 12 * z, Math.PI + 0.6, Math.PI + 1.4);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+
+      case 'starfish': {
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'mountain_pine': {
+        // Evergreen Pine
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 10 * z, 4.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trunk
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx - 2 * z, sy - 8 * z, 4 * z, 8 * z);
+
+        // 3-tiered pine foliage
+        const pineColors = ['#064e3b', '#065f46', '#047857'];
+        for (let t = 0; t < 3; t++) {
+          ctx.fillStyle = pineColors[t];
+          const py = sy - 8 * z - t * 7 * z;
+          const pw = (14 - t * 3) * z;
+          ctx.beginPath();
+          ctx.moveTo(sx - pw / 2, py);
+          ctx.lineTo(sx, py - 9 * z);
+          ctx.lineTo(sx + pw / 2, py);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'railway_signal': {
+        // Signal Post
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 1.5 * z, sy - 20 * z, 3 * z, 20 * z);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(sx - 4 * z, sy - 22 * z, 8 * z, 10 * z, 2 * z);
+        ctx.fill();
+
+        // Green LED lamp
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 18 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
       case 'genesis_monolith': {
-        // Obelisk base pedestal
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 16 * z, 8 * z, 0, 0, Math.PI * 2);
@@ -530,7 +763,6 @@ export class Renderer {
         ctx.roundRect(sx - 12 * z, sy - 6 * z, 24 * z, 8 * z, 2 * z);
         ctx.fill();
 
-        // Glowing Golden Monolith Body
         const floatBob = Math.sin(this.tick * 0.08) * 1.5 * z;
         const monoY = sy - 12 * z + floatBob;
 
@@ -544,7 +776,6 @@ export class Renderer {
         ctx.closePath();
         ctx.fill();
 
-        // Shimmering gold crest
         ctx.fillStyle = '#fef08a';
         ctx.beginPath();
         ctx.moveTo(sx - 3 * z, monoY - 22 * z);
@@ -553,7 +784,6 @@ export class Renderer {
         ctx.closePath();
         ctx.fill();
 
-        // Runic glyph
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold ${Math.round(9 * z)}px monospace`;
         ctx.textAlign = 'center';
@@ -563,24 +793,20 @@ export class Renderer {
       }
 
       case 'dev_library': {
-        // Study Kiosk
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 14 * z, 6 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Wooden cabinet
         ctx.fillStyle = '#78350f';
         ctx.beginPath();
         ctx.roundRect(sx - 11 * z, sy - 22 * z, 22 * z, 22 * z, 3 * z);
         ctx.fill();
 
-        // Book shelves
         ctx.fillStyle = '#451a03';
         ctx.fillRect(sx - 9 * z, sy - 19 * z, 18 * z, 8 * z);
         ctx.fillRect(sx - 9 * z, sy - 9 * z, 18 * z, 7 * z);
 
-        // Books
         const colors = ['#38bdf8', '#f43f5e', '#10b981', '#fbbf24', '#c084fc'];
         for (let b = 0; b < 5; b++) {
           ctx.fillStyle = colors[b % colors.length];
@@ -588,7 +814,6 @@ export class Renderer {
           ctx.fillRect(sx - 8 * z + b * 3.2 * z, sy - 8 * z, 2.4 * z, 5.5 * z);
         }
 
-        // Roof awning
         ctx.fillStyle = '#6366f1';
         ctx.beginPath();
         ctx.moveTo(sx - 13 * z, sy - 22 * z);
@@ -600,7 +825,6 @@ export class Renderer {
       }
 
       case 'mystic_duck': {
-        // Water Ripple Trail
         ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.beginPath();
         ctx.ellipse(sx, sy + 2 * z, 9 * z, 4 * z, 0, 0, Math.PI * 2);
@@ -609,52 +833,44 @@ export class Renderer {
         const bob = Math.sin(this.tick * 0.1) * 1.5 * z;
         const dy = sy + bob;
 
-        // Yellow Duck Body
         ctx.fillStyle = '#eab308';
         ctx.beginPath();
         ctx.ellipse(sx, dy - 3 * z, 7 * z, 4.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Head
         ctx.beginPath();
         ctx.arc(sx + 4 * z, dy - 7 * z, 3.5 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Orange Bill
         ctx.fillStyle = '#f97316';
         ctx.fillRect(sx + 6.5 * z, dy - 7 * z, 3 * z, 1.8 * z);
 
-        // Eye
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(sx + 4.5 * z, dy - 8 * z, 1 * z, 1 * z);
         break;
       }
 
       case 'cafe_cat': {
-        // Cafe Chair
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, 8 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#be123c'; // Velvet cushion
+        ctx.fillStyle = '#be123c';
         ctx.beginPath();
         ctx.ellipse(sx, sy - 4 * z, 8 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Black/White Cat Curled Up
         const catY = sy - 6 * z;
         ctx.fillStyle = '#0f172a';
         ctx.beginPath();
         ctx.ellipse(sx, catY, 6 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Cat Head & Ears
         ctx.beginPath();
         ctx.arc(sx + 3 * z, catY - 2 * z, 3.5 * z, 0, Math.PI * 2);
         ctx.fill();
 
-        // Pink inner ears
         ctx.fillStyle = '#f472b6';
         ctx.beginPath();
         ctx.moveTo(sx + 2 * z, catY - 5 * z);
@@ -662,7 +878,6 @@ export class Renderer {
         ctx.lineTo(sx + 4.5 * z, catY - 5 * z);
         ctx.fill();
 
-        // Animated tail twitch
         const tailWag = Math.sin(this.tick * 0.1) * 2 * z;
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 1.8 * z;
