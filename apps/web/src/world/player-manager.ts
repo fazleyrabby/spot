@@ -28,6 +28,11 @@ import type { Plot, PlotManager } from './plot-manager.js';
 export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
+export const MIN_WALKABLE_WY = 7.5 * TILE_HEIGHT; // Strictly south of railway safety perimeter fence (~120px)
+export const MAX_WALKABLE_WY = 95.0 * TILE_HEIGHT; // Strictly north of deep ocean tide (~1520px)
+export const MIN_WALKABLE_WX = 1.0 * TILE_WIDTH;
+export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 1.0 * TILE_WIDTH;
+
 const MOVE_SPEED = 2.6; // smooth continuous speed
 const WALK_FRAME_INTERVAL = 7;
 const IDLE_SLEEP_TIMEOUT = 180; // 3 seconds
@@ -105,8 +110,8 @@ export class PlayerManager {
     this.gx = gx;
     this.gy = gy;
     const center = gridToWorldCenter(gx, gy);
-    this.wx = center.wx;
-    this.wy = center.wy;
+    this.wx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, center.wx));
+    this.wy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, center.wy));
     this.updateCurrentPlot();
   }
 
@@ -170,8 +175,8 @@ export class PlayerManager {
 
   walkTo(wx: number, wy: number): void {
     this.targetDestination = {
-      wx: Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, wx)),
-      wy: Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, wy)),
+      wx: Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, wx)),
+      wy: Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, wy)),
     };
     this.resetIdle();
   }
@@ -226,8 +231,8 @@ export class PlayerManager {
       const moveX = (dx / len) * speed;
       const moveY = (dy / len) * speed;
 
-      this.wx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, this.wx + moveX));
-      this.wy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, this.wy + moveY));
+      this.wx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, this.wx + moveX));
+      this.wy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, this.wy + moveY));
 
       this.updateCurrentPlot();
 
