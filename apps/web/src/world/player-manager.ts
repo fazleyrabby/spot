@@ -118,12 +118,22 @@ export class PlayerManager {
     }
   }
 
+  onInteract?: () => void;
+
   bindInput(): void {
     window.addEventListener('keydown', (e) => {
+      // Don't capture keys if typing in an input/textarea
+      if (['input', 'textarea', 'select'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+        return;
+      }
+
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
         this.keys.add(k);
         this.resetIdle();
+      } else if (k === 'e' || k === ' ' || k === 'enter') {
+        this.resetIdle();
+        this.onInteract?.();
       }
     });
 

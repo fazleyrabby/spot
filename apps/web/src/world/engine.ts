@@ -17,8 +17,9 @@ import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import { InteractionHandler } from './interaction.js';
-import { gridToWorldCenter } from '@spot/world';
+import { gridToWorldCenter, worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
+import { getSecretAt } from './secrets.js';
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -127,7 +128,40 @@ export class Engine {
       this.camera.centerOn(center.wx, center.wy, 1.1, true);
     }
 
-    // 5. Bind player movement keys (WASD/Arrows)
+    // 5. Bind player movement keys (WASD/Arrows) & 'E' / Space interaction
+    this.player.onInteract = () => {
+      // 1. Check if near any secret landmark (within 2.5 tiles)
+      const grid = worldToGrid(this.player.wx, this.player.wy);
+      if (grid) {
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            const secret = getSecretAt(grid.gx + dx, grid.gy + dy);
+            if (secret) {
+              this.options.onSecretClick?.(secret);
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Check if near any citizen (within 50px)
+      const allCitizens = this.monuments.getAllEntities();
+      let nearestCitizen: OccupiedSpotSummary | null = null;
+      let minCitizenDist = 55;
+
+      for (const ent of allCitizens) {
+        const dist = Math.hypot(this.player.wx - ent.wx, this.player.wy - ent.wy);
+        if (dist < minCitizenDist) {
+          minCitizenDist = dist;
+          nearestCitizen = ent.spot;
+        }
+      }
+
+      if (nearestCitizen) {
+        this.renderer.selectedCitizen = nearestCitizen;
+        this.options.onCitizenClick?.(nearestCitizen);
+      }
+    };
     this.player.bindInput();
 
     // 6. Bind mouse/touch input handler
