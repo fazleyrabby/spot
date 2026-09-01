@@ -38,19 +38,20 @@
     background: rgba(10, 12, 18, 0.78);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    display: flex;
+    display: none;
     align-items: flex-start;
     justify-content: center;
     padding-top: 14vh;
-    z-index: 250;
+    z-index: 300;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .search-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .search-card {
