@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import WorldHUD from '../components/WorldHUD.astro';
 import ProfileModal from '../components/ProfileModal.astro';
 import SecretModal from '../components/SecretModal.astro';
+import WorldChatBar from '../components/WorldChatBar.astro';
 ---
 
 <Layout
@@ -30,6 +31,9 @@ import SecretModal from '../components/SecretModal.astro';
 
     <!-- Secret discovery modal -->
     <SecretModal />
+
+    <!-- Quick Emote & Chat Dock -->
+    <WorldChatBar />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -506,6 +510,56 @@ import SecretModal from '../components/SecretModal.astro';
 
       loaderSub.textContent = 'Rendering Stardew World…';
       await engine.init();
+
+      // ── Chat & Emote Dock Wiring ──────────────────────────────────────────
+      const chatForm = document.getElementById('world-chat-form') as HTMLFormElement | null;
+      const chatInput = document.getElementById('world-chat-input') as HTMLInputElement | null;
+      const emoteBtns = document.querySelectorAll('.emote-btn');
+
+      emoteBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const emote = (btn as HTMLElement).dataset.emote;
+          if (emote && engine) {
+            engine.player.say(emote, 240);
+          }
+        });
+      });
+
+      chatForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!chatInput || !engine) return;
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        engine.player.say(msg, 360);
+        chatInput.value = '';
+        chatInput.blur();
+      });
+
+      // Emote numeric hotkeys (1-6) and Enter to focus chat
+      window.addEventListener('keydown', (e) => {
+        if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+          return;
+        }
+
+        const key = e.key;
+        const emoteMap: Record<string, string> = {
+          '1': '👋',
+          '2': '☕',
+          '3': '✨',
+          '4': '❤️',
+          '5': '🚀',
+          '6': '🎮',
+        };
+
+        if (emoteMap[key] && engine) {
+          engine.player.say(emoteMap[key], 240);
+        } else if (key === 't' || key === '/') {
+          e.preventDefault();
+          chatInput?.focus();
+        }
+      });
 
       // Update HUD coordinate & zoom display
       setInterval(() => {

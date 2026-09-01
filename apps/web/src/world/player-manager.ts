@@ -61,6 +61,18 @@ export class PlayerManager {
   isFounder: boolean = false;
   isVerified: boolean = false;
 
+  chatBubble: { text: string; age: number; maxAge: number } | null = null;
+
+  say(text: string, duration = 300): void {
+    if (!text || !text.trim()) return;
+    this.chatBubble = {
+      text: text.trim(),
+      age: 0,
+      maxAge: duration,
+    };
+    this.resetIdle();
+  }
+
   private plotManager: PlotManager | null = null;
   currentPlot: Plot | null = null;
   private onPlotChange?: (plot: Plot) => void;
@@ -155,6 +167,7 @@ export class PlayerManager {
 
   update(): void {
     this.tick++;
+    this.updateChatBubble();
     let dx = 0;
     let dy = 0;
 
@@ -241,7 +254,7 @@ export class PlayerManager {
       skin: this.avatar.colors.skin || '#fde047',
     };
 
-    // Soft ground shadow
+    // 1. Soft ground shadow
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
     ctx.beginPath();
@@ -257,6 +270,64 @@ export class PlayerManager {
     }
 
     this.renderNameBadge(ctx, sx, sy, z);
+
+    // Chat / Emote speech bubble
+    if (this.chatBubble) {
+      this.renderChatBubble(ctx, sx, sy - 38 * z, z);
+    }
+  }
+
+  private updateChatBubble(): void {
+    if (!this.chatBubble) return;
+    this.chatBubble.age++;
+    if (this.chatBubble.age >= this.chatBubble.maxAge) {
+      this.chatBubble = null;
+    }
+  }
+
+  private renderChatBubble(ctx: CanvasRenderingContext2D, bx: number, by: number, z: number): void {
+    if (!this.chatBubble) return;
+    const { text, age, maxAge } = this.chatBubble;
+    const alpha = age > maxAge - 30 ? (maxAge - age) / 30 : 1;
+
+    const fontSize = Math.max(9, Math.round(10 * z));
+    ctx.font = `600 ${fontSize}px 'Outfit', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const textW = ctx.measureText(text).width;
+    const padX = 8 * z;
+    const padY = 5 * z;
+    const bubbleW = Math.max(28 * z, textW + padX * 2);
+    const bubbleH = fontSize + padY * 2;
+
+    const floatY = by - Math.min(4 * z, (age / 30) * 4 * z);
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha);
+
+    // Speech bubble pill
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    ctx.beginPath();
+    ctx.roundRect(bx - bubbleW / 2, floatY - bubbleH / 2, bubbleW, bubbleH, 7 * z);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Bubble pointer
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    ctx.beginPath();
+    ctx.moveTo(bx - 3 * z, floatY + bubbleH / 2);
+    ctx.lineTo(bx, floatY + bubbleH / 2 + 4 * z);
+    ctx.lineTo(bx + 3 * z, floatY + bubbleH / 2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(text, bx, floatY);
+    ctx.restore();
   }
 
   private renderChibi(
