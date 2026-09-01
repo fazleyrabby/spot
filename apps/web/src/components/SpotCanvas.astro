@@ -322,7 +322,8 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 6px;
-      max-width: calc(100vw - 80px);
+      /* Reserve room for the right-side nav controls (~60px wide + 12px margin) */
+      max-width: calc(100vw - 88px);
     }
 
     .hud-actions {
@@ -331,10 +332,25 @@
     }
 
     .coord-pill {
-      padding: 6px 12px 6px 10px;
+      padding: 6px 10px;
       font-size: 0.76rem;
-      gap: 6px;
-      overflow: visible;
+      gap: 5px;
+      overflow: hidden;
+      max-width: 100%;
+    }
+
+    /* Hide decorative elements that expand the pill width on mobile */
+    .coord-icon {
+      display: none;
+    }
+
+    .district-text {
+      display: none;
+    }
+
+    /* Shrink the creator badge — hide the "made by" label, keep the name */
+    .creator-badge__label {
+      display: none;
     }
 
     .support-btn {
@@ -359,12 +375,17 @@
       display: none;
     }
 
-    .district-text {
+    .prime-badge {
+      display: none !important;
+    }
+
+    /* Also hide creator name on very narrow screens, keep only the icon */
+    .creator-badge__name {
       display: none;
     }
 
-    .prime-badge {
-      display: none !important;
+    .creator-badge__text {
+      display: none;
     }
   }
 </style>
