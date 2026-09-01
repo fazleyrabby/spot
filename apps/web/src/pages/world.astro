@@ -444,6 +444,13 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
       }
     }
 
+    // Play contextual discovery SFX
+    if (engine) {
+      if (secret.id === 'mystic_duck') engine.audio.playDuckQuack();
+      else if (secret.id === 'cafe_cat') engine.audio.playCatPurr();
+      else engine.audio.playFanfare();
+    }
+
     // Save to discovered secrets
     const discovered = getDiscoveredSecrets();
     const isNew = !discovered.has(secret.id);
@@ -760,6 +767,20 @@ import CitizenSearchModal from '../components/CitizenSearchModal.astro';
   btnRecenter?.addEventListener('click', (e) => {
     e.stopPropagation();
     engine?.flyTo(52, 60, 1.0);
+  });
+
+  // ── Audio Ambience Toggle ────────────────────────────────────────────────
+  const btnWorldAudio = document.getElementById('world-audio-btn');
+  const worldAudioIcon = document.getElementById('world-audio-icon');
+
+  btnWorldAudio?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const isMuted = engine.audio.toggleMute();
+    if (worldAudioIcon) {
+      worldAudioIcon.textContent = isMuted ? '🔇' : '🔊';
+    }
+    showToast(isMuted ? 'Environmental sound muted' : '🍃 Natural air, breeze & city sounds enabled', 'info');
   });
 
   // ── Boot ─────────────────────────────────────────────────────────────────

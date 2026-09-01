@@ -20,6 +20,7 @@ import { InteractionHandler } from './interaction.js';
 import { gridToWorldCenter, worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
 import { getSecretAt } from './secrets.js';
+import { AudioManager } from './audio-manager.js';
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -44,6 +45,7 @@ export class Engine {
   readonly player: PlayerManager;
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
+  readonly audio: AudioManager;
 
   private input!: InteractionHandler;
   private sseSource: EventSource | null = null;
@@ -51,6 +53,7 @@ export class Engine {
 
   constructor(options: EngineOptions) {
     this.options = options;
+    this.audio = new AudioManager();
 
     this.camera = new Camera({
       minZoom: 0.35,

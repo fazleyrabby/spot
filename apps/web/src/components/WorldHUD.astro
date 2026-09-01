@@ -56,6 +56,13 @@
     <kbd class="hud-kbd">⌘K</kbd>
   </button>
 
+  <div class="hud-divider"></div>
+
+  <!-- Audio Ambient Sound Toggle -->
+  <button class="hud-audio-btn" id="world-audio-btn" title="Toggle Natural Environmental Sounds (Air, Birds, SFX)">
+    <span id="world-audio-icon">🔇</span>
+  </button>
+
   <div class="hud-divider hud-divider-right"></div>
 
   <!-- Zoom controls -->
@@ -219,6 +226,26 @@
     background: rgba(56, 189, 248, 0.22);
     border-color: #38bdf8;
     color: #f8fafc;
+  }
+
+  .hud-audio-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-audio-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: scale(1.08);
   }
 
   .hud-kbd {
