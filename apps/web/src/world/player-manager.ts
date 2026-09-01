@@ -165,6 +165,16 @@ export class PlayerManager {
     this.idleTimer = 0;
   }
 
+  targetDestination: { wx: number; wy: number } | null = null;
+
+  walkTo(wx: number, wy: number): void {
+    this.targetDestination = {
+      wx: Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, wx)),
+      wy: Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, wy)),
+    };
+    this.resetIdle();
+  }
+
   update(): void {
     this.tick++;
     this.updateChatBubble();
@@ -180,6 +190,24 @@ export class PlayerManager {
     if (down) dy += 1;
     if (left) dx -= 1;
     if (right) dx += 1;
+
+    // Keyboard overrides tap destination
+    if (dx !== 0 || dy !== 0) {
+      this.targetDestination = null;
+    } else if (this.targetDestination) {
+      const distX = this.targetDestination.wx - this.wx;
+      const distY = this.targetDestination.wy - this.wy;
+      const dist = Math.hypot(distX, distY);
+
+      if (dist < 4) {
+        this.targetDestination = null;
+        dx = 0;
+        dy = 0;
+      } else {
+        dx = distX / dist;
+        dy = distY / dist;
+      }
+    }
 
     if (dx !== 0 || dy !== 0) {
       this.state = 'walking';
