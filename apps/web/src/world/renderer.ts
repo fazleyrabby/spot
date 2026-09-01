@@ -1,14 +1,12 @@
 /**
- * Renderer — Top-Down City & Urban District Canvas2D Renderer for Spot World.
+ * Renderer — Top-Down Diverse City & Urban District Canvas2D Renderer for Spot World.
  *
- * Visual Features:
- *  - Dark asphalt streets with white lane stripes and zebra crosswalks.
- *  - Paved sidewalks, urban plazas, and green park squares.
- *  - Streetlamps with warm ambient golden light halos on the dark streets.
- *  - Urban furniture: Benches, vending machines, tree planters, cafe tables.
- *  - Chibi citizens and player walking along sidewalks and pedestrian plazas.
- *  - Clean RPG selection rings under hovered/clicked citizens (no giant square boxes).
- *  - Unified depth sorting (Y-sort) for all entities.
+ * 5 Unique Districts:
+ *  - Grand Central Plaza (Slate paving, central landmark fountain, cafe tables)
+ *  - Central Park & Lake (Lush grass, animated water pond, blooming trees)
+ *  - Downtown Cyber District (Asphalt avenues, glowing vending machines, streetlamps)
+ *  - Cafe Promenade (Warm terracotta brick, bistro umbrellas, flower planters)
+ *  - Zen Gardens (Cobblestone courtyards, pink cherry blossoms, stone lanterns)
  */
 
 import { Camera } from './camera.js';
@@ -21,45 +19,47 @@ import {
   getCityTileType,
   getCityProp,
   type CityProp,
-  type UrbanTileType,
 } from './terrain-generator.js';
-import { SpriteManager, URBAN_TILES } from './sprite-manager.js';
+import { SpriteManager } from './sprite-manager.js';
 import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
-// Urban Palette (Sleek Dark Asphalt, Amber Lighting, Jade Accents)
+// District Palettes
 // ---------------------------------------------------------------------------
 
-const CITY_PALETTE = {
+const PALETTES = {
   // Asphalt & Streets
-  asphalt_base: '#171b21',
-  asphalt_edge: '#12151a',
+  asphalt: '#151921',
   lane_white: 'rgba(248, 250, 252, 0.85)',
-  lane_yellow: '#f59e0b',
-  crosswalk_bar: 'rgba(255, 255, 255, 0.90)',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.92)',
 
-  // Sidewalks & Plazas
-  sidewalk_base: '#27313f',
-  sidewalk_edge: '#1e2632',
-  sidewalk_seam: 'rgba(255, 255, 255, 0.06)',
-  plaza_base: '#222a36',
-  plaza_accent: '#2a3443',
-  park_grass: '#1b3822',
-  park_accent: '#23472c',
+  // Sidewalks
+  sidewalk_base: '#262f3c',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.05)',
 
-  // Lighting
-  lamp_glow_inner: 'rgba(251, 191, 36, 0.32)',
-  lamp_glow_outer: 'rgba(251, 191, 36, 0.0)',
-  neon_vending_glow: 'rgba(56, 189, 248, 0.28)',
+  // District Pavements
+  grand_plaza_1: '#202834',
+  grand_plaza_2: '#273140',
 
-  // Citizen Selection Rings
-  hover_ring: 'rgba(245, 158, 11, 0.75)',
-  hover_glow: 'rgba(245, 158, 11, 0.20)',
+  terracotta_1: '#3d251e',
+  terracotta_2: '#4a2c23',
+
+  zen_paving_1: '#252930',
+  zen_paving_2: '#2d333b',
+
+  park_grass_1: '#16361e',
+  park_grass_2: '#1c4226',
+  water_pond: '#0c4a6e',
+  water_ripple: '#38bdf8',
+
+  // Target Selection Rings
+  hover_ring: 'rgba(245, 158, 11, 0.85)',
+  hover_glow: 'rgba(245, 158, 11, 0.22)',
   select_ring: '#38bdf8',
-  select_glow: 'rgba(56, 189, 248, 0.25)',
+  select_glow: 'rgba(56, 189, 248, 0.28)',
 };
 
 interface RenderableEntity {
@@ -93,7 +93,7 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
 
-  // Interaction highlights
+  // Interaction targets
   hoveredCitizen: OccupiedSpotSummary | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
 
@@ -123,14 +123,14 @@ export class Renderer {
   }
 
   private initCityParticles(): void {
-    const colors = ['#fef08a', '#bae6fd', '#86efac', '#fbcfe8'];
-    for (let i = 0; i < 25; i++) {
+    const colors = ['#fef08a', '#bae6fd', '#fbcfe8', '#86efac'];
+    for (let i = 0; i < 30; i++) {
       this.cityParticles.push({
         x: Math.random() * (this.canvas.width || 800),
         y: Math.random() * (this.canvas.height || 600),
-        vx: (Math.random() - 0.5) * 0.3 + 0.15,
-        vy: -0.1 - Math.random() * 0.25,
-        size: 1 + Math.random() * 1.8,
+        vx: (Math.random() - 0.5) * 0.35 + 0.15,
+        vy: -0.12 - Math.random() * 0.25,
+        size: 1 + Math.random() * 2,
         alpha: 0.15 + Math.random() * 0.45,
         color: colors[Math.floor(Math.random() * colors.length)],
       });
@@ -177,15 +177,15 @@ export class Renderer {
     const H = camera.viewportHeight;
     const z = camera.zoom;
 
-    // 1. Dark city night sky clear
-    ctx.fillStyle = '#0b0e13';
+    // 1. Dark city sky
+    ctx.fillStyle = '#080b0f';
     ctx.fillRect(0, 0, W, H);
 
     // 2. Visible grid bounds
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
 
-    // 3. Ground Layer (Asphalt, Crosswalks, Sidewalks, Plazas)
+    // 3. Ground Layer (Diverse District Tiles)
     this.drawCityGround(ctx, range, z);
 
     // 4. Collect Depth-Sorted Entities & Street Lights
@@ -215,13 +215,13 @@ export class Renderer {
           render: (c, currentZoom) => {
             const ringRadius = 10 * currentZoom;
             c.save();
-            c.fillStyle = isSelected ? CITY_PALETTE.select_glow : CITY_PALETTE.hover_glow;
+            c.fillStyle = isSelected ? PALETTES.select_glow : PALETTES.hover_glow;
             c.beginPath();
             c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
             c.fill();
 
-            c.strokeStyle = isSelected ? CITY_PALETTE.select_ring : CITY_PALETTE.hover_ring;
-            c.lineWidth = 1.5;
+            c.strokeStyle = isSelected ? PALETTES.select_ring : PALETTES.hover_ring;
+            c.lineWidth = 1.6;
             c.beginPath();
             c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.5, 0, 0, Math.PI * 2);
             c.stroke();
@@ -247,7 +247,7 @@ export class Renderer {
       },
     });
 
-    // 5. Draw Ambient Radial Light Glows on the streets under entities
+    // 5. Draw Ambient Radial Light Glows on the ground
     this.drawStreetLighting(ctx, lights, z);
 
     // 6. Unified Depth Sort (Y ascending)
@@ -258,7 +258,7 @@ export class Renderer {
       entity.render(ctx, z);
     }
 
-    // 8. Floating particles (night motes & sparks)
+    // 8. Floating ambient night motes & cherry blossoms
     this.drawCityParticles(ctx);
   }
 
@@ -288,38 +288,35 @@ export class Renderer {
 
         switch (tileType) {
           case 'road_asphalt': {
-            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillStyle = PALETTES.asphalt;
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'road_h_stripe': {
-            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillStyle = PALETTES.asphalt;
             ctx.fillRect(dx, dy, dw, dh);
-            // Dashed center line
             if (gx % 2 === 0) {
-              ctx.fillStyle = CITY_PALETTE.lane_white;
+              ctx.fillStyle = PALETTES.lane_white;
               ctx.fillRect(dx + dw * 0.15, dy + dh * 0.45, dw * 0.7, Math.max(1, 2 * z));
             }
             break;
           }
 
           case 'road_v_stripe': {
-            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillStyle = PALETTES.asphalt;
             ctx.fillRect(dx, dy, dw, dh);
-            // Dashed vertical center line
             if (gy % 2 === 0) {
-              ctx.fillStyle = CITY_PALETTE.lane_white;
+              ctx.fillStyle = PALETTES.lane_white;
               ctx.fillRect(dx + dw * 0.45, dy + dh * 0.15, Math.max(1, 2 * z), dh * 0.7);
             }
             break;
           }
 
           case 'crosswalk': {
-            ctx.fillStyle = CITY_PALETTE.asphalt_base;
+            ctx.fillStyle = PALETTES.asphalt;
             ctx.fillRect(dx, dy, dw, dh);
-            // Zebra bars
-            ctx.fillStyle = CITY_PALETTE.crosswalk_bar;
+            ctx.fillStyle = PALETTES.crosswalk_bar;
             const barCount = 4;
             const barW = dw / (barCount * 2);
             for (let b = 0; b < barCount; b++) {
@@ -329,26 +326,50 @@ export class Renderer {
           }
 
           case 'sidewalk': {
-            ctx.fillStyle = CITY_PALETTE.sidewalk_base;
+            ctx.fillStyle = PALETTES.sidewalk_base;
             ctx.fillRect(dx, dy, dw, dh);
-            // Pavement seams
-            ctx.fillStyle = CITY_PALETTE.sidewalk_seam;
+            ctx.fillStyle = PALETTES.sidewalk_seam;
             ctx.fillRect(dx, dy, dw, 1);
             ctx.fillRect(dx, dy, 1, dh);
             break;
           }
 
-          case 'plaza_paving': {
+          case 'plaza_grand': {
             const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? CITY_PALETTE.plaza_base : CITY_PALETTE.plaza_accent;
+            ctx.fillStyle = isAlt ? PALETTES.grand_plaza_1 : PALETTES.grand_plaza_2;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'plaza_terracotta': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? PALETTES.terracotta_1 : PALETTES.terracotta_2;
+            ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'plaza_zen': {
+            const isAlt = (gx + gy) % 2 === 0;
+            ctx.fillStyle = isAlt ? PALETTES.zen_paving_1 : PALETTES.zen_paving_2;
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'park_grass': {
             const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? CITY_PALETTE.park_grass : CITY_PALETTE.park_accent;
+            ctx.fillStyle = isAlt ? PALETTES.park_grass_1 : PALETTES.park_grass_2;
             ctx.fillRect(dx, dy, dw, dh);
+            break;
+          }
+
+          case 'water_pond': {
+            ctx.fillStyle = PALETTES.water_pond;
+            ctx.fillRect(dx, dy, dw, dh);
+
+            // Shimmering animated water reflection wave
+            const wave = Math.sin((this.tick * 0.05) + gx * 0.8 + gy * 0.8);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.fillRect(dx + dw * 0.2, dy + (0.4 + wave * 0.15) * dh, dw * 0.6, Math.max(1, 1.5 * z));
             break;
           }
         }
@@ -374,15 +395,14 @@ export class Renderer {
         if (!prop) continue;
 
         const screen = this.camera.worldToScreen(prop.wx, prop.wy);
-        if (screen.x < -60 || screen.x > W + 60 || screen.y < -60 || screen.y > H + 60) continue;
+        if (screen.x < -70 || screen.x > W + 70 || screen.y < -70 || screen.y > H + 70) continue;
 
-        // Streetlight glow
         if (prop.hasLight) {
           lights.push({
             wx: prop.wx,
-            wy: prop.wy - 18,
-            radius: prop.type === 'street_lamp' ? 64 : 32,
-            color: prop.type === 'street_lamp' ? 'rgba(251, 191, 36, 0.28)' : 'rgba(56, 189, 248, 0.22)',
+            wy: prop.wy - 16,
+            radius: prop.lightRadius ?? 60,
+            color: prop.lightColor ?? 'rgba(251, 191, 36, 0.28)',
           });
         }
 
@@ -404,6 +424,139 @@ export class Renderer {
     z: number,
   ): void {
     switch (prop.type) {
+      case 'fountain': {
+        // Grand Central Landmark Fountain
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 22 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone Basin
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 20 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Water Basin Interior
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 3 * z, 17 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Fountain Tier Pillar
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(sx - 3 * z, sy - 16 * z, 6 * z, 14 * z);
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 16 * z, 8 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bubbling Animated Water Jet
+        const jetHeight = (8 + Math.sin(this.tick * 0.15) * 2) * z;
+        ctx.fillStyle = '#bae6fd';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 18 * z - jetHeight, 3.5 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'cherry_tree': {
+        // Zen Pink Cherry Blossom
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 13 * z, 5.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dark gnarled trunk
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx - 2.5 * z, sy - 16 * z, 5 * z, 15 * z);
+
+        // Pink blossom cloud
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 24 * z, 14 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fbcfe8';
+        ctx.beginPath();
+        ctx.arc(sx - 2 * z, sy - 26 * z, 11 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'park_tree': {
+        // Lush Emerald Park Canopy
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 14 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#5c3a1e';
+        ctx.fillRect(sx - 3 * z, sy - 18 * z, 6 * z, 16 * z);
+
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 26 * z, 15 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(sx - 2 * z, sy - 28 * z, 12 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'stone_lantern': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 5 * z, 2.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone pillar
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(sx - 2 * z, sy - 12 * z, 4 * z, 12 * z);
+
+        // Lantern cage with warm orange glow
+        ctx.fillStyle = '#fb923c';
+        ctx.fillRect(sx - 3 * z, sy - 14 * z, 6 * z, 5 * z);
+
+        // Stone roof
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(sx - 5 * z, sy - 14 * z);
+        ctx.lineTo(sx, sy - 18 * z);
+        ctx.lineTo(sx + 5 * z, sy - 14 * z);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+
+      case 'flower_bed': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 8 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone brick border
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 7.5 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 3 * z, 5.5 * z, 2.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Colorful flowers
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(sx - 3 * z, sy - 5 * z, 2 * z, 2 * z);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(sx + 1 * z, sy - 4 * z, 2 * z, 2 * z);
+        ctx.fillStyle = '#c084fc';
+        ctx.fillRect(sx - 1 * z, sy - 6 * z, 2 * z, 2 * z);
+        break;
+      }
+
       case 'street_lamp': {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
@@ -489,14 +642,22 @@ export class Renderer {
         break;
       }
 
-      case 'bush_box': {
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(sx - 6 * z, sy - 3 * z, 12 * z, 4 * z);
-
-        ctx.fillStyle = '#16a34a';
+      case 'cafe_table': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
         ctx.beginPath();
-        ctx.arc(sx - 2 * z, sy - 6 * z, 5 * z, 0, Math.PI * 2);
-        ctx.arc(sx + 2 * z, sy - 6 * z, 5 * z, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy, 7 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(sx - 1 * z, sy - 7 * z, 2 * z, 7 * z);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 7 * z, 6 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 16 * z, 10 * z, Math.PI, 0);
         ctx.fill();
         break;
       }
@@ -517,26 +678,6 @@ export class Renderer {
         ctx.fillRect(sx - 3.5 * z, sy - 8 * z, 7 * z, 8 * z);
         ctx.fillStyle = '#334155';
         ctx.fillRect(sx - 4.5 * z, sy - 9 * z, 9 * z, 2 * z);
-        break;
-      }
-
-      case 'cafe_table': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy, 7 * z, 3 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(sx - 1 * z, sy - 7 * z, 2 * z, 7 * z);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy - 7 * z, 6 * z, 3 * z, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 16 * z, 10 * z, Math.PI, 0);
-        ctx.fill();
         break;
       }
     }
