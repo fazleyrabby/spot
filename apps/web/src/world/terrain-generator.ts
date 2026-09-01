@@ -2,12 +2,11 @@
  * City & District Layout Generator for Spot World (100x100 Grid).
  *
  * Distinct Urban Districts:
- *  1. Central Grand Plaza (gx: 40..58, gy: 40..58) — Grand stone plaza, fountain square, cafe tables.
- *  2. Central Park & Lake (gx: 62..82, gy: 12..35) — Lush park, organic pond, bridges, flower beds.
+ *  1. Central Grand Plaza (gx: 40..58, gy: 40..58) — Grand stone plaza, fountain square, study kiosk.
+ *  2. Central Park & Lake (gx: 62..82, gy: 12..35) — Lush park, lake with mystic duck, genesis monolith.
  *  3. Downtown Cyber District (gx: 8..36, gy: 8..36) — Asphalt avenues, neon vending machines, bus stops.
- *  4. Cafe Promenade (gx: 8..36, gy: 54..86) — Terracotta brick, cafe parasols, bistro seating.
- *  5. Zen Gardens & Courtyards (gx: 58..88, gy: 54..86) — Stepping stones, stone lanterns, cherry trees.
- *  6. Asymmetric Road Network — Major 2-lane boulevards and varied side streets (no rigid 10x10 waffle).
+ *  4. Cafe Promenade (gx: 8..36, gy: 54..86) — Terracotta brick, cafe parasols, Midnight Whiskers cat.
+ *  5. Zen Gardens & Courtyards (gx: 58..88, gy: 54..86) — Stepping stones, whispering stone lanterns, cherry trees.
  */
 
 import { TILE_WIDTH, TILE_HEIGHT, WORLD_COLS, WORLD_ROWS } from '@spot/world';
@@ -38,6 +37,10 @@ export type UrbanPropType =
   | 'fire_hydrant'
   | 'trash_can'
   | 'bus_stop'
+  | 'genesis_monolith'
+  | 'dev_library'
+  | 'mystic_duck'
+  | 'cafe_cat'
   | null;
 
 export interface CityProp {
@@ -63,11 +66,9 @@ function spatialHash(gx: number, gy: number, salt = 0): number {
 // Road & Boulevard Grid Definitions (Asymmetric & Hierarchical)
 // ---------------------------------------------------------------------------
 
-// Major 2-lane avenues
-const MAJOR_ROADS_X = [48, 49]; // Central Grand Boulevard N-S
-const MAJOR_ROADS_Y = [48, 49]; // Central Grand Boulevard E-W
+const MAJOR_ROADS_X = [48, 49];
+const MAJOR_ROADS_Y = [48, 49];
 
-// Secondary 1-lane streets (varied spacing: 18, 34, 66, 84)
 const SECONDARY_ROADS_X = [14, 32, 68, 86];
 const SECONDARY_ROADS_Y = [14, 32, 68, 86];
 
@@ -82,7 +83,6 @@ function isRoad(gx: number, gy: number): boolean {
 
 function isSidewalk(gx: number, gy: number): boolean {
   if (isRoad(gx, gy)) return false;
-  // Sidewalks buffer every road by 1 tile
   for (const rx of [...MAJOR_ROADS_X, ...SECONDARY_ROADS_X]) {
     if (Math.abs(gx - rx) === 1) return true;
   }
@@ -99,23 +99,18 @@ function isSidewalk(gx: number, gy: number): boolean {
 export type DistrictType = 'grand_plaza' | 'central_park' | 'downtown' | 'promenade' | 'zen_garden';
 
 export function getDistrict(gx: number, gy: number): DistrictType {
-  // 1. Central Grand Plaza (center of the world)
   if (gx >= 36 && gx <= 60 && gy >= 36 && gy <= 60) {
     return 'grand_plaza';
   }
-  // 2. Central Park & Lake (North-East)
   if (gx >= 55 && gy <= 36) {
     return 'central_park';
   }
-  // 3. Cafe Promenade (South-West)
   if (gx <= 45 && gy >= 52) {
     return 'promenade';
   }
-  // 4. Zen Gardens & Courtyards (South-East)
   if (gx >= 55 && gy >= 52) {
     return 'zen_garden';
   }
-  // 5. Downtown Cyber District (North-West)
   return 'downtown';
 }
 
@@ -124,7 +119,6 @@ export function getDistrict(gx: number, gy: number): DistrictType {
 // ---------------------------------------------------------------------------
 
 export function getCityTileType(gx: number, gy: number): UrbanTileType {
-  // 1. Roads & Crosswalks
   const isRX = MAJOR_ROADS_X.includes(gx) || SECONDARY_ROADS_X.includes(gx);
   const isRY = MAJOR_ROADS_Y.includes(gy) || SECONDARY_ROADS_Y.includes(gy);
 
@@ -138,17 +132,14 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
     return MAJOR_ROADS_Y.includes(gy) ? 'road_h_stripe' : 'road_asphalt';
   }
 
-  // 2. Sidewalks along streets
   if (isSidewalk(gx, gy)) {
     return 'sidewalk';
   }
 
-  // 3. District Interior
   const district = getDistrict(gx, gy);
 
   switch (district) {
     case 'central_park': {
-      // Organic Lake Pond in Central Park
       const dx = gx - 70;
       const dy = gy - 22;
       const dist = (dx * dx) / 45 + (dy * dy) / 20;
@@ -189,7 +180,9 @@ export function getCityProp(gx: number, gy: number, isOccupiedCitizen: boolean):
   let lightColor = 'rgba(251, 191, 36, 0.28)';
   let lightRadius = 60;
 
-  // 1. Center Landmark Fountain (at the exact heart of Grand Plaza: 48, 48)
+  // ── SPECIAL EASTER EGG & STUDY LANDMARKS ───────────────────────────────────
+
+  // 1. Center Landmark Fountain (48, 47)
   if (gx === 48 && gy === 47) {
     return {
       gx,
@@ -203,9 +196,93 @@ export function getCityProp(gx: number, gy: number, isOccupiedCitizen: boolean):
     };
   }
 
-  // 2. Sidewalk streetlamps and props
+  // 2. Genesis Monolith in Central Park Grove (64, 16)
+  if (gx === 64 && gy === 16) {
+    return {
+      gx,
+      gy,
+      type: 'genesis_monolith',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
+      hasLight: true,
+      lightColor: 'rgba(245, 158, 11, 0.45)',
+      lightRadius: 80,
+    };
+  }
+
+  // 3. Open Developer Study Kiosk in Grand Plaza (44, 52)
+  if (gx === 44 && gy === 52) {
+    return {
+      gx,
+      gy,
+      type: 'dev_library',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
+      hasLight: true,
+      lightColor: 'rgba(129, 140, 248, 0.38)',
+      lightRadius: 75,
+    };
+  }
+
+  // 4. Mystic Lake Duck (72, 22)
+  if (gx === 72 && gy === 22) {
+    return {
+      gx,
+      gy,
+      type: 'mystic_duck',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT / 2,
+      hasLight: true,
+      lightColor: 'rgba(56, 189, 248, 0.25)',
+      lightRadius: 40,
+    };
+  }
+
+  // 5. Midnight Whiskers Cafe Cat (22, 70)
+  if (gx === 22 && gy === 70) {
+    return {
+      gx,
+      gy,
+      type: 'cafe_cat',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
+      hasLight: true,
+      lightColor: 'rgba(244, 114, 182, 0.30)',
+      lightRadius: 45,
+    };
+  }
+
+  // 6. Interactive Cyber Vending Machine in Downtown (18, 24)
+  if (gx === 18 && gy === 24) {
+    return {
+      gx,
+      gy,
+      type: 'vending_machine',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
+      hasLight: true,
+      lightColor: 'rgba(56, 189, 248, 0.38)',
+      lightRadius: 55,
+    };
+  }
+
+  // 7. Whispering Stone Lantern in Zen Garden (78, 74)
+  if (gx === 78 && gy === 74) {
+    return {
+      gx,
+      gy,
+      type: 'stone_lantern',
+      wx: gx * TILE_WIDTH + TILE_WIDTH / 2,
+      wy: gy * TILE_HEIGHT + TILE_HEIGHT,
+      hasLight: true,
+      lightColor: 'rgba(251, 146, 60, 0.40)',
+      lightRadius: 65,
+    };
+  }
+
+  // ── Standard District Props ───────────────────────────────────────────────
+
   if (tileType === 'sidewalk') {
-    // Streetlamps spaced along roads
     if ((gx % 4 === 1 && gy % 2 === 0) || (gy % 4 === 1 && gx % 2 === 0)) {
       type = 'street_lamp';
       hasLight = true;

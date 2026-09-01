@@ -30,6 +30,8 @@ export interface EngineOptions {
   isVerified?: boolean;
   /** Callback when a citizen monument / plot is clicked */
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
+  /** Callback when an easter egg landmark is clicked */
+  onSecretClick?: (secret: import('./secrets.js').WorldSecret) => void;
   /** Callback when an empty tile is clicked */
   onEmptyClick?: (gx: number, gy: number) => void;
 }
@@ -136,6 +138,7 @@ export class Engine {
       this.monuments,
       {
         onCitizenClick: (spot) => this.options.onCitizenClick?.(spot),
+        onSecretClick: (secret) => this.options.onSecretClick?.(secret),
         onTileClick: (gx, gy) => this.options.onEmptyClick?.(gx, gy),
       },
     );

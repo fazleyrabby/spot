@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import WorldHUD from '../components/WorldHUD.astro';
 import ProfileModal from '../components/ProfileModal.astro';
+import SecretModal from '../components/SecretModal.astro';
 ---
 
 <Layout
@@ -26,6 +27,9 @@ import ProfileModal from '../components/ProfileModal.astro';
 
     <!-- Reuse the existing profile modal for click-to-inspect -->
     <ProfileModal />
+
+    <!-- Secret discovery modal -->
+    <SecretModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -347,11 +351,126 @@ import ProfileModal from '../components/ProfileModal.astro';
     if (e.key === 'Escape') closeProfileModal();
   });
 
+  // ── Secret Discovery Modal Wiring ─────────────────────────────────────────
+  const secretBackdrop = document.getElementById('secret-modal-backdrop');
+  const secretCloseBtn = document.getElementById('secret-modal-close');
+  const secretDismissBtn = document.getElementById('secret-dismiss-btn');
+  const secretIcon = document.getElementById('secret-icon');
+  const secretDistrict = document.getElementById('secret-district');
+  const secretTitle = document.getElementById('secret-title');
+  const secretSubtitle = document.getElementById('secret-subtitle');
+  const secretQuoteBox = document.getElementById('secret-quote-box');
+  const secretQuote = document.getElementById('secret-quote');
+  const secretDesc = document.getElementById('secret-desc');
+  const secretRewardBadge = document.getElementById('secret-reward-badge');
+  const secretRewardText = document.getElementById('secret-reward-text');
+  const secretActionBtn = document.getElementById('secret-action-btn') as HTMLAnchorElement | null;
+  const hudSecretsCount = document.getElementById('hud-secrets-count');
+
+  const TOTAL_SECRETS = 6;
+
+  function getDiscoveredSecrets(): Set<string> {
+    try {
+      const raw = localStorage.getItem('spot_world_secrets') || '[]';
+      return new Set(JSON.parse(raw));
+    } catch {
+      return new Set();
+    }
+  }
+
+  function updateSecretsHUD(): void {
+    const discovered = getDiscoveredSecrets();
+    if (hudSecretsCount) {
+      hudSecretsCount.textContent = `${discovered.size}/${TOTAL_SECRETS}`;
+    }
+  }
+
+  function openSecretModal(secret: import('../world/secrets.js').WorldSecret): void {
+    if (!secretBackdrop) return;
+
+    if (secretIcon) secretIcon.textContent = secret.icon;
+    if (secretDistrict) secretDistrict.textContent = secret.district;
+    if (secretTitle) secretTitle.textContent = secret.title;
+    if (secretSubtitle) secretSubtitle.textContent = secret.subtitle;
+    if (secretDesc) secretDesc.textContent = secret.description;
+
+    if (secretQuoteBox && secretQuote) {
+      if (secret.quote) {
+        secretQuoteBox.style.display = 'block';
+        secretQuote.textContent = secret.quote;
+      } else {
+        secretQuoteBox.style.display = 'none';
+      }
+    }
+
+    if (secretRewardBadge && secretRewardText) {
+      if (secret.reward) {
+        secretRewardBadge.style.display = 'inline-flex';
+        secretRewardText.textContent = secret.reward;
+      } else {
+        secretRewardBadge.style.display = 'none';
+      }
+    }
+
+    if (secretActionBtn) {
+      if (secret.actionUrl && secret.actionLabel) {
+        secretActionBtn.style.display = 'inline-flex';
+        secretActionBtn.href = secret.actionUrl;
+        secretActionBtn.firstElementChild!.textContent = secret.actionLabel;
+      } else if (secret.actionLabel) {
+        secretActionBtn.style.display = 'inline-flex';
+        secretActionBtn.href = '#';
+        secretActionBtn.firstElementChild!.textContent = secret.actionLabel;
+        secretActionBtn.onclick = (e) => {
+          e.preventDefault();
+          const fortunes = [
+            '“Glitch Cola: Your next commit will have 0 merge conflicts.”',
+            '“Cyber Matcha: Fullstack clarity +100. Write clean code.”',
+            '“Overclocked Cold Brew: Fast compilation & instant hot-reloads.”',
+          ];
+          if (secretQuote) secretQuote.textContent = fortunes[Math.floor(Math.random() * fortunes.length)];
+          if (secretQuoteBox) secretQuoteBox.style.display = 'block';
+        };
+      } else {
+        secretActionBtn.style.display = 'none';
+      }
+    }
+
+    // Save to discovered secrets
+    const discovered = getDiscoveredSecrets();
+    const isNew = !discovered.has(secret.id);
+    if (isNew) {
+      discovered.add(secret.id);
+      localStorage.setItem('spot_world_secrets', JSON.stringify(Array.from(discovered)));
+      updateSecretsHUD();
+      showToast(`✨ Discovered: ${secret.name} (${discovered.size}/${TOTAL_SECRETS})`, 'success');
+    }
+
+    secretBackdrop.classList.add('open');
+    secretBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeSecretModal(): void {
+    if (!secretBackdrop) return;
+    secretBackdrop.classList.remove('open');
+    secretBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  secretCloseBtn?.addEventListener('click', closeSecretModal);
+  secretDismissBtn?.addEventListener('click', closeSecretModal);
+  secretBackdrop?.addEventListener('click', (e) => {
+    if (e.target === secretBackdrop) closeSecretModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSecretModal();
+  });
+
   // ── Engine ────────────────────────────────────────────────────────────────
   let engine: InstanceType<typeof Engine> | null = null;
 
   async function boot() {
     loaderSub.textContent = 'Fetching citizen data…';
+    updateSecretsHUD();
 
     try {
       let avatarId = 'astronaut';
@@ -378,8 +497,10 @@ import ProfileModal from '../components/ProfileModal.astro';
         displayName,
         isVerified,
         onCitizenClick: (spot) => openProfileModal(spot),
+        onSecretClick: (secret) => openSecretModal(secret),
         onEmptyClick: (_gx, _gy) => {
           closeProfileModal();
+          closeSecretModal();
         },
       });
 
