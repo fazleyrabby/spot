@@ -516,36 +516,63 @@ export class MonumentManager {
     c: { primary: string; secondary: string; accent: string; skin: string },
     _avatarId: string,
   ): void {
-    const bodyY = sy - 7 * z;
-
-    // Blanket
-    ctx.fillStyle = c.accent || '#f59e0b';
+    // 1. Soft ground shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.beginPath();
-    ctx.roundRect(sx - 9 * z, bodyY - 2 * z, 18 * z, 9 * z, 3.5 * z);
+    ctx.ellipse(sx, sy, 12 * z, 5 * z, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Head
-    const headX = sx - 2.5 * z;
-    const headY = bodyY - 7 * z;
-    ctx.fillStyle = c.skin;
+    // 2. Sleeping Mat / Futon Base
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.arc(headX, headY, 6.5 * z, 0, Math.PI * 2);
+    ctx.roundRect(sx - 11 * z, sy - 9 * z, 22 * z, 10 * z, 3 * z);
     ctx.fill();
 
-    // Hair
-    ctx.fillStyle = c.secondary;
+    // 3. White Pillow
+    ctx.fillStyle = '#f8fafc';
     ctx.beginPath();
-    ctx.arc(headX, headY - 1 * z, 6.5 * z, Math.PI * 0.8, Math.PI * 2.2);
+    ctx.roundRect(sx - 10 * z, sy - 9.5 * z, 8 * z, 6.5 * z, 2 * z);
     ctx.fill();
 
-    // Sleeping eye arc
+    // 4. Cozy Folded Quilt Blanket
+    ctx.fillStyle = c.primary || '#3b82f6';
+    ctx.beginPath();
+    ctx.roundRect(sx - 3 * z, sy - 8.5 * z, 13 * z, 8.5 * z, 2.5 * z);
+    ctx.fill();
+
+    // White foldover sheet cuff
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(sx - 3 * z, sy - 8.5 * z, 3 * z, 8.5 * z);
+
+    // 5. Chibi Head Resting on Pillow
+    const headX = sx - 6.5 * z;
+    const headY = sy - 6.5 * z;
+
+    ctx.fillStyle = c.skin || '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(headX, headY, 5 * z, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair / Helmet
+    ctx.fillStyle = c.secondary || '#1e293b';
+    ctx.beginPath();
+    ctx.arc(headX, headY - 1 * z, 5 * z, Math.PI * 0.7, Math.PI * 2.1);
+    ctx.fill();
+
+    // Closed peaceful sleeping eye arc
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 1.2 * z;
     ctx.beginPath();
-    ctx.moveTo(headX - 3.5 * z, headY);
-    ctx.lineTo(headX - 1.5 * z, headY - 1.2 * z);
-    ctx.lineTo(headX + 0.5 * z, headY);
+    ctx.moveTo(headX - 1.5 * z, headY);
+    ctx.lineTo(headX, headY - 1 * z);
+    ctx.lineTo(headX + 1.5 * z, headY);
     ctx.stroke();
+
+    // Cozy blush cheek
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.6)';
+    ctx.beginPath();
+    ctx.arc(headX + 1.5 * z, headY + 1.8 * z, 1.2 * z, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private renderSleepParticles(
