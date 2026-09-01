@@ -56,19 +56,37 @@ export interface CitizenEntity {
 export class MonumentManager {
   private entities = new Map<string, CitizenEntity>();
   private excludeCitizenId = '';
+  private excludeDisplayName = '';
   private tick = 0;
 
-  constructor(_onClick?: (spot: OccupiedSpotSummary) => void) {}
+  constructor(
+    _onClick?: (spot: OccupiedSpotSummary) => void,
+    excludeCitizenId?: string,
+    excludeDisplayName?: string,
+  ) {
+    if (excludeCitizenId) this.excludeCitizenId = excludeCitizenId;
+    if (excludeDisplayName) this.excludeDisplayName = excludeDisplayName;
+  }
 
-  setExcludeCitizen(id: string): void {
+  setExcludeCitizen(id: string, displayName?: string): void {
     this.excludeCitizenId = id;
+    if (displayName) this.excludeDisplayName = displayName;
+
+    if (id || displayName) {
+      for (const [key, ent] of this.entities.entries()) {
+        if ((id && ent.spot.citizenId === id) || (displayName && ent.spot.displayName === displayName)) {
+          this.entities.delete(key);
+        }
+      }
+    }
   }
 
   update(spots: OccupiedSpotSummary[]): void {
     const existing = new Set<string>();
 
     for (const spot of spots) {
-      if (spot.citizenId === this.excludeCitizenId) continue;
+      if (this.excludeCitizenId && spot.citizenId === this.excludeCitizenId) continue;
+      if (this.excludeDisplayName && spot.displayName === this.excludeDisplayName) continue;
       const key = `${spot.x},${spot.y}`;
       existing.add(key);
 
