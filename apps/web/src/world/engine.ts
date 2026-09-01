@@ -119,10 +119,10 @@ export class Engine {
         this.camera.centerOn(center.wx, center.wy, 1.0, true);
       }
     } else {
-      // Guest: center at founder spot (52, 60)
-      this.player.setPosition(52, 60);
-      const center = gridToWorldCenter(52, 60);
-      this.camera.centerOn(center.wx, center.wy, 1.0, true);
+      // Guest: spawn at Grand Central Plaza (48, 50)
+      this.player.setPosition(48, 50);
+      const center = gridToWorldCenter(48, 50);
+      this.camera.centerOn(center.wx, center.wy, 1.1, true);
     }
 
     // 5. Bind player movement keys (WASD/Arrows)
