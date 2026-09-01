@@ -56,6 +56,26 @@ export const SafeUrlSchema = z
   .optional()
   .or(z.literal(''));
 
+/** Same as SafeUrlSchema but capped at 128 characters for social handles / profile URLs. */
+export const SafeSocialUrlSchema = z
+  .string()
+  .max(128, 'URL must not exceed 128 characters')
+  .trim()
+  .refine(
+    (val) => {
+      if (!val) return true;
+      try {
+        const parsed = new URL(val);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    { message: 'URL must use a valid http:// or https:// scheme' }
+  )
+  .optional()
+  .or(z.literal(''));
+
 export const CreateCitizenSchema = z.object({
   displayName: z
     .string()
@@ -70,6 +90,10 @@ export const CreateCitizenSchema = z.object({
   customAvatarData: z
     .string()
     .max(65536)
+    .refine(
+      (val) => !val || val.startsWith('data:image/') || val.startsWith('{'),
+      { message: 'customAvatarData must be a data URI (data:image/...) or a JSON pixel map' }
+    )
     .optional()
     .or(z.literal('')),
   tagline: z
@@ -80,36 +104,12 @@ export const CreateCitizenSchema = z.object({
     .or(z.literal('')),
   bio: z.string().max(280, 'Bio must not exceed 280 characters').trim().optional().or(z.literal('')),
   websiteUrl: SafeUrlSchema,
-  githubUrl: z
-    .string()
-    .max(128, 'GitHub handle or URL must not exceed 128 characters')
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  twitterUrl: z
-    .string()
-    .max(128, 'X / Twitter handle or URL must not exceed 128 characters')
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  facebookUrl: z
-    .string()
-    .max(128, 'Facebook profile or URL must not exceed 128 characters')
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  instagramUrl: z
-    .string()
-    .max(128, 'Instagram handle or URL must not exceed 128 characters')
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  youtubeUrl: z
-    .string()
-    .max(128, 'YouTube channel or URL must not exceed 128 characters')
-    .trim()
-    .optional()
-    .or(z.literal('')),
+  // Social URL fields: enforce http/https to block javascript: / data: XSS vectors
+  githubUrl: SafeSocialUrlSchema,
+  twitterUrl: SafeSocialUrlSchema,
+  facebookUrl: SafeSocialUrlSchema,
+  instagramUrl: SafeSocialUrlSchema,
+  youtubeUrl: SafeSocialUrlSchema,
   linkedinUrl: SafeUrlSchema,
   githubId: z.string().max(64).optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -144,6 +144,10 @@ export const UpdateCitizenSchema = z.object({
   customAvatarData: z
     .string()
     .max(65536)
+    .refine(
+      (val) => !val || val.startsWith('data:image/') || val.startsWith('{'),
+      { message: 'customAvatarData must be a data URI (data:image/...) or a JSON pixel map' }
+    )
     .optional()
     .or(z.literal('')),
   tagline: z
@@ -153,34 +157,16 @@ export const UpdateCitizenSchema = z.object({
     .optional(),
   bio: z.string().max(280).trim().optional(),
   websiteUrl: SafeUrlSchema,
-  githubUrl: z
-    .string()
-    .max(128)
-    .trim()
-    .optional(),
-  twitterUrl: z
-    .string()
-    .max(128)
-    .trim()
-    .optional(),
-  facebookUrl: z
-    .string()
-    .max(128)
-    .trim()
-    .optional(),
-  instagramUrl: z
-    .string()
-    .max(128)
-    .trim()
-    .optional(),
-  youtubeUrl: z
-    .string()
-    .max(128)
-    .trim()
-    .optional(),
+  // Social URL fields: enforce http/https to block javascript: / data: XSS vectors
+  githubUrl: SafeSocialUrlSchema,
+  twitterUrl: SafeSocialUrlSchema,
+  facebookUrl: SafeSocialUrlSchema,
+  instagramUrl: SafeSocialUrlSchema,
+  youtubeUrl: SafeSocialUrlSchema,
   linkedinUrl: SafeUrlSchema,
 });
 
 export type CreateCitizenInput = z.infer<typeof CreateCitizenSchema>;
 export type ClaimSpotInput = z.infer<typeof ClaimSpotSchema>;
 export type UpdateCitizenInput = z.infer<typeof UpdateCitizenSchema>;
+export type SafeSocialUrl = z.infer<typeof SafeSocialUrlSchema>;
