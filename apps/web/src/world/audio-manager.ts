@@ -134,13 +134,13 @@ export class AudioManager {
       this.waterGain = wGain;
     } catch (_) {}
 
-    // 3. Periodic Natural Bird Chirps
+    // 3. Periodic Natural Bird Chirps (Occasional & Natural)
     this.ambientInterval = window.setInterval(() => {
       if (this.isMuted) return;
-      if (Math.random() < 0.65) {
+      if (Math.random() < 0.55) {
         this.playBirdChirp();
       }
-    }, 2800);
+    }, 6500);
   }
 
   private stopAmbient(): void {
@@ -194,23 +194,52 @@ export class AudioManager {
     if (!ctx) return;
 
     try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const startTime = ctx.currentTime;
+      const baseFreq = 2800 + Math.random() * 500;
+      const chirpCount = Math.random() < 0.5 ? 2 : 3;
 
-      osc.type = 'sine';
-      const baseFreq = 2200 + Math.random() * 600;
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq + 800, now + 0.06);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq - 300, now + 0.14);
+      for (let i = 0; i < chirpCount; i++) {
+        const chirpStart = startTime + i * 0.09;
+        const dur = 0.055;
 
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        // Carrier oscillator
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.15);
+        // Fast pitch envelope for natural avian "pip"
+        osc.frequency.setValueAtTime(baseFreq + (i === 1 ? 300 : 0), chirpStart);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq + 650 + (i === 1 ? 400 : 0), chirpStart + dur * 0.4);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq - 150, chirpStart + dur);
+
+        // Micro-flutter vibrato for organic realism
+        const vibrato = ctx.createOscillator();
+        vibrato.frequency.setValueAtTime(38, chirpStart);
+        const vibGain = ctx.createGain();
+        vibGain.gain.setValueAtTime(45, chirpStart);
+        vibrato.connect(vibGain);
+        vibGain.connect(osc.frequency);
+
+        // Soft gain envelope
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.001, chirpStart);
+        gain.gain.linearRampToValueAtTime(0.06, chirpStart + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, chirpStart + dur);
+
+        // Bandpass filter to remove harsh synthetic highs
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(baseFreq + 300, chirpStart);
+        filter.Q.setValueAtTime(1.5, chirpStart);
+
+        osc.connect(gain);
+        gain.connect(filter);
+        filter.connect(ctx.destination);
+
+        vibrato.start(chirpStart);
+        osc.start(chirpStart);
+        vibrato.stop(chirpStart + dur);
+        osc.stop(chirpStart + dur);
+      }
     } catch (_) {}
   }
 
