@@ -1,12 +1,8 @@
 /**
  * Renderer — Canvas2D top-down renderer for Spot World (Stardew Valley / RPG Maker style).
  *
- * Visual upgrades:
- *  - Cohesive, rich green meadow ground (no orange checkerboard).
- *  - Clean plot lawn styling with subtle stone corner pavers.
- *  - Clean depth sorting (Y-sort) for trees, cottages, citizen characters, player.
- *  - Name badges displayed intelligently (hovered/selected or close-up neighbors) to prevent clutter.
- *  - Ambient drifting particles.
+ * All citizens are rendered as cute animated chibi characters.
+ * Each plot features a homey landmark prop at its center (lantern, bench, garden, campfire, signpost).
  */
 
 import { Camera } from './camera.js';
@@ -31,16 +27,15 @@ import { PlotManager, type Plot } from './plot-manager.js';
 
 const PALETTE = {
   // Ground tiles (lush natural greens)
-  grass_1: '#2c5d23', // base meadow
-  grass_2: '#336a29', // sunny grass
-  grass_3: '#26511e', // deep shade
-  grass_4: '#39782f', // vibrant lawn
+  grass_1: '#2c5d23',
+  grass_2: '#336a29',
+  grass_3: '#26511e',
+  grass_4: '#39782f',
 
-  // Plot interior & subtle path
+  // Plot interior
   plot_lawn: '#35752b',
   plot_center: '#3b8230',
   plot_stone_dot: 'rgba(203, 213, 225, 0.35)',
-  plot_path_paver: 'rgba(217, 119, 6, 0.22)',
 
   // Nature props
   trunk: '#5c3a1e',
@@ -173,7 +168,7 @@ export class Renderer {
     const H = camera.viewportHeight;
     const z = camera.zoom;
 
-    // 1. Dark forest clear
+    // 1. Dark forest background
     ctx.fillStyle = '#0f1710';
     ctx.fillRect(0, 0, W, H);
 
@@ -190,14 +185,15 @@ export class Renderer {
     // 4a. Nature props on empty land
     this.collectNatureEntities(range, entities);
 
-    // 4b. Citizen Houses & AI Roaming Characters
+    // 4b. Plot Center Props (Lamp, Bench, Garden Bed, Campfire)
+    this.collectPlotProps(range, entities);
+
+    // 4c. Citizen Chibi Characters
     const allCitizens = this.monuments.getAllEntities();
     for (const ent of allCitizens) {
       const screen = camera.worldToScreen(ent.wx, ent.wy);
       if (screen.x < -80 || screen.x > W + 80 || screen.y < -80 || screen.y > H + 80) continue;
 
-      // Determine if name tag should show:
-      // Show if hovered, selected, or if close to camera center when zoomed in
       const isHovered = this.hoveredPlot?.centerX === ent.spot.x && this.hoveredPlot?.centerY === ent.spot.y;
       const isSelected = this.selectedPlot?.centerX === ent.spot.x && this.selectedPlot?.centerY === ent.spot.y;
       const distToPlayer = Math.hypot(ent.wx - this.player.wx, ent.wy - this.player.wy);
@@ -213,7 +209,7 @@ export class Renderer {
       });
     }
 
-    // 4c. Player Character
+    // 4d. Player Character
     const playerScreen = camera.worldToScreen(this.player.wx, this.player.wy);
     entities.push({
       depth: this.player.wy,
@@ -259,12 +255,11 @@ export class Renderer {
         const { isBorder } = this.plots.isPlotBorder(gx, gy);
 
         if (plot) {
-          // Inside 5x5 citizen plot
           const isCenter = gx === plot.centerX && gy === plot.centerY;
           ctx.fillStyle = isCenter ? PALETTE.plot_center : PALETTE.plot_lawn;
           ctx.fillRect(Math.floor(screen.x), Math.floor(screen.y), Math.ceil(tw), Math.ceil(th));
 
-          // Subtle stone border dot on perimeter edges (clean & delicate)
+          // Subtle stone border dot on perimeter edges
           if (isBorder && (gx + gy) % 2 === 0) {
             ctx.fillStyle = PALETTE.plot_stone_dot;
             ctx.fillRect(
@@ -275,12 +270,10 @@ export class Renderer {
             );
           }
         } else {
-          // Empty natural land — lush green variation
           const baseType = getTileBaseTerrain(gx, gy);
           ctx.fillStyle = PALETTE[baseType];
           ctx.fillRect(Math.floor(screen.x), Math.floor(screen.y), Math.ceil(tw), Math.ceil(th));
 
-          // Faint natural blade details
           if ((gx * 7 + gy * 13) % 7 === 0 && z >= 0.75) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.fillRect(
@@ -291,6 +284,178 @@ export class Renderer {
             );
           }
         }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Plot Props Collection
+  // ---------------------------------------------------------------------------
+
+  private collectPlotProps(
+    range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
+    entities: RenderableEntity[],
+  ): void {
+    const W = this.camera.viewportWidth;
+    const H = this.camera.viewportHeight;
+
+    const allPlots = this.plots.getAllPlots();
+    for (const plot of allPlots) {
+      if (
+        plot.centerX < range.minGx ||
+        plot.centerX > range.maxGx ||
+        plot.centerY < range.minGy ||
+        plot.centerY > range.maxGy
+      ) {
+        continue;
+      }
+
+      const screen = this.camera.worldToScreen(plot.worldCenterX, plot.worldCenterY);
+      if (screen.x < -60 || screen.x > W + 60 || screen.y < -60 || screen.y > H + 60) continue;
+
+      // Hash prop type from plot owner name
+      const propType = this.getPropTypeForName(plot.owner.displayName);
+
+      entities.push({
+        depth: plot.worldCenterY,
+        render: (ctx, z) => {
+          this.drawPlotProp(ctx, propType, screen.x, screen.y, z);
+        },
+      });
+    }
+  }
+
+  private getPropTypeForName(name: string): 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire' {
+    const props: ('lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire')[] = ['lamp', 'bench', 'flowers', 'sign', 'bonfire'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = (hash << 5) - hash + name.charCodeAt(i);
+      hash |= 0;
+    }
+    return props[Math.abs(hash) % props.length];
+  }
+
+  private drawPlotProp(
+    ctx: CanvasRenderingContext2D,
+    type: 'lamp' | 'bench' | 'flowers' | 'sign' | 'bonfire',
+    sx: number,
+    sy: number,
+    z: number,
+  ): void {
+    switch (type) {
+      case 'lamp': {
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pole
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - 1.5 * z, sy - 18 * z, 3 * z, 18 * z);
+
+        // Lantern head with warm glow
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 19 * z, 8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 19 * z, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'bench': {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 8 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#78350f';
+        // Legs
+        ctx.fillRect(sx - 6 * z, sy - 4 * z, 2 * z, 4 * z);
+        ctx.fillRect(sx + 4 * z, sy - 4 * z, 2 * z, 4 * z);
+        // Seat
+        ctx.fillRect(sx - 7 * z, sy - 6 * z, 14 * z, 3 * z);
+        // Backrest
+        ctx.fillRect(sx - 7 * z, sy - 10 * z, 14 * z, 2.5 * z);
+        break;
+      }
+
+      case 'flowers': {
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone circle
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 2 * z, 6 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 2.5 * z, 4.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Blossoms
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(sx - 2 * z, sy - 4 * z, 2 * z, 2 * z);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(sx + 1 * z, sy - 3 * z, 2 * z, 2 * z);
+        break;
+      }
+
+      case 'sign': {
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 4 * z, 2 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Post
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(sx - 1.5 * z, sy - 12 * z, 3 * z, 12 * z);
+        // Signboard
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(sx - 6 * z, sy - 14 * z, 12 * z, 6 * z);
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 6 * z, sy - 14 * z, 12 * z, 6 * z);
+        break;
+      }
+
+      case 'bonfire': {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 6 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stones
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 1 * z, 5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Flickering fire
+        const flicker = Math.sin(this.tick * 0.2) * 1.5 * z;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 4 * z, 6 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 4 * z + flicker, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 5 * z + flicker * 0.5, 1.8 * z, 0, Math.PI * 2);
+        ctx.fill();
+        break;
       }
     }
   }
@@ -439,7 +604,6 @@ export class Renderer {
   // ---------------------------------------------------------------------------
 
   private drawOverlays(ctx: CanvasRenderingContext2D, z: number): void {
-    // 1. Hovered Plot highlight
     if (this.hoveredPlot) {
       const p = this.hoveredPlot;
       const sMin = this.camera.worldToScreen(p.worldMinX, p.worldMinY);
@@ -467,7 +631,6 @@ export class Renderer {
       ctx.strokeRect(s.x, s.y, TILE_WIDTH * z, TILE_HEIGHT * z);
     }
 
-    // 2. Selected Plot highlight
     if (this.selectedPlot) {
       const p = this.selectedPlot;
       const sMin = this.camera.worldToScreen(p.worldMinX, p.worldMinY);
