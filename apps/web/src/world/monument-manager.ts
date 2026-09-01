@@ -1,17 +1,16 @@
 /**
  * MonumentManager — Renders other citizens in Spot World.
  *
- * Rules:
- * - Offline citizens: rendered as a cozy house / cottage structure at the plot center with chimney smoke.
- * - Online citizens: rendered as a cute chibi character walking around their 5x5 plot (AI roam).
- * - Clickable to open citizen profile popup.
+ * Visual Improvements:
+ * - Offline citizens: cozy cottage / house structure scaled to fit grid tile footprint with soft chimney smoke.
+ * - Online citizens: cute chibi character with autonomous wandering AI.
+ * - Name tags: shown for hovered/selected citizen, or when zoomed in for nearby neighbors (not a sea of overlapping black badges).
  */
 
 import {
   TILE_WIDTH,
   TILE_HEIGHT,
   gridToWorldCenter,
-  worldToGrid,
 } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
 import { AVATAR_CATALOG } from '../canvas/avatars.js';
@@ -31,12 +30,10 @@ interface ChimneySmoke {
   age: number;
 }
 
-interface CitizenEntity {
+export interface CitizenEntity {
   spot: OccupiedSpotSummary;
-  // World space feet anchor position
   wx: number;
   wy: number;
-  // AI roam state for online citizens
   targetWx: number;
   targetWy: number;
   direction: 'down' | 'up' | 'left' | 'right';
@@ -44,26 +41,19 @@ interface CitizenEntity {
   animTimer: number;
   pauseTimer: number;
   isMoving: boolean;
-  // Chimney smoke
   smokeParticles: ChimneySmoke[];
 }
 
 export class MonumentManager {
   private entities = new Map<string, CitizenEntity>();
   private excludeCitizenId = '';
-  private onClick?: (spot: OccupiedSpotSummary) => void;
 
-  constructor(onClick?: (spot: OccupiedSpotSummary) => void) {
-    this.onClick = onClick;
-  }
+  constructor(_onClick?: (spot: OccupiedSpotSummary) => void) {}
 
   setExcludeCitizen(id: string): void {
     this.excludeCitizenId = id;
   }
 
-  /**
-   * Sync citizens from world snapshot
-   */
   update(spots: OccupiedSpotSummary[]): void {
     const existing = new Set<string>();
 
@@ -94,7 +84,6 @@ export class MonumentManager {
       }
     }
 
-    // Remove deleted spots
     for (const key of Array.from(this.entities.keys())) {
       if (!existing.has(key)) {
         this.entities.delete(key);
@@ -102,9 +91,6 @@ export class MonumentManager {
     }
   }
 
-  /**
-   * Update AI roam positions and particles per frame
-   */
   updateTick(): void {
     for (const ent of this.entities.values()) {
       if (ent.spot.isOnline) {
@@ -125,20 +111,18 @@ export class MonumentManager {
     const dist = Math.hypot(ent.targetWx - ent.wx, ent.targetWy - ent.wy);
 
     if (dist < 3) {
-      // Arrived at waypoint — pause for 60 to 180 frames (1-3s)
       ent.pauseTimer = 60 + Math.floor(Math.random() * 120);
       ent.isMoving = false;
 
-      // Pick next random waypoint within plot (center ± 1.5 tiles)
       const center = gridToWorldCenter(ent.spot.x, ent.spot.y);
-      const roamRadiusX = TILE_WIDTH * 1.5;
-      const roamRadiusY = TILE_HEIGHT * 1.2;
+      const roamRadiusX = TILE_WIDTH * 1.2;
+      const roamRadiusY = TILE_HEIGHT * 1.0;
 
       ent.targetWx = center.wx + (Math.random() - 0.5) * roamRadiusX * 2;
       ent.targetWy = center.wy + (Math.random() - 0.5) * roamRadiusY * 2;
     } else {
       ent.isMoving = true;
-      const speed = 0.9; // AI walking speed
+      const speed = 0.85;
       const dx = ent.targetWx - ent.wx;
       const dy = ent.targetWy - ent.wy;
 
@@ -160,14 +144,14 @@ export class MonumentManager {
   }
 
   private updateChimneySmoke(ent: CitizenEntity): void {
-    if (Math.random() < 0.04 && ent.smokeParticles.length < 6) {
+    if (Math.random() < 0.035 && ent.smokeParticles.length < 5) {
       ent.smokeParticles.push({
-        x: ent.wx + 10 + (Math.random() - 0.5) * 4,
-        y: ent.wy - 38,
-        alpha: 0.7,
-        radius: 3 + Math.random() * 2,
-        vx: (Math.random() - 0.5) * 0.2 + 0.15,
-        vy: -0.4 - Math.random() * 0.2,
+        x: ent.wx + 8 + (Math.random() - 0.5) * 3,
+        y: ent.wy - 28,
+        alpha: 0.65,
+        radius: 2.5 + Math.random() * 2,
+        vx: (Math.random() - 0.5) * 0.15 + 0.1,
+        vy: -0.35 - Math.random() * 0.2,
         age: 0,
       });
     }
@@ -177,37 +161,31 @@ export class MonumentManager {
       p.age++;
       p.x += p.vx;
       p.y += p.vy;
-      p.radius += 0.05;
-      p.alpha -= 0.008;
+      p.radius += 0.04;
+      p.alpha -= 0.009;
 
-      if (p.alpha <= 0 || p.age > 90) {
+      if (p.alpha <= 0 || p.age > 85) {
         ent.smokeParticles.splice(i, 1);
       }
     }
   }
 
-  /**
-   * Hit test for clicks
-   */
   hitTest(wx: number, wy: number): OccupiedSpotSummary | null {
     for (const ent of this.entities.values()) {
       const dist = Math.hypot(wx - ent.wx, wy - ent.wy);
-      if (dist < 32) {
+      if (dist < 26) {
         return ent.spot;
       }
     }
     return null;
   }
 
-  /**
-   * Get all entities for depth-sorted rendering
-   */
   getAllEntities(): CitizenEntity[] {
     return Array.from(this.entities.values());
   }
 
   // ---------------------------------------------------------------------------
-  // Rendering Helpers
+  // Entity Rendering
   // ---------------------------------------------------------------------------
 
   renderEntity(
@@ -217,11 +195,12 @@ export class MonumentManager {
     sy: number,
     z: number,
     sprites: SpriteManager,
+    showNameTag: boolean,
   ): void {
     if (ent.spot.isOnline) {
-      this.renderOnlineChibi(ctx, ent, sx, sy, z);
+      this.renderOnlineChibi(ctx, ent, sx, sy, z, showNameTag);
     } else {
-      this.renderHouseStructure(ctx, ent, sx, sy, z, sprites);
+      this.renderHouseStructure(ctx, ent, sx, sy, z, sprites, showNameTag);
     }
   }
 
@@ -231,6 +210,7 @@ export class MonumentManager {
     sx: number,
     sy: number,
     z: number,
+    showNameTag: boolean,
   ): void {
     const avatar = AVATAR_CATALOG[ent.spot.avatarId] ?? AVATAR_CATALOG.astronaut;
     const colors = {
@@ -240,10 +220,10 @@ export class MonumentManager {
       skin: avatar.colors.skin || '#fed7aa',
     };
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    // Soft shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy, 8 * z, 4 * z, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
     ctx.fill();
 
     const isStepping = ent.isMoving && (ent.frame === 1 || ent.frame === 3);
@@ -252,42 +232,49 @@ export class MonumentManager {
 
     // Feet
     ctx.fillStyle = colors.accent;
-    ctx.fillRect(sx - 4.5 * z, sy - 2 * z, 3.5 * z, 2.5 * z);
-    ctx.fillRect(sx + 1.2 * z, sy - 2 * z, 3.5 * z, 2.5 * z);
+    ctx.fillRect(sx - 4 * z, sy - 2 * z, 3 * z, 2.5 * z);
+    ctx.fillRect(sx + 1 * z, sy - 2 * z, 3 * z, 2.5 * z);
 
     // Body
     ctx.fillStyle = colors.primary;
     ctx.beginPath();
-    ctx.roundRect(sx - 5.5 * z, sy - 11 * z, 11 * z, 9 * z, 2.5 * z);
+    ctx.roundRect(sx - 5 * z, sy - 10 * z, 10 * z, 8 * z, 2.5 * z);
     ctx.fill();
 
     // Head
-    const headY = sy - 16 * z + headBob;
+    const headY = sy - 15 * z + headBob;
     ctx.fillStyle = colors.skin;
     ctx.beginPath();
-    ctx.arc(sx, headY, 7.5 * z, 0, Math.PI * 2);
+    ctx.arc(sx, headY, 7 * z, 0, Math.PI * 2);
     ctx.fill();
 
     // Hair
     ctx.fillStyle = colors.secondary;
     ctx.beginPath();
     if (dir === 'up') {
-      ctx.arc(sx, headY, 7.5 * z, 0, Math.PI * 2);
+      ctx.arc(sx, headY, 7 * z, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      ctx.arc(sx, headY - 1 * z, 7.5 * z, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.arc(sx, headY - 1 * z, 7 * z, Math.PI * 0.8, Math.PI * 2.2);
       ctx.fill();
     }
 
     // Eyes
     if (dir !== 'up') {
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(sx - 3.5 * z, headY - 0.5 * z, 2 * z, 2.5 * z);
-      ctx.fillRect(sx + 1.8 * z, headY - 0.5 * z, 2 * z, 2.5 * z);
+      ctx.fillRect(sx - 3 * z, headY - 0.5 * z, 1.8 * z, 2.2 * z);
+      ctx.fillRect(sx + 1.2 * z, headY - 0.5 * z, 1.8 * z, 2.2 * z);
     }
 
-    // Citizen Name Tag with Online Green Dot
-    this.renderCitizenBadge(ctx, sx, sy - 26 * z, z, ent.spot.displayName, true);
+    if (showNameTag) {
+      this.renderCitizenBadge(ctx, sx, sy - 24 * z, z, ent.spot.displayName, true);
+    } else {
+      // Small cute green online indicator dot above head
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(sx, sy - 23 * z, 2.5 * z, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   private renderHouseStructure(
@@ -297,30 +284,46 @@ export class MonumentManager {
     sy: number,
     z: number,
     sprites: SpriteManager,
+    showNameTag: boolean,
   ): void {
-    // Try sprite first
     const spriteKey = sprites.getHouseKeyForSpot(ent.spot.displayName);
     const sprite = sprites.getSprite(spriteKey);
 
     if (sprite) {
-      const sw = sprite.naturalWidth * 0.45 * z;
-      const sh = sprite.naturalHeight * 0.45 * z;
-      ctx.drawImage(sprite, sx - sw / 2, sy - sh + 4 * z, sw, sh);
+      // Scale sprite cleanly so it fits nicely on a 48x32 tile footprint
+      const maxW = 44 * z;
+      const maxH = 40 * z;
+      const aspect = sprite.naturalWidth / sprite.naturalHeight;
+
+      let drawW = maxW;
+      let drawH = maxW / aspect;
+      if (drawH > maxH) {
+        drawH = maxH;
+        drawW = maxH * aspect;
+      }
+
+      // Soft ground shadow under cottage
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, drawW * 0.45, 5 * z, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.drawImage(sprite, sx - drawW / 2, sy - drawH + 2 * z, drawW, drawH);
     } else {
-      // Procedural cozy Stardew-style cottage fallback
-      this.renderProceduralHouse(ctx, sx, sy, z, ent.spot);
+      this.renderProceduralHouse(ctx, sx, sy, z);
     }
 
     // Chimney Smoke Particles
     for (const p of ent.smokeParticles) {
-      ctx.fillStyle = `rgba(226, 232, 240, ${p.alpha})`;
+      ctx.fillStyle = `rgba(241, 245, 249, ${p.alpha})`;
       ctx.beginPath();
       ctx.arc(sx + (p.x - ent.wx) * z, sy + (p.y - ent.wy) * z, p.radius * z, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Citizen name plate
-    this.renderCitizenBadge(ctx, sx, sy - 42 * z, z, ent.spot.displayName, false);
+    if (showNameTag) {
+      this.renderCitizenBadge(ctx, sx, sy - 36 * z, z, ent.spot.displayName, false);
+    }
   }
 
   private renderProceduralHouse(
@@ -328,49 +331,43 @@ export class MonumentManager {
     sx: number,
     sy: number,
     z: number,
-    spot: OccupiedSpotSummary,
   ): void {
-    const hw = 34 * z;
-    const hh = 26 * z;
+    const hw = 30 * z;
+    const hh = 22 * z;
 
-    // Ground shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy, hw * 0.6, 6 * z, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, hw * 0.55, 5 * z, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // House Body (cozy timber/brick)
-    ctx.fillStyle = '#e2d5c3';
+    // Cottage Body
+    ctx.fillStyle = '#dcd2c4';
     ctx.beginPath();
-    ctx.roundRect(sx - hw / 2, sy - hh, hw, hh, 3 * z);
+    ctx.roundRect(sx - hw / 2, sy - hh, hw, hh, 2.5 * z);
     ctx.fill();
 
-    ctx.strokeStyle = '#8b6f4e';
-    ctx.lineWidth = 1.5 * z;
+    ctx.strokeStyle = '#85694b';
+    ctx.lineWidth = 1.2 * z;
     ctx.stroke();
 
-    // Wood Roof (warm terracotta / slate)
-    const roofY = sy - hh - 12 * z;
+    // Terracotta Roof
+    const roofY = sy - hh - 10 * z;
     ctx.fillStyle = '#b45309';
     ctx.beginPath();
-    ctx.moveTo(sx - hw * 0.6, sy - hh + 2 * z);
+    ctx.moveTo(sx - hw * 0.55, sy - hh + 1.5 * z);
     ctx.lineTo(sx, roofY);
-    ctx.lineTo(sx + hw * 0.6, sy - hh + 2 * z);
+    ctx.lineTo(sx + hw * 0.55, sy - hh + 1.5 * z);
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle = '#78350f';
-    ctx.lineWidth = 1.8 * z;
-    ctx.stroke();
-
     // Door
-    ctx.fillStyle = '#523418';
-    ctx.fillRect(sx - 5 * z, sy - 14 * z, 10 * z, 14 * z);
+    ctx.fillStyle = '#452a14';
+    ctx.fillRect(sx - 4 * z, sy - 12 * z, 8 * z, 12 * z);
 
     // Warm lit window
     ctx.fillStyle = '#fde047';
-    ctx.fillRect(sx - 13 * z, sy - 18 * z, 6 * z, 6 * z);
-    ctx.fillRect(sx + 7 * z, sy - 18 * z, 6 * z, 6 * z);
+    ctx.fillRect(sx - 11 * z, sy - 16 * z, 5 * z, 5 * z);
+    ctx.fillRect(sx + 6 * z, sy - 16 * z, 5 * z, 5 * z);
   }
 
   private renderCitizenBadge(
@@ -381,34 +378,33 @@ export class MonumentManager {
     name: string,
     isOnline: boolean,
   ): void {
-    const fontSize = Math.max(8, Math.round(9 * z));
+    const fontSize = Math.max(8, Math.round(8.5 * z));
     ctx.font = `600 ${fontSize}px 'Outfit', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     const textW = ctx.measureText(name).width;
-    const dotSpace = isOnline ? 9 * z : 0;
-    const badgeW = textW + 12 * z + dotSpace;
-    const badgeH = fontSize + 6 * z;
+    const dotSpace = isOnline ? 8 * z : 0;
+    const badgeW = textW + 10 * z + dotSpace;
+    const badgeH = fontSize + 5 * z;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
     ctx.beginPath();
     ctx.roundRect(bx - badgeW / 2, by - badgeH / 2, badgeW, badgeH, 4 * z);
     ctx.fill();
 
-    ctx.strokeStyle = isOnline ? 'rgba(16, 185, 129, 0.6)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.strokeStyle = isOnline ? 'rgba(16, 185, 129, 0.7)' : 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     if (isOnline) {
-      // Online green dot
       ctx.fillStyle = '#10b981';
       ctx.beginPath();
-      ctx.arc(bx - badgeW / 2 + 6 * z, by, 3 * z, 0, Math.PI * 2);
+      ctx.arc(bx - badgeW / 2 + 5 * z, by, 2.5 * z, 0, Math.PI * 2);
       ctx.fill();
     }
 
     ctx.fillStyle = isOnline ? '#34d399' : '#f8fafc';
-    ctx.fillText(name, bx + (isOnline ? 4 * z : 0), by);
+    ctx.fillText(name, bx + (isOnline ? 3 * z : 0), by);
   }
 }
