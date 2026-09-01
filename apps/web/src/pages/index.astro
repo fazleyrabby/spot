@@ -108,6 +108,11 @@ import TransferModal from '../components/TransferModal.astro';
     }, 4000);
   }
 
+  function trackEvent(eventName: string, params: Record<string, unknown> = {}) {
+    const fn = (window as any).gtag;
+    if (typeof fn === 'function') fn('event', eventName, params);
+  }
+
   // 2. DOM Selectors
   const canvas = document.getElementById('spot-canvas') as HTMLCanvasElement;
   const coordPill = document.getElementById('coord-pill');
@@ -538,6 +543,12 @@ import TransferModal from '../components/TransferModal.astro';
       }
 
       showToast(`🎉 Spot (${gx}, ${gy}) is now yours forever!`, 'success');
+      trackEvent('spot_claim', {
+        spot_id: spotId,
+        spot_x: gx,
+        spot_y: gy,
+        method: 'github',
+      });
 
       // Center camera on newly claimed spot
       const worldPos = renderer.grid.gridToWorld(gx, gy);
@@ -1219,6 +1230,9 @@ import TransferModal from '../components/TransferModal.astro';
 
       closeProfileModal();
       showToast('🗑️ Spot released and profile deleted.', 'success');
+      trackEvent('spot_release', {
+        spot_id: targetSpotId || '',
+      });
     } catch (err: any) {
       showToast(err.message || 'Failed to delete account', 'error');
     }
@@ -1760,6 +1774,12 @@ import TransferModal from '../components/TransferModal.astro';
 
       closeClaimModal();
       showToast(`🎉 Spot (${currentTargetSpot.x}, ${currentTargetSpot.y}) is now yours forever!`, 'success');
+      trackEvent('spot_claim', {
+        spot_id: spotId,
+        spot_x: currentTargetSpot.x,
+        spot_y: currentTargetSpot.y,
+        method: 'manual',
+      });
 
       const worldPos = renderer.grid.gridToWorld(currentTargetSpot.x, currentTargetSpot.y);
       renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
