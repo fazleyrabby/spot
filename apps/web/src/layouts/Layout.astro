@@ -10,7 +10,7 @@ interface Props {
 
 const {
   title = 'SPOT — Your Place on the Internet',
-  description = 'Claim a permanent coordinate in SPOT, a 10,000-tile digital world where you create your pixel avatar and own your corner of the internet.',
+  description = 'A shared Internet canvas with 10,000 places. Pick an avatar, choose a spot, and leave your mark. Free to join.',
   image = 'https://www.claimyourspot.lol/og-image.png',
   url = 'https://www.claimyourspot.lol/',
 } = Astro.props;
@@ -63,11 +63,18 @@ const author = 'Md. Fazley Rabbi';
       "@context": "https://schema.org",
       "@graph": [
         {
+          "@type": "WebSite",
+          "name": "SPOT",
+          "url": "https://www.claimyourspot.lol/",
+          "description": description,
+          "inLanguage": "en"
+        },
+        {
           "@type": "WebApplication",
           "name": "SPOT",
           "url": "https://www.claimyourspot.lol/",
           "description": description,
-          "applicationCategory": "SocialNetworkingApplication",
+          "applicationCategory": "InternetApplication",
           "operatingSystem": "All",
           "author": { "@type": "Person", "name": "Md. Fazley Rabbi", "url": "https://fazleyrabbi.xyz/" },
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
