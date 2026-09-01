@@ -31,4 +31,5 @@ export const config = {
   rpId: process.env.WEBAUTHN_RP_ID || (appEnv === 'local' ? 'localhost' : 'www.claimyourspot.lol'),
   rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://www.claimyourspot.lol'),
   isProd: process.env.NODE_ENV === 'production',
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
 };

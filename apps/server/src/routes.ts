@@ -13,6 +13,7 @@ import {
   resolveCitizenById,
 } from './auth.js';
 import { config } from './config.js';
+import { sendSpotClaimNotification } from './discord.js';
 import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
 import {
   CreateCitizenSchema,
@@ -850,6 +851,17 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
         githubUrl: citizen.githubUrl,
       },
       neighborCitizenIds,
+    });
+
+    void sendSpotClaimNotification({
+      spotId: claimedSpot.id,
+      x: Number(x),
+      y: Number(y),
+      displayName: citizen.displayName,
+      tagline: citizen.tagline,
+      githubUrl: citizen.githubUrl,
+      websiteUrl: citizen.websiteUrl,
+      claimedAt: claimedSpot.claimedAt,
     });
 
     res.status(200).json({
