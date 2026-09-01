@@ -400,10 +400,10 @@ export class MonumentManager {
 
   hitTest(wx: number, wy: number): OccupiedSpotSummary | null {
     for (const ent of this.entities.values()) {
-      // Tight precise hitbox around chibi character sprite
-      const dx = Math.abs(wx - ent.wx);
-      const dy = wy - ent.wy; // Head is vertically above feet
-      if (dx < 7.5 && dy >= -18 && dy <= 4) {
+      // 3.5px - 4px ultra-precise radius of the citizen
+      const dx = wx - ent.wx;
+      const dy = wy - (ent.wy - 6);
+      if (Math.hypot(dx, dy) <= 4.0) {
         return ent.spot;
       }
     }

@@ -263,7 +263,7 @@ export class Renderer {
         entities.push({
           depth: ent.wy - 0.1,
           render: (c, currentZoom) => {
-            const ringRadius = 7 * currentZoom;
+            const ringRadius = 5.5 * currentZoom;
             c.save();
             c.fillStyle = isSelected ? PALETTES.select_glow : PALETTES.hover_glow;
             c.beginPath();
@@ -271,7 +271,7 @@ export class Renderer {
             c.fill();
 
             c.strokeStyle = isSelected ? PALETTES.select_ring : PALETTES.hover_ring;
-            c.lineWidth = 1.4;
+            c.lineWidth = 1.2;
             c.beginPath();
             c.ellipse(screen.x, screen.y, ringRadius, ringRadius * 0.45, 0, 0, Math.PI * 2);
             c.stroke();
