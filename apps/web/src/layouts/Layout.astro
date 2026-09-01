@@ -58,6 +58,15 @@ const author = 'Md. Fazley Rabbi';
     <meta property="twitter:creator" content="@fazleyrabby" />
     <meta property="twitter:site" content="@fazleyrabby" />
 
+    <!-- Google tag (gtag.js) -->
+    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-R7ZVE6FQJ3"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-R7ZVE6FQJ3');
+    </script>
+
     <!-- JSON-LD Structured Data -->
     <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
