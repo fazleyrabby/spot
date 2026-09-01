@@ -6061,7 +6061,7 @@ var require_hex = __commonJS({
       }
       return format5;
     }
-    function normalizeText2(text, options) {
+    function normalizeText3(text, options) {
       const allowPrefix = options.allowPrefix ?? true;
       const separators = [...resolveSeparators2(options)].sort((left, right) => right.length - left.length);
       for (const separator of separators) {
@@ -6119,7 +6119,7 @@ var require_hex = __commonJS({
       return chunks.join(group.separator);
     }
     function normalize5(text, options = {}) {
-      return normalizeText2(text, options);
+      return normalizeText3(text, options);
     }
     function is5(text, options = {}) {
       if (typeof text !== "string") {
@@ -18744,10 +18744,11 @@ try {
 } catch {
 }
 dotenv.config();
+var useLiveDb = process.env.USE_LIVE_DB === "true";
 var appEnv = process.env.APP_ENV || (process.env.NODE_ENV === "production" ? "production" : "local");
 var defaultLocalDatabaseUrl = "postgresql://spot_user:spot_secret_password@localhost:55432/spot_db";
 var configuredDatabaseUrl = process.env.DATABASE_URL || "";
-var databaseUrl = appEnv === "local" && configuredDatabaseUrl.includes("supabase") ? defaultLocalDatabaseUrl : configuredDatabaseUrl || (appEnv === "local" ? defaultLocalDatabaseUrl : "");
+var databaseUrl = !useLiveDb && appEnv === "local" && configuredDatabaseUrl.includes("supabase") ? defaultLocalDatabaseUrl : configuredDatabaseUrl || (appEnv === "local" ? defaultLocalDatabaseUrl : "");
 var config = {
   port: parseInt(process.env.PORT || "5050", 10),
   nodeEnv: process.env.NODE_ENV || "development",
@@ -18757,7 +18758,8 @@ var config = {
   corsOrigin: process.env.CORS_ORIGIN || "https://www.claimyourspot.lol",
   rpId: process.env.WEBAUTHN_RP_ID || (appEnv === "local" ? "localhost" : "www.claimyourspot.lol"),
   rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === "local" ? "http://localhost:4322" : "https://www.claimyourspot.lol"),
-  isProd: process.env.NODE_ENV === "production"
+  isProd: process.env.NODE_ENV === "production",
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || ""
 };
 
 // ../server/src/routes.ts
@@ -18896,6 +18898,44 @@ async function requireAuthMiddleware(req, res, next) {
   next();
 }
 
+// ../server/src/discord.ts
+async function sendSpotClaimNotification(input) {
+  const webhookUrl = config.discordWebhookUrl;
+  if (!webhookUrl) return;
+  const spotUrl = `https://www.claimyourspot.lol/?spot=${input.x},${input.y}`;
+  const authorName = input.displayName || "Anonymous Citizen";
+  const payload = {
+    embeds: [
+      {
+        title: `Spot (${input.x}, ${input.y}) claimed!`,
+        description: `**${authorName}** just claimed spot **(${input.x}, ${input.y})**.`,
+        url: spotUrl,
+        color: 3462041,
+        fields: [
+          ...input.tagline ? [{ name: "Tagline", value: input.tagline.slice(0, 1024), inline: false }] : [],
+          ...input.githubUrl ? [{ name: "GitHub", value: input.githubUrl, inline: true }] : [],
+          ...input.websiteUrl ? [{ name: "Website", value: input.websiteUrl, inline: true }] : [],
+          { name: "Claimed at", value: new Date(input.claimedAt).toUTCString(), inline: false }
+        ],
+        footer: { text: "claimyourspot.lol" },
+        timestamp: new Date(input.claimedAt).toISOString()
+      }
+    ]
+  };
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      console.error(`Discord webhook failed with status ${res.status}:`, await res.text().catch(() => ""));
+    }
+  } catch (err) {
+    console.error("Discord webhook error:", err);
+  }
+}
+
 // ../server/src/rateLimiter.ts
 var SlidingWindowRateLimiter = class {
   windows = /* @__PURE__ */ new Map();
@@ -18984,43 +19024,113 @@ var spotCommentLimiter = new SlidingWindowRateLimiter(
 // ../../packages/shared/src/schemas.ts
 import { z } from "zod";
 var BLOCKED_WORDS = [
+  // Profanities & Vulgarities
   "fuck",
   "fucker",
   "fucking",
+  "fuk",
+  "fucc",
+  "fck",
+  "fuxk",
   "shit",
+  "shite",
+  "sh!t",
+  "bullshit",
+  "shitty",
   "bitch",
+  "b!tch",
+  "bitches",
   "bastard",
   "asshole",
+  "a$$hole",
+  "a$$",
+  "asshat",
+  "asswipe",
+  "dick",
+  "d!ck",
+  "dickhead",
+  "cock",
+  "c0ck",
+  "pussy",
+  "pussies",
+  "cunt",
+  "c*nt",
+  "slut",
+  "sluts",
+  "whore",
+  "whores",
+  "motherfucker",
+  "douche",
+  "douchebag",
+  "jackass",
+  "prick",
+  "twat",
+  "wanker",
+  // Hate Speech & Slurs
   "nigger",
   "nigga",
-  "cunt",
-  "dick",
-  "pussy",
-  "slut",
-  "whore",
-  "motherfucker",
-  "bullshit",
-  "douche"
+  "n1gger",
+  "n1gga",
+  "chink",
+  "gook",
+  "kike",
+  "kyke",
+  "spic",
+  "faggot",
+  "fag",
+  "f@g",
+  "f@ggot",
+  "dyke",
+  "tranny",
+  "retard",
+  "retarded",
+  "pedophile",
+  "pedo",
+  "hitler",
+  "nazi",
+  "terrorist"
 ];
+function normalizeText(text) {
+  let s = text.toLowerCase();
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, "");
+  s = s.replace(/[@]/g, "a").replace(/[$]/g, "s").replace(/[!|1]/g, "i").replace(/[0]/g, "o").replace(/[3]/g, "e").replace(/[5]/g, "s").replace(/[+]/g, "t").replace(/[*_~`]/g, "");
+  return s;
+}
 function containsBlockedWord(text) {
   if (!text) return false;
-  const lower = text.toLowerCase();
-  return BLOCKED_WORDS.some((w) => {
-    const re = new RegExp(`\\b${w}\\b`, "i");
-    return re.test(lower) || w.length > 4 && lower.includes(w);
-  });
+  const rawLower = text.toLowerCase();
+  const normalized = normalizeText(text);
+  for (const w of BLOCKED_WORDS) {
+    const wordPattern = w.toLowerCase();
+    const re1 = new RegExp(`\\b${escapeRegExp(wordPattern)}\\b`, "i");
+    if (re1.test(rawLower) || re1.test(normalized)) {
+      return true;
+    }
+    if (wordPattern.length >= 4 && (rawLower.includes(wordPattern) || normalized.includes(wordPattern))) {
+      return true;
+    }
+    const spacedPattern = wordPattern.split("").map(escapeRegExp).join("[\\s._-]*");
+    const reSpaced = new RegExp(`\\b${spacedPattern}\\b`, "i");
+    if (reSpaced.test(rawLower) || reSpaced.test(normalized)) {
+      return true;
+    }
+  }
+  return false;
 }
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function sanitizeDisplayName(name) {
-  let clean = name.trim();
+function censorProfanity(text) {
+  let clean = text;
   for (const w of BLOCKED_WORDS) {
-    if (w.length >= 3) {
-      const re = new RegExp(`\\b${escapeRegExp(w)}\\b`, "gi");
-      clean = clean.replace(re, (m) => "*".repeat(m.length));
-    }
+    const spacedPattern = w.split("").map(escapeRegExp).join("[\\s._-]*");
+    const re = new RegExp(`\\b${spacedPattern}\\b`, "gi");
+    clean = clean.replace(re, (m) => "*".repeat(m.length));
   }
+  return clean;
+}
+function sanitizeDisplayName(name) {
+  let clean = censorProfanity(name.trim());
   clean = clean.replace(/\s{2,}/g, " ").trim();
   return (clean.slice(0, 32) || "Citizen").trim();
 }
@@ -19036,18 +19146,34 @@ var SafeUrlSchema = z.string().max(256, "URL must not exceed 256 characters").tr
   },
   { message: "URL must use a valid http:// or https:// scheme" }
 ).optional().or(z.literal(""));
+var SafeSocialUrlSchema = z.string().max(128, "URL must not exceed 128 characters").trim().refine(
+  (val) => {
+    if (!val) return true;
+    try {
+      const parsed = new URL(val);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  },
+  { message: "URL must use a valid http:// or https:// scheme" }
+).optional().or(z.literal(""));
 var CreateCitizenSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(32, "Display name must not exceed 32 characters").trim(),
   avatarId: z.string().min(1, "Avatar selection is required").max(32, "Avatar ID must not exceed 32 characters").trim(),
-  customAvatarData: z.string().max(65536).optional().or(z.literal("")),
+  customAvatarData: z.string().max(65536).refine(
+    (val) => !val || val.startsWith("data:image/") || val.startsWith("{"),
+    { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }
+  ).optional().or(z.literal("")),
   tagline: z.string().max(80, "Tagline must not exceed 80 characters").trim().optional().or(z.literal("")),
   bio: z.string().max(280, "Bio must not exceed 280 characters").trim().optional().or(z.literal("")),
   websiteUrl: SafeUrlSchema,
-  githubUrl: z.string().max(128, "GitHub handle or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
-  twitterUrl: z.string().max(128, "X / Twitter handle or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
-  facebookUrl: z.string().max(128, "Facebook profile or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
-  instagramUrl: z.string().max(128, "Instagram handle or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
-  youtubeUrl: z.string().max(128, "YouTube channel or URL must not exceed 128 characters").trim().optional().or(z.literal("")),
+  // Social URL fields: enforce http/https to block javascript: / data: XSS vectors
+  githubUrl: SafeSocialUrlSchema,
+  twitterUrl: SafeSocialUrlSchema,
+  facebookUrl: SafeSocialUrlSchema,
+  instagramUrl: SafeSocialUrlSchema,
+  youtubeUrl: SafeSocialUrlSchema,
   linkedinUrl: SafeUrlSchema,
   githubId: z.string().max(64).optional(),
   email: z.string().email().optional().or(z.literal("")),
@@ -19062,15 +19188,19 @@ var ClaimSpotSchema = z.object({
 var UpdateCitizenSchema = z.object({
   displayName: z.string().min(1, "Display name cannot be empty").max(32, "Display name must not exceed 32 characters").trim().optional(),
   avatarId: z.string().min(1).max(32).trim().optional(),
-  customAvatarData: z.string().max(65536).optional().or(z.literal("")),
+  customAvatarData: z.string().max(65536).refine(
+    (val) => !val || val.startsWith("data:image/") || val.startsWith("{"),
+    { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }
+  ).optional().or(z.literal("")),
   tagline: z.string().max(80).trim().optional(),
   bio: z.string().max(280).trim().optional(),
   websiteUrl: SafeUrlSchema,
-  githubUrl: z.string().max(128).trim().optional(),
-  twitterUrl: z.string().max(128).trim().optional(),
-  facebookUrl: z.string().max(128).trim().optional(),
-  instagramUrl: z.string().max(128).trim().optional(),
-  youtubeUrl: z.string().max(128).trim().optional(),
+  // Social URL fields: enforce http/https to block javascript: / data: XSS vectors
+  githubUrl: SafeSocialUrlSchema,
+  twitterUrl: SafeSocialUrlSchema,
+  facebookUrl: SafeSocialUrlSchema,
+  instagramUrl: SafeSocialUrlSchema,
+  youtubeUrl: SafeSocialUrlSchema,
   linkedinUrl: SafeUrlSchema
 });
 
@@ -20223,7 +20353,7 @@ function detectFormat(text) {
   }
   return format4;
 }
-function normalizeText(text, options) {
+function normalizeText2(text, options) {
   const allowPrefix = options.allowPrefix ?? true;
   const separators = [...resolveSeparators(options)].sort((left, right) => right.length - left.length);
   for (const separator of separators) {
@@ -20281,7 +20411,7 @@ function groupPairs(pairs, group) {
   return chunks.join(group.separator);
 }
 function normalize(text, options = {}) {
-  return normalizeText(text, options);
+  return normalizeText2(text, options);
 }
 function is2(text, options = {}) {
   if (typeof text !== "string") {
@@ -23539,7 +23669,7 @@ function issuerSubjectToString(input) {
 var import_x509 = __toESM(require_x509_cjs(), 1);
 
 // ../../node_modules/.pnpm/@simplewebauthn+server@13.3.3/node_modules/@simplewebauthn/server/esm/helpers/fetch.js
-function fetch(url) {
+function fetch2(url) {
   return _fetchInternals.stubThis(url);
 }
 var _fetchInternals = {
@@ -23586,7 +23716,7 @@ async function isCertRevoked(cert) {
   }
   let certListBytes;
   try {
-    const respCRL = await fetch(crlURL);
+    const respCRL = await fetch2(crlURL);
     certListBytes = await respCRL.arrayBuffer();
   } catch (_err) {
     return false;
@@ -25343,7 +25473,7 @@ var BaseMetadataService = class {
    */
   async downloadBlob(cachedMDS) {
     const { url } = cachedMDS;
-    const resp = await fetch(url);
+    const resp = await fetch2(url);
     const data = await resp.text();
     return data;
   }
@@ -27888,6 +28018,16 @@ apiRouter.post("/spots/claim", spotClaimLimiter, optionalAuthMiddleware, (req, r
         githubUrl: citizen.githubUrl
       },
       neighborCitizenIds
+    });
+    void sendSpotClaimNotification({
+      spotId: claimedSpot.id,
+      x: Number(x),
+      y: Number(y),
+      displayName: citizen.displayName,
+      tagline: citizen.tagline,
+      githubUrl: citizen.githubUrl,
+      websiteUrl: citizen.websiteUrl,
+      claimedAt: claimedSpot.claimedAt
     });
     res.status(200).json({
       success: true,
