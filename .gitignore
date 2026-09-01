@@ -37,3 +37,6 @@ live-home.png
 # Local-only Remotion Product Hunt video project
 video/
 nohup.out
+
+# Internal planning docs (not for public repo)
+docs/
