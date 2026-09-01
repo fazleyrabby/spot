@@ -254,10 +254,8 @@ export class Renderer {
 
       const isHovered = this.hoveredCitizen?.x === ent.spot.x && this.hoveredCitizen?.y === ent.spot.y;
       const isSelected = this.selectedCitizen?.x === ent.spot.x && this.selectedCitizen?.y === ent.spot.y;
-      const distToPlayer = Math.hypot(ent.wx - this.player.wx, ent.wy - this.player.wy);
-      const isNearby = z >= 1.25 && distToPlayer < 40;
 
-      const showNameTag = isHovered || isSelected || isNearby;
+      const showNameTag = isHovered || isSelected;
 
       if (isHovered || isSelected) {
         entities.push({
