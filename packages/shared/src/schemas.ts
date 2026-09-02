@@ -100,8 +100,10 @@ export const SafeUrlSchema = z
   .refine(
     (val) => {
       if (!val) return true;
+      if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) return false;
       try {
-        const parsed = new URL(val);
+        const testUrl = val.includes('://') ? val : `https://${val}`;
+        const parsed = new URL(testUrl);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch {
         return false;
@@ -112,14 +114,16 @@ export const SafeUrlSchema = z
   .optional()
   .or(z.literal(''));
 
-/** Same as SafeUrlSchema but capped at 128 characters for social handles / profile URLs. */
+/** Allows social handles (e.g. @username, username) or full http/https URLs. */
 export const SafeSocialUrlSchema = z
   .string()
-  .max(128, 'URL must not exceed 128 characters')
+  .max(128, 'Social link must not exceed 128 characters')
   .trim()
   .refine(
     (val) => {
       if (!val) return true;
+      if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) return false;
+      if (!val.includes('://')) return true;
       try {
         const parsed = new URL(val);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
@@ -127,7 +131,7 @@ export const SafeSocialUrlSchema = z
         return false;
       }
     },
-    { message: 'URL must use a valid http:// or https:// scheme' }
+    { message: 'Social handle or URL must use a valid scheme' }
   )
   .optional()
   .or(z.literal(''));
