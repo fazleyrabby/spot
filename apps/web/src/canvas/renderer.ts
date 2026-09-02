@@ -163,71 +163,95 @@ export class WorldCanvasRenderer {
 
     const spotSize = grid.config.spotSize;
 
-    // 1. Pass 1: Draw All Tiles & Avatars in visible bounds
-    const labelsToRender: Array<{
+    // 1. Pass 1: Draw All Base Grid Tiles & Avatars (excluding hovered spot)
+    const backgroundLabelsToRender: Array<{
       x: number;
       y: number;
       size: number;
       occupied: OccupiedSpotSummary;
-      isHovered: boolean;
-      isSelected: boolean;
-    }> = [];
-    const activeSpotsToRender: Array<{
-      x: number;
-      y: number;
-      size: number;
-      occupied: OccupiedSpotSummary;
-      isHovered: boolean;
-      isSelected: boolean;
     }> = [];
 
     for (let gx = visible.minX; gx <= visible.maxX; gx++) {
       for (let gy = visible.minY; gy <= visible.maxY; gy++) {
+        const isHovered = this.hoveredCoord?.x === gx && this.hoveredCoord?.y === gy;
+        const isSelected = this.selectedCoord?.x === gx && this.selectedCoord?.y === gy;
+
+        // Skip the hovered spot here; it will be rendered in the top-priority foreground pass
+        if (isHovered) continue;
+
         const spotId = grid.getSpotId(gx, gy);
         const worldPos = grid.gridToWorld(gx, gy);
         const occupied = this.occupiedMap.get(spotId);
 
-        const isHovered = this.hoveredCoord?.x === gx && this.hoveredCoord?.y === gy;
-        const isSelected = this.selectedCoord?.x === gx && this.selectedCoord?.y === gy;
-
         if (occupied) {
-          this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, isHovered, isSelected);
-          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered || isSelected);
-          if (this.camera.zoom > 1.2 || isHovered) {
-            labelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered, isSelected });
-          }
-          if (isHovered || isSelected) {
-            activeSpotsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied, isHovered, isSelected });
+          this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, false, isSelected);
+          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isSelected);
+          if (this.camera.zoom > 1.2 && !isSelected) {
+            backgroundLabelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied });
           }
         } else {
-          this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered, isSelected);
-          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isHovered || isSelected);
+          this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, false, isSelected);
+          if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isSelected);
         }
       }
     }
 
-    // 2. Pass 2: Draw background labels above the tile/avatar pass.
-    labelsToRender.sort((a, b) => Number(a.isHovered) - Number(b.isHovered));
-    for (const item of labelsToRender.filter((item) => !item.isHovered && !item.isSelected)) {
+    // 2. Pass 2: Draw background labels
+    for (const item of backgroundLabelsToRender) {
       this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, false);
     }
 
-    // 3. Foreground pass: keep the hovered/focused spot, including its avatar,
-    // above neighboring labels and sprites. This matters when labels overlap
-    // adjacent tiles in a dense part of the map.
-    for (const item of activeSpotsToRender) {
-      this.renderOccupiedSpot(ctx, item.x, item.y, item.size, item.occupied, item.isHovered, item.isSelected);
-      const activeCoords = grid.worldToGrid(item.x, item.y);
-      if (activeCoords && this.isPrimeSpot(activeCoords.x, activeCoords.y)) {
-        this.renderPrimeSpot(ctx, item.x, item.y, item.size, true);
+    // 3. Pass 3: Draw Selected Spot (if it is NOT the hovered spot)
+    const isSelectedHovered = Boolean(
+      this.selectedCoord &&
+      this.hoveredCoord &&
+      this.selectedCoord.x === this.hoveredCoord.x &&
+      this.selectedCoord.y === this.hoveredCoord.y
+    );
+
+    if (this.selectedCoord && !isSelectedHovered) {
+      const sx = this.selectedCoord.x;
+      const sy = this.selectedCoord.y;
+      const spotId = grid.getSpotId(sx, sy);
+      const worldPos = grid.gridToWorld(sx, sy);
+      const occupied = this.occupiedMap.get(spotId);
+
+      if (occupied) {
+        this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, false, true);
+        if (this.isPrimeSpot(sx, sy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
+        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, false);
+      } else {
+        this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, false, true);
+        if (this.isPrimeSpot(sx, sy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
       }
-      this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, item.isHovered);
+      this.renderSelectedBeacon(ctx, worldPos.x, worldPos.y, spotSize);
     }
 
-    // 4. Pass 4: Render Selection Cursor if active
-    if (this.selectedCoord) {
+    // 4. Pass 4: Draw selection beacon if the selected spot IS hovered (draw beacon UNDER hovered label)
+    if (this.selectedCoord && isSelectedHovered) {
       const pos = grid.gridToWorld(this.selectedCoord.x, this.selectedCoord.y);
       this.renderSelectedBeacon(ctx, pos.x, pos.y, spotSize);
+    }
+
+    // 5. Pass 5 (TOP PRIORITY): HOVERED SPOT ALWAYS ON TOP OF EVERYTHING
+    if (this.hoveredCoord) {
+      const hx = this.hoveredCoord.x;
+      const hy = this.hoveredCoord.y;
+      const spotId = grid.getSpotId(hx, hy);
+      const worldPos = grid.gridToWorld(hx, hy);
+      const occupied = this.occupiedMap.get(spotId);
+      const isSelected = Boolean(
+        this.selectedCoord && this.selectedCoord.x === hx && this.selectedCoord.y === hy
+      );
+
+      if (occupied) {
+        this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, true, isSelected);
+        if (this.isPrimeSpot(hx, hy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
+        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, true);
+      } else {
+        this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, true, isSelected);
+        if (this.isPrimeSpot(hx, hy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
+      }
     }
 
     ctx.restore();
@@ -391,14 +415,18 @@ export class WorldCanvasRenderer {
     }
 
     // Tile backdrop
-    if (isSelected) {
+    ctx.save();
+    if (isHovered) {
+      ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.35)' : '#263247';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 2;
+    } else if (isSelected) {
       ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 2;
-    } else if (isHovered) {
-      ctx.fillStyle = '#263247';
-      ctx.strokeStyle = '#f8fafc';
-      ctx.lineWidth = 1.5;
     } else {
       ctx.fillStyle = 'rgba(24, 28, 40, 0.85)';
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -409,6 +437,7 @@ export class WorldCanvasRenderer {
     ctx.roundRect(x, y, size, size, 5);
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
 
     // Avatar Sprite
     const pad = 4;
@@ -467,10 +496,17 @@ export class WorldCanvasRenderer {
     const pillX = x + size / 2 - pillWidth / 2;
     const pillY = y + size + 4;
 
+    ctx.save();
+    if (isHovered) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 2;
+    }
+
     // Dark glass capsule background behind text
-    ctx.fillStyle = isHovered ? 'rgba(15, 23, 42, 0.95)' : 'rgba(10, 12, 18, 0.85)';
+    ctx.fillStyle = isHovered ? '#0f172a' : 'rgba(10, 12, 18, 0.85)';
     ctx.strokeStyle = isHovered ? '#f59e0b' : 'rgba(255, 255, 255, 0.18)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = isHovered ? 1.5 : 1;
 
     ctx.beginPath();
     ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 4);
@@ -478,10 +514,13 @@ export class WorldCanvasRenderer {
     ctx.stroke();
 
     // Text
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillStyle = isHovered ? '#ffffff' : 'rgba(241, 245, 249, 0.95)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, x + size / 2, pillY + pillHeight / 2);
+    ctx.restore();
   }
 
   private renderSelectedBeacon(
