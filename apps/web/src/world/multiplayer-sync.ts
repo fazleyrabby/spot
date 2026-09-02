@@ -39,7 +39,7 @@ export class MultiplayerSync {
   private failureCount = 0;
   private networkBackoffUntil = 0;
   private isSending = false;
-  private readonly MIN_MOVE_INTERVAL_MS = 140;
+  private readonly MIN_MOVE_INTERVAL_MS = 300;
 
   constructor(options: {
     apiBase: string;
@@ -148,9 +148,9 @@ export class MultiplayerSync {
     const distMoved = Math.hypot(wx - this.lastSentWx, wy - this.lastSentWy);
     const stateChanged = state !== this.lastSentState || direction !== this.lastSentDirection;
     const speechChanged = speech !== this.lastSentSpeech;
-    const isMoving = state === 'walk' || state === 'run' || distMoved >= 2.0;
+    const isMoving = state === 'walking' || state === 'walk' || state === 'run' || distMoved >= 2.0;
 
-    // 1. When actively moving: enforce 140ms minimum interval and no overlapping requests
+    // 1. When actively moving: enforce 300ms minimum interval and no overlapping requests
     if (isMoving) {
       if (!speechChanged) {
         if (now - this.lastSendTime < this.MIN_MOVE_INTERVAL_MS || this.isSending) {
@@ -158,12 +158,9 @@ export class MultiplayerSync {
         }
       }
     } else {
-      // 2. When stopped/idle: only broadcast once when transitioning to idle (so others see us stop), or when chat speech changes
+      // 2. When idle: only broadcast ONCE when transitioning to idle (so others see us stop), or if chat speech changes
       if (!stateChanged && !speechChanged) {
-        // Idle keepalive: at most once every 30 seconds
-        if (now - this.lastSendTime < 30000) {
-          return;
-        }
+        return; // Zero HTTP requests when idle (SSE holds connection)
       }
     }
 
