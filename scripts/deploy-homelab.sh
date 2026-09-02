@@ -22,13 +22,19 @@ else
   ENV_FILE=".env.production"
 fi
 
-echo "📦 1. Building production containers..."
+echo "🏷️ 1. Preserving previous image for instant rollback..."
+if docker image inspect spot-spot-app:latest >/dev/null 2>&1; then
+  docker tag spot-spot-app:latest spot-spot-app:previous
+  echo "✅ Preserved current image as 'spot-spot-app:previous'."
+fi
+
+echo "📦 2. Building production containers..."
 docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml build
 
-echo "🔄 2. Starting services..."
+echo "🔄 3. Starting services..."
 docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d
 
-echo "⏳ 3. Waiting for health checks..."
+echo "⏳ 4. Waiting for health checks..."
 sleep 5
 
 docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml ps
