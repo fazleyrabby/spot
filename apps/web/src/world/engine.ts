@@ -35,6 +35,10 @@ export interface EngineOptions {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
   /** Callback when an easter egg landmark is clicked */
   onSecretClick?: (secret: import('./secrets.js').WorldSecret) => void;
+  /** Callback when an NPC is interacted with */
+  onNpcInteract?: (npc: import('./npc-manager.js').StreetNPC) => void;
+  /** Callback when a secret is newly discovered by walking near it */
+  onSecretDiscovered?: (secret: import('./secrets.js').WorldSecret) => void;
   /** Callback when an empty tile is clicked */
   onEmptyClick?: (gx: number, gy: number) => void;
 }
@@ -149,6 +153,19 @@ export class Engine {
 
     // 5. Bind player movement keys (WASD/Arrows) & 'E' / Space interaction
     this.player.onInteract = () => {
+      // 0. Check if near any Street NPC
+      const nearestNpc = this.renderer.npcs.getNearestNPC(this.player.wx, this.player.wy);
+      if (nearestNpc) {
+        if (nearestNpc.id === 'kiro_barista') {
+          this.renderer.npcs.activateSpeedBoost(20);
+          this.audio.playWhoosh();
+        } else if (nearestNpc.id === 'prof_barnaby') {
+          this.audio.playFanfare();
+        }
+        this.options.onNpcInteract?.(nearestNpc);
+        return;
+      }
+
       // 1. Check if near any secret landmark (within 2.5 tiles)
       const grid = worldToGrid(this.player.wx, this.player.wy);
       if (grid) {
@@ -183,6 +200,13 @@ export class Engine {
     };
     this.player.onStep = () => {
       this.audio.playFootstep();
+      const grid = worldToGrid(this.player.wx, this.player.wy);
+      if (grid) {
+        const secret = getSecretAt(grid.gx, grid.gy);
+        if (secret) {
+          this.options.onSecretDiscovered?.(secret);
+        }
+      }
     };
     this.renderer.train.onTrainApproach = (proximity) => {
       this.audio.playTrainSound(proximity);

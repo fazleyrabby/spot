@@ -65,6 +65,11 @@ export type UrbanPropType =
   | 'dev_library'
   | 'mystic_duck'
   | 'cafe_cat'
+  | 'glitch_void'
+  | 'cyber_lighthouse'
+  | 'hermit_cabin'
+  | 'retro_arcade'
+  | 'sunken_sub'
   | 'palm_tree'
   | 'beach_umbrella'
   | 'beach_bonfire'
@@ -343,6 +348,41 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'vending_machine', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 85,
+    };
+  }
+
+  if (gx === 98 && gy === 98) {
+    return {
+      gx, gy, type: 'glitch_void', wx, wy,
+      hasLight: true, lightColor: 'rgba(168, 85, 247, 0.65)', lightRadius: 110,
+    };
+  }
+
+  if (gx === 4 && gy === 94) {
+    return {
+      gx, gy, type: 'cyber_lighthouse', wx, wy,
+      hasLight: true, lightColor: 'rgba(0, 240, 255, 0.75)', lightRadius: 140,
+    };
+  }
+
+  if (gx === 50 && gy === 4) {
+    return {
+      gx, gy, type: 'hermit_cabin', wx, wy,
+      hasLight: true, lightColor: 'rgba(245, 158, 11, 0.55)', lightRadius: 95,
+    };
+  }
+
+  if (gx === 86 && gy === 22) {
+    return {
+      gx, gy, type: 'retro_arcade', wx, wy,
+      hasLight: true, lightColor: 'rgba(239, 68, 68, 0.5)', lightRadius: 85,
+    };
+  }
+
+  if (gx === 14 && gy === 78) {
+    return {
+      gx, gy, type: 'sunken_sub', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.5)', lightRadius: 90,
     };
   }
 

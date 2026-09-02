@@ -353,6 +353,33 @@ export class AudioManager {
     } catch (_) {}
   }
 
+  playWhoosh(): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.35);
+
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } catch (_) {}
+  }
+
   playTrainSound(proximity = 1.0): void {
     if (this.isMuted) return;
     const ctx = this.ctx;

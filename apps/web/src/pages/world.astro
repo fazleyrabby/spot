@@ -3,6 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import WorldHUD from '../components/WorldHUD.astro';
 import ProfileModal from '../components/ProfileModal.astro';
 import SecretModal from '../components/SecretModal.astro';
+import NpcModal from '../components/NpcModal.astro';
+import JournalModal from '../components/JournalModal.astro';
 import WorldChatBar from '../components/WorldChatBar.astro';
 import SearchModal from '../components/SearchModal.astro';
 ---
@@ -32,6 +34,12 @@ import SearchModal from '../components/SearchModal.astro';
 
     <!-- Secret discovery modal -->
     <SecretModal />
+
+    <!-- Street NPC interaction dialogue modal -->
+    <NpcModal />
+
+    <!-- Explorer Journal modal -->
+    <JournalModal />
 
     <!-- Quick Emote & Chat Dock -->
     <WorldChatBar />
@@ -179,6 +187,7 @@ import SearchModal from '../components/SearchModal.astro';
 
 <script>
   import { Engine } from '../world/engine.js';
+  import { WORLD_SECRETS } from '../world/secrets.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import type { OccupiedSpotSummary } from '@spot/shared';
   import { containsBlockedWord } from '@spot/shared';
@@ -507,7 +516,7 @@ import SearchModal from '../components/SearchModal.astro';
   const secretActionBtn = document.getElementById('secret-action-btn') as HTMLAnchorElement | null;
   const hudSecretsCount = document.getElementById('hud-secrets-count');
 
-  const TOTAL_SECRETS = 6;
+  const TOTAL_SECRETS = WORLD_SECRETS.length;
 
   function getDiscoveredSecrets(): Set<string> {
     try {
@@ -609,8 +618,177 @@ import SearchModal from '../components/SearchModal.astro';
     if (e.target === secretBackdrop) closeSecretModal();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSecretModal();
+    if (e.key === 'Escape') {
+      closeSecretModal();
+      closeNpcModal();
+      closeJournalModal();
+    }
   });
+
+  // ── NPC Dialogue Modal Wiring ─────────────────────────────────────────────
+  const npcBackdrop = document.getElementById('npc-modal-backdrop');
+  const npcCloseBtn = document.getElementById('npc-modal-close');
+  const npcDismissBtn = document.getElementById('npc-dismiss-btn');
+  const npcActionBtn = document.getElementById('npc-action-btn');
+  const npcActionText = document.getElementById('npc-action-text');
+  const npcIcon = document.getElementById('npc-icon');
+  const npcDistrict = document.getElementById('npc-district');
+  const npcName = document.getElementById('npc-name');
+  const npcTitle = document.getElementById('npc-title');
+  const npcDialogue = document.getElementById('npc-dialogue');
+  const npcEffectBadge = document.getElementById('npc-effect-badge');
+  const npcEffectText = document.getElementById('npc-effect-text');
+  let currentNpc: import('../world/npc-manager.js').StreetNPC | null = null;
+
+  function openNpcModal(npc: import('../world/npc-manager.js').StreetNPC): void {
+    if (!npcBackdrop) return;
+    currentNpc = npc;
+    if (npcIcon) npcIcon.textContent = npc.icon;
+    if (npcDistrict) npcDistrict.textContent = npc.district;
+    if (npcName) npcName.textContent = npc.name;
+    if (npcTitle) npcTitle.textContent = npc.title;
+    if (npcDialogue) npcDialogue.textContent = `“${npc.dialogue}”`;
+
+    if (npcActionText) {
+      npcActionText.textContent = npc.id === 'kiro_barista' ? 'Drink Turbo Espresso ⚡' : 'Set GPS to Random Citizen 🧭';
+    }
+
+    if (npcEffectBadge && npcEffectText) {
+      if (npc.id === 'kiro_barista') {
+        npcEffectBadge.style.display = 'inline-flex';
+        npcEffectText.textContent = 'Grants +40% Speed Boost for 20s';
+      } else {
+        npcEffectBadge.style.display = 'none';
+      }
+    }
+
+    npcBackdrop.classList.add('open');
+    npcBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeNpcModal(): void {
+    if (!npcBackdrop) return;
+    npcBackdrop.classList.remove('open');
+    npcBackdrop.setAttribute('aria-hidden', 'true');
+    currentNpc = null;
+  }
+
+  npcCloseBtn?.addEventListener('click', closeNpcModal);
+  npcDismissBtn?.addEventListener('click', closeNpcModal);
+  npcBackdrop?.addEventListener('click', (e) => {
+    if (e.target === npcBackdrop) closeNpcModal();
+  });
+
+  npcActionBtn?.addEventListener('click', () => {
+    if (!currentNpc || !engine) return;
+    if (currentNpc.id === 'kiro_barista') {
+      engine.renderer.npcs.activateSpeedBoost(20);
+      showToast('⚡ Turbo Espresso consumed! Speed +40% for 20s!', 'success');
+      closeNpcModal();
+    } else if (currentNpc.id === 'prof_barnaby') {
+      const allCitizens = engine.monuments.getAllEntities();
+      if (allCitizens.length > 0) {
+        const randomCitizen = allCitizens[Math.floor(Math.random() * allCitizens.length)];
+        const targetName = randomCitizen.spot.displayName || 'Citizen';
+        engine.renderer.gpsTarget = {
+          name: targetName,
+          wx: randomCitizen.wx,
+          wy: randomCitizen.wy,
+        };
+        showToast(`🧭 GPS Waypoint set to ${targetName}! Follow the compass needle.`, 'success');
+      } else {
+        showToast('🧭 Barnaby surveyed the horizon, but no citizens are registered yet!', 'info');
+      }
+      closeNpcModal();
+    }
+  });
+
+  // ── Explorer Journal Modal Wiring ──────────────────────────────────────────
+  const journalBackdrop = document.getElementById('journal-modal-backdrop');
+  const journalCloseBtn = document.getElementById('journal-modal-close');
+  const journalList = document.getElementById('journal-list');
+  const journalProgressText = document.getElementById('journal-progress-text');
+  const journalProgressFill = document.getElementById('journal-progress-fill');
+  const hudSecretsBtn = document.getElementById('hud-secrets-btn');
+
+  function openJournalModal(): void {
+    if (!journalBackdrop || !journalList) return;
+    const discovered = getDiscoveredSecrets();
+    const total = WORLD_SECRETS.length;
+    const pct = Math.round((discovered.size / total) * 100);
+
+    if (journalProgressText) {
+      journalProgressText.textContent = `${discovered.size} / ${total} Discovered (${pct}%)`;
+    }
+    if (journalProgressFill) {
+      journalProgressFill.style.width = `${pct}%`;
+    }
+
+    journalList.innerHTML = '';
+    for (const secret of WORLD_SECRETS) {
+      const isFound = discovered.has(secret.id);
+      const card = document.createElement('div');
+      card.className = `journal-item ${isFound ? 'discovered' : ''}`;
+
+      if (isFound) {
+        card.innerHTML = `
+          <div class="journal-item-icon">${secret.icon}</div>
+          <div class="journal-item-content">
+            <div class="journal-item-top">
+              <h4 class="journal-item-name">${secret.name}</h4>
+              <span class="journal-item-coords">(${secret.gx}, ${secret.gy})</span>
+            </div>
+            <div class="journal-item-district">${secret.district} • <span style="color:#00f0ff;">✓ Discovered</span></div>
+            <p class="journal-item-clue">“${secret.quote || secret.description}”</p>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="journal-item-icon">❓</div>
+          <div class="journal-item-content">
+            <div class="journal-item-top">
+              <h4 class="journal-item-name">Undiscovered Landmark</h4>
+              <span class="journal-item-coords">[???, ???]</span>
+            </div>
+            <div class="journal-item-district">${secret.district} • <span style="color:#f59e0b;">Undiscovered</span></div>
+            <p class="journal-item-clue">🔍 Riddle: “${secret.clue}”</p>
+          </div>
+        `;
+      }
+      journalList.appendChild(card);
+    }
+
+    journalBackdrop.classList.add('open');
+    journalBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeJournalModal(): void {
+    if (!journalBackdrop) return;
+    journalBackdrop.classList.remove('open');
+    journalBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  hudSecretsBtn?.addEventListener('click', openJournalModal);
+  journalCloseBtn?.addEventListener('click', closeJournalModal);
+  journalBackdrop?.addEventListener('click', (e) => {
+    if (e.target === journalBackdrop) closeJournalModal();
+  });
+
+  // ── Turbo Boost HUD Timer Loop ─────────────────────────────────────────────
+  const hudTurboPill = document.getElementById('hud-turbo-pill');
+  const hudTurboTimer = document.getElementById('hud-turbo-timer');
+
+  setInterval(() => {
+    if (!engine) return;
+    const remainingFrames = engine.renderer.npcs.speedBoostRemainingFrames;
+    if (remainingFrames > 0 && hudTurboPill && hudTurboTimer) {
+      hudTurboPill.style.display = 'inline-flex';
+      const seconds = Math.ceil(remainingFrames / 60);
+      hudTurboTimer.textContent = `${seconds}s`;
+    } else if (hudTurboPill) {
+      hudTurboPill.style.display = 'none';
+    }
+  }, 200);
 
   // ── Engine ────────────────────────────────────────────────────────────────
   let engine: InstanceType<typeof Engine> | null = null;
@@ -690,9 +868,13 @@ import SearchModal from '../components/SearchModal.astro';
         isVerified,
         onCitizenClick: (spot) => openProfileModal(spot),
         onSecretClick: (secret) => openSecretModal(secret),
+        onSecretDiscovered: (secret) => openSecretModal(secret),
+        onNpcInteract: (npc) => openNpcModal(npc),
         onEmptyClick: (_gx, _gy) => {
           closeProfileModal();
           closeSecretModal();
+          closeNpcModal();
+          closeJournalModal();
         },
       });
 

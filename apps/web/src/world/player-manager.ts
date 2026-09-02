@@ -56,6 +56,8 @@ export class PlayerManager {
   state: PlayerState = 'idle';
   direction: Direction = 'down';
   frame = 0;
+  speedMultiplier = 1.0;
+  speedTrail: { wx: number; wy: number; alpha: number }[] = [];
   private animTimer = 0;
   private idleTimer = 0;
   private tick = 0;
@@ -184,6 +186,7 @@ export class PlayerManager {
   update(): void {
     this.tick++;
     this.updateChatBubble();
+    this.updateSpeedTrail();
     let dx = 0;
     let dy = 0;
 
@@ -226,13 +229,18 @@ export class PlayerManager {
       }
 
       const isSprint = this.keys.has('shift');
-      const speed = isSprint ? 5.6 : 3.8;
+      const baseSpeed = isSprint ? 5.6 : 3.8;
+      const speed = baseSpeed * this.speedMultiplier;
       const len = Math.hypot(dx, dy);
       const moveX = (dx / len) * speed;
       const moveY = (dy / len) * speed;
 
       this.wx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, this.wx + moveX));
       this.wy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, this.wy + moveY));
+
+      if (this.speedMultiplier > 1.0 && this.tick % 3 === 0) {
+        this.speedTrail.push({ wx: this.wx, wy: this.wy, alpha: 0.65 });
+      }
 
       this.updateCurrentPlot();
 
@@ -284,6 +292,15 @@ export class PlayerManager {
     }
   }
 
+  private updateSpeedTrail(): void {
+    for (let i = this.speedTrail.length - 1; i >= 0; i--) {
+      this.speedTrail[i].alpha -= 0.05;
+      if (this.speedTrail[i].alpha <= 0) {
+        this.speedTrail.splice(i, 1);
+      }
+    }
+  }
+
   render(ctx: CanvasRenderingContext2D, sx: number, sy: number, zoom: number): void {
     const z = zoom;
     const colors = {
@@ -292,6 +309,20 @@ export class PlayerManager {
       accent: this.avatar.colors.accent || '#f59e0b',
       skin: this.avatar.colors.skin || '#fde047',
     };
+
+    // Speed boost cyan motion trails
+    if (this.speedTrail.length > 0) {
+      ctx.save();
+      for (const t of this.speedTrail) {
+        const dx = (t.wx - this.wx) * z;
+        const dy = (t.wy - this.wy) * z;
+        ctx.fillStyle = `rgba(0, 240, 255, ${t.alpha * 0.45})`;
+        ctx.beginPath();
+        ctx.ellipse(sx + dx, sy + dy, 7 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
 
     // 1. Soft ground shadow
     ctx.save();
