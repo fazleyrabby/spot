@@ -26,6 +26,7 @@ import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
+import { SkyManager } from './sky-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
@@ -116,6 +117,7 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
   readonly train: TrainManager;
+  readonly sky: SkyManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
@@ -146,6 +148,7 @@ export class Renderer {
     this.monuments = monuments;
     this.plots = plots;
     this.train = new TrainManager();
+    this.sky = new SkyManager();
 
     this.initCityParticles();
   }
@@ -196,6 +199,7 @@ export class Renderer {
     this.player.update();
     this.monuments.updateTick();
     this.train.tick(this.player.wy);
+    this.sky.tick(this.player.wx, this.player.wy);
     this.multiplayer?.broadcastMovement(
       this.player.wx,
       this.player.wy,
@@ -229,6 +233,10 @@ export class Renderer {
 
     // 3. Ground Layer (Mountains, Railway, Districts, Boardwalk, Beach, Ocean)
     this.drawCityGround(ctx, range, z);
+
+    // 3b. Atmospheric Ground Shadows & Wildlife
+    this.sky.renderGroundShadows(ctx, camera, this.timeOfDay);
+    this.sky.renderGroundedWildlife(ctx, camera);
 
     // 4. Collect Depth-Sorted Entities & Street Lights
     const entities: RenderableEntity[] = [];
@@ -327,6 +335,9 @@ export class Renderer {
 
     // 9. Floating ambient particles
     this.drawCityParticles(ctx);
+
+    // 9b. Sky Layer (Drifting Clouds, Cyber Blimp & High-Altitude Birds)
+    this.sky.renderSkyLayer(ctx, camera, this.timeOfDay);
 
     // 10. On-Screen GPS Waypoint Indicator
     this.drawGpsWaypoint(ctx);
