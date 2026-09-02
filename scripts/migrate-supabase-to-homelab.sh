@@ -17,20 +17,22 @@ fi
 
 BACKUP_FILE="spot_supabase_export_$(date +%Y%m%d_%H%M%S).sql"
 
-echo "📥 1. Exporting data from Supabase..."
-pg_dump --clean --if-exists --no-owner --no-privileges \
+echo "📦 1. Ensuring spot-postgres container is running..."
+if ! docker ps --format '{{.Names}}' | grep -q "^spot-postgres$"; then
+  echo "Starting spot-postgres container..."
+  docker compose --env-file .env.production -f docker-compose.prod.yml up -d spot-postgres
+  sleep 5
+fi
+
+echo "📥 2. Exporting data from Supabase..."
+docker exec -i spot-postgres pg_dump \
   --data-only \
+  --inserts \
+  --on-conflict-do-nothing \
   -t citizens -t spots -t citizen_passkeys -t citizen_sessions -t spot_comments -t site_stats -t moderation_flags \
   "$SUPABASE_DB_URL" > "$BACKUP_FILE"
 
 echo "✓ Export completed: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
-
-echo "📦 2. Checking if spot-postgres container is running..."
-if ! docker ps --format '{{.Names}}' | grep -q "^spot-postgres$"; then
-  echo "Starting spot-postgres container..."
-  docker compose -f docker-compose.prod.yml up -d spot-postgres
-  sleep 5
-fi
 
 echo "🚀 3. Restoring data into local spot-postgres container..."
 docker exec -i spot-postgres psql -U spot_user -d spot_db < "$BACKUP_FILE"
