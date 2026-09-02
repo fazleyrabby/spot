@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config.js';
 import { apiRouter } from './routes.js';
 
@@ -43,6 +45,31 @@ app.get('/health', (_req, res) => {
 
 // Mount API router
 app.use('/api', apiRouter);
+
+// Serve static frontend in production if dist exists
+const webDistPath = process.env.WEB_DIST_PATH || path.resolve(process.cwd(), '../web/dist');
+if (fs.existsSync(webDistPath)) {
+  app.use(express.static(webDistPath, { maxAge: '1d', index: false }));
+
+  app.get('/world', (_req, res) => {
+    const worldHtml = path.join(webDistPath, 'world', 'index.html');
+    if (fs.existsSync(worldHtml)) {
+      return res.sendFile(worldHtml);
+    }
+    res.sendFile(path.join(webDistPath, 'index.html'));
+  });
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/health') {
+      return next();
+    }
+    const htmlFile = path.join(webDistPath, req.path.replace(/^\//, ''), 'index.html');
+    if (fs.existsSync(htmlFile)) {
+      return res.sendFile(htmlFile);
+    }
+    res.sendFile(path.join(webDistPath, 'index.html'));
+  });
+}
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

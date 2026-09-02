@@ -4302,13 +4302,13 @@ function __disposeResources(env) {
   }
   return next();
 }
-function __rewriteRelativeImportExtension(path2, preserveJsx) {
-  if (typeof path2 === "string" && /^\.\.?\//.test(path2)) {
-    return path2.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
+function __rewriteRelativeImportExtension(path3, preserveJsx) {
+  if (typeof path3 === "string" && /^\.\.?\//.test(path3)) {
+    return path3.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
       return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
     });
   }
-  return path2;
+  return path3;
 }
 var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
 var init_tslib_es6 = __esm({
@@ -13916,14 +13916,14 @@ var require_dependency_container = __commonJS({
           provider = providerOrConstructor;
         }
         if (providers_1.isTokenProvider(provider)) {
-          const path2 = [token];
+          const path3 = [token];
           let tokenProvider = provider;
           while (tokenProvider != null) {
             const currentToken = tokenProvider.useToken;
-            if (path2.includes(currentToken)) {
-              throw new Error(`Token registration cycle detected! ${[...path2, currentToken].join(" -> ")}`);
+            if (path3.includes(currentToken)) {
+              throw new Error(`Token registration cycle detected! ${[...path3, currentToken].join(" -> ")}`);
             }
-            path2.push(currentToken);
+            path3.push(currentToken);
             const registration = this._registry.get(currentToken);
             if (registration && providers_1.isTokenProvider(registration.provider)) {
               tokenProvider = registration.provider;
@@ -18730,6 +18730,8 @@ var require_x509_cjs = __commonJS({
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path2 from "path";
+import fs from "fs";
 
 // ../server/src/config.ts
 import dotenv from "dotenv";
@@ -28498,6 +28500,27 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", time: (/* @__PURE__ */ new Date()).toISOString() });
 });
 app.use("/api", apiRouter);
+var webDistPath = process.env.WEB_DIST_PATH || path2.resolve(process.cwd(), "../web/dist");
+if (fs.existsSync(webDistPath)) {
+  app.use(express.static(webDistPath, { maxAge: "1d", index: false }));
+  app.get("/world", (_req, res) => {
+    const worldHtml = path2.join(webDistPath, "world", "index.html");
+    if (fs.existsSync(worldHtml)) {
+      return res.sendFile(worldHtml);
+    }
+    res.sendFile(path2.join(webDistPath, "index.html"));
+  });
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path === "/health") {
+      return next();
+    }
+    const htmlFile = path2.join(webDistPath, req.path.replace(/^\//, ""), "index.html");
+    if (fs.existsSync(htmlFile)) {
+      return res.sendFile(htmlFile);
+    }
+    res.sendFile(path2.join(webDistPath, "index.html"));
+  });
+}
 app.use((err, _req, res, _next) => {
   console.error("Unhandled Server Error:", err);
   res.status(500).json({ error: "InternalServerError", message: "An unexpected error occurred" });

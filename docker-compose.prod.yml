@@ -1,0 +1,58 @@
+services:
+  spot-postgres:
+    image: postgres:16-alpine
+    container_name: spot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spot_db}
+      POSTGRES_USER: ${POSTGRES_USER:-spot_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+    volumes:
+      - spot_pgdata:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spot_user} -d ${POSTGRES_DB:-spot_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - spot-network
+
+  spot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spot-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      PORT: 4323
+      DATABASE_URL: postgresql://${POSTGRES_USER:-spot_user}:${POSTGRES_PASSWORD}@spot-postgres:5432/${POSTGRES_DB:-spot_db}
+      COOKIE_SECRET: ${COOKIE_SECRET:?Cookie secret is required}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://spot.fazleyrabbi.xyz}
+      RP_ID: ${RP_ID:-spot.fazleyrabbi.xyz}
+      RP_ORIGIN: ${RP_ORIGIN:-https://spot.fazleyrabbi.xyz}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+    depends_on:
+      spot-postgres:
+        condition: service_healthy
+    networks:
+      - spot-network
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.spot.entrypoints=web"
+      - "traefik.http.routers.spot.rule=Host(`${DOMAIN_NAME:-spot.fazleyrabbi.xyz}`)"
+      - "traefik.http.services.spot.loadbalancer.server.port=4323"
+
+networks:
+  spot-network:
+    driver: bridge
+  traefik:
+    external: true
+
+volumes:
+  spot_pgdata:

@@ -123,7 +123,16 @@ export async function updateSpotWall(spotId: string, visibility: 'open' | 'reado
 }
 
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
-  // Direct Supabase query: 0 Vercel Serverless CPU, 0 Vercel Invocations!
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/world`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('API /world fetch failed, falling back to direct mode:', err);
+    }
+  }
   return await fetchWorldDirect();
 }
 
