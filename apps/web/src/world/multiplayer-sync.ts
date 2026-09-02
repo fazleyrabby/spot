@@ -6,8 +6,6 @@
  * - Optional Supabase Realtime Broadcast WebSockets
  */
 
-import { supabase } from '../api/supabase.js';
-
 export interface LivePlayerPayload {
   citizenId: string;
   senderTabId: string;
@@ -30,10 +28,8 @@ export class MultiplayerSync {
   private tabId: string;
 
   private sseSource: EventSource | null = null;
-  private supabaseChannel: any = null;
   private onRemotePlayerMove: (data: LivePlayerPayload) => void;
 
-  private isSupabaseSubscribed = false;
   private lastSentWx = -9999;
   private lastSentWy = -9999;
   private lastSentState = '';
@@ -70,35 +66,7 @@ export class MultiplayerSync {
   }
 
   start(): void {
-    // 1. Try Supabase Realtime Channel (Production WebSockets)
-    if (supabase) {
-      try {
-        const channel = supabase.channel('spot-world-multiplayer', {
-          config: { broadcast: { self: false } },
-        });
-
-        channel
-          .on('broadcast', { event: 'player-position' }, (event: any) => {
-            const payload = event?.payload;
-            if (payload && payload.senderTabId !== this.tabId) {
-              this.onRemotePlayerMove(payload);
-            }
-          })
-          .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              this.isSupabaseSubscribed = true;
-            } else {
-              this.isSupabaseSubscribed = false;
-            }
-          });
-
-        this.supabaseChannel = channel;
-      } catch (err) {
-        console.warn('[MultiplayerSync] Supabase channel initialization notice:', err);
-      }
-    }
-
-    // 2. Also connect SSE Stream (for local Express server & homelab real-time)
+    // Connect authoritative Server-Sent Events stream for real-time multiplayer
     const base = this.getResolvedApiBase();
     if (base) {
       const streamUrl = `${base}/api/realtime/stream?tabId=${this.tabId}`;
@@ -127,12 +95,6 @@ export class MultiplayerSync {
   }
 
   stop(): void {
-    if (this.supabaseChannel && supabase) {
-      try {
-        supabase.removeChannel(this.supabaseChannel);
-      } catch (_) {}
-      this.supabaseChannel = null;
-    }
     if (this.sseSource) {
       this.sseSource.close();
       this.sseSource = null;
@@ -205,9 +167,9 @@ export class MultiplayerSync {
       timestamp: now,
     };
 
-    // 1. Broadcast via Authoritative Backend (SSE - 0 Supabase message limits)
+    // Broadcast via Authoritative Backend (SSE)
     const base = this.getResolvedApiBase();
-    if (base && (this.sseSource || !this.isSupabaseSubscribed)) {
+    if (base) {
       if (now >= this.networkBackoffUntil) {
         try {
           fetch(`${base}/api/realtime/position`, {
@@ -228,17 +190,6 @@ export class MultiplayerSync {
             });
         } catch (_) {}
       }
-    }
-
-    // 2. Broadcast via Supabase WebSockets if subscribed
-    if (this.supabaseChannel && this.isSupabaseSubscribed) {
-      try {
-        this.supabaseChannel.send({
-          type: 'broadcast',
-          event: 'player-position',
-          payload,
-        });
-      } catch (_) {}
     }
   }
 }
