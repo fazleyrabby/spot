@@ -6,6 +6,9 @@
   "routes": [
     { "src": "^/assets/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
     { "src": "^/_astro/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
+    { "src": "^/(.*)\\.html$", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+    { "src": "^/$", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+    { "src": "^/world/?$", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "handle": "filesystem" },
     { "src": "^/api/(.*)$", "dest": "/api/[...path]?...path=$1", "check": true },
     { "handle": "error" },

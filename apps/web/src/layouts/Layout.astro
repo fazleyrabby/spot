@@ -96,6 +96,40 @@ const author = 'Md. Fazley Rabbi';
         }
       ]
     })} />
+
+    <!-- Auto-recovery from stale deployment asset hashes & bfcache drops -->
+    <script is:inline>
+      // 1. If any stylesheet fails to load (e.g. 404 during live deployment rollout)
+      window.addEventListener('error', function (e) {
+        var t = e && e.target;
+        if (t && t.tagName === 'LINK' && t.rel === 'stylesheet') {
+          var retryKey = 'spot_css_heal_' + location.pathname;
+          var lastRetry = sessionStorage.getItem(retryKey);
+          if (!lastRetry || Date.now() - parseInt(lastRetry, 10) > 10000) {
+            sessionStorage.setItem(retryKey, Date.now().toString());
+            window.location.reload();
+          }
+        }
+      }, true);
+
+      // 2. If restored from browser Back-Forward Cache (bfcache)
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+          var sheets = document.querySelectorAll('link[rel="stylesheet"]');
+          var missing = false;
+          sheets.forEach(function (sheet) {
+            try {
+              if (!sheet.sheet || sheet.sheet.cssRules.length === 0) {
+                missing = true;
+              }
+            } catch (_) {}
+          });
+          if (missing) {
+            window.location.reload();
+          }
+        }
+      });
+    </script>
   </head>
   <body>
     <slot />
