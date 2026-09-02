@@ -186,10 +186,25 @@ import SearchModal from '../components/SearchModal.astro';
   import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
-  const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
-  const API_BASE: string = configuredBase
-    ? (configuredBase.endsWith('/api') ? configuredBase.replace(/\/api$/, '') : configuredBase)
-    : (typeof window !== 'undefined' ? window.location.origin : '');
+  function resolveApiOrigin(): string {
+    const configured = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
+    if (typeof window !== 'undefined') {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      // When accessed from non-localhost (e.g. claimyourspot.lol or remote homelab), never target localhost
+      if (!isLocal && configured && (configured.includes('localhost') || configured.includes('127.0.0.1'))) {
+        return window.location.origin;
+      }
+      if (configured) {
+        return configured.endsWith('/api') ? configured.replace(/\/api$/, '') : configured;
+      }
+      return window.location.origin;
+    }
+    if (configured) {
+      return configured.endsWith('/api') ? configured.replace(/\/api$/, '') : configured;
+    }
+    return '';
+  }
+  const API_BASE: string = resolveApiOrigin();
 
   // ── DOM refs ─────────────────────────────────────────────────────────────
   const canvas       = document.getElementById('world-canvas') as HTMLCanvasElement;
@@ -935,11 +950,11 @@ import SearchModal from '../components/SearchModal.astro';
                   avatarId: item.avatarId || 'astronaut',
                   customAvatarData: item.customAvatarData,
                   websiteUrl: item.websiteUrl,
-                  twitterHandle: item.twitterHandle,
-                  facebookHandle: item.facebookHandle,
-                  instagramHandle: item.instagramHandle,
-                  linkedinHandle: item.linkedinHandle,
-                  youtubeHandle: item.youtubeHandle,
+                  twitterUrl: item.twitterUrl || item.twitterHandle,
+                  facebookUrl: item.facebookUrl || item.facebookHandle,
+                  instagramUrl: item.instagramUrl || item.instagramHandle,
+                  linkedinUrl: item.linkedinUrl || item.linkedinHandle,
+                  youtubeUrl: item.youtubeUrl || item.youtubeHandle,
                   githubUrl: item.githubUrl,
                   isVerified: item.isVerified,
                   claimedAt: item.claimedAt || new Date().toISOString(),

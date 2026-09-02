@@ -40,6 +40,8 @@ export class MultiplayerSync {
   private lastSentDirection = '';
   private lastSentSpeech: string | null = null;
   private lastSendTime = 0;
+  private failureCount = 0;
+  private networkBackoffUntil = 0;
 
   constructor(options: {
     apiBase: string;
@@ -97,12 +99,16 @@ export class MultiplayerSync {
     }
 
     // 2. Also connect SSE Stream (for local Express server & homelab real-time)
-    const base = this.apiBase || (typeof window !== 'undefined' ? window.location.origin : '');
+    const base = this.getResolvedApiBase();
     if (base) {
       const streamUrl = `${base}/api/realtime/stream?tabId=${this.tabId}`;
       try {
         const source = new EventSource(streamUrl, { withCredentials: true });
         this.sseSource = source;
+
+        source.onopen = () => {
+          this.failureCount = 0;
+        };
 
         source.onmessage = (event) => {
           try {
@@ -111,6 +117,10 @@ export class MultiplayerSync {
               this.onRemotePlayerMove(data);
             }
           } catch (_) {}
+        };
+
+        source.onerror = () => {
+          // EventSource auto-retries internally; avoid aggressive console noise
         };
       } catch (_) {}
     }
@@ -126,6 +136,28 @@ export class MultiplayerSync {
     if (this.sseSource) {
       this.sseSource.close();
       this.sseSource = null;
+    }
+  }
+
+  private getResolvedApiBase(): string {
+    let base = this.apiBase;
+    if (typeof window !== 'undefined') {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      // When accessed from non-localhost (e.g. claimyourspot.lol), never use localhost
+      if (!isLocal && base && (base.includes('localhost') || base.includes('127.0.0.1'))) {
+        return window.location.origin;
+      }
+      return base || window.location.origin;
+    }
+    return base || '';
+  }
+
+  private handleSendFailure(now: number): void {
+    this.failureCount++;
+    if (this.failureCount >= 3) {
+      // Exponential backoff up to 10s if the server is unreachable
+      const backoffMs = Math.min(10000, 1000 * Math.pow(2, this.failureCount - 3));
+      this.networkBackoffUntil = now + backoffMs;
     }
   }
 
@@ -174,16 +206,28 @@ export class MultiplayerSync {
     };
 
     // 1. Broadcast via Authoritative Backend (SSE - 0 Supabase message limits)
-    const base = this.apiBase || (typeof window !== 'undefined' ? window.location.origin : '');
+    const base = this.getResolvedApiBase();
     if (base && (this.sseSource || !this.isSupabaseSubscribed)) {
-      try {
-        fetch(`${base}/api/realtime/position`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        }).catch(() => {});
-      } catch (_) {}
+      if (now >= this.networkBackoffUntil) {
+        try {
+          fetch(`${base}/api/realtime/position`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+          })
+            .then((res) => {
+              if (res.ok) {
+                this.failureCount = 0;
+              } else {
+                this.handleSendFailure(now);
+              }
+            })
+            .catch(() => {
+              this.handleSendFailure(now);
+            });
+        } catch (_) {}
+      }
     }
 
     // 2. Broadcast via Supabase WebSockets if subscribed

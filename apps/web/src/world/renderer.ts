@@ -119,6 +119,7 @@ export class Renderer {
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
+  hoveredGrid: { gx: number; gy: number } | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
   gpsTarget: { name: string; wx: number; wy: number } | null = null;
   timeOfDay: 'day' | 'twilight' | 'night' = 'night';
@@ -639,7 +640,7 @@ export class Renderer {
 
     for (let gy = range.minGy; gy <= range.maxGy; gy++) {
       for (let gx = range.minGx; gx <= range.maxGx; gx++) {
-        const prop = getCityProp(gx, gy, false);
+        const prop = getCityProp(gx, gy);
         if (!prop) continue;
 
         const screen = this.camera.worldToScreen(prop.wx, prop.wy);

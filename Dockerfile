@@ -23,6 +23,11 @@ RUN pnpm install --frozen-lockfile
 # Copy full source tree
 COPY . .
 
+# Set build-time env for client bundle
+ENV NODE_ENV=production
+ENV PUBLIC_ENABLE_SSE=true
+ENV PUBLIC_API_BASE=""
+
 # Build all monorepo workspaces
 RUN pnpm build
 

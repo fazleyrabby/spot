@@ -47,7 +47,7 @@ export class Engine {
   readonly player: PlayerManager;
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
-  readonly input: InteractionHandler;
+  input: InteractionHandler | null = null;
   readonly audio: AudioManager;
   readonly multiplayer: MultiplayerSync;
 
@@ -220,8 +220,21 @@ export class Engine {
   // Data Sync
   // ---------------------------------------------------------------------------
 
+  private getResolvedApiBase(): string {
+    let base = this.options.apiBase;
+    if (typeof window !== 'undefined') {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isLocal && base && (base.includes('localhost') || base.includes('127.0.0.1'))) {
+        return window.location.origin;
+      }
+      return base || window.location.origin;
+    }
+    return base || '';
+  }
+
   private async fetchSnapshot(): Promise<WorldSnapshot> {
-    const url = `${this.options.apiBase}/api/world`;
+    const base = this.getResolvedApiBase();
+    const url = `${base}/api/world`;
     try {
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -262,10 +275,11 @@ export class Engine {
   // ---------------------------------------------------------------------------
 
   private connectSSE(): void {
-    const apiSseEnabled = (import.meta as any).env?.DEV || (import.meta as any).env?.PUBLIC_ENABLE_SSE === 'true';
-    if (!this.options.apiBase || !apiSseEnabled) return;
+    const apiSseEnabled = (import.meta as any).env?.DEV || (import.meta as any).env?.PUBLIC_ENABLE_SSE === 'true' || !(import.meta as any).env?.SSR;
+    const base = this.getResolvedApiBase();
+    if (!base || !apiSseEnabled) return;
 
-    const url = `${this.options.apiBase}/api/realtime/stream`;
+    const url = `${base}/api/realtime/stream`;
     try {
       const source = new EventSource(url, { withCredentials: true });
       this.sseSource = source;

@@ -96,6 +96,13 @@ export class PlotManager {
   }
 
   /**
+   * Find occupied spot by exact coordinates or covering plot.
+   */
+  getSpotAt(gx: number, gy: number): OccupiedSpotSummary | null {
+    return this.occupiedMap.get(`${gx},${gy}`) ?? this.getPlotAt(gx, gy)?.owner ?? null;
+  }
+
+  /**
    * Find the plot for a specific citizen by their citizenId.
    */
   getOwnerPlot(citizenId: string): Plot | null {
