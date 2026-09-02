@@ -44,3 +44,7 @@ docs/
 HANDOVER.md
 HOMELAB_MIGRATION_PLAN.md
 BACKUP_PLAN.md
+
+# Local utility scripts with sensitive configs
+scripts/*.py
+scripts/send-founder-apology-emails.py
