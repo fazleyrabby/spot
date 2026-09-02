@@ -173,7 +173,7 @@ export class MultiplayerSync {
       timestamp: now,
     };
 
-    // Broadcast via Supabase WebSockets (Free, Instant, 0 Vercel Invocations)
+    // Broadcast via Supabase WebSockets (Instant, 0 HTTP requests, 0 Vercel Invocations)
     if (this.supabaseChannel && this.isSupabaseSubscribed) {
       try {
         this.supabaseChannel.send({
@@ -181,19 +181,6 @@ export class MultiplayerSync {
           event: 'player-position',
           payload,
         });
-      } catch (_) {}
-      return;
-    }
-
-    // Local dev fallback only (never hammer Vercel serverless in production)
-    if (import.meta.env.DEV) {
-      try {
-        fetch(`${this.apiBase}/api/realtime/position`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        }).catch(() => {});
       } catch (_) {}
     }
   }
