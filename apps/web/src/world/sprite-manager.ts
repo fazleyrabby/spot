@@ -53,7 +53,6 @@ export class SpriteManager {
 
     return new Promise((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
       let done = false;
 
       const finish = (success: boolean) => {
@@ -69,10 +68,21 @@ export class SpriteManager {
       };
 
       img.onload = () => finish(true);
-      img.onerror = () => finish(false);
+      img.onerror = () => {
+        // If initial load fails (e.g. extension hook or CDN glitch), retry once with cache-buster
+        const retry = new Image();
+        retry.onload = () => {
+          if (done) return;
+          done = true;
+          this.sheetImg = retry;
+          this.isLoaded = true;
+          resolve();
+        };
+        retry.onerror = () => finish(false);
+        retry.src = `/sprites/city/tilemap_packed.png?v=${Date.now()}`;
+      };
 
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      img.src = `${origin}/sprites/city/tilemap_packed.png`;
+      img.src = '/sprites/city/tilemap_packed.png';
 
       if (img.complete && img.naturalWidth > 0) {
         finish(true);
