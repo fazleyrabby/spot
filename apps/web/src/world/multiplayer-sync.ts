@@ -145,9 +145,10 @@ export class MultiplayerSync {
     }
 
     const now = Date.now();
+    const currentSpeech = speech?.trim() || null;
     const distMoved = Math.hypot(wx - this.lastSentWx, wy - this.lastSentWy);
     const stateChanged = state !== this.lastSentState || direction !== this.lastSentDirection;
-    const speechChanged = speech !== this.lastSentSpeech;
+    const speechChanged = currentSpeech !== this.lastSentSpeech;
     const isMoving = state === 'walking' || state === 'walk' || state === 'run' || distMoved >= 2.0;
 
     // 1. When actively moving: enforce 300ms minimum interval and no overlapping requests
@@ -168,7 +169,7 @@ export class MultiplayerSync {
     this.lastSentWy = wy;
     this.lastSentDirection = direction;
     this.lastSentState = state;
-    this.lastSentSpeech = speech || null;
+    this.lastSentSpeech = currentSpeech;
     this.lastSendTime = now;
 
     const payload: LivePlayerPayload = {
