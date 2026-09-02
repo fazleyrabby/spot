@@ -6,14 +6,27 @@ CREATE TABLE IF NOT EXISTS citizens (
   display_name VARCHAR(32) NOT NULL,
   avatar_id VARCHAR(32) NOT NULL,
   tagline VARCHAR(80),
+  bio VARCHAR(280),
   website_url VARCHAR(256),
   github_url VARCHAR(256),
+  github_id VARCHAR(64) UNIQUE,
+  email VARCHAR(256),
+  avatar_url VARCHAR(512),
+  twitter_url VARCHAR(256),
+  facebook_url VARCHAR(256),
+  instagram_url VARCHAR(256),
+  youtube_url VARCHAR(256),
   linkedin_url VARCHAR(256),
+  custom_avatar_data TEXT,
+  ip_address VARCHAR(64),
+  device_fingerprint VARCHAR(64),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_citizens_token_hash ON citizens(session_token_hash);
+CREATE INDEX IF NOT EXISTS idx_citizens_github_id ON citizens(github_id);
+CREATE INDEX IF NOT EXISTS idx_citizens_device_fingerprint ON citizens(device_fingerprint);
 
 CREATE TABLE IF NOT EXISTS spots (
   id VARCHAR(32) PRIMARY KEY,
