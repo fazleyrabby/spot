@@ -25,12 +25,20 @@ if ! docker ps --format '{{.Names}}' | grep -q "^spot-postgres$"; then
 fi
 
 echo "📥 2. Exporting data from Supabase..."
+cat << 'HEADER' > "$BACKUP_FILE"
+SET session_replication_role = 'replica';
+TRUNCATE TABLE spot_comments, referrals, citizen_passkeys, citizen_sessions, moderation_flags, spots, citizens CASCADE;
+HEADER
+
 docker exec -i spot-postgres pg_dump \
   --data-only \
   --inserts \
-  --on-conflict-do-nothing \
-  -t citizens -t spots -t citizen_passkeys -t citizen_sessions -t spot_comments -t site_stats -t moderation_flags \
-  "$SUPABASE_DB_URL" > "$BACKUP_FILE"
+  -t citizens -t spots -t citizen_passkeys -t citizen_sessions -t spot_comments -t site_stats -t moderation_flags -t referrals \
+  "$SUPABASE_DB_URL" >> "$BACKUP_FILE"
+
+cat << 'FOOTER' >> "$BACKUP_FILE"
+SET session_replication_role = 'origin';
+FOOTER
 
 echo "✓ Export completed: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
 
