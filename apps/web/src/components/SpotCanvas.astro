@@ -51,6 +51,29 @@
         </svg>
         <span>Support</span>
       </button>
+
+      <details class="seo-guide" id="seo-guide">
+        <summary class="seo-guide-summary" title="How SPOT works">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>How SPOT works</span>
+        </summary>
+        <div class="seo-guide-content glass-panel">
+          <h3>SPOT — Your place on the Internet</h3>
+          <p>A shared Internet canvas with 10,000 places. Pick an avatar, choose a spot, and leave your mark.</p>
+          <p>SPOT is a free Internet experiment where everyone gets one place on a shared canvas. Add your name, a short description, and a link to your website, portfolio, or project.</p>
+          <p>The canvas contains 10,000 spots. Each person can have one spot, making the world a simple visual collection of people and the things they make.</p>
+          <ol>
+            <li>Pick an avatar.</li>
+            <li>Choose an available spot.</li>
+            <li>Add your name and a link, and become part of the world.</li>
+          </ol>
+          <p class="seo-guide-free">✨ Free to join. No payment required.</p>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -192,6 +215,63 @@
   .coffee-icon {
     color: #f59e0b;
   }
+
+  /* Integrated "How SPOT Works" Guide */
+  .seo-guide {
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .seo-guide-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.80rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-surface-glass);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: pointer;
+    list-style: none;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .seo-guide-summary:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(30, 35, 50, 0.9);
+    transform: translateY(-1px);
+  }
+
+  .seo-guide-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .seo-guide-content {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    width: min(340px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    background: rgba(13, 17, 28, 0.96);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    z-index: 100;
+  }
+
+  .seo-guide-content h3 { margin: 0 0 7px; color: #f8fafc; font-size: 0.95rem; line-height: 1.25; }
+  .seo-guide-content p { margin: 0 0 8px; line-height: 1.45; }
+  .seo-guide-content ol { margin: 0 0 8px; padding-left: 18px; line-height: 1.5; }
+  .seo-guide-free { color: var(--accent-amber); font-weight: 600; margin: 0 !important; }
 
   .coord-pill {
     display: flex;
