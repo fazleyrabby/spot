@@ -41,3 +41,5 @@ nohup.out
 
 # Internal planning docs (not for public repo)
 docs/
+HANDOVER.md
+HOMELAB_MIGRATION_PLAN.md
