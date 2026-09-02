@@ -11,7 +11,9 @@
  *
  * Deploy to Cloudflare:
  * - Go to Cloudflare Dashboard -> Workers & Pages -> Create Worker
- * - Paste this script and add a Route (e.g., spot.fazleyrabbi.xyz/*)
+ * - Paste this script and add Routes:
+ *   - claimyourspot.lol/*
+ *   - www.claimyourspot.lol/*
  */
 
 const OFFLINE_HTML = `<!DOCTYPE html>
