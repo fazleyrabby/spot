@@ -125,25 +125,26 @@ export async function updateSpotWall(spotId: string, visibility: 'open' | 'reado
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
   if (API_BASE) {
     try {
-      const visitRes = await fetch(`${API_BASE}/analytics/visit`, {
+      // Fire analytics visit in parallel without blocking snapshot fetch
+      const visitPromise = fetch(`${API_BASE}/analytics/visit`, {
         credentials: 'include',
-      });
-      const visitData = visitRes.ok ? await visitRes.json() : null;
+        signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined,
+      }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
       const res = await fetch(`${API_BASE}/world`, {
         headers: getAuthHeaders(),
         credentials: 'include',
+        signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined,
       });
+
       if (res.ok) {
         const snapshot = await res.json();
+        const visitData = await visitPromise;
         if (visitData?.totalVisitors != null) snapshot.totalVisitors = visitData.totalVisitors;
         return snapshot;
       }
-      throw new Error(`World API returned ${res.status}`);
     } catch (err) {
-      // Never fall back to direct Supabase reads when the authoritative API is configured.
-      // This keeps local development isolated from the live dataset.
-      console.error('API /world unavailable; refusing live-data fallback:', err);
-      throw err;
+      console.warn('API /world fetch failed or timed out, falling back to direct Supabase query:', err);
     }
   }
   return await fetchWorldDirect();
