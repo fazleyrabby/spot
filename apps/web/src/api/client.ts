@@ -123,30 +123,7 @@ export async function updateSpotWall(spotId: string, visibility: 'open' | 'reado
 }
 
 export async function fetchWorldSnapshot(): Promise<WorldSnapshot> {
-  if (API_BASE) {
-    try {
-      // Fire analytics visit in parallel without blocking snapshot fetch
-      const visitPromise = fetch(`${API_BASE}/analytics/visit`, {
-        credentials: 'include',
-        signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined,
-      }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-
-      const res = await fetch(`${API_BASE}/world`, {
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined,
-      });
-
-      if (res.ok) {
-        const snapshot = await res.json();
-        const visitData = await visitPromise;
-        if (visitData?.totalVisitors != null) snapshot.totalVisitors = visitData.totalVisitors;
-        return snapshot;
-      }
-    } catch (err) {
-      console.warn('API /world fetch failed or timed out, falling back to direct Supabase query:', err);
-    }
-  }
+  // Direct Supabase query: 0 Vercel Serverless CPU, 0 Vercel Invocations!
   return await fetchWorldDirect();
 }
 
