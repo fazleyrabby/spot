@@ -83,9 +83,23 @@ if (fs.existsSync(webDistPath)) {
     if (req.path.startsWith('/api') || req.path === '/health') {
       return next();
     }
-    const htmlFile = path.join(webDistPath, req.path.replace(/^\//, ''), 'index.html');
+    const cleanPath = req.path.replace(/^\//, '');
+    if (cleanPath === '' || cleanPath === '/') {
+      return sendFreshHtml(res, path.join(webDistPath, 'index.html'));
+    }
+    const htmlFile = path.join(webDistPath, cleanPath, 'index.html');
     if (fs.existsSync(htmlFile)) {
       return sendFreshHtml(res, htmlFile);
+    }
+    const directFile = path.join(webDistPath, `${cleanPath}.html`);
+    if (fs.existsSync(directFile)) {
+      return sendFreshHtml(res, directFile);
+    }
+    // 404 Not Found fallback
+    const notFoundFile = path.join(webDistPath, '404.html');
+    if (fs.existsSync(notFoundFile)) {
+      res.status(404);
+      return sendFreshHtml(res, notFoundFile);
     }
     sendFreshHtml(res, path.join(webDistPath, 'index.html'));
   });
