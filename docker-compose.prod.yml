@@ -31,9 +31,9 @@ services:
       PORT: 4323
       DATABASE_URL: postgresql://${POSTGRES_USER:-spot_user}:${POSTGRES_PASSWORD}@spot-postgres:5432/${POSTGRES_DB:-spot_db}
       COOKIE_SECRET: ${COOKIE_SECRET:?Cookie secret is required}
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://spot.fazleyrabbi.xyz}
-      RP_ID: ${RP_ID:-spot.fazleyrabbi.xyz}
-      RP_ORIGIN: ${RP_ORIGIN:-https://spot.fazleyrabbi.xyz}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://claimyourspot.lol}
+      RP_ID: ${RP_ID:-claimyourspot.lol}
+      RP_ORIGIN: ${RP_ORIGIN:-https://claimyourspot.lol}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
     depends_on:
       spot-postgres:
@@ -45,7 +45,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.spot.entrypoints=web"
-      - "traefik.http.routers.spot.rule=Host(`${DOMAIN_NAME:-spot.fazleyrabbi.xyz}`)"
+      - "traefik.http.routers.spot.rule=Host(`${DOMAIN_NAME:-claimyourspot.lol}`) || Host(`www.${DOMAIN_NAME:-claimyourspot.lol}`)"
       - "traefik.http.services.spot.loadbalancer.server.port=4323"
 
 networks:
