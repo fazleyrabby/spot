@@ -12,10 +12,21 @@ import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 
 // All writes go through the authoritative server when PUBLIC_API_BASE is set.
 // Leave unset for local dev without the server (falls back to direct Supabase mode).
-const configuredApiBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
-export const API_BASE = configuredApiBase
-  ? (configuredApiBase.endsWith('/api') ? configuredApiBase : `${configuredApiBase}/api`)
-  : (import.meta.env.PROD ? '/api' : null);
+function resolveApiClientBase(): string | null {
+  const configuredApiBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
+  if (typeof window !== 'undefined') {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // If client is not on localhost, never route to localhost
+    if (!isLocal && configuredApiBase && (configuredApiBase.includes('localhost') || configuredApiBase.includes('127.0.0.1'))) {
+      return '/api';
+    }
+  }
+  if (configuredApiBase) {
+    return configuredApiBase.endsWith('/api') ? configuredApiBase : `${configuredApiBase}/api`;
+  }
+  return import.meta.env.PROD || (typeof window !== 'undefined' && window.location.origin) ? '/api' : null;
+}
+export const API_BASE = resolveApiClientBase();
 
 export interface MySessionResponse {
   authenticated: boolean;

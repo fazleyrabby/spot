@@ -94,11 +94,13 @@ export class InteractionHandler {
       } else {
         if (this.isUiElement(e.target)) {
           this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredGrid = null;
           canvas.style.cursor = 'default';
           return;
         }
 
         const world = this.screenToWorld(e.clientX, e.clientY);
+        this.renderer.hoveredGrid = worldToGrid(world.x, world.y);
         const citizen = this.monuments.hitTest(world.x, world.y);
 
         if (citizen) {
