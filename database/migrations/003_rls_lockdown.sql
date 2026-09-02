@@ -16,7 +16,12 @@ DROP POLICY IF EXISTS "Public insert citizens" ON public.citizens;
 DROP POLICY IF EXISTS "Public update spots" ON public.spots;
 
 -- 3. Prevent session-token hijacking: anon can no longer read session_token_hash
-REVOKE SELECT (session_token_hash) ON public.citizens FROM anon, authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    EXECUTE 'REVOKE SELECT (session_token_hash) ON public.citizens FROM anon, authenticated';
+  END IF;
+END $$;
 
 -- 4. MODERATION_FLAGS: server-only. Enable RLS with no policies => anon denied,
 --    while the server (table owner) still has full access.
@@ -36,4 +41,10 @@ AS $$
   RETURNING value;
 $$;
 REVOKE ALL ON FUNCTION public.increment_visitors() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.increment_visitors() TO anon, authenticated;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_visitors() TO anon, authenticated';
+  END IF;
+END $$;
