@@ -230,3 +230,69 @@ export type CreateCitizenInput = z.infer<typeof CreateCitizenSchema>;
 export type ClaimSpotInput = z.infer<typeof ClaimSpotSchema>;
 export type UpdateCitizenInput = z.infer<typeof UpdateCitizenSchema>;
 export type SafeSocialUrl = z.infer<typeof SafeSocialUrlSchema>;
+
+/**
+ * Normalizes a raw social handle, username, or URL into a fully qualified HTTPS URL.
+ * e.g.:
+ *   formatSocialUrl('@alrifatsabbir', 'instagram') -> 'https://instagram.com/alrifatsabbir'
+ *   formatSocialUrl('alrifatsabbir', 'twitter')   -> 'https://x.com/alrifatsabbir'
+ *   formatSocialUrl('alrifatsabbir.me', 'website') -> 'https://alrifatsabbir.me'
+ */
+export function formatSocialUrl(
+  val?: string | null,
+  platform?: 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'
+): string | undefined {
+  if (!val) return undefined;
+  let clean = val.trim();
+  if (!clean) return undefined;
+
+  // Already a full URL
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    return clean;
+  }
+
+  // Strip leading @
+  clean = clean.replace(/^@+/, '');
+
+  switch (platform) {
+    case 'twitter':
+      if (clean.startsWith('x.com/') || clean.startsWith('twitter.com/')) {
+        return `https://${clean}`;
+      }
+      return `https://x.com/${clean}`;
+
+    case 'facebook':
+      if (clean.startsWith('facebook.com/')) {
+        return `https://${clean}`;
+      }
+      return `https://facebook.com/${clean}`;
+
+    case 'instagram':
+      if (clean.startsWith('instagram.com/')) {
+        return `https://${clean}`;
+      }
+      return `https://instagram.com/${clean}`;
+
+    case 'youtube':
+      if (clean.startsWith('youtube.com/')) {
+        return `https://${clean}`;
+      }
+      return clean.startsWith('UC') ? `https://youtube.com/channel/${clean}` : `https://youtube.com/@${clean}`;
+
+    case 'github':
+      if (clean.startsWith('github.com/')) {
+        return `https://${clean}`;
+      }
+      return `https://github.com/${clean}`;
+
+    case 'linkedin':
+      if (clean.startsWith('linkedin.com/')) {
+        return `https://${clean}`;
+      }
+      return clean.startsWith('in/') ? `https://linkedin.com/${clean}` : `https://linkedin.com/in/${clean}`;
+
+    case 'website':
+    default:
+      return `https://${clean}`;
+  }
+}

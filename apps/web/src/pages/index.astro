@@ -25,7 +25,7 @@ import TransferModal from '../components/TransferModal.astro';
 <script>
   import QRCode from 'qrcode';
   import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, type CitizenSearchResult, type SpotComment } from '../api/client.js';
-  import { containsBlockedWord } from '@spot/shared';
+  import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
   import { WorldCanvasRenderer } from '../canvas/renderer.js';
@@ -887,18 +887,20 @@ import TransferModal from '../components/TransferModal.astro';
 
     // External links
     if (linkWebsite) {
-      if (occupied.websiteUrl) {
-        linkWebsite.href = occupied.websiteUrl;
+      const href = formatSocialUrl(occupied.websiteUrl, 'website');
+      if (href) {
+        linkWebsite.href = href;
         linkWebsite.style.display = 'inline-flex';
-        if (linkWebsiteText) linkWebsiteText.textContent = occupied.websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        if (linkWebsiteText) linkWebsiteText.textContent = href.replace(/^https?:\/\//, '').replace(/\/$/, '');
       } else {
         linkWebsite.style.display = 'none';
       }
     }
 
     if (linkTwitter) {
-      if (occupied.twitterUrl) {
-        linkTwitter.href = occupied.twitterUrl;
+      const href = formatSocialUrl(occupied.twitterUrl, 'twitter');
+      if (href) {
+        linkTwitter.href = href;
         linkTwitter.style.display = 'inline-flex';
       } else {
         linkTwitter.style.display = 'none';
@@ -906,8 +908,9 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     if (linkFacebook) {
-      if (occupied.facebookUrl) {
-        linkFacebook.href = occupied.facebookUrl;
+      const href = formatSocialUrl(occupied.facebookUrl, 'facebook');
+      if (href) {
+        linkFacebook.href = href;
         linkFacebook.style.display = 'inline-flex';
       } else {
         linkFacebook.style.display = 'none';
@@ -915,8 +918,9 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     if (linkInstagram) {
-      if (occupied.instagramUrl) {
-        linkInstagram.href = occupied.instagramUrl;
+      const href = formatSocialUrl(occupied.instagramUrl, 'instagram');
+      if (href) {
+        linkInstagram.href = href;
         linkInstagram.style.display = 'inline-flex';
       } else {
         linkInstagram.style.display = 'none';
@@ -924,8 +928,9 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     if (linkLinkedin) {
-      if (occupied.linkedinUrl) {
-        linkLinkedin.href = occupied.linkedinUrl;
+      const href = formatSocialUrl(occupied.linkedinUrl, 'linkedin');
+      if (href) {
+        linkLinkedin.href = href;
         linkLinkedin.style.display = 'inline-flex';
       } else {
         linkLinkedin.style.display = 'none';
@@ -933,8 +938,9 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     if (linkYoutube) {
-      if (occupied.youtubeUrl) {
-        linkYoutube.href = occupied.youtubeUrl;
+      const href = formatSocialUrl(occupied.youtubeUrl, 'youtube');
+      if (href) {
+        linkYoutube.href = href;
         linkYoutube.style.display = 'inline-flex';
       } else {
         linkYoutube.style.display = 'none';
@@ -942,22 +948,9 @@ import TransferModal from '../components/TransferModal.astro';
     }
 
     if (linkGithub) {
-      if (occupied.githubUrl) {
-        // Sanitize: if it's already a full URL it must be http/https (SafeSocialUrlSchema enforces
-        // this server-side, but guard defensively on the client too). If it's a raw username, strip
-        // everything except safe GitHub username characters to prevent open redirect / XSS.
-        const ghRaw = occupied.githubUrl || '';
-        let ghHref: string;
-        if (/^https?:\/\//i.test(ghRaw)) {
-          try {
-            const parsed = new URL(ghRaw);
-            ghHref = (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? ghRaw : '#';
-          } catch { ghHref = '#'; }
-        } else {
-          const ghUser = ghRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 39);
-          ghHref = ghUser ? `https://github.com/${ghUser}` : '#';
-        }
-        linkGithub.href = ghHref;
+      const href = formatSocialUrl(occupied.githubUrl, 'github');
+      if (href) {
+        linkGithub.href = href;
         linkGithub.style.display = 'inline-flex';
       } else {
         linkGithub.style.display = 'none';

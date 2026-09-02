@@ -189,8 +189,7 @@ import SearchModal from '../components/SearchModal.astro';
   import { Engine } from '../world/engine.js';
   import { WORLD_SECRETS } from '../world/secrets.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
-  import type { OccupiedSpotSummary } from '@spot/shared';
-  import { containsBlockedWord } from '@spot/shared';
+  import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
   import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
@@ -281,9 +280,14 @@ import SearchModal from '../components/SearchModal.astro';
     const profilePresence = document.getElementById('profile-presence');
     const spotWallSection = document.getElementById('spot-wall-section');
 
-    const setLink = (el: HTMLAnchorElement | null, url?: string | null) => {
+    const setLink = (
+      el: HTMLAnchorElement | null,
+      url?: string | null,
+      platform?: 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'github' | 'linkedin' | 'website'
+    ) => {
       if (!el) return;
-      if (url) { el.href = url; el.style.display = ''; }
+      const href = formatSocialUrl(url, platform);
+      if (href) { el.href = href; el.style.display = ''; }
       else      { el.style.display = 'none'; }
     };
 
@@ -323,19 +327,22 @@ import SearchModal from '../components/SearchModal.astro';
       }
 
       if (linkWebsite) {
-        setLink(linkWebsite, spot.websiteUrl);
+        setLink(linkWebsite, spot.websiteUrl, 'website');
         if (linkWebsiteText && spot.websiteUrl) {
-          try {
-            linkWebsiteText.textContent = new URL(spot.websiteUrl).hostname;
-          } catch { linkWebsiteText.textContent = 'Website'; }
+          const href = formatSocialUrl(spot.websiteUrl, 'website');
+          if (href) {
+            try {
+              linkWebsiteText.textContent = new URL(href).hostname;
+            } catch { linkWebsiteText.textContent = 'Website'; }
+          }
         }
       }
-      setLink(linkTwitter,   spot.twitterUrl);
-      setLink(linkFacebook,  spot.facebookUrl);
-      setLink(linkInstagram, spot.instagramUrl);
-      setLink(linkLinkedin,  spot.linkedinUrl);
-      setLink(linkYoutube,   spot.youtubeUrl);
-      setLink(linkGithub,    spot.githubUrl);
+      setLink(linkTwitter,   spot.twitterUrl,   'twitter');
+      setLink(linkFacebook,  spot.facebookUrl,  'facebook');
+      setLink(linkInstagram, spot.instagramUrl, 'instagram');
+      setLink(linkLinkedin,  spot.linkedinUrl,  'linkedin');
+      setLink(linkYoutube,   spot.youtubeUrl,   'youtube');
+      setLink(linkGithub,    spot.githubUrl,    'github');
 
       if (spotWallSection) spotWallSection.style.display = '';
 
