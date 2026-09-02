@@ -427,15 +427,25 @@ export class MonumentManager {
   }
 
   hitTest(wx: number, wy: number): OccupiedSpotSummary | null {
+    let closestSpot: OccupiedSpotSummary | null = null;
+    let minDistanceSq = Infinity;
+
     for (const ent of this.entities.values()) {
-      // 3.5px - 4px ultra-precise radius of the citizen
+      // Full-body generous click area centered at torso (ent.wy - 12)
+      // Horizontal radius: 18px, Vertical radius: 22px (covers head, badge, body & shadow)
       const dx = wx - ent.wx;
-      const dy = wy - (ent.wy - 6);
-      if (Math.hypot(dx, dy) <= 4.0) {
-        return ent.spot;
+      const dy = wy - (ent.wy - 12);
+
+      const normDist = (dx * dx) / (18 * 18) + (dy * dy) / (22 * 22);
+      if (normDist <= 1.0) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq < minDistanceSq) {
+          minDistanceSq = distSq;
+          closestSpot = ent.spot;
+        }
       }
     }
-    return null;
+    return closestSpot;
   }
 
   getAllEntities(): CitizenEntity[] {
