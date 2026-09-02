@@ -456,8 +456,10 @@
   }
 
   .profile-name {
-    font-size: 1.25rem;
+    font-family: var(--font-tech);
+    font-size: 1.3rem;
     font-weight: 800;
+    letter-spacing: 0.03em;
     color: var(--text-primary);
     line-height: 1.2;
   }
@@ -487,42 +489,45 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.28);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
     padding: 3px 8px;
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    border-radius: 4px;
+    font-family: var(--font-tech);
+    font-size: 0.72rem;
     color: var(--accent-jade);
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   .presence-badge.founder-badge {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
     color: var(--accent-amber);
   }
 
   .presence-badge.founder-badge .presence-dot {
     background: var(--accent-amber);
-    box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+    box-shadow: 0 0 0 1.5px rgba(245, 158, 11, 0.4);
   }
 
   .presence-badge.verified-pill-badge {
-    background: rgba(56, 189, 248, 0.15);
-    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
     color: #38bdf8;
   }
 
   .presence-badge.verified-pill-badge .presence-dot {
     background: #38bdf8;
-    box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+    box-shadow: 0 0 0 1.5px rgba(56, 189, 248, 0.4);
   }
 
   .presence-dot {
     width: 6px;
     height: 6px;
     background: var(--accent-jade);
-    border-radius: var(--radius-full);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px rgba(16, 185, 129, 0.4);
   }
 
   .profile-body {
@@ -548,12 +553,14 @@
     align-items: center;
     gap: 6px;
     background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--border-subtle);
-    padding: 7px 14px;
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: 0.82rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-family: var(--font-tech);
+    font-size: 0.78rem;
     font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 6px 12px;
+    border-radius: 6px;
     text-decoration: none;
     transition: all 0.15s ease;
   }

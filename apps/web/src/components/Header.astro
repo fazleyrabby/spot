@@ -16,16 +16,23 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
 <header class="header-hud glass-panel" id="header-hud">
   <div class="hud-left">
-    <div class="brand-badge">
-      <span class="badge-dot"></span>
+    <a href="/" class="brand-badge" title="SPOT — Internet Canvas">
+      <span class="brand-glyph" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="2" y="2" width="9" height="9" rx="2"></rect>
+          <rect x="13" y="2" width="9" height="9" rx="2" opacity="0.4"></rect>
+          <rect x="2" y="13" width="9" height="9" rx="2" opacity="0.4"></rect>
+          <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--accent-amber)"></rect>
+        </svg>
+      </span>
       <span class="brand-title">SPOT</span>
-    </div>
+    </a>
   </div>
 
   <div class="hud-center">
     <!-- 1. Claimed Count -->
     <div class="stat-pill claimed-pill" title="Total citizens / spots claimed">
-      <svg class="stat-icon icon-amber" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="stat-icon icon-amber" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
         <circle cx="12" cy="7" r="4"></circle>
       </svg>
@@ -33,7 +40,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       <span class="stat-slash">/</span>
       <span class="stat-total mono-num">{totalSpots.toLocaleString()}</span>
       <span class="stat-text">claimed</span>
-      <div class="mini-bar">
+      <div class="mini-bar" aria-hidden="true">
         <div class="mini-bar-fill" style={`width: ${pct}%`}></div>
       </div>
     </div>
@@ -42,7 +49,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
     <!-- 2. Unique Visitors -->
     <div class="stat-pill visitors-pill" title="Unique visitors in the last 24 hours">
-      <svg class="stat-icon icon-muted" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="stat-icon icon-muted" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
         <circle cx="12" cy="12" r="3"></circle>
       </svg>
@@ -54,25 +61,24 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
     <!-- 3. Realtime Online -->
     <div class="stat-pill online-pill" title="Active real-time visitors">
-      <span class="online-dot"></span>
+      <span class="online-pip" aria-hidden="true"></span>
       <span class="stat-num mono-num highlight-jade" id="hud-online-count">{onlineCount}</span>
       <span class="stat-text">online</span>
     </div>
   </div>
 
   <div class="hud-right">
-    <a class="hud-world-btn" href="/world" id="header-world-btn" title="Open Spot World — isometric view">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="2" y1="12" x2="22" y2="12"></line>
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+    <a class="hud-world-btn" href="/world" id="header-world-btn" title="Open Spot World — 3D isometric view">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
       </svg>
       <span class="world-btn-label">World</span>
     </a>
 
     <button class="hud-search-btn" id="header-search-btn" type="button" title="Search citizens (Cmd+K)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
@@ -81,7 +87,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     </button>
 
     <button class="cta-claim-btn" id="header-claim-btn" type="button">
-      <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="claim-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
@@ -91,8 +97,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 </header>
 
 <div class="activity-ticker glass-panel" id="activity-ticker" aria-live="polite">
-  <span class="activity-live-dot"></span>
-  <span class="activity-label">LIVE</span>
+  <span class="activity-tag">LIVE</span>
   <span class="activity-text" id="activity-text">Watching the city...</span>
 </div>
 
@@ -107,15 +112,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    height: 46px;
-    padding: 0 12px 0 10px;
-    background: rgba(14, 17, 26, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    gap: 14px;
+    height: 44px;
+    padding: 0 10px 0 8px;
+    background: rgba(11, 15, 23, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     z-index: 40;
     pointer-events: auto;
     width: max-content;
@@ -125,18 +130,19 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
   .activity-ticker {
     position: fixed;
-    top: 68px;
+    top: 66px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 39;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    max-width: min(430px, calc(100vw - 28px));
-    padding: 6px 11px;
-    border: 1px solid rgba(16, 185, 129, 0.22);
-    border-radius: var(--radius-full);
-    background: rgba(11, 17, 23, 0.78);
+    gap: 8px;
+    max-width: min(420px, calc(100vw - 28px));
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    background: rgba(10, 14, 22, 0.88);
+    box-shadow: 0 8px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
     color: var(--text-secondary);
     font-size: 0.72rem;
     white-space: nowrap;
@@ -144,25 +150,26 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     pointer-events: none;
   }
 
-  .activity-live-dot {
-    width: 6px;
-    height: 6px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 9px rgba(16, 185, 129, 0.9);
-  }
-
-  .activity-label {
-    color: #34d399;
+  .activity-tag {
+    display: inline-block;
+    padding: 1px 5px;
     font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
+    font-weight: 700;
+    font-family: var(--font-tech);
+    letter-spacing: 0.08em;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 4px;
+    line-height: 1.2;
+    flex-shrink: 0;
   }
 
   .activity-text {
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #94a3b8;
+    font-size: 0.72rem;
   }
 
   .hud-left {
@@ -176,26 +183,28 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     display: inline-flex;
     flex-direction: row;
     align-items: center;
-    gap: 6px;
-    background: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.28);
+    gap: 7px;
     padding: 4px 8px;
-    border-radius: var(--radius-md);
-    flex-shrink: 0;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s ease;
   }
 
-  .badge-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--accent-amber);
-    border-radius: 1.5px;
-    flex-shrink: 0;
+  .brand-badge:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .brand-glyph {
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-secondary);
   }
 
   .brand-title {
-    font-size: 0.85rem;
+    font-family: var(--font-tech);
+    font-size: 0.88rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     color: var(--text-primary);
     line-height: 1;
   }
@@ -215,7 +224,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     flex-wrap: nowrap;
     align-items: center;
     gap: 5px;
-    font-size: 0.82rem;
+    font-size: 0.80rem;
     white-space: nowrap;
     line-height: 1;
     flex-shrink: 0;
@@ -228,7 +237,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
 
   .stat-icon {
     flex-shrink: 0;
-    opacity: 0.85;
+    opacity: 0.75;
   }
 
   .icon-amber {
@@ -250,6 +259,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   .stat-slash {
     color: var(--text-muted);
     font-size: 0.75rem;
+    opacity: 0.5;
   }
 
   .stat-total {
@@ -258,15 +268,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   }
 
   .stat-text {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-muted);
     font-weight: 500;
   }
 
   .mini-bar {
-    width: 36px;
+    width: 32px;
     height: 3px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 2px;
     overflow: hidden;
     margin-left: 2px;
@@ -281,98 +291,121 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   .stat-divider {
     width: 1px;
     height: 14px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.09);
   }
 
-  .online-dot {
+  /* Engineered Hardware LED Pip (No Cheesy Pulse Animation) */
+  .online-pip {
     width: 6px;
     height: 6px;
-    background: var(--accent-jade);
-    border-radius: var(--radius-full);
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+    flex-shrink: 0;
   }
 
   .hud-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
+  /* Architectural Tool Buttons */
   .hud-world-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    color: var(--accent-jade);
-    font-size: 0.78rem;
+    height: 30px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
     font-weight: 600;
-    padding: 5px 9px;
-    border-radius: var(--radius-md);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: 6px;
     text-decoration: none;
-    transition: all 0.2s var(--ease-out-expo);
+    transition: all 0.15s ease;
   }
 
   .hud-world-btn:hover {
-    background: rgba(16, 185, 129, 0.16);
-    border-color: rgba(16, 185, 129, 0.45);
-    color: #34d399;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: var(--text-primary);
   }
 
   .hud-search-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--border-subtle);
+    gap: 5px;
+    height: 30px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-secondary);
-    font-size: 0.78rem;
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
     font-weight: 600;
-    padding: 5px 9px;
-    border-radius: var(--radius-md);
-    transition: all 0.2s var(--ease-out-expo);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
 
   .hud-search-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.16);
   }
 
   .search-shortcut {
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.4);
     padding: 1px 4px;
     border-radius: 3px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  /* Tactile Command Button */
   .cta-claim-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: var(--accent-amber);
-    color: #120c02;
-    font-size: 0.8rem;
+    height: 30px;
+    box-sizing: border-box;
+    background: #f59e0b;
+    color: #0c0f17;
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
     font-weight: 700;
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    transition: all 0.2s var(--ease-out-expo);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    padding: 0 11px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3), 0 2px 8px rgba(245, 158, 11, 0.25);
+    transition: all 0.12s ease;
     white-space: nowrap;
+    cursor: pointer;
   }
 
   .cta-claim-btn:hover {
-    background: var(--accent-amber-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+    background: #fbbf24;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4), 0 3px 12px rgba(245, 158, 11, 0.35);
   }
 
   .cta-claim-btn:active {
-    transform: translateY(0);
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   /* Responsive Media Queries */
@@ -382,6 +415,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       width: calc(100% - 16px);
       padding: 0 8px;
       gap: 6px;
+      height: 40px;
     }
 
     .mini-bar {
@@ -393,7 +427,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
 
     .activity-ticker {
-      top: 62px;
+      top: 54px;
     }
   }
 
@@ -428,15 +462,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
 
     .hud-search-btn {
-      padding: 6px 7px;
+      padding: 5px 6px;
     }
 
     .hud-world-btn {
-      padding: 6px 7px;
+      padding: 5px 6px;
     }
 
     .cta-claim-btn {
-      padding: 5px 8px;
+      padding: 5px 9px;
       font-size: 0.72rem;
     }
   }

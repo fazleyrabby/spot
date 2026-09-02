@@ -21,9 +21,14 @@
 
     <!-- Offline Server Alert / Reconnect Notice -->
     <div class="claim-offline-banner" id="claim-offline-banner" style="display: none;">
-      <div class="offline-pulse-dot"></div>
+      <span class="offline-pip" aria-hidden="true"></span>
       <div class="offline-banner-content">
-        <div class="offline-banner-title">⚡ Server Recharging</div>
+        <div class="offline-banner-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon>
+          </svg>
+          <span>Server Recharging</span>
+        </div>
         <div class="offline-banner-desc" id="txt-offline-countdown">Holding your spot. Auto-retrying in 4s...</div>
       </div>
       <button type="button" class="btn-offline-retry-now" id="btn-offline-retry-now">Retry Now</button>
@@ -71,7 +76,7 @@
               <canvas id="claim-custom-preview-canvas" width="64" height="64" class="custom-preview-canvas"></canvas>
             </div>
             <div class="custom-preview-meta">
-              <div class="custom-preview-title" id="txt-claim-preview-title">Custom Pixel Avatar Ready! ✨</div>
+              <div class="custom-preview-title" id="txt-claim-preview-title">Custom Pixel Avatar Ready</div>
               <div class="custom-preview-controls">
                 <button type="button" class="btn-res-toggle active" id="btn-claim-res-32" data-res="32">32×32 Ultra HD</button>
                 <button type="button" class="btn-res-toggle" id="btn-claim-res-16" data-res="16">16×16 HD</button>
@@ -291,8 +296,10 @@
   }
 
   .claim-title {
-    font-size: 1.4rem;
+    font-family: var(--font-tech);
+    font-size: 1.45rem;
     font-weight: 800;
+    letter-spacing: 0.04em;
     color: var(--text-primary);
     line-height: 1.2;
     margin-bottom: 6px;
@@ -308,23 +315,15 @@
     align-items: center;
     gap: 6px;
     margin-top: 8px;
-    font-size: 0.76rem;
+    font-family: var(--font-tech);
+    font-size: 0.74rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
     color: #38bdf8;
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 3px 9px;
-    border-radius: 999px;
-  }
-
-  .pulse-sparkle {
-    font-size: 0.85rem;
-    animation: gentle-sparkle 2s infinite ease-in-out;
-  }
-
-  @keyframes gentle-sparkle {
-    0%, 100% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.15); opacity: 1; }
+    padding: 2px 8px;
+    border-radius: 4px;
   }
 
   .oauth-section {
@@ -343,6 +342,8 @@
     padding: 10px 16px;
     background: #24292e;
     color: #ffffff;
+    font-family: var(--font-tech);
+    letter-spacing: 0.04em;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: var(--radius-md);
     font-size: 0.85rem;
@@ -691,19 +692,13 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .offline-pulse-dot {
-    width: 8px;
-    height: 8px;
+  .offline-pip {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #f59e0b;
-    box-shadow: 0 0 10px #f59e0b;
-    animation: offlinePulse 1.4s ease-in-out infinite alternate;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
     flex-shrink: 0;
-  }
-
-  @keyframes offlinePulse {
-    from { opacity: 0.4; transform: scale(0.85); }
-    to { opacity: 1; transform: scale(1.2); }
   }
 
   .offline-banner-content {

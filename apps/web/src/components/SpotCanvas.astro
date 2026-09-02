@@ -12,7 +12,15 @@
   <!-- Bottom-Left Hover/Coordinate Pill & Support Button -->
   <div class="hud-bottom-left" id="hud-bottom-left">
     <div class="coord-pill glass-panel" id="coord-pill">
-      <span class="coord-icon">🎯</span>
+      <span class="coord-icon" aria-hidden="true">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="22" y1="12" x2="18" y2="12"></line>
+          <line x1="6" y1="12" x2="2" y2="12"></line>
+          <line x1="12" y1="6" x2="12" y2="2"></line>
+          <line x1="12" y1="22" x2="12" y2="18"></line>
+        </svg>
+      </span>
       <span class="coord-text mono-num" id="coord-text">Spot: (52, 60)</span>
       <span class="coord-badge empty" id="coord-status">Available</span>
       <span class="district-text" id="coord-district">Sector 5-5</span>
@@ -34,7 +42,11 @@
         aria-label="Made by fazleyrabbi"
         id="creator-badge-link"
       >
-        <span class="creator-badge__icon">⚡</span>
+        <span class="creator-badge__icon" aria-hidden="true">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </span>
         <span class="creator-badge__text">
           <span class="creator-badge__label">made by</span>
           <span class="creator-badge__name">fazleyrabbi</span>
@@ -42,7 +54,7 @@
       </a>
 
       <button type="button" class="support-btn glass-panel" id="btn-open-support" title="Support creator & development of Spot">
-        <svg class="coffee-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="coffee-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
           <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
           <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -54,12 +66,12 @@
 
       <details class="seo-guide" id="seo-guide">
         <summary class="seo-guide-summary" title="How SPOT works">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
-          <span>How SPOT works</span>
+          <span>About</span>
         </summary>
         <div class="seo-guide-content glass-panel">
           <h3>SPOT — Your place on the Internet</h3>
@@ -71,7 +83,7 @@
             <li>Choose an available spot.</li>
             <li>Add your name and a link, and become part of the world.</li>
           </ol>
-          <p class="seo-guide-free">✨ Free to join.</p>
+          <p class="seo-guide-free">Free to join.</p>
         </div>
       </details>
     </div>
@@ -81,7 +93,7 @@
   <div class="hud-bottom-right" id="hud-bottom-right">
     <div class="nav-controls glass-panel">
       <button class="nav-btn" id="btn-zoom-in" title="Zoom in (+)" aria-label="Zoom in">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -90,7 +102,7 @@
       <div class="nav-divider"></div>
 
       <button class="nav-btn" id="btn-zoom-out" title="Zoom out (-)" aria-label="Zoom out">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
       </button>
@@ -98,12 +110,9 @@
       <div class="nav-divider"></div>
 
       <button class="nav-btn" id="btn-recenter" title="Recenter world" aria-label="Recenter world">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="22" y1="12" x2="18" y2="12"></line>
-          <line x1="6" y1="12" x2="2" y2="12"></line>
-          <line x1="12" y1="6" x2="12" y2="2"></line>
-          <line x1="12" y1="22" x2="12" y2="18"></line>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
         </svg>
       </button>
     </div>
@@ -194,26 +203,39 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
-    border-radius: var(--radius-full);
-    font-size: 0.82rem;
+    height: 32px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
     color: var(--text-secondary);
+    background: rgba(11, 15, 23, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     text-decoration: none;
     pointer-events: auto;
-    transition: all 0.2s var(--ease-out-expo);
-    border: 1px solid var(--border-subtle);
+    transition: all 0.15s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
   }
 
   .support-btn:hover {
     color: #f59e0b;
-    background: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.35);
-    transform: translateY(-1px);
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .support-btn:active {
+    transform: translateY(1px);
   }
 
   .coffee-icon {
     color: #f59e0b;
+    flex-shrink: 0;
   }
 
   /* Integrated "How SPOT Works" Guide */
@@ -225,16 +247,22 @@
   .seo-guide-summary {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border-radius: var(--radius-full);
-    font-size: 0.80rem;
-    font-weight: 500;
+    gap: 5px;
+    height: 32px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    font-family: var(--font-tech);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
     color: var(--text-secondary);
-    background: var(--bg-surface-glass);
-    border: 1px solid var(--border-subtle);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(11, 15, 23, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     cursor: pointer;
     list-style: none;
     transition: all 0.15s ease;
@@ -244,9 +272,8 @@
 
   .seo-guide-summary:hover {
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.25);
-    background: rgba(30, 35, 50, 0.9);
-    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(18, 24, 38, 0.92);
   }
 
   .seo-guide-summary::-webkit-details-marker {
@@ -259,10 +286,10 @@
     left: 0;
     width: min(340px, calc(100vw - 32px));
     padding: 14px 16px;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    border-radius: 14px;
-    background: rgba(13, 17, 28, 0.96);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(11, 15, 23, 0.96);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
     color: #cbd5e1;
     font-size: 0.78rem;
     z-index: 100;
@@ -274,81 +301,101 @@
   .seo-guide-free { color: var(--accent-amber); font-weight: 600; margin: 0 !important; }
 
   .coord-pill {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 16px 8px 14px;
-    border-radius: var(--radius-full);
-    font-size: 0.85rem;
+    gap: 8px;
+    height: 32px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    font-size: 0.78rem;
     font-weight: 500;
+    line-height: 1;
+    background: rgba(11, 15, 23, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
     pointer-events: auto;
     overflow: visible;
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
   .coord-icon {
-    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-muted);
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .coord-text {
     color: var(--text-primary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1;
   }
 
   .district-text {
-    color: rgba(148, 163, 184, 0.8);
+    color: rgba(148, 163, 184, 0.7);
+    font-family: var(--font-tech);
     font-size: 0.68rem;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     white-space: nowrap;
+    line-height: 1;
   }
 
   .prime-badge {
     color: #fbbf24;
+    font-family: var(--font-tech);
     font-size: 0.62rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
-    padding: 3px 6px;
-    border: 1px solid rgba(251, 191, 36, 0.45);
-    border-radius: var(--radius-sm);
-    background: rgba(120, 53, 15, 0.35);
+    letter-spacing: 0.08em;
+    padding: 2px 5px;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 4px;
+    background: rgba(120, 53, 15, 0.3);
+    line-height: 1;
   }
 
   .coord-badge {
-    font-size: 0.72rem; /* 11.5px */
+    font-family: var(--font-tech);
+    font-size: 0.66rem;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    border-radius: 4px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
   }
 
   .coord-badge.empty {
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.12);
     color: var(--accent-amber);
-    border: 1px solid rgba(245, 158, 11, 0.35);
+    border: 1px solid rgba(245, 158, 11, 0.25);
   }
 
   .coord-badge.occupied {
-    background: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.12);
     color: var(--accent-jade);
-    border: 1px solid rgba(16, 185, 129, 0.35);
+    border: 1px solid rgba(16, 185, 129, 0.25);
   }
 
   .verified-badge-mini {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
     overflow: visible;
-    margin-right: -1px;
   }
 
   .verified-badge-svg {
     width: 100%;
     height: 100%;
     overflow: visible;
-    filter: drop-shadow(0 2px 4px rgba(56, 189, 248, 0.4));
+    filter: drop-shadow(0 1px 3px rgba(56, 189, 248, 0.4));
   }
 
   .hud-bottom-right {
@@ -363,24 +410,39 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-radius: var(--radius-md);
-    padding: 4px;
-    gap: 2px;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 1px;
+    background: rgba(11, 15, 23, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   }
 
   .nav-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    transition: all 0.15s ease;
+    border-radius: 5px;
+    transition: all 0.12s ease;
+    cursor: pointer;
   }
 
   .nav-btn:hover {
     color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .nav-btn:active {
+    transform: translateY(1px);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-divider {
+    width: 18px;
+    height: 1px;
     background: rgba(255, 255, 255, 0.08);
   }
 
