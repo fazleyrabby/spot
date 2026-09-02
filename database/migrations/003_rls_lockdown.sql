@@ -1,11 +1,11 @@
-# ==============================================================================
-# SPOT — RLS LOCKDOWN (apply AFTER the API server is deployed and
-# PUBLIC_API_BASE is set on the frontend host).
-#
-# Locks the public anon key down to READ-ONLY so nobody can delete/steal data
-# through the browser. All writes must now go through apps/server (which uses
-# the database directly and bypasses RLS). Run this in Supabase SQL Editor.
-# ==============================================================================
+-- ==============================================================================
+-- SPOT — RLS LOCKDOWN (apply AFTER the API server is deployed and
+-- PUBLIC_API_BASE is set on the frontend host).
+--
+-- Locks the public anon key down to READ-ONLY so nobody can delete/steal data
+-- through the browser. All writes must now go through apps/server (which uses
+-- the database directly and bypasses RLS). Run this in Supabase SQL Editor.
+-- ==============================================================================
 
 -- 1. CITIZENS: keep public reads, DROP all public writes
 DROP POLICY IF EXISTS "Public delete citizens" ON public.citizens;
