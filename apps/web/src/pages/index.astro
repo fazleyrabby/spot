@@ -24,7 +24,7 @@ import TransferModal from '../components/TransferModal.astro';
 
 <script>
   import QRCode from 'qrcode';
-  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, type CitizenSearchResult, type SpotComment } from '../api/client.js';
+  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, type CitizenSearchResult, type SpotComment } from '../api/client.js';
   import { containsBlockedWord } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
@@ -387,15 +387,7 @@ import TransferModal from '../components/TransferModal.astro';
 
           // If the user does not own a spot yet and has a pending target, claim it automatically!
           if (!sessionOwnedSpot && sessionCitizen) {
-            const pending = localStorage.getItem('spot_claim_pending_target');
-            if (pending) {
-              localStorage.removeItem('spot_claim_pending_target');
-              const coords = JSON.parse(pending);
-              if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
-                await autoClaimWithGithub(coords.x, coords.y, sessionCitizen);
-                sessionOwnedSpot = myOwnedSpot;
-              }
-            }
+            checkAndExecutePendingClaim(sessionCitizen);
           }
         }
       } else {
@@ -452,6 +444,47 @@ import TransferModal from '../components/TransferModal.astro';
     }
   }
 
+  // 5b. Durable Auto-Claim Queue with Server Downtime Recovery
+  let isExecutingPendingClaim = false;
+  let autoClaimRetryTimer: any = null;
+
+  async function checkAndExecutePendingClaim(citizen: Citizen) {
+    if (isExecutingPendingClaim) return;
+    const pending = localStorage.getItem('spot_claim_pending_target');
+    if (!pending) return;
+
+    try {
+      isExecutingPendingClaim = true;
+      const coords = JSON.parse(pending);
+      if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
+        await autoClaimWithGithub(coords.x, coords.y, citizen);
+      }
+    } catch (e) {
+      console.warn('Pending claim target parse error:', e);
+    } finally {
+      isExecutingPendingClaim = false;
+    }
+  }
+
+  function scheduleAutoClaimRetry(gx: number, gy: number, citizen: Citizen) {
+    if (autoClaimRetryTimer) return;
+    let attempts = 0;
+    autoClaimRetryTimer = setInterval(async () => {
+      attempts++;
+      const isHealthy = await checkServerHealth();
+      if (isHealthy) {
+        clearInterval(autoClaimRetryTimer);
+        autoClaimRetryTimer = null;
+        showToast('⚡ Server reconnected! Completing your spot claim...', 'info');
+        await autoClaimWithGithub(gx, gy, citizen);
+      } else if (attempts >= 60) {
+        // Stop polling after 4 minutes, but keep spot_claim_pending_target in localStorage for reload
+        clearInterval(autoClaimRetryTimer);
+        autoClaimRetryTimer = null;
+      }
+    }, 4000);
+  }
+
   // Automatic Claim on return from GitHub OAuth
   async function autoClaimWithGithub(gx: number, gy: number, citizen: Citizen) {
     const spotId = renderer.grid.getSpotId(gx, gy);
@@ -467,6 +500,13 @@ import TransferModal from '../components/TransferModal.astro';
 
       myCitizen = res.citizen;
       myOwnedSpot = { id: spotId, x: gx, y: gy, claimedAt: new Date().toISOString() };
+
+      // SUCCESS: Only remove pending target after confirmed database claim!
+      localStorage.removeItem('spot_claim_pending_target');
+      if (autoClaimRetryTimer) {
+        clearInterval(autoClaimRetryTimer);
+        autoClaimRetryTimer = null;
+      }
 
       const newOccupied: OccupiedSpotSummary = {
         spotId,
@@ -506,6 +546,18 @@ import TransferModal from '../components/TransferModal.astro';
       renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
       renderer.selectSpot(gx, gy);
     } catch (err: any) {
+      if (isServerOfflineError(err)) {
+        showToast(`⚡ Server is recharging. Spot (${gx}, ${gy}) is held for you and will auto-claim when connection restores.`, 'info');
+        scheduleAutoClaimRetry(gx, gy, citizen);
+        return;
+      }
+      // If the spot was taken by someone else while away, clear target and notify
+      if (err.status === 409 || err.message?.includes('already claimed') || err.message?.includes('occupied')) {
+        localStorage.removeItem('spot_claim_pending_target');
+        showToast(`Spot (${gx}, ${gy}) was just claimed by another citizen. Please choose another vacant spot.`, 'error');
+        openClaimModal(gx, gy);
+        return;
+      }
       showToast(err.message || 'Failed to claim spot with GitHub', 'error');
     }
   }
@@ -680,13 +732,8 @@ import TransferModal from '../components/TransferModal.astro';
             headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
           }
 
-          const pending = localStorage.getItem('spot_claim_pending_target');
-          if (!myOwnedSpot && pending) {
-            localStorage.removeItem('spot_claim_pending_target');
-            const coords = JSON.parse(pending);
-            if (coords && renderer.grid.isValidCoordinate(coords.x, coords.y)) {
-              await autoClaimWithGithub(coords.x, coords.y, syncRes.citizen);
-            }
+          if (!myOwnedSpot && syncRes.citizen) {
+            checkAndExecutePendingClaim(syncRes.citizen);
           }
         }
       } catch (err) {
@@ -1411,13 +1458,69 @@ import TransferModal from '../components/TransferModal.astro';
       claimCustomAvatarData = null;
       if (claimCustomPreviewBox) claimCustomPreviewBox.style.display = 'none';
     });
+    hideModalOfflineState();
     if (claimBackdrop) {
       claimBackdrop.classList.add('open');
       claimBackdrop.setAttribute('aria-hidden', 'false');
     }
   }
 
+  // Claim Modal Offline Reconnect Poller
+  const claimOfflineBanner = document.getElementById('claim-offline-banner');
+  const txtOfflineCountdown = document.getElementById('txt-offline-countdown');
+  const btnOfflineRetryNow = document.getElementById('btn-offline-retry-now');
+  let modalOfflinePollTimer: any = null;
+
+  function showModalOfflineState() {
+    if (claimOfflineBanner) claimOfflineBanner.style.display = 'flex';
+    if (txtOfflineCountdown) txtOfflineCountdown.textContent = 'Holding your spot. Auto-retrying in 4s...';
+    startModalOfflinePolling();
+  }
+
+  function hideModalOfflineState() {
+    if (claimOfflineBanner) claimOfflineBanner.style.display = 'none';
+    if (modalOfflinePollTimer) {
+      clearInterval(modalOfflinePollTimer);
+      modalOfflinePollTimer = null;
+    }
+  }
+
+  function startModalOfflinePolling() {
+    if (modalOfflinePollTimer) return;
+    let countdown = 4;
+    modalOfflinePollTimer = setInterval(async () => {
+      countdown--;
+      if (countdown > 0) {
+        if (txtOfflineCountdown) txtOfflineCountdown.textContent = `Holding your spot. Auto-retrying in ${countdown}s...`;
+      } else {
+        countdown = 4;
+        if (txtOfflineCountdown) txtOfflineCountdown.textContent = 'Checking server status...';
+        const isHealthy = await checkServerHealth();
+        if (isHealthy) {
+          hideModalOfflineState();
+          showToast('⚡ Server reconnected! Submitting claim...', 'info');
+          claimForm?.dispatchEvent(new Event('submit'));
+        } else {
+          if (txtOfflineCountdown) txtOfflineCountdown.textContent = 'Holding your spot. Auto-retrying in 4s...';
+        }
+      }
+    }, 1000);
+  }
+
+  btnOfflineRetryNow?.addEventListener('click', async () => {
+    if (btnOfflineRetryNow) btnOfflineRetryNow.textContent = 'Checking...';
+    const isHealthy = await checkServerHealth();
+    if (isHealthy) {
+      hideModalOfflineState();
+      claimForm?.dispatchEvent(new Event('submit'));
+    } else {
+      if (btnOfflineRetryNow) btnOfflineRetryNow.textContent = 'Retry Now';
+      showToast('⚡ Server is still recharging. Will keep trying automatically.', 'info');
+    }
+  });
+
   function closeClaimModal() {
+    hideModalOfflineState();
     if (claimBackdrop) {
       claimBackdrop.classList.remove('open');
       claimBackdrop.setAttribute('aria-hidden', 'true');
@@ -1736,7 +1839,13 @@ import TransferModal from '../components/TransferModal.astro';
       renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
       renderer.selectSpot(currentTargetSpot.x, currentTargetSpot.y);
     } catch (err: any) {
-      showToast(err.message || 'Failed to claim spot', 'error');
+      if (isServerOfflineError(err)) {
+        showModalOfflineState();
+        showToast('⚡ Server is recharging. Your spot and form are safely held. Auto-retrying...', 'info');
+      } else {
+        hideModalOfflineState();
+        showToast(err.message || 'Failed to claim spot', 'error');
+      }
     } finally {
       submitClaimBtn.disabled = false;
       submitClaimBtn.innerHTML = `
