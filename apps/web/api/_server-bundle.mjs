@@ -27711,6 +27711,7 @@ apiRouter.get("/analytics/visit", async (req, res) => {
 apiRouter.get("/world", async (req, res) => {
   try {
     if (worldCache && Date.now() < worldCache.expiresAt) {
+      res.setHeader("Cache-Control", "public, s-maxage=10, stale-while-revalidate=60");
       return res.json(worldCache.data);
     }
     const spotsRes = await query(`
@@ -27747,6 +27748,7 @@ apiRouter.get("/world", async (req, res) => {
       occupied: spotsRes.rows
     };
     worldCache = { data, expiresAt: Date.now() + WORLD_CACHE_TTL_MS };
+    res.setHeader("Cache-Control", "public, s-maxage=10, stale-while-revalidate=60");
     res.json(data);
   } catch (err) {
     console.error("Error fetching world snapshot:", err);

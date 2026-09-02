@@ -469,6 +469,7 @@ apiRouter.get('/world', async (req, res) => {
   try {
     // Serve from cache when fresh
     if (worldCache && Date.now() < worldCache.expiresAt) {
+      res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=60');
       return res.json(worldCache.data);
     }
 
@@ -510,6 +511,7 @@ apiRouter.get('/world', async (req, res) => {
     };
 
     worldCache = { data, expiresAt: Date.now() + WORLD_CACHE_TTL_MS };
+    res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=60');
     res.json(data);
   } catch (err: any) {
     console.error('Error fetching world snapshot:', err);
