@@ -318,10 +318,14 @@ export async function updateMyProfile(
 
 export async function deleteMyAccount(targetSpotId?: string, targetCitizenId?: string): Promise<{ success: boolean; message: string }> {
   if (API_BASE) {
+    const deviceFingerprint = await getDeviceFingerprint().catch(() => '');
     try {
       const res = await fetch(`${API_BASE}/citizens/me`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          'x-spot-device-fingerprint': deviceFingerprint,
+        },
         credentials: 'include',
       });
       const data = await res.json().catch(() => ({}));

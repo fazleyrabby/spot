@@ -16,9 +16,14 @@ app.use(express.json({ limit: '1mb' }));
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Only allow the app's own origin (no third-party origins)
+      // Only allow the app's own origin (support both www and apex domain)
       const isLocalOrigin = config.appEnv === 'local' && origin?.startsWith('http://localhost');
-      if (!origin || isLocalOrigin || origin === config.corsOrigin) {
+      const isConfiguredOrigin =
+        origin === config.corsOrigin ||
+        origin === config.corsOrigin.replace('https://', 'https://www.') ||
+        origin === config.corsOrigin.replace('https://www.', 'https://');
+      const isOwnDomain = Boolean(origin?.endsWith('claimyourspot.lol'));
+      if (!origin || isLocalOrigin || isConfiguredOrigin || isOwnDomain) {
         callback(null, true);
       } else {
         callback(null, false);
@@ -42,7 +47,20 @@ app.use('/api', apiRouter);
 // Serve static frontend in production if dist exists
 const webDistPath = process.env.WEB_DIST_PATH || path.resolve(process.cwd(), '../web/dist');
 if (fs.existsSync(webDistPath)) {
-  app.use(express.static(webDistPath, { maxAge: '1d', index: false }));
+  app.use(
+    express.static(webDistPath, {
+      maxAge: '1d',
+      index: false,
+      setHeaders: (res, filePath) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        if (filePath.includes('/_astro/') || filePath.includes('/sprites/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+        }
+      },
+    })
+  );
 
   app.get('/world', (_req, res) => {
     const worldHtml = path.join(webDistPath, 'world', 'index.html');

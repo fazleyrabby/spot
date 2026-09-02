@@ -696,28 +696,39 @@ apiRouter.post('/spots/claim', spotClaimLimiter, optionalAuthMiddleware, (req: A
   }
 
   // Durable guest identity guard: a new browser session on the same device
-  // cannot create another anonymous citizen. Fingerprints are abuse signals,
-  // not authentication credentials, so existing sessions still use their token.
+  // cannot claim a second spot if they already own one. Fingerprints are abuse signals,
+  // not authentication credentials.
   if (!citizen && deviceFingerprint) {
     const deviceOwnerRes = await query<any>(
-      `SELECT s.id, s.x, s.y
+      `SELECT c.id as citizen_id, s.id as spot_id, s.x, s.y
        FROM citizens c
        LEFT JOIN spots s ON s.owner_id = c.id
        WHERE c.device_fingerprint = $1
-       ORDER BY c.created_at ASC
+       ORDER BY c.created_at DESC
        LIMIT 1`,
       [deviceFingerprint]
     );
     if (deviceOwnerRes.rows[0]) {
       const owner = deviceOwnerRes.rows[0];
-      res.status(409).json({
-        error: 'DeviceAlreadyHasCitizen',
-        message: owner.id
-          ? `This device already owns spot (${owner.x}, ${owner.y}). Use Sync Phone to access it here.`
-          : 'This device already has an anonymous citizen. Use Sync Phone to access it here.',
-        ownedSpotId: owner.id || null,
-      });
-      return;
+      // Only block if this device already owns an ACTIVE spot on the board (anti-hoarding)
+      if (owner.spot_id) {
+        res.status(409).json({
+          error: 'DeviceAlreadyHasCitizen',
+          message: `This device already owns spot (${owner.x}, ${owner.y}). Use Sync Phone to access it here.`,
+          ownedSpotId: owner.spot_id,
+        });
+        return;
+      }
+
+      // If the citizen has no spot (e.g. released their spot or previous anonymous attempt),
+      // reuse this citizen so the user can claim their new spot smoothly!
+      const citRes = await query<any>(
+        `SELECT ${CITIZEN_PROFILE_COLUMNS} FROM citizens WHERE id = $1 LIMIT 1`,
+        [owner.citizen_id]
+      );
+      if (citRes.rows[0]) {
+        citizen = citRes.rows[0];
+      }
     }
   }
 
@@ -1198,8 +1209,29 @@ apiRouter.patch('/citizens/me', requireAuthMiddleware, async (req: Authenticated
  * DELETE /api/citizens/me
  * Release owned spot and permanently delete citizen account (Right to Erasure)
  */
-apiRouter.delete('/citizens/me', requireAuthMiddleware, async (req: AuthenticatedRequest, res) => {
-  const citizen = req.citizen!;
+apiRouter.delete('/citizens/me', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  let citizen = req.citizen;
+
+  // Fallback to device fingerprint if auth cookie/header was lost
+  if (!citizen) {
+    const deviceFingerprint = typeof req.headers['x-spot-device-fingerprint'] === 'string'
+      ? req.headers['x-spot-device-fingerprint']
+      : null;
+    if (deviceFingerprint) {
+      const citRes = await query<any>(
+        `SELECT ${CITIZEN_PROFILE_COLUMNS} FROM citizens WHERE device_fingerprint = $1 ORDER BY created_at DESC LIMIT 1`,
+        [deviceFingerprint]
+      );
+      if (citRes.rows[0]) {
+        citizen = citRes.rows[0];
+      }
+    }
+  }
+
+  if (!citizen) {
+    res.status(401).json({ error: 'Unauthorized', message: 'No active citizen profile found to delete.' });
+    return;
+  }
 
   try {
     // 1. Get citizen's spot if any

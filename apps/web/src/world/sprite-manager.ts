@@ -53,16 +53,30 @@ export class SpriteManager {
 
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => {
-        this.sheetImg = img;
-        this.isLoaded = true;
+      img.crossOrigin = 'anonymous';
+      let done = false;
+
+      const finish = (success: boolean) => {
+        if (done) return;
+        done = true;
+        if (success) {
+          this.sheetImg = img;
+          this.isLoaded = true;
+        } else {
+          console.warn('[SpriteManager] Failed to load city tilemap_packed.png, using procedural fallback.');
+        }
         resolve();
       };
-      img.onerror = () => {
-        console.warn('[SpriteManager] Failed to load city tilemap_packed.png, using procedural fallback.');
-        resolve();
-      };
-      img.src = '/sprites/city/tilemap_packed.png';
+
+      img.onload = () => finish(true);
+      img.onerror = () => finish(false);
+
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      img.src = `${origin}/sprites/city/tilemap_packed.png`;
+
+      if (img.complete && img.naturalWidth > 0) {
+        finish(true);
+      }
     });
   }
 
