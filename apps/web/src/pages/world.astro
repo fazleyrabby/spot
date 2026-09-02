@@ -610,21 +610,62 @@ import SearchModal from '../components/SearchModal.astro';
       let displayName = 'Visitor';
       let isVerified = false;
 
-      // Fast local storage cache check (<1ms)
-      const savedOwned = localStorage.getItem('spot_my_owned');
-      if (savedOwned) {
-        try {
-          const parsed = JSON.parse(savedOwned);
-          if (parsed?.citizenId || parsed?.ownerId) {
-            citizenId = parsed.citizenId || parsed.ownerId;
-            if (parsed.displayName) displayName = parsed.displayName;
-            if (parsed.avatarId) avatarId = parsed.avatarId;
-            if (parsed.isVerified) isVerified = parsed.isVerified;
-          }
-        } catch (_) {}
-      }
+      // 1. Instant local storage cache check (<0.5ms)
+      try {
+        const cachedCitizen = localStorage.getItem('spot_my_citizen');
+        if (cachedCitizen) {
+          const parsed = JSON.parse(cachedCitizen);
+          if (parsed?.id) citizenId = parsed.id;
+          if (parsed?.displayName) displayName = parsed.displayName;
+          if (parsed?.avatarId) avatarId = parsed.avatarId;
+          if (parsed?.isVerified) isVerified = parsed.isVerified;
+        }
+      } catch (_) {}
 
-      // ── Start Engine Immediately on Frame 1! ──────────────────────────
+      // 2. Synchronize active session so logged-in citizens never appear as Visitor
+      try {
+        let sessionCitizen: any = null;
+        if (supabase) {
+          const { data: { session: sbSession } } = await supabase.auth.getSession();
+          if (sbSession?.user) {
+            const metadata = sbSession.user.user_metadata || {};
+            const syncRes = await syncGithubAuth({
+              githubId: sbSession.user.id,
+              username: metadata.user_name || metadata.preferred_username || metadata.name,
+              email: sbSession.user.email,
+              avatarUrl: metadata.avatar_url,
+              displayName: metadata.full_name || metadata.name || metadata.user_name,
+            });
+            if (syncRes?.citizen) {
+              sessionCitizen = syncRes.citizen;
+            }
+          }
+        }
+
+        if (!sessionCitizen) {
+          const session = await fetchMySession();
+          if (session?.citizen) {
+            sessionCitizen = session.citizen;
+          }
+        }
+
+        if (sessionCitizen) {
+          citizenId = sessionCitizen.id || citizenId;
+          displayName = sessionCitizen.displayName || displayName;
+          avatarId = sessionCitizen.avatarId || avatarId;
+          isVerified = sessionCitizen.isVerified ?? isVerified;
+
+          // Cache for instant 0ms restoration on future page visits
+          localStorage.setItem('spot_my_citizen', JSON.stringify({
+            id: citizenId,
+            displayName,
+            avatarId,
+            isVerified,
+          }));
+        }
+      } catch (_) {}
+
+      // ── Start Engine with Authenticated Citizen Identity ─────────────────
       engine = new Engine({
         canvas,
         apiBase: API_BASE,
@@ -639,48 +680,6 @@ import SearchModal from '../components/SearchModal.astro';
           closeSecretModal();
         },
       });
-
-      // Background Auth & GitHub Sync (non-blocking, parallel)
-      (async () => {
-        try {
-          let sessionCitizen: any = null;
-          if (supabase) {
-            const { data: { session: sbSession } } = await supabase.auth.getSession();
-            if (sbSession?.user) {
-              const metadata = sbSession.user.user_metadata || {};
-              const syncRes = await syncGithubAuth({
-                githubId: sbSession.user.id,
-                username: metadata.user_name || metadata.preferred_username || metadata.name,
-                email: sbSession.user.email,
-                avatarUrl: metadata.avatar_url,
-                displayName: metadata.full_name || metadata.name || metadata.user_name,
-              });
-              if (syncRes.authenticated || syncRes.success) {
-                sessionCitizen = syncRes.citizen;
-              }
-            }
-          }
-
-          if (!sessionCitizen) {
-            const session = await fetchMySession();
-            if (session.authenticated || (session as any).success) {
-              sessionCitizen = session.citizen;
-            }
-          }
-
-          if (sessionCitizen && engine) {
-            if (sessionCitizen.id) engine.options.citizenId = sessionCitizen.id;
-            if (sessionCitizen.displayName) {
-              engine.options.displayName = sessionCitizen.displayName;
-              engine.player.displayName = sessionCitizen.displayName;
-            }
-            if (sessionCitizen.avatarId) {
-              engine.options.avatarId = sessionCitizen.avatarId;
-              engine.player.setAvatar(sessionCitizen.avatarId);
-            }
-          }
-        } catch (_) {}
-      })();
 
       loaderSub.textContent = 'Rendering Island…';
       await engine.init();

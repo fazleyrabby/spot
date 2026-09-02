@@ -411,6 +411,17 @@ import TransferModal from '../components/TransferModal.astro';
       // that was synchronously restored from localStorage on page load so the
       // header never shows a ghost "My Spot (x, y)" for a released/deleted spot.
       myOwnedSpot = sessionOwnedSpot;
+      if (myCitizen) {
+        localStorage.setItem('spot_my_citizen', JSON.stringify({
+          id: myCitizen.id,
+          displayName: myCitizen.displayName,
+          avatarId: myCitizen.avatarId,
+          isVerified: myCitizen.isVerified,
+        }));
+      } else {
+        localStorage.removeItem('spot_my_citizen');
+      }
+
       if (myOwnedSpot) {
         localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
         if (headerClaimBtn) {
