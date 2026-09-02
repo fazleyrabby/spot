@@ -1,0 +1,238 @@
+---
+/**
+ * NpcModal — Dialogue modal for Street NPCs (Kiro the Barista & Professor Barnaby).
+ */
+---
+
+<div class="npc-modal-backdrop modal-backdrop" id="npc-modal-backdrop" aria-hidden="true">
+  <div class="npc-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="npc-name">
+    <button class="modal-close-btn" id="npc-modal-close" aria-label="Close dialogue">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="npc-header">
+      <div class="npc-avatar-frame" id="npc-avatar-frame">
+        <span class="npc-icon" id="npc-icon">☕</span>
+      </div>
+
+      <div class="npc-meta">
+        <div class="npc-district-badge" id="npc-district">Downtown Cyber District</div>
+        <h2 class="npc-name" id="npc-name">Kiro the Cyber Barista</h2>
+        <p class="npc-title" id="npc-title">Master of Glitch Brews</p>
+      </div>
+    </div>
+
+    <div class="npc-body">
+      <div class="npc-dialogue-box">
+        <p class="npc-dialogue" id="npc-dialogue">
+          "Need a quick boost to sprint across the city? Try my fresh Turbo Espresso!"
+        </p>
+      </div>
+
+      <div class="npc-effect-badge" id="npc-effect-badge" style="display: none;">
+        <span class="effect-icon">⚡</span>
+        <span id="npc-effect-text">Speed Boost +40% Active</span>
+      </div>
+    </div>
+
+    <div class="npc-footer">
+      <button type="button" class="btn-primary" id="npc-action-btn">
+        <span id="npc-action-text">Order Espresso</span>
+      </button>
+      <button type="button" class="btn-secondary" id="npc-dismiss-btn">
+        Farewell
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .npc-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 250;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease-out;
+  }
+
+  .npc-modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .npc-card {
+    position: relative;
+    max-width: 440px;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 18px;
+    padding: 1.75rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 240, 255, 0.12);
+    animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes modalScaleIn {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+  }
+
+  .npc-header {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .npc-avatar-frame {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1.5px solid rgba(0, 240, 255, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+
+  .npc-icon {
+    font-size: 2rem;
+  }
+
+  .npc-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .npc-district-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    color: #38bdf8;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .npc-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 2px 0;
+  }
+
+  .npc-title {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .npc-dialogue-box {
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 3px solid #00f0ff;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+  }
+
+  .npc-dialogue {
+    color: #e2e8f0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .npc-effect-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+  }
+
+  .npc-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.25rem;
+  }
+
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    border: none;
+  }
+
+  .btn-primary {
+    background: #00f0ff;
+    color: #090b10;
+    box-shadow: 0 4px 12px rgba(0, 240, 255, 0.3);
+  }
+
+  .btn-primary:hover {
+    background: #5df6ff;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+  }
+</style>

@@ -27,6 +27,7 @@ import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
 import { SkyManager } from './sky-manager.js';
+import { NPCManager } from './npc-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
@@ -118,6 +119,7 @@ export class Renderer {
   readonly plots: PlotManager;
   readonly train: TrainManager;
   readonly sky: SkyManager;
+  readonly npcs: NPCManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
@@ -149,6 +151,7 @@ export class Renderer {
     this.plots = plots;
     this.train = new TrainManager();
     this.sky = new SkyManager();
+    this.npcs = new NPCManager();
 
     this.initCityParticles();
   }
@@ -200,6 +203,8 @@ export class Renderer {
     this.monuments.updateTick();
     this.train.tick(this.player.wy);
     this.sky.tick(this.player.wx, this.player.wy);
+    this.npcs.tick();
+    this.player.speedMultiplier = this.npcs.getSpeedMultiplier();
     this.multiplayer?.broadcastMovement(
       this.player.wx,
       this.player.wy,
@@ -316,6 +321,9 @@ export class Renderer {
     for (const entity of entities) {
       entity.render(ctx, z);
     }
+
+    // 7b. Street NPCs (Kiro the Barista & Prof. Barnaby)
+    this.npcs.renderNPCs(ctx, camera, this.player.wx, this.player.wy);
 
     // 8. Time of Day Atmospheric Wash
     if (this.timeOfDay === 'day') {
@@ -998,6 +1006,200 @@ export class Renderer {
         ctx.moveTo(sx - 4 * z, catY);
         ctx.quadraticCurveTo(sx - 8 * z, catY - 2 * z + tailWag, sx - 6 * z, catY - 6 * z + tailWag);
         ctx.stroke();
+        break;
+      }
+
+      case 'glitch_void': {
+        const glitchPulse = Math.sin(this.tick * 0.12) * 2 * z;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, (18 + glitchPulse) * z, (9 + glitchPulse * 0.5) * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#a855f7';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 8 * z, (12 + glitchPulse) * z, (24 + glitchPulse) * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#00f0ff';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 8 * z, 6 * z, 16 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.font = `bold ${Math.round(8 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        const bY1 = sy - 14 * z - ((this.tick * 0.8) % (25 * z));
+        const bY2 = sy - 10 * z - (((this.tick + 20) * 0.8) % (25 * z));
+        ctx.fillText('0 1', sx - 6 * z, bY1);
+        ctx.fillText('1 0', sx + 6 * z, bY2);
+        break;
+      }
+
+      case 'cyber_lighthouse': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 22 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(sx - 14 * z, sy);
+        ctx.lineTo(sx - 8 * z, sy - 48 * z);
+        ctx.lineTo(sx + 8 * z, sy - 48 * z);
+        ctx.lineTo(sx + 14 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(sx - 12 * z, sy - 14 * z, 24 * z, 6 * z);
+        ctx.fillRect(sx - 10 * z, sy - 28 * z, 20 * z, 6 * z);
+        ctx.fillRect(sx - 8 * z, sy - 42 * z, 16 * z, 5 * z);
+
+        ctx.fillStyle = '#090b10';
+        ctx.fillRect(sx - 10 * z, sy - 54 * z, 20 * z, 6 * z);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(sx - 7 * z, sy - 53 * z, 14 * z, 5 * z);
+
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 54 * z, 9 * z, Math.PI, 0);
+        ctx.fill();
+
+        const beamAngle = (this.tick * 0.035) % (Math.PI * 2);
+        const beamLen = 140 * z;
+        ctx.save();
+        ctx.translate(sx, sy - 51 * z);
+        ctx.rotate(beamAngle);
+        const beamGrad = ctx.createRadialGradient(0, 0, 4 * z, 0, 0, beamLen);
+        beamGrad.addColorStop(0, 'rgba(0, 240, 255, 0.85)');
+        beamGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.25)');
+        beamGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, beamLen, -0.22, 0.22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'hermit_cabin': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 24 * z, 12 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(sx - 18 * z, sy - 24 * z, 36 * z, 24 * z);
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 1;
+        for (let l = -20; l < 0; l += 5) {
+          ctx.beginPath();
+          ctx.moveTo(sx - 18 * z, sy + l * z);
+          ctx.lineTo(sx + 18 * z, sy + l * z);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(sx - 22 * z, sy - 24 * z);
+        ctx.lineTo(sx, sy - 40 * z);
+        ctx.lineTo(sx + 22 * z, sy - 24 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.moveTo(sx - 23 * z, sy - 25 * z);
+        ctx.lineTo(sx, sy - 42 * z);
+        ctx.lineTo(sx + 23 * z, sy - 25 * z);
+        ctx.lineTo(sx + 18 * z, sy - 28 * z);
+        ctx.lineTo(sx, sy - 38 * z);
+        ctx.lineTo(sx - 18 * z, sy - 28 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(sx + 4 * z, sy - 16 * z, 8 * z, 8 * z);
+        ctx.strokeStyle = '#451a03';
+        ctx.strokeRect(sx + 4 * z, sy - 16 * z, 8 * z, 8 * z);
+
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 14 * z, sy - 42 * z, 6 * z, 16 * z);
+        ctx.fillStyle = 'rgba(241, 245, 249, 0.45)';
+        for (let i = 0; i < 3; i++) {
+          const sOffset = ((this.tick * 0.4 + i * 20) % 60);
+          ctx.beginPath();
+          ctx.arc((sx - 11 * z) + Math.sin(sOffset * 0.1) * 4 * z, (sy - 44 * z) - sOffset * 0.8 * z, (3 + sOffset * 0.1) * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'retro_arcade': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 12 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.2;
+        ctx.fillRect(sx - 10 * z, sy - 28 * z, 20 * z, 28 * z);
+        ctx.strokeRect(sx - 10 * z, sy - 28 * z, 20 * z, 28 * z);
+
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(sx - 9 * z, sy - 27 * z, 18 * z, 5 * z);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.round(6 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('SPACE', sx, sy - 23 * z);
+
+        ctx.fillStyle = '#022c22';
+        ctx.fillRect(sx - 8 * z, sy - 21 * z, 16 * z, 10 * z);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(sx - 2 * z, sy - 18 * z, 4 * z, 3 * z);
+        ctx.fillRect(sx - 4 * z, sy - 16 * z, 8 * z, 2 * z);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 9 * z, sy - 10 * z, 18 * z, 4 * z);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(sx - 5 * z, sy - 12 * z, 2 * z, 3 * z);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(sx + 3 * z, sy - 9 * z, 2 * z, 2 * z);
+        break;
+      }
+
+      case 'sunken_sub': {
+        ctx.fillStyle = 'rgba(2, 132, 199, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 24 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 4 * z, 20 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 6 * z, sy - 20 * z, 12 * z, 14 * z);
+
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 1 * z, sy - 20 * z);
+        ctx.lineTo(sx - 1 * z, sy - 30 * z);
+        ctx.lineTo(sx + 3 * z, sy - 30 * z);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        for (let i = 0; i < 3; i++) {
+          const bY = sy - 6 * z - ((this.tick * 0.5 + i * 18) % (20 * z));
+          ctx.beginPath();
+          ctx.arc(sx + 8 * z + Math.sin(this.tick * 0.1 + i) * 2 * z, bY, 1.8 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
         break;
       }
 
