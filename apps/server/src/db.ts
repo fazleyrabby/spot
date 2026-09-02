@@ -14,10 +14,7 @@ function getPool(): pg.Pool {
     _pool = new Pool({
       connectionString: config.databaseUrl,
       ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
-      // Vercel can keep several function instances warm at once. Supabase's
-      // session pool has a small connection ceiling, so never let one
-      // serverless instance consume the whole pool.
-      max: process.env.VERCEL ? 1 : 10,
+      max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     });

@@ -334,9 +334,8 @@ export function broadcastRealtimeEvent(event: { type: string; [key: string]: any
 /**
  * GET /api/realtime/stream
  * Server-Sent Events (SSE) stream for instant real-time canvas updates across all tabs/devices.
- * Only registered on long-running hosts — disabled on Vercel serverless (client uses Supabase Realtime).
  */
-const enableSSE = process.env.VERCEL ? false : process.env.ENABLE_SSE !== 'false';
+const enableSSE = process.env.ENABLE_SSE !== 'false';
 const sseHandler = async (req: AuthenticatedRequest, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');

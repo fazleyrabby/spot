@@ -92,45 +92,25 @@ pnpm dev
 > **writes** (claim / edit / delete / GitHub sync) must go through `apps/server`, and the
 > public anon key must be locked to read-only. Steps 3–5 below do exactly that.
 
-### Option A: Hybrid Deployment (Recommended)
+### Production Deployment (Docker Compose / Homelab)
 
-1. **Backend (`apps/server`)** — deploy to **Render** (or Railway/Fly). Create a new Web Service from the repo:
-   - **Build:** `pnpm install && pnpm --filter @spot/shared build && pnpm --filter @spot/world build && pnpm --filter server build`
-   - **Start:** `pnpm --filter server start`
-   - **Env vars:**
-     ```
-     DATABASE_URL=postgresql://...   # Supabase transaction pooler (port 6543)
-     CORS_ORIGIN=https://www.claimyourspot.lol
-     COOKIE_SECRET=<long random string>
-     NODE_ENV=production
-     ```
-   - Note the resulting URL, e.g. `https://spot-api.onrender.com`.
+SPOT runs in production using Docker Compose with an integrated Node 20 application server and PostgreSQL 17 database behind a Cloudflare Tunnel or Traefik reverse proxy.
 
-2. **Frontend (`apps/web`)** — deploy to **Vercel** (Root Directory `apps/web`). Add env var:
-   ```
-   PUBLIC_API_BASE=https://spot-api.onrender.com
-   ```
-   (also add `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` if you changed them). Redeploy.
-
-3. **Lock the database** — after the server is live, run `database/migrations/003_rls_lockdown.sql`
-   in the Supabase SQL Editor. This drops the public write/delete policies, revokes
-   `session_token_hash` reads, and locks `moderation_flags` to server-only. Verify:
+1. **Configure Environment:**
+   Copy `.env.production.example` to `.env.production` and configure your credentials:
    ```bash
-   curl https://spot-api.onrender.com/health
-   curl https://spot-api.onrender.com/api/world
+   cp .env.production.example .env.production
    ```
 
-4. **Verify writes go through the server** (should return JSON, not a DB error):
+2. **Build and Start Containers:**
    ```bash
-   curl -X POST https://spot-api.onrender.com/api/spots/claim \
-     -H "Content-Type: application/json" \
-     -d '{"x":50,"y":50,"displayName":"Smoke Test","avatarId":"astronaut"}'
+   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
    ```
 
-### Option B: Docker Compose
-```bash
-docker compose up -d --build
-```
+3. **Verify Deployment:**
+   ```bash
+   curl -s https://claimyourspot.lol/health
+   ```
 
 ---
 
