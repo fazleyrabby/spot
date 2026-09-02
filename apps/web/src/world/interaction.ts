@@ -119,8 +119,9 @@ export class InteractionHandler {
         canvas.releasePointerCapture(e.pointerId);
       } catch (_) {}
 
-      // Click / Tap (dragged less than 6 pixels)
-      if (this.dragDistance < 6) {
+      // Click / Tap (dragged less than 6px on desktop mouse, 18px on touchscreens)
+      const maxClickDist = e.pointerType === 'touch' ? 18 : 6;
+      if (this.dragDistance < maxClickDist) {
         const releaseTarget = document.elementFromPoint(e.clientX, e.clientY);
         if (this.isUiElement(releaseTarget)) {
           return;

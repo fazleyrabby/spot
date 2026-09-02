@@ -65,6 +65,7 @@ export interface CitizenEntity {
   emote: EmoteBubble | null;
   emoteTimer: number;
   liveSpeech?: { text: string; age: number; maxAge: number } | null;
+  spawnProgress?: number;
 }
 
 const MODES: CitizenActivityMode[] = [
@@ -232,6 +233,7 @@ export class MonumentManager {
           sleepParticles: [],
           emote: null,
           emoteTimer: Math.floor(Math.random() * 300),
+          spawnProgress: Math.max(-25, -Math.floor(Math.hypot(baseWx - 2400, baseWy - 2400) * 0.025)),
         };
         this.entities.set(key, ent);
       } else {
@@ -241,7 +243,7 @@ export class MonumentManager {
     }
 
     for (const key of this.entities.keys()) {
-      if (!currentKeys.has(key)) {
+      if (!currentKeys.has(key) && !key.startsWith('live_')) {
         this.entities.delete(key);
       }
     }
@@ -249,7 +251,17 @@ export class MonumentManager {
 
   updateTick(): void {
     this.tick++;
-    for (const ent of this.entities.values()) {
+    for (const [key, ent] of this.entities.entries()) {
+      if (key.startsWith('live_')) {
+        ent.pauseTimer--;
+        if (ent.pauseTimer <= 0) {
+          this.entities.delete(key);
+          continue;
+        }
+      }
+      if (ent.spawnProgress !== undefined && ent.spawnProgress < 1) {
+        ent.spawnProgress = Math.min(1, ent.spawnProgress + 0.08);
+      }
       this.updateCitizenAI(ent);
       this.updateEmote(ent);
     }
@@ -293,30 +305,35 @@ export class MonumentManager {
     }
 
     // 1. Live remote multiplayer player fast interpolation
-    if (ent.spot.isOnline && (Math.abs(ent.wx - ent.targetWx) > 0.5 || Math.abs(ent.wy - ent.targetWy) > 0.5)) {
-      const dx = ent.targetWx - ent.wx;
-      const dy = ent.targetWy - ent.wy;
-      const dist = Math.hypot(dx, dy);
+    if (ent.spot.isOnline) {
+      if (Math.abs(ent.wx - ent.targetWx) > 0.5 || Math.abs(ent.wy - ent.targetWy) > 0.5) {
+        const dx = ent.targetWx - ent.wx;
+        const dy = ent.targetWy - ent.wy;
+        const dist = Math.hypot(dx, dy);
 
-      if (dist > 180) {
-        ent.wx = ent.targetWx;
-        ent.wy = ent.targetWy;
-        ent.isMoving = false;
-      } else if (dist > 1.2) {
-        const step = Math.min(dist, Math.max(3.8, dist * 0.45));
-        ent.wx += (dx / dist) * step;
-        ent.wy += (dy / dist) * step;
-        ent.isMoving = true;
+        if (dist > 180) {
+          ent.wx = ent.targetWx;
+          ent.wy = ent.targetWy;
+          ent.isMoving = false;
+        } else if (dist > 1.2) {
+          const step = Math.min(dist, Math.max(3.8, dist * 0.45));
+          ent.wx += (dx / dist) * step;
+          ent.wy += (dy / dist) * step;
+          ent.isMoving = true;
+        } else {
+          ent.wx = ent.targetWx;
+          ent.wy = ent.targetWy;
+          ent.isMoving = false;
+        }
+
+        ent.animTimer++;
+        if (ent.animTimer >= 6) {
+          ent.animTimer = 0;
+          ent.frame = (ent.frame + 1) % 4;
+        }
       } else {
-        ent.wx = ent.targetWx;
-        ent.wy = ent.targetWy;
         ent.isMoving = false;
-      }
-
-      ent.animTimer++;
-      if (ent.animTimer >= 6) {
-        ent.animTimer = 0;
-        ent.frame = (ent.frame + 1) % 4;
+        ent.frame = 0;
       }
       return;
     }
@@ -438,6 +455,17 @@ export class MonumentManager {
     _sprites: SpriteManager,
     showNameTag: boolean,
   ): void {
+    const hasSpawnAnim = ent.spawnProgress !== undefined && ent.spawnProgress < 1;
+    if (hasSpawnAnim) {
+      if (ent.spawnProgress! <= 0) return; // not spawned yet in radial ripple
+      ctx.save();
+      const p = ent.spawnProgress!;
+      const bounce = Math.sin(p * Math.PI * 0.5) * (1 + 0.3 * (1 - p));
+      ctx.translate(sx, sy);
+      ctx.scale(bounce, bounce);
+      ctx.translate(-sx, -sy);
+    }
+
     const avatar = AVATAR_CATALOG[ent.spot.avatarId] ?? AVATAR_CATALOG.astronaut;
     const colors = {
       primary: avatar.colors.primary || '#38bdf8',
@@ -477,6 +505,10 @@ export class MonumentManager {
       ctx.beginPath();
       ctx.arc(sx, sy - 25 * z, 2.5 * z, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    if (hasSpawnAnim) {
+      ctx.restore();
     }
   }
 
