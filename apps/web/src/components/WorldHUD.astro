@@ -7,11 +7,11 @@
  */
 ---
 
-<div class="world-hud" id="world-hud">
+<div class="world-hud glass-panel" id="world-hud">
   <!-- Back to grid -->
   <a class="hud-back-btn" href="/" id="world-back-btn" title="Back to Grid View">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="15 18 9 12 15 6"></polyline>
     </svg>
     <span>Grid View</span>
@@ -21,8 +21,13 @@
 
   <!-- Brand -->
   <div class="hud-brand">
-    <span class="hud-brand-dot"></span>
-    <span class="hud-brand-label">SPOT WORLD</span>
+    <span class="hud-brand-glyph" aria-hidden="true">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17" fill="none" stroke="currentColor" stroke-width="2"></polyline>
+      </svg>
+    </span>
+    <span class="hud-brand-label">WORLD</span>
   </div>
 
   <div class="hud-divider"></div>
@@ -30,7 +35,7 @@
   <!-- Coordinate display (updated by JS) -->
   <div class="hud-coord" id="world-coord-display" title="Hovered grid coordinate">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" y1="8" x2="12" y2="12"></line>
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -40,13 +45,18 @@
 
   <!-- Discoveries & Easter Eggs Journal Button -->
   <button type="button" class="hud-secrets" id="hud-secrets-btn" title="Open Explorer Journal (Landmarks & Mystery Riddles)">
-    <span class="hud-secrets-icon">🧭</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor"></polygon>
+    </svg>
     <span id="hud-secrets-count">0/11</span>
   </button>
 
   <!-- Active Turbo Speed Boost Pill -->
-  <div class="hud-turbo-pill" id="hud-turbo-pill" style="display: none;" title="Turbo Espresso Speed Boost Active">
-    <span class="turbo-pulse">⚡</span>
+  <div class="hud-turbo-pill" id="hud-turbo-pill" style="display: none;" title="Turbo Speed Boost Active">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon>
+    </svg>
     <span id="hud-turbo-timer">20s</span>
   </div>
 
@@ -54,7 +64,7 @@
 
   <!-- Search / Find Citizen Button -->
   <button class="hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
@@ -65,14 +75,14 @@
   <div class="hud-divider"></div>
 
   <!-- Audio Ambient Sound Toggle -->
-  <button class="hud-audio-btn" id="world-audio-btn" title="Toggle Natural Environmental Sounds (Air, Birds, SFX)">
+  <button class="hud-tool-btn" id="world-audio-btn" title="Toggle Environmental Sounds">
     <span id="world-audio-icon">🔇</span>
   </button>
 
   <div class="hud-divider"></div>
 
   <!-- Time of Day Switcher (Day / Dusk / Night) -->
-  <button class="hud-audio-btn" id="world-tod-btn" title="Cycle Time of Day (Day / Dusk / Night)">
+  <button class="hud-tool-btn" id="world-tod-btn" title="Cycle Lighting (Night / Day / Sunset)">
     <span id="world-tod-icon">🌙</span>
   </button>
 
@@ -81,21 +91,21 @@
   <!-- Zoom controls -->
   <div class="hud-zoom-group">
     <button class="hud-zoom-btn" id="world-zoom-in" title="Zoom in">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
     </button>
-    <span class="hud-zoom-level" id="world-zoom-level">55%</span>
+    <span class="hud-zoom-level mono-num" id="world-zoom-level">55%</span>
     <button class="hud-zoom-btn" id="world-zoom-out" title="Zoom out">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
     </button>
     <button class="hud-zoom-btn hud-recenter-btn" id="world-recenter" title="Re-centre">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
@@ -113,15 +123,15 @@
     display: inline-flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
-    height: 44px;
-    padding: 0 12px;
-    background: rgba(14, 17, 26, 0.9);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.13);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    gap: 8px;
+    height: 42px;
+    padding: 0 10px;
+    background: rgba(11, 15, 23, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     z-index: 40;
     white-space: nowrap;
     pointer-events: auto;
@@ -133,56 +143,52 @@
     align-items: center;
     gap: 5px;
     color: var(--text-secondary);
-    font-size: 0.78rem;
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
     text-decoration: none;
     padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    transition: all 0.18s ease;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.15s ease;
   }
 
   .hud-back-btn:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
   }
 
   .hud-divider {
     width: 1px;
-    height: 18px;
-    background: rgba(255, 255, 255, 0.1);
+    height: 16px;
+    background: rgba(255, 255, 255, 0.09);
     flex-shrink: 0;
   }
 
   .hud-brand {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 8px;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    border-radius: 8px;
+    gap: 5px;
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
   }
 
-  .hud-brand-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--accent-jade);
-    border-radius: 50%;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  .hud-brand-glyph {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent-jade);
   }
 
   .hud-brand-label {
-    font-size: 0.72rem;
+    font-family: var(--font-tech);
+    font-size: 0.74rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.14em;
     color: var(--accent-jade);
   }
 
@@ -190,112 +196,10 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-family: var(--font-mono);
     color: var(--text-muted);
-    min-width: 70px;
-  }
-
-  .hud-coord:hover {
-    color: #f8fafc;
-  }
-
-  .hud-secrets {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    font-family: var(--font-mono, monospace);
-    color: #fbbf24;
-    background: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    padding: 3px 9px;
-    border-radius: 9999px;
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.15s ease;
-  }
-
-  .hud-secrets:hover {
-    background: rgba(245, 158, 11, 0.24);
-    border-color: rgba(245, 158, 11, 0.55);
-    transform: translateY(-1px);
-  }
-
-  .hud-turbo-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.74rem;
-    font-weight: 800;
-    font-family: var(--font-mono, monospace);
-    color: #00f0ff;
-    background: rgba(0, 240, 255, 0.14);
-    border: 1px solid rgba(0, 240, 255, 0.4);
-    padding: 3px 8px;
-    border-radius: 9999px;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
-    animation: turboPulse 1s infinite alternate;
-  }
-
-  @keyframes turboPulse {
-    from { opacity: 0.85; transform: scale(1); }
-    to { opacity: 1; transform: scale(1.04); }
-  }
-
-  .hud-secrets-icon {
-    font-size: 0.85rem;
-  }
-
-  .hud-search-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 9px;
-    border-radius: 9999px;
-    background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    color: #38bdf8;
-    font-size: 0.76rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .hud-search-btn:hover {
-    background: rgba(56, 189, 248, 0.22);
-    border-color: #38bdf8;
-    color: #f8fafc;
-  }
-
-  .hud-audio-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #cbd5e1;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .hud-audio-btn:hover {
-    background: rgba(255, 255, 255, 0.16);
-    transform: scale(1.08);
-  }
-
-  .hud-kbd {
-    font-size: 0.65rem;
-    font-family: var(--font-mono, monospace);
-    background: rgba(0, 0, 0, 0.35);
-    padding: 1px 4px;
-    border-radius: 3px;
-    color: #94a3b8;
+    min-width: 65px;
   }
 
   .hud-coord svg {
@@ -308,40 +212,149 @@
     font-weight: 500;
   }
 
-  .hud-zoom-group {
+  .hud-secrets {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: var(--font-tech);
+    letter-spacing: 0.04em;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+  }
+
+  .hud-secrets:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: #fef08a;
+  }
+
+  .hud-secrets:active {
+    transform: translateY(1px);
+  }
+
+  .hud-turbo-pill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--font-tech);
+    letter-spacing: 0.04em;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 3px 7px;
+    border-radius: 6px;
+  }
+
+  .hud-search-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    font-family: var(--font-tech);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-search-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: var(--text-primary);
+  }
+
+  .hud-tool-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-tool-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
+  .hud-tool-btn:active {
+    transform: translateY(1px);
+  }
+
+  .hud-kbd {
+    font-size: 0.62rem;
+    font-family: var(--font-mono, monospace);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .hud-zoom-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .hud-zoom-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--border-subtle);
-    border-radius: 7px;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
     color: var(--text-secondary);
-    transition: all 0.15s ease;
+    transition: all 0.12s ease;
+    cursor: pointer;
   }
 
   .hud-zoom-btn:hover {
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  .hud-zoom-btn:active {
+    transform: translateY(1px);
   }
 
   .hud-recenter-btn {
-    margin-left: 2px;
+    margin-left: 1px;
   }
 
   .hud-zoom-level {
-    font-size: 0.72rem;
+    font-size: 0.70rem;
     font-family: var(--font-mono);
     color: var(--text-muted);
-    min-width: 32px;
+    min-width: 30px;
     text-align: center;
   }
 
@@ -366,11 +379,11 @@
 
   @media (max-width: 480px) {
     .world-hud {
-      top: 10px;
-      gap: 5px;
-      padding: 0 8px;
+      top: 8px;
+      gap: 4px;
+      padding: 0 6px;
       height: 38px;
-      max-width: calc(100vw - 20px);
+      max-width: calc(100vw - 16px);
     }
 
     .hud-back-btn span {
@@ -386,22 +399,22 @@
     }
 
     .hud-search-btn {
-      padding: 4px 7px;
+      padding: 4px 6px;
     }
 
     .hud-secrets {
       padding: 2px 6px;
-      font-size: 0.72rem;
+      font-size: 0.70rem;
     }
 
-    .hud-audio-btn {
+    .hud-tool-btn {
       width: 26px;
       height: 26px;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
     }
 
     .hud-divider {
-      margin: 0 1px;
+      margin: 0;
     }
   }
 </style>
