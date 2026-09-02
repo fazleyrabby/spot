@@ -384,3 +384,24 @@ export async function deleteMyAccount(targetSpotId?: string, targetCitizenId?: s
   }
   return await deleteAccountDirect(targetSpotId, targetCitizenId);
 }
+
+/**
+ * Record a unique visitor hit (1 per 24h per device) on the backend.
+ * Returns the updated totalVisitors count or null on failure.
+ */
+export async function recordVisit(): Promise<number | null> {
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/analytics/visit`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return typeof data.totalVisitors === 'number' ? data.totalVisitors : null;
+      }
+    } catch {}
+  }
+  return null;
+}
+

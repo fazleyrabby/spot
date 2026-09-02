@@ -24,7 +24,7 @@ import TransferModal from '../components/TransferModal.astro';
 
 <script>
   import QRCode from 'qrcode';
-  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, type CitizenSearchResult, type SpotComment } from '../api/client.js';
+  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, recordVisit, type CitizenSearchResult, type SpotComment } from '../api/client.js';
   import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
@@ -360,6 +360,13 @@ import TransferModal from '../components/TransferModal.astro';
       if (hudOnlineCount && snapshot.onlineCount) {
         hudOnlineCount.textContent = String(snapshot.onlineCount);
       }
+
+      // Record unique visitor analytics hit
+      recordVisit().then((updatedCount) => {
+        if (updatedCount && hudVisitorsCount) {
+          hudVisitorsCount.textContent = updatedCount.toLocaleString();
+        }
+      });
     } catch (err) {
       console.warn('Backend API snapshot load fallback:', err);
       worldLoader?.classList.add('is-hidden');
