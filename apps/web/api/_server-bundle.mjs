@@ -19040,7 +19040,7 @@ var spotCommentLimiter = new SlidingWindowRateLimiter(
   "Spot wall rate limit exceeded. Please wait before posting again."
 ).middleware();
 
-// ../../packages/shared/src/schemas.ts
+// ../../packages/shared/dist/schemas.js
 import { z } from "zod";
 var BLOCKED_WORDS = [
   // Profanities & Vulgarities
@@ -19116,7 +19116,8 @@ function normalizeText(text) {
   return s;
 }
 function containsBlockedWord(text) {
-  if (!text) return false;
+  if (!text)
+    return false;
   const rawLower = text.toLowerCase();
   const normalized = normalizeText(text);
   for (const w of BLOCKED_WORDS) {
@@ -19153,37 +19154,30 @@ function sanitizeDisplayName(name) {
   clean = clean.replace(/\s{2,}/g, " ").trim();
   return (clean.slice(0, 32) || "Citizen").trim();
 }
-var SafeUrlSchema = z.string().max(256, "URL must not exceed 256 characters").trim().refine(
-  (val) => {
-    if (!val) return true;
-    try {
-      const parsed = new URL(val);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch {
-      return false;
-    }
-  },
-  { message: "URL must use a valid http:// or https:// scheme" }
-).optional().or(z.literal(""));
-var SafeSocialUrlSchema = z.string().max(128, "URL must not exceed 128 characters").trim().refine(
-  (val) => {
-    if (!val) return true;
-    try {
-      const parsed = new URL(val);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch {
-      return false;
-    }
-  },
-  { message: "URL must use a valid http:// or https:// scheme" }
-).optional().or(z.literal(""));
+var SafeUrlSchema = z.string().max(256, "URL must not exceed 256 characters").trim().refine((val) => {
+  if (!val)
+    return true;
+  try {
+    const parsed = new URL(val);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}, { message: "URL must use a valid http:// or https:// scheme" }).optional().or(z.literal(""));
+var SafeSocialUrlSchema = z.string().max(128, "URL must not exceed 128 characters").trim().refine((val) => {
+  if (!val)
+    return true;
+  try {
+    const parsed = new URL(val);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}, { message: "URL must use a valid http:// or https:// scheme" }).optional().or(z.literal(""));
 var CreateCitizenSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(32, "Display name must not exceed 32 characters").trim(),
   avatarId: z.string().min(1, "Avatar selection is required").max(32, "Avatar ID must not exceed 32 characters").trim(),
-  customAvatarData: z.string().max(65536).refine(
-    (val) => !val || val.startsWith("data:image/") || val.startsWith("{"),
-    { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }
-  ).optional().or(z.literal("")),
+  customAvatarData: z.string().max(65536).refine((val) => !val || val.startsWith("data:image/") || val.startsWith("{"), { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }).optional().or(z.literal("")),
   tagline: z.string().max(80, "Tagline must not exceed 80 characters").trim().optional().or(z.literal("")),
   bio: z.string().max(280, "Bio must not exceed 280 characters").trim().optional().or(z.literal("")),
   websiteUrl: SafeUrlSchema,
@@ -19207,10 +19201,7 @@ var ClaimSpotSchema = z.object({
 var UpdateCitizenSchema = z.object({
   displayName: z.string().min(1, "Display name cannot be empty").max(32, "Display name must not exceed 32 characters").trim().optional(),
   avatarId: z.string().min(1).max(32).trim().optional(),
-  customAvatarData: z.string().max(65536).refine(
-    (val) => !val || val.startsWith("data:image/") || val.startsWith("{"),
-    { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }
-  ).optional().or(z.literal("")),
+  customAvatarData: z.string().max(65536).refine((val) => !val || val.startsWith("data:image/") || val.startsWith("{"), { message: "customAvatarData must be a data URI (data:image/...) or a JSON pixel map" }).optional().or(z.literal("")),
   tagline: z.string().max(80).trim().optional(),
   bio: z.string().max(280).trim().optional(),
   websiteUrl: SafeUrlSchema,
