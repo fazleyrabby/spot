@@ -1881,39 +1881,7 @@ import TransferModal from '../components/TransferModal.astro';
       localStorage.setItem('spot_presence_id', tabId);
     }
 
-    if (connectApiActivityStream(tabId)) return;
-
-    // Direct Supabase Realtime Channel (fallback when no authoritative API is configured)
-    function connectSupabaseRealtime() {
-      if (supabaseChannel) return;
-      supabaseChannel = supabase
-        .channel('spot_world_realtime', {
-          config: { presence: { key: tabId || 'default' } }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'spots' }, async () => {
-          try {
-            const snap = await fetchWorldSnapshot();
-            worldSnapshot.occupied = snap.occupied;
-            worldSnapshot.claimedCount = snap.claimedCount;
-            renderer.setSnapshot(worldSnapshot);
-            if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-          } catch {}
-        })
-        .on('presence', { event: 'sync' }, () => {
-          const state = supabaseChannel.presenceState();
-          const count = Object.keys(state).length;
-          const onlineCountEl = document.getElementById('hud-online-count');
-          if (onlineCountEl) onlineCountEl.textContent = String(count);
-        })
-        .subscribe(async (status: string) => {
-          if (status === 'SUBSCRIBED') {
-            await supabaseChannel.track({ online_at: new Date().toISOString() });
-          }
-        });
-    }
-
-    // Connect to Supabase Realtime directly
-    connectSupabaseRealtime();
+    connectApiActivityStream(tabId);
   }
 
   function disconnectRealtime() {
