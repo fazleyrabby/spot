@@ -38,6 +38,8 @@ export class MultiplayerSync {
   private lastSendTime = 0;
   private failureCount = 0;
   private networkBackoffUntil = 0;
+  private isSending = false;
+  private readonly MIN_MOVE_INTERVAL_MS = 140;
 
   constructor(options: {
     apiBase: string;
@@ -128,7 +130,7 @@ export class MultiplayerSync {
   }
 
   /**
-   * Throttled position & speech broadcast (sends every 150ms when moving or talking).
+   * Throttled position & speech broadcast (sends at most ~7/sec when moving, 0 when idle).
    */
   broadcastMovement(
     wx: number,
@@ -137,14 +139,32 @@ export class MultiplayerSync {
     state: string,
     speech?: string | null,
   ): void {
+    // Never broadcast when browser tab is inactive/hidden
+    if (typeof document !== 'undefined' && document.hidden) {
+      return;
+    }
+
     const now = Date.now();
     const distMoved = Math.hypot(wx - this.lastSentWx, wy - this.lastSentWy);
     const stateChanged = state !== this.lastSentState || direction !== this.lastSentDirection;
     const speechChanged = speech !== this.lastSentSpeech;
+    const isMoving = state === 'walk' || state === 'run' || distMoved >= 2.0;
 
-    // Throttle: send if moved > 2px, or state/speech changed, or 2s keepalive
-    if (distMoved < 2.5 && !stateChanged && !speechChanged && now - this.lastSendTime < 2000) {
-      return;
+    // 1. When actively moving: enforce 140ms minimum interval and no overlapping requests
+    if (isMoving) {
+      if (!speechChanged) {
+        if (now - this.lastSendTime < this.MIN_MOVE_INTERVAL_MS || this.isSending) {
+          return;
+        }
+      }
+    } else {
+      // 2. When stopped/idle: only broadcast once when transitioning to idle (so others see us stop), or when chat speech changes
+      if (!stateChanged && !speechChanged) {
+        // Idle keepalive: at most once every 30 seconds
+        if (now - this.lastSendTime < 30000) {
+          return;
+        }
+      }
     }
 
     this.lastSentWx = wx;
@@ -169,26 +189,29 @@ export class MultiplayerSync {
 
     // Broadcast via Authoritative Backend (SSE)
     const base = this.getResolvedApiBase();
-    if (base) {
-      if (now >= this.networkBackoffUntil) {
-        try {
-          fetch(`${base}/api/realtime/position`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(payload),
+    if (base && now >= this.networkBackoffUntil) {
+      this.isSending = true;
+      try {
+        fetch(`${base}/api/realtime/position`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        })
+          .then((res) => {
+            this.isSending = false;
+            if (res.ok) {
+              this.failureCount = 0;
+            } else {
+              this.handleSendFailure(Date.now());
+            }
           })
-            .then((res) => {
-              if (res.ok) {
-                this.failureCount = 0;
-              } else {
-                this.handleSendFailure(now);
-              }
-            })
-            .catch(() => {
-              this.handleSendFailure(now);
-            });
-        } catch (_) {}
+          .catch(() => {
+            this.isSending = false;
+            this.handleSendFailure(Date.now());
+          });
+      } catch (_) {
+        this.isSending = false;
       }
     }
   }
