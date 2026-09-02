@@ -15,6 +15,11 @@ ALTER TABLE citizen_passkeys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webauthn_challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE citizen_sessions ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON citizen_passkeys, webauthn_challenges, citizen_sessions FROM anon, authenticated;
-REVOKE ALL ON SEQUENCE citizen_sessions_id_seq FROM anon, authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    EXECUTE 'REVOKE ALL ON citizen_passkeys, webauthn_challenges, citizen_sessions FROM anon, authenticated';
+    EXECUTE 'REVOKE ALL ON SEQUENCE citizen_sessions_id_seq FROM anon, authenticated';
+  END IF;
+END $$;
 
