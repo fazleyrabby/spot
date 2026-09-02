@@ -56,18 +56,27 @@ if (fs.existsSync(webDistPath)) {
         if (filePath.includes('/_astro/') || filePath.includes('/sprites/')) {
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         } else if (filePath.endsWith('.html')) {
-          res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
         }
       },
     })
   );
 
+  const sendFreshHtml = (res: express.Response, filePath: string) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(filePath);
+  };
+
   app.get('/world', (_req, res) => {
     const worldHtml = path.join(webDistPath, 'world', 'index.html');
     if (fs.existsSync(worldHtml)) {
-      return res.sendFile(worldHtml);
+      return sendFreshHtml(res, worldHtml);
     }
-    res.sendFile(path.join(webDistPath, 'index.html'));
+    sendFreshHtml(res, path.join(webDistPath, 'index.html'));
   });
 
   app.get('*', (req, res, next) => {
@@ -76,9 +85,9 @@ if (fs.existsSync(webDistPath)) {
     }
     const htmlFile = path.join(webDistPath, req.path.replace(/^\//, ''), 'index.html');
     if (fs.existsSync(htmlFile)) {
-      return res.sendFile(htmlFile);
+      return sendFreshHtml(res, htmlFile);
     }
-    res.sendFile(path.join(webDistPath, 'index.html'));
+    sendFreshHtml(res, path.join(webDistPath, 'index.html'));
   });
 }
 
