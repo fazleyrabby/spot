@@ -135,6 +135,11 @@ export class MonumentManager {
         ent.isMoving = data.state === 'walking';
         ent.spot.isOnline = true;
         ent.pauseTimer = 600; // Keep alive under player control
+        if (data.speech) {
+          if (!ent.liveSpeech || ent.liveSpeech.text !== data.speech) {
+            ent.liveSpeech = { text: data.speech, age: 0, maxAge: 360 };
+          }
+        }
         found = true;
         break;
       }
@@ -167,6 +172,7 @@ export class MonumentManager {
           sleepParticles: [],
           emote: null,
           emoteTimer: 0,
+          liveSpeech: data.speech ? { text: data.speech, age: 0, maxAge: 360 } : null,
         };
         this.entities.set(key, liveEnt);
       } else {
@@ -177,6 +183,11 @@ export class MonumentManager {
         liveEnt.state = data.state as CitizenActivityMode;
         liveEnt.isMoving = data.state === 'walking';
         liveEnt.pauseTimer = 600;
+        if (data.speech) {
+          if (!liveEnt.liveSpeech || liveEnt.liveSpeech.text !== data.speech) {
+            liveEnt.liveSpeech = { text: data.speech, age: 0, maxAge: 360 };
+          }
+        }
       }
     }
   }
@@ -451,6 +462,11 @@ export class MonumentManager {
     // Emote thought bubble (❤️, ☕, ✨, 🎵, 💡)
     if (ent.emote) {
       this.renderEmoteBubble(ctx, sx, sy - 34 * z, z, ent.emote);
+    }
+
+    // Live Multiplayer Chat / Speech Bubble (Short-lived 5-6s message)
+    if (ent.liveSpeech) {
+      this.renderChatBubble(ctx, sx, sy - 38 * z, z, ent.liveSpeech);
     }
 
     // Name badge with live Activity Mode
@@ -871,6 +887,56 @@ export class MonumentManager {
     ctx.textBaseline = 'middle';
     ctx.fillText(text, sx, sy);
 
+    ctx.restore();
+  }
+
+  private renderChatBubble(
+    ctx: CanvasRenderingContext2D,
+    bx: number,
+    by: number,
+    z: number,
+    bubble: { text: string; age: number; maxAge: number },
+  ): void {
+    const { text, age, maxAge } = bubble;
+    const alpha = age > maxAge - 30 ? (maxAge - age) / 30 : 1;
+
+    const fontSize = Math.max(9, Math.round(10 * z));
+    ctx.font = `600 ${fontSize}px 'Outfit', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const textW = ctx.measureText(text).width;
+    const padX = 8 * z;
+    const padY = 5 * z;
+    const bubbleW = Math.max(28 * z, textW + padX * 2);
+    const bubbleH = fontSize + padY * 2;
+
+    const floatY = by - Math.min(4 * z, (age / 30) * 4 * z);
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha);
+
+    // Speech bubble pill
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    ctx.beginPath();
+    ctx.roundRect(bx - bubbleW / 2, floatY - bubbleH / 2, bubbleW, bubbleH, 7 * z);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Bubble pointer
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    ctx.beginPath();
+    ctx.moveTo(bx - 3 * z, floatY + bubbleH / 2);
+    ctx.lineTo(bx, floatY + bubbleH / 2 + 4 * z);
+    ctx.lineTo(bx + 3 * z, floatY + bubbleH / 2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(text, bx, floatY);
     ctx.restore();
   }
 }
