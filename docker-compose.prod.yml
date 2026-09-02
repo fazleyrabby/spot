@@ -45,7 +45,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.spot.entrypoints=web"
-      - "traefik.http.routers.spot.rule=Host(`${DOMAIN_NAME:-claimyourspot.lol}`, `www.${DOMAIN_NAME:-claimyourspot.lol}`)"
+      - "traefik.http.routers.spot.rule=Host(`claimyourspot.lol`) || Host(`www.claimyourspot.lol`)"
       - "traefik.http.services.spot.loadbalancer.server.port=4323"
 
 networks:
