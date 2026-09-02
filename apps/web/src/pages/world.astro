@@ -189,7 +189,7 @@ import SearchModal from '../components/SearchModal.astro';
   const configuredBase = (import.meta.env.PUBLIC_API_BASE as string | undefined)?.replace(/\/$/, '');
   const API_BASE: string = configuredBase
     ? (configuredBase.endsWith('/api') ? configuredBase.replace(/\/api$/, '') : configuredBase)
-    : (import.meta.env.PROD ? '' : 'http://localhost:5050');
+    : (typeof window !== 'undefined' ? window.location.origin : '');
 
   // ── DOM refs ─────────────────────────────────────────────────────────────
   const canvas       = document.getElementById('world-canvas') as HTMLCanvasElement;
