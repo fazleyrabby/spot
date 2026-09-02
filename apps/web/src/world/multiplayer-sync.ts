@@ -2,8 +2,8 @@
  * MultiplayerSync — Live Real-Time Multiplayer Movement, Presence, and Speech Synchronization.
  *
  * Supports:
- * - Supabase Realtime Broadcast WebSockets (Vercel Production)
- * - Server-Sent Events (SSE) & REST position relay (Local Development & Express)
+ * - Authoritative Backend SSE & REST position relay
+ * - Optional Supabase Realtime Broadcast WebSockets
  */
 
 import { supabase } from '../api/supabase.js';

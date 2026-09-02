@@ -2,9 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load root environment files (safe to fail in Vercel). `.env.local` is loaded
-// first, so its local values win over the developer's ignored `.env` without
-// overriding values explicitly supplied by the hosting environment.
+// Load root environment files. `.env.local` is loaded first, so its local values
+// win over `.env` without overriding values explicitly supplied by the hosting environment.
 try {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);

@@ -63,11 +63,9 @@ All notable changes to SPOT are documented here.
 ## 2026-08-29
 
 ### Infrastructure
-- Cache world snapshot with 10s TTL; run Vercel function in `sin1` region near DB
-- Configure Astro output for Vercel
-- Enable SSL for Supabase pooler connections
-- Bundle server into `api/_server-bundle.mjs` for Vercel deployment
-- Override Vercel routes so catch-all matches all `/api/*` paths
+- Cache world snapshot with TTL in memory
+- Configure Astro static build output
+- Enable SSL for PostgreSQL connections
 
 ---
 

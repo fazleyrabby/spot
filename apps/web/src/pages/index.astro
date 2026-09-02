@@ -1829,9 +1829,7 @@ import TransferModal from '../components/TransferModal.astro';
   let apiEventSource: EventSource | null = null;
 
   function connectApiActivityStream(tabId: string): boolean {
-    // Vercel serverless deployments intentionally disable the long-lived SSE
-    // endpoint; use Supabase Realtime there instead. Local dev keeps SSE.
-    const apiSseEnabled = import.meta.env.DEV || import.meta.env.PUBLIC_ENABLE_SSE === 'true';
+    const apiSseEnabled = import.meta.env.DEV || import.meta.env.PUBLIC_ENABLE_SSE === 'true' || !import.meta.env.SSR;
     if (!API_BASE || !apiSseEnabled || apiEventSource) return Boolean(apiEventSource);
     const token = localStorage.getItem('spot_session_token');
     const params = new URLSearchParams({ tabId });
