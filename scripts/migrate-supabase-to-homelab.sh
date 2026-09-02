@@ -32,7 +32,7 @@ HEADER
 
 docker exec -i spot-postgres pg_dump \
   --data-only \
-  --inserts \
+  --column-inserts \
   -t citizens -t spots -t citizen_passkeys -t citizen_sessions -t spot_comments -t site_stats -t moderation_flags -t referrals \
   "$SUPABASE_DB_URL" >> "$BACKUP_FILE"
 
