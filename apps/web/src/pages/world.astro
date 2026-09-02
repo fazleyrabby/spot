@@ -245,33 +245,85 @@ import SearchModal from '../components/SearchModal.astro';
       }
     }
 
-    if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
-    if (profileName)    profileName.textContent     = spot.displayName;
-    if (profileTagline) profileTagline.textContent  = spot.tagline || '';
-
-    if (profileVerifiedBadge) {
-      profileVerifiedBadge.style.display = spot.isVerified ? '' : 'none';
-    }
+    const isGuest = !spot.citizenId || spot.citizenId.startsWith('guest_') || spot.displayName === 'Visitor';
+    const profilePresenceText = document.getElementById('profile-presence-text');
+    const profilePresence = document.getElementById('profile-presence');
+    const spotWallSection = document.getElementById('spot-wall-section');
 
     const setLink = (el: HTMLAnchorElement | null, url?: string | null) => {
       if (!el) return;
       if (url) { el.href = url; el.style.display = ''; }
       else      { el.style.display = 'none'; }
     };
-    if (linkWebsite) {
-      setLink(linkWebsite, spot.websiteUrl);
-      if (linkWebsiteText && spot.websiteUrl) {
-        try {
-          linkWebsiteText.textContent = new URL(spot.websiteUrl).hostname;
-        } catch { linkWebsiteText.textContent = 'Website'; }
+
+    if (isGuest) {
+      if (profileSpotId)  profileSpotId.textContent  = 'Temporary Visitor';
+      if (profileName)    profileName.textContent     = spot.displayName || 'Visitor';
+      if (profileTagline) profileTagline.textContent  = 'A roaming guest exploring the Spot World island ✨';
+      if (profilePresenceText) profilePresenceText.textContent = 'Roaming Explorer';
+      if (profilePresence) {
+        profilePresence.style.background = 'rgba(56, 189, 248, 0.12)';
+        profilePresence.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        profilePresence.style.color = '#38bdf8';
       }
+      if (profileVerifiedBadge) profileVerifiedBadge.style.display = 'none';
+
+      setLink(linkWebsite, null);
+      setLink(linkTwitter, null);
+      setLink(linkFacebook, null);
+      setLink(linkInstagram, null);
+      setLink(linkLinkedin, null);
+      setLink(linkYoutube, null);
+      setLink(linkGithub, null);
+
+      if (spotWallSection) spotWallSection.style.display = 'none';
+    } else {
+      if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
+      if (profileName)    profileName.textContent     = spot.displayName;
+      if (profileTagline) profileTagline.textContent  = spot.tagline || '';
+      if (profilePresenceText) profilePresenceText.textContent = 'Permanent Citizen';
+      if (profilePresence) {
+        profilePresence.style.background = '';
+        profilePresence.style.borderColor = '';
+        profilePresence.style.color = '';
+      }
+      if (profileVerifiedBadge) {
+        profileVerifiedBadge.style.display = spot.isVerified ? '' : 'none';
+      }
+
+      if (linkWebsite) {
+        setLink(linkWebsite, spot.websiteUrl);
+        if (linkWebsiteText && spot.websiteUrl) {
+          try {
+            linkWebsiteText.textContent = new URL(spot.websiteUrl).hostname;
+          } catch { linkWebsiteText.textContent = 'Website'; }
+        }
+      }
+      setLink(linkTwitter,   spot.twitterUrl);
+      setLink(linkFacebook,  spot.facebookUrl);
+      setLink(linkInstagram, spot.instagramUrl);
+      setLink(linkLinkedin,  spot.linkedinUrl);
+      setLink(linkYoutube,   spot.youtubeUrl);
+      setLink(linkGithub,    spot.githubUrl);
+
+      if (spotWallSection) spotWallSection.style.display = '';
+
+      // Reset Spot Wall to closed/clean state by default
+      if (spotWallForm) {
+        spotWallForm.hidden = true;
+        spotWallForm.style.display = 'none';
+      }
+      if (spotWallSelfNote) {
+        spotWallSelfNote.style.display = 'block';
+        spotWallSelfNote.textContent = 'This wall is read-only until the owner opens it.';
+      }
+      if (spotWallComments) {
+        spotWallComments.textContent = 'Loading messages…';
+      }
+
+      const spotId = `${spot.x},${spot.y}`;
+      void loadSpotComments(spotId, spot);
     }
-    setLink(linkTwitter,   spot.twitterUrl);
-    setLink(linkFacebook,  spot.facebookUrl);
-    setLink(linkInstagram, spot.instagramUrl);
-    setLink(linkLinkedin,  spot.linkedinUrl);
-    setLink(linkYoutube,   spot.youtubeUrl);
-    setLink(linkGithub,    spot.githubUrl);
 
     const viewSec = document.getElementById('profile-view-section');
     const editSec = document.getElementById('profile-edit-section');
@@ -282,22 +334,6 @@ import SearchModal from '../components/SearchModal.astro';
     const deleteBtn = document.getElementById('profile-delete-btn');
     if (editBtn)   editBtn.style.display = 'none';
     if (deleteBtn) deleteBtn.style.display = 'none';
-
-    // Reset Spot Wall to closed/clean state by default
-    if (spotWallForm) {
-      spotWallForm.hidden = true;
-      spotWallForm.style.display = 'none';
-    }
-    if (spotWallSelfNote) {
-      spotWallSelfNote.style.display = 'block';
-      spotWallSelfNote.textContent = 'This wall is read-only until the owner opens it.';
-    }
-    if (spotWallComments) {
-      spotWallComments.textContent = 'Loading messages…';
-    }
-
-    const spotId = `${spot.x},${spot.y}`;
-    void loadSpotComments(spotId, spot);
 
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');
