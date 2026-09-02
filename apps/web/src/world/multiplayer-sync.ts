@@ -96,9 +96,8 @@ export class MultiplayerSync {
       }
     }
 
-    // 2. Also connect SSE Stream (for local Express server & instant dev events)
-    const apiSseEnabled = (import.meta as any).env?.DEV || (import.meta as any).env?.PUBLIC_ENABLE_SSE === 'true';
-    if (this.apiBase && apiSseEnabled) {
+    // 2. Also connect SSE Stream (for local Express server & homelab real-time)
+    if (this.apiBase) {
       const streamUrl = `${this.apiBase}/api/realtime/stream?tabId=${this.tabId}`;
       try {
         const source = new EventSource(streamUrl, { withCredentials: true });
@@ -173,7 +172,19 @@ export class MultiplayerSync {
       timestamp: now,
     };
 
-    // Broadcast via Supabase WebSockets (Instant, 0 HTTP requests, 0 Vercel Invocations)
+    // 1. Broadcast via Authoritative Backend (SSE - 0 Supabase message limits)
+    if (this.apiBase && (this.sseSource || !this.isSupabaseSubscribed)) {
+      try {
+        fetch(`${this.apiBase}/api/realtime/position`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    // 2. Broadcast via Supabase WebSockets if subscribed
     if (this.supabaseChannel && this.isSupabaseSubscribed) {
       try {
         this.supabaseChannel.send({
