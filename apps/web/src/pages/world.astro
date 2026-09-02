@@ -190,7 +190,7 @@ import SearchModal from '../components/SearchModal.astro';
   import { WORLD_SECRETS } from '../world/secrets.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
-  import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment } from '../api/client.js';
+  import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment, recordVisit } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
@@ -863,6 +863,9 @@ import SearchModal from '../components/SearchModal.astro';
             isVerified,
           }));
         }
+
+        // Record visitor analytics hit
+        recordVisit();
       } catch (_) {}
 
       // ── Start Engine with Authenticated Citizen Identity ─────────────────
