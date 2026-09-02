@@ -330,9 +330,17 @@ export default {
       // Forward original request to homelab VPS origin
       const response = await fetch(request);
 
-      // Intercept Cloudflare origin down codes (502, 503, 504, 521, 522, 523, 524)
+      // 1. Intercept Cloudflare origin down codes (502, 503, 504, 521, 522, 523, 524)
       if ([502, 503, 504, 521, 522, 523, 524].includes(response.status)) {
         return handleOffline(request, response.status);
+      }
+
+      // 2. Intercept Traefik reverse proxy fallback when container is stopped
+      if (response.status === 404 && response.headers.get('content-type')?.includes('text/plain')) {
+        const text = await response.clone().text();
+        if (text.trim() === '404 page not found') {
+          return handleOffline(request, 503);
+        }
       }
 
       return response;
