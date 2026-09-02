@@ -171,6 +171,37 @@ export async function fetchMySession(): Promise<MySessionResponse> {
   return await fetchSessionDirect();
 }
 
+export function isServerOfflineError(err: any): boolean {
+  if (!err) return false;
+  if (err.isOffline) return true;
+  if (err.status === 503 || err.status === 502 || err.status === 504) return true;
+  const msg = (err.message || '').toLowerCase();
+  return (
+    msg.includes('server is temporarily offline') ||
+    msg.includes('serveroffline') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('load failed') ||
+    msg.includes('econnrefused')
+  );
+}
+
+export async function checkServerHealth(): Promise<boolean> {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const url = origin ? `${origin}/health?t=${Date.now()}` : '/health';
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return data.status === 'ok';
+    }
+  } catch {}
+  return false;
+}
+
 export async function syncGithubAuth(data: {
   githubId: string;
   username?: string;
@@ -193,11 +224,16 @@ export async function syncGithubAuth(data: {
         }
         return json;
       }
+      // If server is 503/502/504, fall back to direct Supabase session
+      if (res.status === 503 || res.status === 502 || res.status === 504) {
+        console.warn('Authoritative server offline (503), resolving session directly from Supabase...');
+        return await fetchSessionDirect();
+      }
       const err: any = new Error(json.message || json.error || 'Failed to sync GitHub');
       err.status = res.status;
       throw err;
     } catch (err: any) {
-      if (err?.status) throw err;
+      if (err?.status && err.status !== 503 && err.status !== 502 && err.status !== 504) throw err;
       console.warn('API /auth/github/sync unreachable, falling back to direct mode:', err);
     }
   }
@@ -249,12 +285,19 @@ export async function claimSpot(
         return data;
       }
       // Surface the server's authoritative error (409 spot taken, 403 blocked, etc.)
-      const err: any = new Error(data.message || data.error || 'Claim failed');
+      const isOffline = res.status === 503 || res.status === 502 || res.status === 504;
+      const err: any = new Error(
+        isOffline
+          ? 'The SPOT server is temporarily recharging or offline for maintenance. Your spot is held and will be claimed as soon as the server wakes up.'
+          : (data.message || data.error || 'Claim failed')
+      );
       err.status = res.status;
+      err.isOffline = isOffline;
       throw err;
     } catch (err: any) {
-      if (err?.status) throw err; // real server error — do NOT fall back to direct mode
-      console.error('API /spots/claim unreachable; refusing direct Supabase fallback:', err);
+      if (!err.status || err.status === 503 || err.status === 502 || err.status === 504) {
+        err.isOffline = true;
+      }
       throw err;
     }
   }
