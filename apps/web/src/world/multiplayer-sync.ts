@@ -97,8 +97,9 @@ export class MultiplayerSync {
     }
 
     // 2. Also connect SSE Stream (for local Express server & homelab real-time)
-    if (this.apiBase) {
-      const streamUrl = `${this.apiBase}/api/realtime/stream?tabId=${this.tabId}`;
+    const base = this.apiBase || (typeof window !== 'undefined' ? window.location.origin : '');
+    if (base) {
+      const streamUrl = `${base}/api/realtime/stream?tabId=${this.tabId}`;
       try {
         const source = new EventSource(streamUrl, { withCredentials: true });
         this.sseSource = source;
@@ -173,9 +174,10 @@ export class MultiplayerSync {
     };
 
     // 1. Broadcast via Authoritative Backend (SSE - 0 Supabase message limits)
-    if (this.apiBase && (this.sseSource || !this.isSupabaseSubscribed)) {
+    const base = this.apiBase || (typeof window !== 'undefined' ? window.location.origin : '');
+    if (base && (this.sseSource || !this.isSupabaseSubscribed)) {
       try {
-        fetch(`${this.apiBase}/api/realtime/position`, {
+        fetch(`${base}/api/realtime/position`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
