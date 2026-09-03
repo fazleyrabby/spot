@@ -404,26 +404,25 @@ import TransferModal from '../components/TransferModal.astro';
         if (session.authenticated || (session as any).success) {
           sessionCitizen = session.citizen;
           sessionOwnedSpot = session.ownedSpot;
-          myCitizen = sessionCitizen;
         }
       }
 
-      // Apply the database-authoritative ownership state, overriding any value
-      // that was synchronously restored from localStorage on page load so the
-      // header never shows a ghost "My Spot (x, y)" for a released/deleted spot.
-      myOwnedSpot = sessionOwnedSpot;
-      if (myCitizen) {
+      // Only update local state if a valid authenticated citizen was retrieved.
+      // This prevents network glitches, container restarts, or Cloudflare challenges
+      // from erasing the user's logged-in identity!
+      if (sessionCitizen) {
+        myCitizen = sessionCitizen;
+        myCitizen.isVerified = Boolean(myCitizen.isVerified || myCitizen.githubUrl || (myCitizen as any).githubId);
         localStorage.setItem('spot_my_citizen', JSON.stringify({
           id: myCitizen.id,
           displayName: myCitizen.displayName,
           avatarId: myCitizen.avatarId,
           isVerified: myCitizen.isVerified,
         }));
-      } else {
-        localStorage.removeItem('spot_my_citizen');
       }
 
-      if (myOwnedSpot) {
+      if (sessionOwnedSpot) {
+        myOwnedSpot = sessionOwnedSpot;
         localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
         if (headerClaimBtn) {
           headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
@@ -436,17 +435,14 @@ import TransferModal from '../components/TransferModal.astro';
             coordStatus.className = 'coord-badge occupied';
           }
         }
-      } else {
-        localStorage.removeItem('spot_my_owned');
-        if (headerClaimBtn) {
-          headerClaimBtn.innerHTML = `
-            <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>Choose a Spot</span>
-          `;
-        }
+      } else if (!myOwnedSpot && headerClaimBtn) {
+        headerClaimBtn.innerHTML = `
+          <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Claim a Spot</span>
+        `;
       }
     } catch (err) {
       console.warn('Session check fallback:', err);

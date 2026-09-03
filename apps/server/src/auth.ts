@@ -45,6 +45,7 @@ export async function resolveCitizen(token: string): Promise<Citizen | null> {
             twitter_url as "twitterUrl", facebook_url as "facebookUrl",
             instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
             linkedin_url as "linkedinUrl",
+            (github_url IS NOT NULL AND github_url <> '') as "isVerified",
             created_at as "createdAt", updated_at as "updatedAt"
      FROM citizens
      WHERE session_token_hash = $1
@@ -69,7 +70,9 @@ export async function resolveCitizenById(id: string): Promise<Citizen | null> {
             website_url as "websiteUrl", github_url as "githubUrl",
             twitter_url as "twitterUrl", facebook_url as "facebookUrl",
             instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
-            linkedin_url as "linkedinUrl", created_at as "createdAt", updated_at as "updatedAt"
+            linkedin_url as "linkedinUrl",
+            (github_url IS NOT NULL AND github_url <> '') as "isVerified",
+            created_at as "createdAt", updated_at as "updatedAt"
      FROM citizens WHERE id = $1 LIMIT 1`,
     [id]
   );
