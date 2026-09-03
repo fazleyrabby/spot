@@ -1657,7 +1657,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         buyerName,
         headline,
         subtext,
-        targetUrl,
+        targetUrl: sanitizedTargetUrl,
         priceFormatted: `$${(priceCents / 100).toFixed(2)}`,
         saleId,
       }).catch((err) => console.error('[Discord Notification Error]', err));
