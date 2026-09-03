@@ -67,6 +67,12 @@ export class MultiplayerSync {
     }
   }
 
+  updateIdentity(data: { citizenId?: string; displayName?: string; avatarId?: string }): void {
+    if (data.citizenId) this.myCitizenId = data.citizenId;
+    if (data.displayName) this.myDisplayName = data.displayName;
+    if (data.avatarId) this.myAvatarId = data.avatarId;
+  }
+
   start(): void {
     // Connect authoritative Server-Sent Events stream for real-time multiplayer
     const base = this.getResolvedApiBase();

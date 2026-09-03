@@ -115,6 +115,39 @@ export class Engine {
     this.renderer.multiplayer = this.multiplayer;
   }
 
+  private lastSnapshot: WorldSnapshot | null = null;
+
+  updateCitizenIdentity(data: {
+    citizenId?: string;
+    displayName?: string;
+    avatarId?: string;
+    isVerified?: boolean;
+    teleportToSpot?: boolean;
+  }): void {
+    if (data.displayName) this.player.displayName = data.displayName;
+    if (data.avatarId) this.player.setAvatar(data.avatarId);
+    if (data.isVerified !== undefined) this.player.isVerified = data.isVerified;
+    if (data.citizenId) {
+      this.options.citizenId = data.citizenId;
+      this.options.displayName = data.displayName || this.player.displayName;
+      this.multiplayer.updateIdentity({
+        citizenId: data.citizenId,
+        displayName: this.player.displayName,
+        avatarId: data.avatarId,
+      });
+      this.monuments.setExcludeCitizen(data.citizenId, this.player.displayName);
+
+      if (data.teleportToSpot && this.lastSnapshot) {
+        const mySpot = this.lastSnapshot.occupied.find((s) => s.citizenId === data.citizenId);
+        if (mySpot) {
+          this.player.setPosition(mySpot.x, mySpot.y);
+          const center = gridToWorldCenter(mySpot.x, mySpot.y);
+          this.camera.centerOn(center.wx, center.wy, 1.2, true);
+        }
+      }
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Lifecycle
   // ---------------------------------------------------------------------------
@@ -289,6 +322,7 @@ export class Engine {
   }
 
   private applySnapshot(snapshot: WorldSnapshot): void {
+    this.lastSnapshot = snapshot;
     this.plots.update(snapshot.occupied);
     this.monuments.update(snapshot.occupied);
   }

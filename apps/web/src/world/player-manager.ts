@@ -609,7 +609,7 @@ export class PlayerManager {
 
   private renderNameBadge(ctx: CanvasRenderingContext2D, sx: number, sy: number, z: number): void {
     const badgeY = sy - 31 * z;
-    const text = this.displayName;
+    const text = this.isVerified ? `${this.displayName} ✓` : this.displayName;
     const fontSize = Math.max(9, Math.round(10 * z));
 
     ctx.font = `bold ${fontSize}px 'Outfit', sans-serif`;
@@ -627,11 +627,11 @@ export class PlayerManager {
     ctx.roundRect(sx - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 6 * z);
     ctx.fill();
 
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = this.isVerified ? '#00f0ff' : '#f59e0b';
     ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = this.isVerified ? '#38bdf8' : '#fbbf24';
     ctx.fillText(text, sx, badgeY);
   }
 }

@@ -43,6 +43,17 @@
     <span id="world-coord-text">—</span>
   </div>
 
+  <div class="hud-divider"></div>
+
+  <!-- Citizen Identity / Quick Sign-In Pill -->
+  <button type="button" class="hud-citizen-btn" id="world-citizen-btn" title="Citizen Identity">
+    <span class="hud-citizen-icon" id="world-citizen-icon">⚡</span>
+    <span class="hud-citizen-name" id="world-citizen-name">Sign In</span>
+    <span class="hud-citizen-badge" id="world-citizen-badge" style="display: none;">✓</span>
+  </button>
+
+  <div class="hud-divider"></div>
+
   <!-- Discoveries & Easter Eggs Journal Button -->
   <button type="button" class="hud-secrets" id="hud-secrets-btn" title="Open Explorer Journal (Landmarks & Mystery Riddles)">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -210,6 +221,52 @@
   #world-coord-text {
     color: var(--text-secondary);
     font-weight: 500;
+  }
+
+  .hud-citizen-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    font-family: var(--font-tech);
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.09);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+  }
+
+  .hud-citizen-btn:hover {
+    background: rgba(56, 189, 248, 0.20);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #f0f9ff;
+    transform: translateY(-1px);
+  }
+
+  .hud-citizen-btn.is-authenticated {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .hud-citizen-btn.is-authenticated:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.55);
+    color: #fef3c7;
+  }
+
+  .hud-citizen-badge {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1.1;
   }
 
   .hud-secrets {
