@@ -9,8 +9,8 @@ import { globalApiLimiter } from './rateLimiter.js';
 
 export const app: express.Express = express();
 
-// Trust proxy for accurate IP rate limiting behind Cloudflare/Traefik reverse proxy
-app.set('trust proxy', 1);
+// Trust proxy for accurate IP rate limiting behind multi-hop Cloudflare/Traefik reverse proxy
+app.set('trust proxy', true);
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
