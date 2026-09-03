@@ -45,5 +45,6 @@ HANDOVER.md
 HOMELAB_MIGRATION_PLAN.md
 BACKUP_PLAN.md
 
-# Local utility scripts
+# Local utility scripts & database backups
 scripts/
+backups/
