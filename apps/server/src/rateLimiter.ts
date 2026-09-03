@@ -113,3 +113,31 @@ export const spotCommentLimiter = new SlidingWindowRateLimiter(
   10 * 60 * 1000,
   'Spot wall rate limit exceeded. Please wait before posting again.'
 ).middleware();
+
+// 4. Global API Limiter: Max 300 requests per minute per IP (protects against Burp Suite, scrapers, DDoS bursts)
+export const globalApiLimiter = new SlidingWindowRateLimiter(
+  300,
+  60 * 1000,
+  'Global API request threshold exceeded. Please slow down.'
+).middleware();
+
+// 5. Search Limiter: Max 30 searches per minute per IP
+export const searchLimiter = new SlidingWindowRateLimiter(
+  30,
+  60 * 1000,
+  'Too many search queries. Please slow down.'
+).middleware();
+
+// 6. OpenGraph Scraper Limiter: Max 10 URL fetches per minute per IP
+export const ogFetchLimiter = new SlidingWindowRateLimiter(
+  10,
+  60 * 1000,
+  'Too many link preview requests. Please wait a moment.'
+).middleware();
+
+// 7. Auth / Sync Limiter: Max 15 auth sync requests per minute per IP
+export const authSyncLimiter = new SlidingWindowRateLimiter(
+  15,
+  60 * 1000,
+  'Too many authentication requests. Please wait.'
+).middleware();
