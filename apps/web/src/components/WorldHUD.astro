@@ -54,6 +54,33 @@
 
   <div class="hud-divider"></div>
 
+  <!-- Live Online Multiplayer Pill -->
+  <div class="hud-stat-pill hud-online-pill" id="hud-online-pill" title="Live players connected in real time">
+    <span class="hud-online-dot"></span>
+    <span id="hud-online-count">1</span>
+    <span class="hud-stat-label">Online</span>
+  </div>
+
+  <div class="hud-divider"></div>
+
+  <!-- Claimed Spots Scarcity Pill -->
+  <a href="/" class="hud-stat-pill hud-spots-pill" id="hud-spots-pill" title="Total plots claimed on SPOT (Click to view full grid)">
+    <span class="hud-stat-icon">🏙️</span>
+    <span id="hud-claimed-count">19</span>
+    <span class="hud-stat-sublabel">/10k</span>
+  </a>
+
+  <div class="hud-divider"></div>
+
+  <!-- Billboard Sponsorship Scarcity Pill (Interactive: jumps to open billboard) -->
+  <button type="button" class="hud-stat-pill hud-sponsor-pill" id="hud-sponsor-pill" title="Sponsored Billboards vs Open Landmarks (Click to jump to an open billboard!)">
+    <span class="hud-stat-icon">📡</span>
+    <span id="hud-sponsor-ratio">1/11</span>
+    <span class="hud-stat-badge">Sponsored</span>
+  </button>
+
+  <div class="hud-divider"></div>
+
   <!-- Discoveries & Easter Eggs Journal Button -->
   <button type="button" class="hud-secrets" id="hud-secrets-btn" title="Open Explorer Journal (Landmarks & Mystery Riddles)">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -267,6 +294,81 @@
     padding: 1px 4px;
     border-radius: 999px;
     line-height: 1.1;
+  }
+
+  .hud-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: var(--font-tech);
+    padding: 3px 8px;
+    border-radius: 6px;
+    user-select: none;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  /* 🟢 Online Pill */
+  .hud-online-pill {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .hud-online-dot {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #10b981;
+    animation: hudDotPulse 2s ease-in-out infinite;
+  }
+  @keyframes hudDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.8); }
+  }
+
+  /* 🏙️ Claimed Spots Pill */
+  .hud-spots-pill {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    cursor: pointer;
+  }
+  .hud-spots-pill:hover {
+    background: rgba(56, 189, 248, 0.20);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #e0f2fe;
+    transform: translateY(-1px);
+  }
+  .hud-stat-sublabel {
+    font-size: 0.64rem;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* 📡 Billboard Sponsorship Pill */
+  .hud-sponsor-pill {
+    color: #f43f5e;
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    cursor: pointer;
+  }
+  .hud-sponsor-pill:hover {
+    background: rgba(244, 63, 94, 0.20);
+    border-color: rgba(244, 63, 94, 0.5);
+    color: #fff1f2;
+    transform: translateY(-1px);
+  }
+  .hud-stat-badge {
+    background: rgba(244, 63, 94, 0.22);
+    color: #fecdd3;
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .hud-secrets {

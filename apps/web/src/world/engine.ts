@@ -44,6 +44,10 @@ export interface EngineOptions {
   onSecretDiscovered?: (secret: import('./secrets.js').WorldSecret) => void;
   /** Callback when an empty tile is clicked */
   onEmptyClick?: (gx: number, gy: number) => void;
+  /** Callback when world snapshot is loaded (gives claimedCount, onlineCount) */
+  onSnapshotLoaded?: (snapshot: WorldSnapshot) => void;
+  /** Callback when live presence count changes */
+  onPresenceChange?: (onlineCount: number) => void;
 }
 
 export class Engine {
@@ -110,6 +114,9 @@ export class Engine {
       avatarId: options.avatarId || 'astronaut',
       onRemotePlayerMove: (data) => {
         this.monuments.syncLivePlayer(data);
+      },
+      onPresenceChange: (onlineCount) => {
+        this.options.onPresenceChange?.(onlineCount);
       },
     });
     this.renderer.multiplayer = this.multiplayer;
@@ -325,6 +332,7 @@ export class Engine {
     this.lastSnapshot = snapshot;
     this.plots.update(snapshot.occupied);
     this.monuments.update(snapshot.occupied);
+    this.options.onSnapshotLoaded?.(snapshot);
   }
 
   // ---------------------------------------------------------------------------

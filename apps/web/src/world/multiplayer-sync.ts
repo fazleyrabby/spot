@@ -29,6 +29,7 @@ export class MultiplayerSync {
 
   private sseSource: EventSource | null = null;
   private onRemotePlayerMove: (data: LivePlayerPayload) => void;
+  private onPresenceChange?: (onlineCount: number) => void;
 
   private lastSentWx = -9999;
   private lastSentWy = -9999;
@@ -47,12 +48,14 @@ export class MultiplayerSync {
     displayName: string;
     avatarId: string;
     onRemotePlayerMove: (data: LivePlayerPayload) => void;
+    onPresenceChange?: (onlineCount: number) => void;
   }) {
     this.apiBase = options.apiBase;
     this.myCitizenId = options.citizenId;
     this.myDisplayName = options.displayName;
     this.myAvatarId = options.avatarId;
     this.onRemotePlayerMove = options.onRemotePlayerMove;
+    this.onPresenceChange = options.onPresenceChange;
     this.tabId = `tab_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`;
 
     try {
@@ -91,6 +94,8 @@ export class MultiplayerSync {
             const data = JSON.parse(event.data);
             if (data.type === 'player-position' && data.senderTabId !== this.tabId) {
               this.onRemotePlayerMove(data);
+            } else if (data.type === 'presence' && typeof data.onlineCount === 'number') {
+              this.onPresenceChange?.(data.onlineCount);
             }
           } catch (_) {}
         };
