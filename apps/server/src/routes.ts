@@ -1504,9 +1504,9 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
 
     // Verify Gumroad Seller ID in production to prevent forged webhook POSTs
     const expectedSellerId = process.env.GUMROAD_SELLER_ID || 'n2H6rlKkX2TThqZrmrCAuA==';
-    if (config.appEnv === 'production' && payload.seller_id && payload.seller_id !== expectedSellerId) {
-      console.warn(`[Webhook Auth Failure] Invalid seller_id received: ${payload.seller_id}`);
-      res.status(403).json({ error: 'Unauthorized: Invalid seller_id' });
+    if (config.appEnv === 'production' && (!payload.seller_id || payload.seller_id !== expectedSellerId)) {
+      console.warn(`[Webhook Auth Failure] Invalid or missing seller_id received: ${payload.seller_id}`);
+      res.status(403).json({ error: 'Unauthorized: Invalid or missing seller_id' });
       return;
     }
 
@@ -1545,6 +1545,14 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
     }
 
     const bannerImageUrl = extractField('banner image url', 'image_url', 'logo link') || null;
+    let sanitizedBannerImageUrl: string | null = null;
+    if (bannerImageUrl && typeof bannerImageUrl === 'string') {
+      const trimmed = bannerImageUrl.trim();
+      const lower = trimmed.toLowerCase();
+      if (!lower.startsWith('javascript:') && !lower.startsWith('data:') && !lower.startsWith('vbscript:')) {
+        sanitizedBannerImageUrl = (lower.startsWith('http://') || lower.startsWith('https://')) ? trimmed : `https://${trimmed}`;
+      }
+    }
 
     const brandColor = extractField('logo / brand color hex', 'brand_color', 'brand color') || payload.brand_color || null;
 
@@ -1665,7 +1673,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         headline,
         subtext,
         sanitizedTargetUrl,
-        bannerImageUrl,
+        sanitizedBannerImageUrl,
         brandColor,
         priceCents,
         currency,

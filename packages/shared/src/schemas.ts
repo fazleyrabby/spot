@@ -246,6 +246,12 @@ export function formatSocialUrl(
   let clean = val.trim();
   if (!clean) return undefined;
 
+  // Block pseudo-protocols
+  const lower = clean.toLowerCase();
+  if (lower.startsWith('javascript:') || lower.startsWith('data:') || lower.startsWith('vbscript:')) {
+    return undefined;
+  }
+
   // Already a full URL
   if (clean.startsWith('http://') || clean.startsWith('https://')) {
     return clean;
