@@ -7,6 +7,7 @@ import NpcModal from '../components/NpcModal.astro';
 import JournalModal from '../components/JournalModal.astro';
 import WorldChatBar from '../components/WorldChatBar.astro';
 import SearchModal from '../components/SearchModal.astro';
+import BannerModal from '../components/BannerModal.astro';
 ---
 
 <Layout
@@ -40,6 +41,9 @@ import SearchModal from '../components/SearchModal.astro';
 
     <!-- Explorer Journal modal -->
     <JournalModal />
+
+    <!-- Sponsor Billboard Banner Modal -->
+    <BannerModal />
 
     <!-- Quick Emote & Chat Dock -->
     <WorldChatBar />
@@ -188,8 +192,9 @@ import SearchModal from '../components/SearchModal.astro';
 <script>
   import { Engine } from '../world/engine.js';
   import { WORLD_SECRETS } from '../world/secrets.js';
+  import { applyActiveSponsorships, WORLD_BANNERS } from '../world/banner-manager.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
-  import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
+  import { containsBlockedWord, formatSocialUrl, type OccupiedSpotSummary } from '@spot/shared';
   import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment, recordVisit } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
@@ -627,9 +632,432 @@ import SearchModal from '../components/SearchModal.astro';
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSecretModal();
+      closeBannerModal();
       closeNpcModal();
       closeJournalModal();
     }
+  });
+
+  // ── Sponsor Billboard Banner Modal Wiring ────────────────────────────────
+  const bannerBackdrop = document.getElementById('banner-modal-backdrop');
+  const bannerCloseBtn = document.getElementById('banner-modal-close');
+  const bannerDismissBtn = document.getElementById('btn-banner-dismiss');
+  const bannerNotifyBtn = document.getElementById('btn-banner-notify');
+  const bannerDistrict = document.getElementById('banner-modal-district');
+  const bannerTitle = document.getElementById('banner-modal-title');
+  const bannerCoords = document.getElementById('banner-modal-coords');
+  const bannerTag = document.getElementById('banner-modal-tag');
+  const bannerHeadline = document.getElementById('banner-modal-headline');
+  const bannerSubtext = document.getElementById('banner-modal-subtext');
+  const bannerStatus = document.getElementById('banner-modal-status');
+  const bannerDesc = document.getElementById('banner-modal-desc');
+
+  let currentBanner: import('../world/banner-manager.js').WorldBanner | null = null;
+  const bannerActionText = document.getElementById('btn-banner-action-text');
+  const bannerVisitBtn = document.getElementById('btn-banner-visit') as HTMLAnchorElement | null;
+  const bannerPreviewScreen = document.getElementById('banner-modal-preview');
+  const bannerPreviewLed = document.getElementById('banner-preview-led');
+  const bannerPreviewLogoWrap = document.getElementById('banner-preview-logo-wrap');
+  const bannerPreviewLogoImg = document.getElementById('banner-preview-logo-img') as HTMLImageElement | null;
+
+  // Customizer inputs
+  const bannerInputName = document.getElementById('banner-input-name') as HTMLInputElement | null;
+  const bannerInputHeadline = document.getElementById('banner-input-headline') as HTMLInputElement | null;
+  const bannerInputSubtext = document.getElementById('banner-input-subtext') as HTMLInputElement | null;
+  const bannerInputUrl = document.getElementById('banner-input-url') as HTMLInputElement | null;
+  const bannerInputImage = document.getElementById('banner-input-image') as HTMLInputElement | null;
+  const colorPips = document.querySelectorAll<HTMLButtonElement>('#banner-color-pips .color-pip');
+
+  let fetchedOgImage: string | null = null;
+  let selectedAccentColor: string = '#00f0ff';
+
+  function updatePreviewMedia(): void {
+    // Priority: Custom Image URL > Auto-fetched OG image
+    const customImage = bannerInputImage?.value.trim();
+    const effectiveImage = customImage || fetchedOgImage;
+
+    if (effectiveImage && bannerPreviewLogoImg && bannerPreviewLogoWrap) {
+      bannerPreviewLogoImg.src = effectiveImage;
+      bannerPreviewLogoWrap.style.display = 'flex';
+    } else if (bannerPreviewLogoWrap) {
+      bannerPreviewLogoWrap.style.display = 'none';
+    }
+  }
+
+  // Live input synchronization
+  bannerInputHeadline?.addEventListener('input', () => {
+    if (bannerHeadline) {
+      bannerHeadline.textContent = bannerInputHeadline.value.toUpperCase() || (currentBanner?.headline ?? 'COMING SOON...');
+    }
+  });
+
+  bannerInputSubtext?.addEventListener('input', () => {
+    if (bannerSubtext) {
+      bannerSubtext.textContent = bannerInputSubtext.value || (currentBanner?.subtext ?? 'Featured Project / Brand Space');
+    }
+  });
+
+  bannerInputName?.addEventListener('input', () => {
+    if (bannerStatus) {
+      bannerStatus.textContent = bannerInputName.value ? `Reserved for ${bannerInputName.value}` : (currentBanner?.statusText ?? 'Reservation Available');
+    }
+  });
+
+  bannerInputImage?.addEventListener('input', () => {
+    updatePreviewMedia();
+  });
+
+  // Auto-fetch OpenGraph image and metadata when URL is entered
+  bannerInputUrl?.addEventListener('blur', async () => {
+    const rawUrl = bannerInputUrl.value.trim();
+    if (!rawUrl) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/billboards/fetch-og?url=${encodeURIComponent(rawUrl)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ogImage) {
+          fetchedOgImage = data.ogImage;
+          updatePreviewMedia();
+        }
+        // Auto-fill headline if empty
+        if (data.title && !bannerInputHeadline?.value) {
+          const cleanTitle = data.title.split(/[-|·]/)[0].trim().toUpperCase().slice(0, 24);
+          if (bannerInputHeadline) bannerInputHeadline.value = cleanTitle;
+          if (bannerHeadline) bannerHeadline.textContent = cleanTitle;
+        }
+        // Auto-fill subtext if empty
+        if (data.description && !bannerInputSubtext?.value) {
+          const cleanDesc = data.description.slice(0, 45);
+          if (bannerInputSubtext) bannerInputSubtext.value = cleanDesc;
+          if (bannerSubtext) bannerSubtext.textContent = cleanDesc;
+        }
+      }
+    } catch (_) {}
+  });
+
+  // Neon color picker
+  colorPips.forEach((pip) => {
+    pip.addEventListener('click', () => {
+      colorPips.forEach((p) => p.classList.remove('active'));
+      pip.classList.add('active');
+      selectedAccentColor = pip.dataset.color || '#00f0ff';
+      if (bannerPreviewScreen) bannerPreviewScreen.style.borderColor = selectedAccentColor;
+      if (bannerHeadline) bannerHeadline.style.textShadow = `0 0 14px ${selectedAccentColor}`;
+      if (bannerPreviewLed) bannerPreviewLed.style.background = selectedAccentColor;
+      if (bannerTag) bannerTag.style.color = selectedAccentColor;
+    });
+  });
+
+  const bannerCitizenCard = document.getElementById('banner-citizen-card');
+  const bannerCitizenName = document.getElementById('banner-citizen-name');
+  const bannerCitizenVerified = document.getElementById('banner-citizen-verified');
+  const bannerCitizenPlotBtn = document.getElementById('banner-citizen-plot-btn');
+  const bannerCitizenPlotCoords = document.getElementById('banner-citizen-plot-coords');
+  const bannerCitizenCanvas = document.getElementById('banner-citizen-avatar-canvas') as HTMLCanvasElement | null;
+  const bannerGuestCard = document.getElementById('banner-guest-card');
+  const bannerExpiryWrap = document.getElementById('banner-modal-expiry');
+  const bannerExpiryText = document.getElementById('banner-modal-expiry-text');
+  let countdownTimerId: number | null = null;
+
+  function formatTimeLeft(expiresAt: string | undefined): { text: string; isUrgent: boolean } | null {
+    if (!expiresAt) return null;
+    const diffMs = new Date(expiresAt).getTime() - Date.now();
+    if (diffMs <= 0) return { text: 'Expired', isUrgent: true };
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60) % 60;
+    const hours = Math.floor(totalSeconds / 3600) % 24;
+    const days = Math.floor(totalSeconds / 86400);
+
+    let text = '';
+    if (days > 0) {
+      text = `${days}d ${hours}h ${minutes}m left`;
+    } else if (hours > 0) {
+      text = `${hours}h ${minutes}m ${seconds}s left`;
+    } else {
+      text = `${minutes}m ${seconds}s left`;
+    }
+
+    return { text, isUrgent: days < 3 };
+  }
+
+  function updateExpiryDisplay(): void {
+    if (!currentBanner || !currentBanner.isSponsored || !currentBanner.expiresAt) {
+      if (bannerExpiryWrap) bannerExpiryWrap.style.display = 'none';
+      return;
+    }
+
+    const info = formatTimeLeft(currentBanner.expiresAt);
+    if (!info) {
+      if (bannerExpiryWrap) bannerExpiryWrap.style.display = 'none';
+      return;
+    }
+
+    if (bannerExpiryWrap && bannerExpiryText) {
+      bannerExpiryText.textContent = info.text;
+      bannerExpiryWrap.style.display = 'inline-flex';
+      if (info.isUrgent) {
+        bannerExpiryWrap.classList.add('urgent');
+      } else {
+        bannerExpiryWrap.classList.remove('urgent');
+      }
+    }
+  }
+
+  function openBannerModal(banner: import('../world/banner-manager.js').WorldBanner): void {
+    if (!bannerBackdrop) return;
+    currentBanner = banner;
+
+    if (bannerDistrict) bannerDistrict.textContent = banner.district;
+    if (bannerTitle) bannerTitle.textContent = banner.name;
+    if (bannerCoords) bannerCoords.textContent = `Grid: (${banner.gx}, ${banner.gy})`;
+    if (bannerTag) {
+      bannerTag.textContent = banner.tag;
+      bannerTag.style.color = banner.accentColor;
+    }
+    if (bannerHeadline) {
+      bannerHeadline.textContent = banner.headline;
+      bannerHeadline.style.textShadow = `0 0 12px ${banner.accentColor}`;
+    }
+    if (bannerSubtext) bannerSubtext.textContent = banner.subtext;
+    if (bannerStatus) bannerStatus.textContent = banner.statusText;
+    if (bannerDesc) bannerDesc.textContent = banner.description;
+
+    // Reset or initialize customizer values
+    if (bannerInputHeadline) bannerInputHeadline.value = '';
+    if (bannerInputSubtext) bannerInputSubtext.value = '';
+    if (bannerInputUrl) bannerInputUrl.value = '';
+    if (bannerInputImage) bannerInputImage.value = '';
+    if (bannerInputName) bannerInputName.value = '';
+    fetchedOgImage = null;
+
+    if (banner.isSponsored && banner.bannerImageUrl) {
+      if (bannerPreviewLogoImg && bannerPreviewLogoWrap) {
+        bannerPreviewLogoImg.src = banner.bannerImageUrl;
+        bannerPreviewLogoWrap.style.display = 'flex';
+      }
+    } else {
+      updatePreviewMedia();
+    }
+
+    const customizerCard = document.getElementById('banner-customizer-card');
+
+    // Handle Active Sponsor vs Available Billboard
+    if (banner.isSponsored) {
+      if (bannerNotifyBtn) {
+        bannerNotifyBtn.classList.add('secondary');
+      }
+      if (bannerActionText) {
+        bannerActionText.textContent = 'Extend Sponsorship (30 Days) ⚡';
+      }
+
+      // Pre-fill inputs with the sponsor's existing business data
+      if (bannerInputName) bannerInputName.value = banner.buyerName || '';
+      if (bannerInputUrl) bannerInputUrl.value = banner.targetUrl || '';
+      if (bannerInputHeadline) bannerInputHeadline.value = banner.headline || '';
+      if (bannerInputSubtext) bannerInputSubtext.value = banner.subtext || '';
+      if (bannerInputImage) bannerInputImage.value = banner.bannerImageUrl || '';
+
+      if (banner.citizen) {
+        // Show Citizen Sponsor Card with Avatar & Plot Link
+        if (bannerCitizenCard) bannerCitizenCard.style.display = 'flex';
+        if (bannerGuestCard) bannerGuestCard.style.display = 'none';
+        if (bannerCitizenName) bannerCitizenName.textContent = banner.citizen.displayName;
+        if (bannerCitizenVerified) {
+          bannerCitizenVerified.style.display = banner.citizen.isVerified ? 'inline-flex' : 'none';
+        }
+        if (bannerCitizenPlotCoords) {
+          if (banner.citizen.spot) {
+            bannerCitizenPlotCoords.textContent = `(${banner.citizen.spot.x}, ${banner.citizen.spot.y})`;
+            if (bannerCitizenPlotBtn) bannerCitizenPlotBtn.style.display = 'inline-flex';
+          } else if (bannerCitizenPlotBtn) {
+            bannerCitizenPlotBtn.style.display = 'none';
+          }
+        }
+        if (bannerCitizenCanvas && banner.citizen.avatarId) {
+          const cctx = bannerCitizenCanvas.getContext('2d');
+          if (cctx) {
+            cctx.clearRect(0, 0, 36, 36);
+            const avatarDef = AVATAR_CATALOG[banner.citizen.avatarId] || AVATAR_CATALOG.astronaut;
+            if (avatarDef) {
+              drawAvatarOnCanvas(cctx, avatarDef, 18, 20, 2.2);
+            }
+          }
+        }
+      } else {
+        if (bannerCitizenCard) bannerCitizenCard.style.display = 'none';
+        if (bannerGuestCard) bannerGuestCard.style.display = 'none';
+      }
+
+      if (banner.targetUrl && bannerVisitBtn) {
+        bannerVisitBtn.href = banner.targetUrl;
+        bannerVisitBtn.style.display = 'inline-flex';
+      } else if (bannerVisitBtn) {
+        bannerVisitBtn.style.display = 'none';
+      }
+      if (customizerCard) customizerCard.style.display = 'none';
+    } else {
+      if (bannerNotifyBtn) {
+        bannerNotifyBtn.classList.remove('secondary');
+      }
+      if (bannerCitizenCard) bannerCitizenCard.style.display = 'none';
+      if (bannerGuestCard) bannerGuestCard.style.display = 'none';
+      if (bannerVisitBtn) bannerVisitBtn.style.display = 'none';
+      if (customizerCard) customizerCard.style.display = 'flex';
+      if (bannerActionText) {
+        if (banner.district.includes('Grand Central')) {
+          bannerActionText.textContent = 'Book Plaza Spot ($35) ⚡';
+        } else if (banner.district.includes('Downtown')) {
+          bannerActionText.textContent = 'Book Downtown Spot ($20) ⚡';
+        } else {
+          bannerActionText.textContent = 'Book Scenic Spot ($10) ⚡';
+        }
+      }
+    }
+
+    bannerBackdrop.classList.add('open');
+    bannerBackdrop.setAttribute('aria-hidden', 'false');
+
+    // Start live countdown ticker
+    updateExpiryDisplay();
+    if (countdownTimerId) clearInterval(countdownTimerId);
+    countdownTimerId = window.setInterval(updateExpiryDisplay, 1000);
+  }
+
+  // Handle clicking citizen plot chip
+  bannerCitizenPlotBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentBanner?.citizen?.spot && engine) {
+      const spot = currentBanner.citizen.spot;
+      closeBannerModal();
+      engine.camera.centerOn(spot.x * 16 + 8, spot.y * 16 + 8, 1.4);
+      showToast(`📍 Visiting ${currentBanner.citizen.displayName}'s plot (${spot.x}, ${spot.y})!`, 'info');
+    }
+  });
+
+  function closeBannerModal(): void {
+    if (countdownTimerId) {
+      clearInterval(countdownTimerId);
+      countdownTimerId = null;
+    }
+    if (!bannerBackdrop) return;
+    bannerBackdrop.classList.remove('open');
+    bannerBackdrop.setAttribute('aria-hidden', 'true');
+    currentBanner = null;
+  }
+
+  bannerCloseBtn?.addEventListener('click', closeBannerModal);
+  bannerDismissBtn?.addEventListener('click', closeBannerModal);
+  bannerNotifyBtn?.addEventListener('click', () => {
+    if (!currentBanner) return;
+
+    // ── Form Extraction & Fallback Inheritance ─────────────────────────────
+    let sponsorName = bannerInputName?.value.trim();
+    let destUrl = bannerInputUrl?.value.trim();
+    let headline = bannerInputHeadline?.value.trim();
+    let subtext = bannerInputSubtext?.value.trim();
+    let bannerImage = bannerInputImage?.value.trim() || fetchedOgImage || '';
+
+    if (currentBanner.isSponsored) {
+      // When extending existing sponsorship, seamlessly inherit already stored business data!
+      sponsorName = sponsorName || currentBanner.buyerName || 'Verified Sponsor';
+      destUrl = destUrl || currentBanner.targetUrl || 'https://claimyourspot.lol';
+      headline = headline || currentBanner.headline || sponsorName.toUpperCase();
+      subtext = subtext || currentBanner.subtext || '';
+      bannerImage = bannerImage || currentBanner.bannerImageUrl || '';
+    } else {
+      // First-time booking requires Brand Name & Destination URL
+      if (!sponsorName) {
+        showToast('⚠️ Brand / Sponsor Name is required!', 'error');
+        bannerInputName?.focus();
+        return;
+      }
+
+      if (!destUrl || (!destUrl.startsWith('http://') && !destUrl.startsWith('https://'))) {
+        showToast('⚠️ Valid Destination Website URL (https://...) is required!', 'error');
+        bannerInputUrl?.focus();
+        return;
+      }
+
+      headline = headline || sponsorName.toUpperCase();
+      subtext = subtext || 'Featured Project / Brand';
+    }
+
+    // In local development, automatically apply the TESTDEV 100% discount code
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const discountPath = isLocal ? '/TESTDEV' : '';
+
+    // Route each tier to its dedicated Gumroad product
+    let productSlug = 'spot-billboard-scenic';
+    let tierName = 'Scenic & Transit Landmarks ($10)';
+
+    if (currentBanner.district.includes('Grand Central') || currentBanner.id === 'banner_boardwalk_pier') {
+      productSlug = 'spot-billboard-plaza';
+      tierName = 'Grand Central Plaza Gateways ($35)';
+    } else if (currentBanner.district.includes('Downtown')) {
+      productSlug = 'spot-billboard-downtown';
+      tierName = 'Downtown Cyber District ($20)';
+    }
+
+    const gumroadBase = `https://fazleyrabbiii.gumroad.com/l/${productSlug}${discountPath}`;
+
+    const params = new URLSearchParams({
+      billboard_id: currentBanner.id,
+      billboard_name: currentBanner.name,
+      tier: tierName,
+      'custom_fields[Headline]': headline,
+      'custom_fields[Subtext]': subtext,
+      'custom_fields[Destination URL]': destUrl,
+      'custom_fields[Brand / Sponsor Name]': sponsorName,
+      'custom_fields[Logo / Brand Color Hex]': selectedAccentColor,
+    });
+
+    if (bannerImage) {
+      params.set('custom_fields[Banner Image URL]', bannerImage);
+    }
+
+    // Attach citizen ID if user is a logged-in citizen
+    try {
+      const savedCitizenStr = localStorage.getItem('spot_my_citizen');
+      if (savedCitizenStr) {
+        const cData = JSON.parse(savedCitizenStr);
+        if (cData?.id) {
+          params.set('custom_fields[Citizen ID]', cData.id);
+          if (cData.displayName) {
+            params.set('custom_fields[Citizen Handle]', cData.displayName);
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (isLocal) {
+      params.set('discount_code', 'TESTDEV');
+    }
+
+    // Persist configured ad locally for instant preview upon return
+    try {
+      localStorage.setItem(
+        'spot_pending_ad_' + currentBanner.id,
+        JSON.stringify({
+          billboard_id: currentBanner.id,
+          billboard_name: currentBanner.name,
+          headline,
+          subtext,
+          target_url: destUrl,
+          buyer_name: sponsorName,
+          brand_color: selectedAccentColor,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (_) {}
+
+    window.open(`${gumroadBase}?${params.toString()}`, '_blank');
+    closeBannerModal();
+  });
+  bannerBackdrop?.addEventListener('click', (e) => {
+    if (e.target === bannerBackdrop) closeBannerModal();
   });
 
   // ── NPC Dialogue Modal Wiring ─────────────────────────────────────────────
@@ -879,17 +1307,71 @@ import SearchModal from '../components/SearchModal.astro';
         onCitizenClick: (spot) => openProfileModal(spot),
         onSecretClick: (secret) => openSecretModal(secret),
         onSecretDiscovered: (secret) => openSecretModal(secret),
+        onBannerClick: (banner) => openBannerModal(banner),
         onNpcInteract: (npc) => openNpcModal(npc),
         onEmptyClick: (_gx, _gy) => {
           closeProfileModal();
           closeSecretModal();
+          closeBannerModal();
           closeNpcModal();
           closeJournalModal();
         },
       });
 
+      // ── Fetch Dynamic Billboard Sponsorships ──────────────────────────────
+      async function syncActiveBanners() {
+        try {
+          const billboardRes = await fetch(`${API_BASE}/api/billboards/active`);
+          if (billboardRes.ok) {
+            const billboardData = await billboardRes.json();
+            if (billboardData?.activeBanners) {
+              applyActiveSponsorships(billboardData.activeBanners);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Check any recent pending ads configured on this device (within 30 mins)
+      for (const b of WORLD_BANNERS) {
+        try {
+          const stored = localStorage.getItem('spot_pending_ad_' + b.id);
+          if (stored) {
+            const item = JSON.parse(stored);
+            if (Date.now() - (item.timestamp || 0) < 30 * 60 * 1000) {
+              applyActiveSponsorships([item]);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Initial server sync
+      await syncActiveBanners();
+
       loaderSub.textContent = 'Rendering Island…';
       await engine.init();
+
+      // Ensure webhook delivery is caught with quick follow-up polls
+      setTimeout(syncActiveBanners, 1200);
+      setTimeout(syncActiveBanners, 3000);
+
+      // ── Returning Sponsor Handling (Gumroad Redirect) ─────────────────────
+      const queryParams = new URLSearchParams(window.location.search);
+      const targetBillboardId = queryParams.get('billboard_id') || queryParams.get('billboard');
+      if (targetBillboardId) {
+        const targetBanner = WORLD_BANNERS.find((b) => b.id === targetBillboardId);
+        if (targetBanner) {
+          setTimeout(() => {
+            if (!engine) return;
+            const targetWx = targetBanner.gx * 16 + 8;
+            const targetWy = targetBanner.gy * 16 + 8;
+            engine.camera.centerOn(targetWx, targetWy, 1.4);
+            showToast('🎉 Congratulations! Your cyber billboard is LIVE in Spot World!', 'success');
+            setTimeout(() => {
+              openBannerModal(targetBanner);
+            }, 600);
+          }, 700);
+        }
+      }
 
       // Sync initial HUD audio icon
       if (worldAudioIcon) {

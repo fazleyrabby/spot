@@ -20,6 +20,7 @@ import { InteractionHandler } from './interaction.js';
 import { gridToWorldCenter, worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
 import { getSecretAt } from './secrets.js';
+import { getBannerAt } from './banner-manager.js';
 import { AudioManager } from './audio-manager.js';
 import { MultiplayerSync } from './multiplayer-sync.js';
 
@@ -35,6 +36,8 @@ export interface EngineOptions {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
   /** Callback when an easter egg landmark is clicked */
   onSecretClick?: (secret: import('./secrets.js').WorldSecret) => void;
+  /** Callback when a sponsor billboard banner is clicked */
+  onBannerClick?: (banner: import('./banner-manager.js').WorldBanner) => void;
   /** Callback when an NPC is interacted with */
   onNpcInteract?: (npc: import('./npc-manager.js').StreetNPC) => void;
   /** Callback when a secret is newly discovered by walking near it */
@@ -169,6 +172,14 @@ export class Engine {
       // 1. Check if near any secret landmark (within 2.5 tiles)
       const grid = worldToGrid(this.player.wx, this.player.wy);
       if (grid) {
+        // 1a. Check billboard banners
+        const banner = getBannerAt(grid.gx, grid.gy);
+        if (banner) {
+          this.options.onBannerClick?.(banner);
+          return;
+        }
+
+        // 1b. Check secret landmarks
         for (let dy = -2; dy <= 2; dy++) {
           for (let dx = -2; dx <= 2; dx++) {
             const secret = getSecretAt(grid.gx + dx, grid.gy + dy);
@@ -222,6 +233,7 @@ export class Engine {
       {
         onCitizenClick: (spot) => this.options.onCitizenClick?.(spot),
         onSecretClick: (secret) => this.options.onSecretClick?.(secret),
+        onBannerClick: (banner) => this.options.onBannerClick?.(banner),
         onTileClick: (gx, gy) => this.options.onEmptyClick?.(gx, gy),
       },
     );
