@@ -1,179 +1,178 @@
 ---
 /**
- * WorldHUD — minimal heads-up display overlay for Spot World.
+ * WorldHUD — minimal, responsive heads-up display overlay for Spot World.
  *
- * Intentionally lean: back button, coordinate display, zoom indicator.
- * No minimap, no stats bar — those are cut from v1 scope.
+ * Organized into 3 logical flex-wrap clusters:
+ * 1. Navigation & Citizen Identity
+ * 2. Real-time Island Stats & Scarcity (Online, Claimed Plots, Billboards, Secrets)
+ * 3. Quick Interaction & Camera Controls (Search, Audio, Lighting, Zoom)
  */
 ---
 
 <div class="world-hud glass-panel" id="world-hud">
-  <!-- Back to grid -->
-  <a class="hud-back-btn" href="/" id="world-back-btn" title="Back to Grid View">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="15 18 9 12 15 6"></polyline>
-    </svg>
-    <span>Grid View</span>
-  </a>
-
-  <div class="hud-divider"></div>
-
-  <!-- Brand -->
-  <div class="hud-brand">
-    <span class="hud-brand-glyph" aria-hidden="true">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 17 12 22 22 17" fill="none" stroke="currentColor" stroke-width="2"></polyline>
+  <!-- Cluster 1: Navigation & Citizen Identity -->
+  <div class="hud-group hud-group-nav">
+    <!-- Back to grid -->
+    <a class="hud-back-btn" href="/" id="world-back-btn" title="Back to Grid View">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
-    </span>
-    <span class="hud-brand-label">WORLD</span>
-  </div>
+      <span>Grid View</span>
+    </a>
 
-  <div class="hud-divider"></div>
+    <!-- Brand -->
+    <div class="hud-brand">
+      <span class="hud-brand-glyph" aria-hidden="true">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17" fill="none" stroke="currentColor" stroke-width="2"></polyline>
+        </svg>
+      </span>
+      <span class="hud-brand-label">WORLD</span>
+    </div>
 
-  <!-- Coordinate display (updated by JS) -->
-  <div class="hud-coord" id="world-coord-display" title="Hovered grid coordinate">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-    </svg>
-    <span id="world-coord-text">—</span>
-  </div>
-
-  <div class="hud-divider"></div>
-
-  <!-- Citizen Identity / Quick Sign-In Pill -->
-  <button type="button" class="hud-citizen-btn" id="world-citizen-btn" title="Citizen Identity">
-    <span class="hud-citizen-icon" id="world-citizen-icon">⚡</span>
-    <span class="hud-citizen-name" id="world-citizen-name">Sign In</span>
-    <span class="hud-citizen-badge" id="world-citizen-badge" style="display: none;">✓</span>
-  </button>
-
-  <div class="hud-divider"></div>
-
-  <!-- Live Online Multiplayer Pill -->
-  <div class="hud-stat-pill hud-online-pill" id="hud-online-pill" title="Live players connected in real time">
-    <span class="hud-online-dot"></span>
-    <span id="hud-online-count">1</span>
-    <span class="hud-stat-label">Online</span>
-  </div>
-
-  <div class="hud-divider"></div>
-
-  <!-- Claimed Spots Scarcity Pill -->
-  <a href="/" class="hud-stat-pill hud-spots-pill" id="hud-spots-pill" title="Total plots claimed on SPOT (Click to view full grid)">
-    <span class="hud-stat-icon">🏙️</span>
-    <span id="hud-claimed-count">19</span>
-    <span class="hud-stat-sublabel">/10k</span>
-  </a>
-
-  <div class="hud-divider"></div>
-
-  <!-- Billboard Sponsorship Scarcity Pill (Interactive: jumps to open billboard) -->
-  <button type="button" class="hud-stat-pill hud-sponsor-pill" id="hud-sponsor-pill" title="Sponsored Billboards vs Open Landmarks (Click to jump to an open billboard!)">
-    <span class="hud-stat-icon">📡</span>
-    <span id="hud-sponsor-ratio">1/11</span>
-    <span class="hud-stat-badge">Sponsored</span>
-  </button>
-
-  <div class="hud-divider"></div>
-
-  <!-- Discoveries & Easter Eggs Journal Button -->
-  <button type="button" class="hud-secrets" id="hud-secrets-btn" title="Open Explorer Journal (Landmarks & Mystery Riddles)">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor"></polygon>
-    </svg>
-    <span id="hud-secrets-count">0/11</span>
-  </button>
-
-  <!-- Active Turbo Speed Boost Pill -->
-  <div class="hud-turbo-pill" id="hud-turbo-pill" style="display: none;" title="Turbo Speed Boost Active">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon>
-    </svg>
-    <span id="hud-turbo-timer">20s</span>
-  </div>
-
-  <div class="hud-divider"></div>
-
-  <!-- Search / Find Citizen Button -->
-  <button class="hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
-    <span>Find</span>
-    <kbd class="hud-kbd">⌘K</kbd>
-  </button>
-
-  <div class="hud-divider"></div>
-
-  <!-- Audio Ambient Sound Toggle -->
-  <button class="hud-tool-btn" id="world-audio-btn" title="Toggle Environmental Sounds">
-    <span id="world-audio-icon">🔇</span>
-  </button>
-
-  <div class="hud-divider"></div>
-
-  <!-- Time of Day Switcher (Day / Dusk / Night) -->
-  <button class="hud-tool-btn" id="world-tod-btn" title="Cycle Lighting (Night / Day / Sunset)">
-    <span id="world-tod-icon">🌙</span>
-  </button>
-
-  <div class="hud-divider hud-divider-right"></div>
-
-  <!-- Zoom controls -->
-  <div class="hud-zoom-group">
-    <button class="hud-zoom-btn" id="world-zoom-in" title="Zoom in">
+    <!-- Coordinate display (updated by JS) -->
+    <div class="hud-coord" id="world-coord-display" title="Hovered grid coordinate">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
+      <span id="world-coord-text">—</span>
+    </div>
+
+    <!-- Citizen Identity / Quick Sign-In Pill -->
+    <button type="button" class="hud-citizen-btn" id="world-citizen-btn" title="Citizen Identity">
+      <span class="hud-citizen-icon" id="world-citizen-icon">⚡</span>
+      <span class="hud-citizen-name" id="world-citizen-name">Sign In</span>
+      <span class="hud-citizen-badge" id="world-citizen-badge" style="display: none;">✓</span>
     </button>
-    <span class="hud-zoom-level mono-num" id="world-zoom-level">55%</span>
-    <button class="hud-zoom-btn" id="world-zoom-out" title="Zoom out">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="5" y1="12" x2="19" y2="12"></line>
+  </div>
+
+  <!-- Cluster 2: Live Island Stats & Scarcity -->
+  <div class="hud-group hud-group-stats">
+    <!-- Live Online Multiplayer Pill -->
+    <div class="hud-stat-pill hud-online-pill" id="hud-online-pill" title="Live players connected in real time">
+      <span class="hud-online-dot"></span>
+      <span id="hud-online-count">1</span>
+      <span class="hud-stat-label">Online</span>
+    </div>
+
+    <!-- Claimed Spots Scarcity Pill -->
+    <a href="/" class="hud-stat-pill hud-spots-pill" id="hud-spots-pill" title="Total plots claimed on SPOT (Click to view full grid)">
+      <span class="hud-stat-icon">🏙️</span>
+      <span id="hud-claimed-count">19</span>
+      <span class="hud-stat-sublabel">/10k</span>
+    </a>
+
+    <!-- Billboard Sponsorship Scarcity Pill (Interactive: jumps to open billboard) -->
+    <button type="button" class="hud-stat-pill hud-sponsor-pill" id="hud-sponsor-pill" title="Sponsored Billboards vs Open Landmarks (Click to jump to an open billboard!)">
+      <span class="hud-stat-icon">📡</span>
+      <span id="hud-sponsor-ratio">1/11</span>
+      <span class="hud-stat-badge">Sponsored</span>
+    </button>
+
+    <!-- Discoveries & Easter Eggs Journal Button -->
+    <button type="button" class="hud-secrets" id="hud-secrets-btn" title="Open Explorer Journal (Landmarks & Mystery Riddles)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor"></polygon>
       </svg>
+      <span id="hud-secrets-count">0/11</span>
     </button>
-    <button class="hud-zoom-btn hud-recenter-btn" id="world-recenter" title="Re-centre">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
+
+    <!-- Active Turbo Speed Boost Pill -->
+    <div class="hud-turbo-pill" id="hud-turbo-pill" style="display: none;" title="Turbo Speed Boost Active">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon>
       </svg>
+      <span id="hud-turbo-timer">20s</span>
+    </div>
+  </div>
+
+  <!-- Cluster 3: Interaction & Camera Controls -->
+  <div class="hud-group hud-group-controls">
+    <!-- Search / Find Citizen Button -->
+    <button class="hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <span>Find</span>
+      <kbd class="hud-kbd">⌘K</kbd>
     </button>
+
+    <!-- Audio Ambient Sound Toggle -->
+    <button class="hud-tool-btn" id="world-audio-btn" title="Toggle Environmental Sounds">
+      <span id="world-audio-icon">🔇</span>
+    </button>
+
+    <!-- Time of Day Switcher (Day / Dusk / Night) -->
+    <button class="hud-tool-btn" id="world-tod-btn" title="Cycle Lighting (Night / Day / Sunset)">
+      <span id="world-tod-icon">🌙</span>
+    </button>
+
+    <!-- Zoom controls -->
+    <div class="hud-zoom-group">
+      <button class="hud-zoom-btn" id="world-zoom-in" title="Zoom in">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+      <span class="hud-zoom-level mono-num" id="world-zoom-level">55%</span>
+      <button class="hud-zoom-btn" id="world-zoom-out" title="Zoom out">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+      <button class="hud-zoom-btn hud-recenter-btn" id="world-recenter" title="Re-centre">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 
 <style>
   .world-hud {
     position: fixed;
-    top: 14px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    display: inline-flex;
+    display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    height: 42px;
-    padding: 0 10px;
+    justify-content: center;
+    gap: 6px 10px;
+    min-height: 42px;
+    height: auto;
+    padding: 5px 10px;
     background: rgba(11, 15, 23, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     z-index: 40;
-    white-space: nowrap;
     pointer-events: auto;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 20px);
+    transition: all 0.2s ease;
+  }
+
+  .hud-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
 
   .hud-back-btn {
@@ -199,13 +198,6 @@
     border-color: rgba(255, 255, 255, 0.16);
   }
 
-  .hud-divider {
-    width: 1px;
-    height: 16px;
-    background: rgba(255, 255, 255, 0.09);
-    flex-shrink: 0;
-  }
-
   .hud-brand {
     display: inline-flex;
     align-items: center;
@@ -219,25 +211,29 @@
   .hud-brand-glyph {
     display: inline-flex;
     align-items: center;
-    color: var(--accent-jade);
+    color: #10b981;
   }
 
   .hud-brand-label {
     font-family: var(--font-tech);
-    font-size: 0.74rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    color: var(--accent-jade);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #10b981;
   }
 
   .hud-coord {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.74rem;
     font-family: var(--font-mono);
+    font-size: 0.75rem;
     color: var(--text-muted);
-    min-width: 65px;
+    min-width: 60px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
   }
 
   .hud-coord svg {
@@ -393,10 +389,12 @@
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.45);
     color: #fef08a;
+    transform: translateY(-1px);
   }
 
-  .hud-secrets:active {
-    transform: translateY(1px);
+  .hud-secrets svg {
+    color: #f59e0b;
+    flex-shrink: 0;
   }
 
   .hud-turbo-pill {
@@ -404,29 +402,38 @@
     align-items: center;
     gap: 4px;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 800;
     font-family: var(--font-tech);
-    letter-spacing: 0.04em;
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.45);
     padding: 3px 7px;
     border-radius: 6px;
+    animation: turboGlow 1.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes turboGlow {
+    from {
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    to {
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
+      border-color: rgba(251, 191, 36, 0.8);
+    }
   }
 
   .hud-search-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 8px;
-    border-radius: 6px;
+    gap: 6px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--text-secondary);
-    font-family: var(--font-tech);
+    border-radius: 6px;
+    padding: 4px 8px;
     font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-family: var(--font-tech);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -517,18 +524,12 @@
     text-align: center;
   }
 
-  /* ── Responsive Mobile Collapse ────────────────────────────────────────── */
-  @media (max-width: 768px) {
+  /* ── Responsive Viewport Adaptations ──────────────────────────────────── */
+  @media (max-width: 820px) {
     .hud-brand {
       display: none;
     }
     .hud-coord {
-      display: none;
-    }
-    .hud-zoom-group {
-      display: none;
-    }
-    .hud-divider-right {
       display: none;
     }
     .hud-kbd {
@@ -536,19 +537,18 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 540px) {
     .world-hud {
       top: 8px;
-      gap: 4px;
-      padding: 0 6px;
-      height: 38px;
-      max-width: calc(100vw - 16px);
+      gap: 4px 6px;
+      padding: 4px 6px;
+      border-radius: 10px;
+      max-width: calc(100vw - 12px);
     }
 
     .hud-back-btn span {
       display: none;
     }
-
     .hud-back-btn {
       padding: 4px 6px;
     }
@@ -556,7 +556,6 @@
     .hud-search-btn span {
       display: none;
     }
-
     .hud-search-btn {
       padding: 4px 6px;
     }
@@ -572,8 +571,9 @@
       font-size: 0.75rem;
     }
 
-    .hud-divider {
-      margin: 0;
+    .hud-stat-pill {
+      padding: 2px 6px;
+      font-size: 0.70rem;
     }
   }
 </style>
