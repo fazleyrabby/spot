@@ -8,6 +8,55 @@ All notable changes to SPOT are documented here.
 
 ---
 
+## 2026-09-03
+
+### Added
+- **Top-View Billboard Display Priority Hierarchy (`renderer.ts`):**
+  - Implemented strict canvas visual priority:
+    1. *Priority 1 (Image):* Renders banner/logo image scaled and clipped directly onto the cyber screen frame with aspect-ratio preservation.
+    2. *Priority 2 (Business):* Renders Business Name as top tag pill, with Marquee Headline and Tagline.
+    3. *Priority 3 (Citizen):* Renders `CITIZEN SPONSOR` and Citizen Display Name if sponsored by a digital citizen without separate business branding.
+- **Dual Modal Presentation (Citizen vs Guest Sponsor):**
+  - *Citizen Sponsors:* Shows procedural 8-bit citizen avatar, verified checkmark, and clickable `📍 Plot (x, y)` chip flying camera to their plot, alongside business data.
+  - *Guest Sponsors:* Shows clean business branding, headline, tagline, and direct "Visit Sponsor Website ↗" link with zero citizen UI.
+- **Automated OpenGraph Extraction & Admin Security:**
+  - Added `GET /api/billboards/fetch-og` to auto-extract og:image and titles.
+  - Protected `GET /api/billboards/orders` with admin secret key.
+  - Added `POST /api/billboards/manual-assign` for manual assignment and recovery.
+  - Added atomic upsert with idempotent Discord alerts.
+- **Dynamic Multi-Tier Zoom Level-of-Detail (LOD) Rendering (`renderer.ts`):**
+  - *Satellite View (`zoom < 60%`):* Text and sub-labels are completely hidden; displays render as sleek cyber hardware bars with blinking neon jewel LEDs to eliminate visual clutter.
+  - *Mid View (`zoom 60% – 80%`):* High-contrast marquee typography (`COMING SOON...`, `YOUR AD HERE`) renders with drop shadows.
+  - *Street View / Hover (`zoom > 80%`):* Full ultra-definition rendering with animated scanline sweeps, glowing tag pills, and metadata.
+- **Interactive Billboard Modal & Spatial Hit-Testing (`BannerModal.astro`, `interaction.ts`):**
+  - $O(1)$ spatial hash partitioning (`bannerSpatialMap`) for instant mouse hover hit-testing.
+  - Interactive hover reticle tooltip `[ 📡 <Name> • Click to Inspect ]` with pointer cursor.
+  - Glassmorphism inspect modal showcasing screen dimensions, holographic animated preview, district coordinates, and booking options.
+- **Monetization & Creator Payout Pipeline:**
+  - Designed multi-tiered Gumroad sponsorship products ($10 Scenic, $20 Downtown Cyber, $35 Grand Central).
+  - Documented Bangladesh BEFTN electronic fund transfer routing (Prime Bank Prabartak More branch code: `170156334`).
+
+### Fixed
+- Fixed missing `OccupiedSpotSummary` type import in `apps/web/src/pages/world.astro`.
+- Fixed text readability and visual spam at wide camera zoom levels.
+
+---
+
+## 2026-09-02
+
+### Added
+- **Homelab Self-Hosted Production Migration:**
+  - Migrated production database to local containerized `postgres:17-alpine` on private bridge network `spot-network` (<0.5ms query latency).
+  - Implemented native Server-Sent Events (SSE) multiplayer engine in `apps/server` (`/api/realtime/stream` & `/api/realtime/position`), completely decoupling from Supabase Realtime limits.
+  - Configured Cloudflare Tunnel (`cloudflared`) and Traefik reverse proxy for SSL termination and zero-port-forwarding security on `claimyourspot.lol`.
+  - Added Cloudflare Edge Worker failover script (`edge/cloudflare-worker-fallback.js`) with retro pixel-art power outage maintenance screen.
+
+### Fixed
+- World HUD positioning and mobile interaction event bubbling.
+- Real-time client API base resolution for remote domains.
+
+---
+
 ## 2026-09-01
 
 ### Fixed
