@@ -1752,7 +1752,7 @@ apiRouter.get('/billboards/active', async (_req, res) => {
         c.display_name AS citizen_display_name,
         c.avatar_id AS citizen_avatar_id,
         c.avatar_url AS citizen_avatar_url,
-        c.is_verified AS citizen_is_verified,
+        (c.github_id IS NOT NULL) AS citizen_is_verified,
         c.github_url AS citizen_github_url,
         s.x AS spot_x,
         s.y AS spot_y
