@@ -22,6 +22,20 @@ import {
 import { AVATAR_CATALOG } from '../canvas/avatars.js';
 import type { SpriteManager } from './sprite-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
+import { WORLD_BANNERS } from './banner-manager.js';
+
+export function isInsideBillboardZone(wx: number, wy: number): boolean {
+  for (const b of WORLD_BANNERS) {
+    const bWx = b.gx * 16 + 8;
+    const bWy = b.gy * 16 + 8;
+    const halfW = (b.pixelWidth || 76) / 2 + 12;
+    // Billboard elevated screen spans from (bWy - 54) to (bWy + 10)
+    if (Math.abs(wx - bWx) < halfW && wy >= bWy - 54 && wy <= bWy + 14) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export type CitizenActivityMode =
   | 'idle'
@@ -204,8 +218,11 @@ export class MonumentManager {
       const key = `${spot.x},${spot.y}`;
       currentKeys.add(key);
 
-      const baseWx = spot.x * TILE_WIDTH + TILE_WIDTH / 2;
-      const baseWy = spot.y * TILE_HEIGHT + TILE_HEIGHT;
+      let baseWx = spot.x * TILE_WIDTH + TILE_WIDTH / 2;
+      let baseWy = spot.y * TILE_HEIGHT + TILE_HEIGHT;
+      if (isInsideBillboardZone(baseWx, baseWy)) {
+        baseWy += 36;
+      }
 
       if (!this.entities.has(key)) {
         const rand = Math.random();
@@ -261,6 +278,10 @@ export class MonumentManager {
       }
       if (ent.spawnProgress !== undefined && ent.spawnProgress < 1) {
         ent.spawnProgress = Math.min(1, ent.spawnProgress + 0.08);
+      }
+      if (isInsideBillboardZone(ent.wx, ent.wy)) {
+        ent.wy += 2.0;
+        ent.targetWy = Math.max(ent.targetWy, ent.wy);
       }
       this.updateCitizenAI(ent);
       this.updateEmote(ent);
@@ -382,8 +403,12 @@ export class MonumentManager {
         const baseWx = ent.spot.x * TILE_WIDTH + TILE_WIDTH / 2;
         const baseWy = ent.spot.y * TILE_HEIGHT + TILE_HEIGHT;
         const wanderR = 24;
-        const targetX = baseWx + (Math.random() * wanderR * 2 - wanderR);
-        const targetY = baseWy + (Math.random() * wanderR * 2 - wanderR);
+        let targetX = baseWx + (Math.random() * wanderR * 2 - wanderR);
+        let targetY = baseWy + (Math.random() * wanderR * 2 - wanderR);
+
+        if (isInsideBillboardZone(targetX, targetY)) {
+          targetY += 36;
+        }
 
         ent.targetWx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, targetX));
         ent.targetWy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, targetY));
@@ -507,10 +532,10 @@ export class MonumentManager {
       this.renderChatBubble(ctx, sx, sy - 38 * z, z, ent.liveSpeech);
     }
 
-    // Name badge with live Activity Mode
-    if (showNameTag) {
+    // Name badge with live Activity Mode (hidden if behind billboard)
+    if (showNameTag && !isInsideBillboardZone(ent.wx, ent.wy)) {
       this.renderCitizenBadge(ctx, sx, sy - 28 * z, z, ent.spot.displayName, ent.state);
-    } else if (ent.spot.isOnline) {
+    } else if (ent.spot.isOnline && !isInsideBillboardZone(ent.wx, ent.wy)) {
       ctx.fillStyle = '#10b981';
       ctx.beginPath();
       ctx.arc(sx, sy - 25 * z, 2.5 * z, 0, Math.PI * 2);
