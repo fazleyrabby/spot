@@ -1497,10 +1497,11 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
     };
 
     const isTestPromo =
-      payload.test === 'true' ||
-      payload.offer_code?.toLowerCase() === 'testdev' ||
-      payload.discount_code?.toLowerCase() === 'testdev' ||
-      (payload.url_params?.discount_code?.toLowerCase() === 'testdev');
+      config.appEnv === 'local' &&
+      (payload.test === 'true' ||
+       payload.offer_code?.toLowerCase() === 'testdev' ||
+       payload.discount_code?.toLowerCase() === 'testdev' ||
+       (payload.url_params?.discount_code?.toLowerCase() === 'testdev'));
 
     const requiredPriceCents = getRequiredPriceCents(billboardId);
 
