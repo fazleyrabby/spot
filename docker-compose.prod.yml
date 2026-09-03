@@ -35,6 +35,7 @@ services:
       RP_ID: ${RP_ID:-claimyourspot.lol}
       RP_ORIGIN: ${RP_ORIGIN:-https://claimyourspot.lol}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      VISITOR_DISCORD_WEBHOOK_URL: ${VISITOR_DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/1545095473432371310/V-BOmxj2kg4OVQr-ouCajIkNoKZqZ68y09sM5srQYy5o3BpAupasITRfFT2NtAZGMIcW}
     depends_on:
       spot-postgres:
         condition: service_healthy

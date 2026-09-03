@@ -103,3 +103,93 @@ export async function sendBillboardPurchaseNotification(input: DiscordBillboardN
     console.error('Discord billboard webhook error:', err);
   }
 }
+
+export interface DiscordVisitorNotification {
+  ip: string;
+  country?: string | null;
+  city?: string | null;
+  region?: string | null;
+  os: string;
+  browser: string;
+  device: string;
+  referrer?: string | null;
+  path?: string | null;
+  userAgent: string;
+  totalVisitors: number;
+}
+
+export function parseUserAgent(ua: string): { os: string; browser: string; device: string } {
+  let os = 'Unknown OS';
+  if (/windows nt 10/i.test(ua)) os = 'Windows 10/11';
+  else if (/windows nt 6\.3/i.test(ua)) os = 'Windows 8.1';
+  else if (/windows nt/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os x/i.test(ua)) os = 'macOS';
+  else if (/iphone/i.test(ua)) os = 'iPhone iOS';
+  else if (/ipad/i.test(ua)) os = 'iPad iOS';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  let browser = 'Unknown Browser';
+  if (/edg\//i.test(ua)) browser = 'Edge';
+  else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+  else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+  let device = '💻 Desktop';
+  if (/mobile|iphone|android.*mobile/i.test(ua)) device = '📱 Mobile';
+  else if (/ipad|tablet|android(?!.*mobile)/i.test(ua)) device = '📟 Tablet';
+
+  return { os, browser, device };
+}
+
+function getCountryFlag(countryCode?: string | null): string {
+  if (!countryCode || countryCode.length !== 2) return '🌍';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
+
+export async function sendVisitorNotification(input: DiscordVisitorNotification): Promise<void> {
+  const webhookUrl = config.visitorDiscordWebhookUrl;
+  if (!webhookUrl) return;
+
+  const flag = getCountryFlag(input.country);
+  const locationStr = [input.city, input.region, input.country].filter(Boolean).join(', ') || 'Unknown Location';
+
+  const payload = {
+    embeds: [
+      {
+        title: `🌐 New Visitor Landed • #${input.totalVisitors}`,
+        description: `**${flag} ${locationStr}**`,
+        color: 0x3b82f6, // Vibrant Blue
+        fields: [
+          { name: '📍 Location', value: `${flag} ${locationStr}`, inline: true },
+          { name: '💻 Device / OS', value: `${input.device} • ${input.os}`, inline: true },
+          { name: '🌐 Browser', value: input.browser, inline: true },
+          { name: '🛡️ IP Address', value: `\`${input.ip}\``, inline: true },
+          { name: '🔗 Referrer', value: input.referrer ? `\`${input.referrer}\`` : 'Direct / Organic', inline: true },
+          { name: '🧭 Page Path', value: `\`${input.path || '/'}\``, inline: true },
+          { name: '🔍 Full User-Agent', value: `\`\`\`${input.userAgent.slice(0, 250)}\`\`\``, inline: false },
+        ],
+        footer: { text: 'SPOT Realtime Analytics • claimyourspot.lol' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error(`Discord visitor webhook failed with status ${res.status}`);
+    }
+  } catch (err) {
+    console.error('Discord visitor webhook error:', err);
+  }
+}

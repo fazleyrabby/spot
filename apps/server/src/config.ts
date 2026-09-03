@@ -32,5 +32,6 @@ export const config = {
   rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://www.claimyourspot.lol'),
   isProd: process.env.NODE_ENV === 'production',
   discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
+  visitorDiscordWebhookUrl: process.env.VISITOR_DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1545095473432371310/V-BOmxj2kg4OVQr-ouCajIkNoKZqZ68y09sM5srQYy5o3BpAupasITRfFT2NtAZGMIcW',
   adminSecret: process.env.ADMIN_SECRET || process.env.SHOWCASE_ADMIN_TOKEN || 'spot_admin_secret_key',
 };
