@@ -1518,7 +1518,26 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
     // Extract citizenId if passed from logged-in citizen
     const citizenId = extractField('citizen id', 'citizen_id') || null;
 
-    // Persist to Postgres database with 30 days active validity
+    // Check if billboard has an existing active sponsorship so extensions ADD +30 days cumulatively!
+    const activeCheck = await query<any>(
+      `SELECT expires_at FROM billboard_orders 
+       WHERE billboard_id = $1 AND status = 'live' AND expires_at > NOW() 
+       ORDER BY expires_at DESC LIMIT 1`,
+      [billboardId]
+    );
+
+    let startsAt = new Date();
+    let expiresAt = new Date(startsAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    if (activeCheck.rows[0]?.expires_at) {
+      const existingExpiry = new Date(activeCheck.rows[0].expires_at);
+      if (existingExpiry > startsAt) {
+        // Add +30 days on top of remaining time
+        expiresAt = new Date(existingExpiry.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    // Persist to Postgres database with cumulative 30 days active validity
     const upsertRes = await query(
       `INSERT INTO billboard_orders (
         gumroad_sale_id,
@@ -1543,7 +1562,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        NOW(), NOW() + INTERVAL '30 days', NOW(), NOW()
+        $17, $18, NOW(), NOW()
       )
       ON CONFLICT (gumroad_sale_id) DO UPDATE SET
         citizen_id = COALESCE(EXCLUDED.citizen_id, billboard_orders.citizen_id),
@@ -1551,7 +1570,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         status = EXCLUDED.status,
         raw_payload = EXCLUDED.raw_payload,
         updated_at = NOW()
-      RETURNING (xmax = 0) AS is_new_insert`,
+      RETURNING (xmax = 0) AS is_new_insert, id, expires_at`,
       [
         saleId,
         billboardId,
@@ -1568,9 +1587,21 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         priceCents,
         currency,
         status,
-        JSON.stringify(payload)
+        JSON.stringify(payload),
+        startsAt.toISOString(),
+        expiresAt.toISOString(),
       ]
     );
+
+    // If this was an extension on an existing slot, mark older live orders as 'extended'
+    if (activeCheck.rows[0]?.expires_at && upsertRes.rows[0]?.id) {
+      await query(
+        `UPDATE billboard_orders 
+         SET status = 'extended', updated_at = NOW() 
+         WHERE billboard_id = $1 AND id != $2 AND status = 'live'`,
+        [billboardId, upsertRes.rows[0].id]
+      );
+    }
 
     const isNewSale = upsertRes.rows[0]?.is_new_insert === true;
 
