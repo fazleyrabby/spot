@@ -449,11 +449,13 @@ if (enableSSE) {
  */
 apiRouter.get('/analytics/visit', async (req, res) => {
   try {
-    const isLocalhost = req.hostname === 'localhost' || req.ip === '127.0.0.1' || req.ip === '::1';
+    const isCloudflare = Boolean(req.headers['cf-connecting-ip'] || req.headers['cf-ray']);
+    const isLocalhost = !isCloudflare && (req.hostname === 'localhost' || req.ip === '127.0.0.1' || req.ip === '::1');
     const hasVisitedCookie = req.cookies?.spot_visited;
+    const isTest = req.query.test === '1';
     let totalVisitors: number;
 
-    if (!isLocalhost && !hasVisitedCookie) {
+    if (!isLocalhost && (!hasVisitedCookie || isTest)) {
       const visitorRes = await query<any>(
         `UPDATE site_stats SET value = value + 1 WHERE key = 'total_visitors' RETURNING value;`
       );
