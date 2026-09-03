@@ -1844,7 +1844,7 @@ import BannerModal from '../components/BannerModal.astro';
         badgeEl.style.display = c.isVerified ? 'inline-block' : 'none';
       }
       btn.classList.add('is-authenticated');
-      btn.title = `Signed in as ${c.displayName} (Click to teleport to your plot)`;
+      btn.title = `Signed in as ${c.displayName} (Click to view profile)`;
     } else {
       nameEl.textContent = 'Sign In';
       if (iconEl) iconEl.textContent = '⚡';
@@ -1859,19 +1859,41 @@ import BannerModal from '../components/BannerModal.astro';
     const saved = localStorage.getItem('spot_my_citizen');
     let currentCitizen = saved ? JSON.parse(saved) : null;
     if (currentCitizen?.displayName && currentCitizen.displayName !== 'Visitor') {
-      // Teleport to own spot
-      const savedOwned = localStorage.getItem('spot_my_owned');
-      if (savedOwned) {
+      // Find citizen's spot from world snapshot or API to open full profile modal
+      let spotSummary: any = null;
+      if (engine?.lastSnapshot?.occupied) {
+        spotSummary = engine.lastSnapshot.occupied.find((s) => s.citizenId === currentCitizen.id);
+      }
+      if (!spotSummary) {
         try {
-          const parsed = JSON.parse(savedOwned);
-          engine?.camera.centerOn(parsed.x * 16 + 8, parsed.y * 16 + 8, 1.4, true);
-          engine?.player.setPosition(parsed.x, parsed.y);
-          showToast(`🎯 Teleported to your Spot (${parsed.x}, ${parsed.y})`, 'info');
-          return;
+          const res = await fetch(`${API_BASE}/citizens/me`, { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.citizen) {
+              spotSummary = {
+                ...data.citizen,
+                spotId: data.ownedSpot ? `${data.ownedSpot.x},${data.ownedSpot.y}` : undefined,
+                x: data.ownedSpot?.x ?? 52,
+                y: data.ownedSpot?.y ?? 60,
+                citizenId: data.citizen.id,
+              };
+            }
+          }
         } catch (_) {}
       }
-      if (engine && currentCitizen.id) {
-        engine.updateCitizenIdentity({ citizenId: currentCitizen.id, teleportToSpot: true });
+
+      if (spotSummary) {
+        openProfileModal(spotSummary);
+      } else {
+        openProfileModal({
+          spotId: '52,60',
+          x: 52,
+          y: 60,
+          citizenId: currentCitizen.id,
+          displayName: currentCitizen.displayName,
+          avatarId: currentCitizen.avatarId || 'astronaut',
+          isVerified: currentCitizen.isVerified,
+        } as any);
       }
     } else {
       // 1-Click GitHub Sign In
