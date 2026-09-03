@@ -13,7 +13,12 @@ import {
   resolveCitizenById,
 } from './auth.js';
 import { config } from './config.js';
-import { sendSpotClaimNotification, sendBillboardPurchaseNotification } from './discord.js';
+import { 
+  sendSpotClaimNotification, 
+  sendBillboardPurchaseNotification, 
+  sendVisitorNotification, 
+  parseUserAgent 
+} from './discord.js';
 import { 
   citizenCreationLimiter, 
   deviceFingerprintCreationLimiter, 
@@ -458,6 +463,34 @@ apiRouter.get('/analytics/visit', async (req, res) => {
         httpOnly: true,
         sameSite: 'lax',
       });
+
+      // Dispatch rich visitor alert to Discord (IP, Device, OS, Country, City, Referrer)
+      const rawIp = (req.headers['cf-connecting-ip'] as string) || 
+                    (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
+                    req.socket.remoteAddress || 
+                    'unknown';
+      const country = (req.headers['cf-ipcountry'] as string) || null;
+      const city = (req.headers['cf-ipcity'] as string) || null;
+      const region = (req.headers['cf-region'] as string) || null;
+      const referrer = (req.headers['referer'] as string) || (req.headers['referrer'] as string) || null;
+      const userAgent = (req.headers['user-agent'] as string) || 'Unknown';
+      const landingPath = (req.query.path as string) || (req.headers['x-landing-path'] as string) || '/';
+
+      const { os, browser, device } = parseUserAgent(userAgent);
+
+      sendVisitorNotification({
+        ip: rawIp,
+        country,
+        city,
+        region,
+        os,
+        browser,
+        device,
+        referrer,
+        path: landingPath,
+        userAgent,
+        totalVisitors,
+      }).catch((err) => console.error('[Discord Visitor Alert Error]', err));
     } else {
       const currentRes = await query<any>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
       totalVisitors = parseInt(currentRes.rows[0]?.value, 10) || 1;
