@@ -985,9 +985,13 @@ import BannerModal from '../components/BannerModal.astro';
       subtext = subtext || 'Featured Project / Brand';
     }
 
-    // In local development, automatically apply the TESTDEV 100% discount code
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const discountPath = isLocal ? '/TESTDEV' : '';
+    // Support test mode: automatically apply TESTDEV discount code on localhost or if ?test=true or ?promo=testdev is in URL
+    const isTestMode =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      new URLSearchParams(window.location.search).get('test') === 'true' ||
+      new URLSearchParams(window.location.search).get('promo') === 'testdev';
+    const discountPath = isTestMode ? '/TESTDEV' : '';
 
     // Route each tier to its dedicated Gumroad product
     let productSlug = 'spot-billboard-scenic';
@@ -1032,7 +1036,7 @@ import BannerModal from '../components/BannerModal.astro';
       }
     } catch (_) {}
 
-    if (isLocal) {
+    if (isTestMode) {
       params.set('discount_code', 'TESTDEV');
     }
 
