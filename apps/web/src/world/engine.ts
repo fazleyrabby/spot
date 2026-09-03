@@ -122,7 +122,7 @@ export class Engine {
     this.renderer.multiplayer = this.multiplayer;
   }
 
-  private lastSnapshot: WorldSnapshot | null = null;
+  lastSnapshot: WorldSnapshot | null = null;
 
   updateCitizenIdentity(data: {
     citizenId?: string;
