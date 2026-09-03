@@ -158,3 +158,34 @@ export async function requireAuthMiddleware(
   req.rawSessionToken = token;
   next();
 }
+
+export function clientIp(req: Request): string | null {
+  const fwd = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim();
+  return fwd || req.socket?.remoteAddress || req.ip || null;
+}
+
+export async function saveWebAuthnChallenge(
+  citizenId: string | null,
+  challenge: string,
+  kind: 'register' | 'authenticate'
+): Promise<void> {
+  await query(
+    `INSERT INTO webauthn_challenges (citizen_id, challenge, kind, expires_at)
+     VALUES ($1, $2, $3, NOW() + INTERVAL '5 minutes')`,
+    [citizenId, challenge, kind]
+  );
+}
+
+export async function consumeWebAuthnChallenge(
+  citizenId: string | null,
+  challenge: string,
+  kind: 'register' | 'authenticate'
+): Promise<boolean> {
+  const result = await query(
+    `DELETE FROM webauthn_challenges
+     WHERE challenge = $1 AND kind = $2 AND (citizen_id = $3 OR (citizen_id IS NULL AND $3 IS NULL)) AND expires_at > NOW()
+     RETURNING id`,
+    [challenge, kind, citizenId]
+  );
+  return result.rows.length > 0;
+}
