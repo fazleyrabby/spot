@@ -6,6 +6,7 @@ import ProfileModal from '../components/ProfileModal.astro';
 import ClaimModal from '../components/ClaimModal.astro';
 import SearchModal from '../components/SearchModal.astro';
 import SupportModal from '../components/SupportModal.astro';
+import AboutModal from '../components/AboutModal.astro';
 import TransferModal from '../components/TransferModal.astro';
 ---
 
@@ -17,6 +18,7 @@ import TransferModal from '../components/TransferModal.astro';
     <ClaimModal />
     <SearchModal />
     <SupportModal />
+    <AboutModal />
     <TransferModal />
     <div id="toast-container" class="toast-container"></div>
   </main>
@@ -1379,6 +1381,7 @@ import TransferModal from '../components/TransferModal.astro';
       closeClaimModal();
       closeSearchModal();
       closeSupportModal();
+      closeAboutModal();
     }
     // Cmd+K or Ctrl+K or "/" to search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -1432,6 +1435,29 @@ import TransferModal from '../components/TransferModal.astro';
     } catch {
       showToast('Payoneer ID: 24076084', 'info');
     }
+  });
+
+  // 11. About Modal Controller
+  const aboutBackdrop = document.getElementById('about-modal-backdrop');
+  const aboutCloseBtn = document.getElementById('about-modal-close');
+  const btnOpenAbout = document.getElementById('btn-open-about');
+
+  function openAboutModal() {
+    if (!aboutBackdrop) return;
+    aboutBackdrop.classList.add('open');
+    aboutBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeAboutModal() {
+    if (!aboutBackdrop) return;
+    aboutBackdrop.classList.remove('open');
+    aboutBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  btnOpenAbout?.addEventListener('click', openAboutModal);
+  aboutCloseBtn?.addEventListener('click', closeAboutModal);
+  aboutBackdrop?.addEventListener('click', (e) => {
+    if (e.target === aboutBackdrop) closeAboutModal();
   });
 
   // 11. Claim Modal Controller
