@@ -1459,10 +1459,25 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
       return null;
     };
 
+    // Verify Gumroad Seller ID in production to prevent forged webhook POSTs
+    const expectedSellerId = process.env.GUMROAD_SELLER_ID || 'n2H6rlKkX2TThqZrmrCAuA==';
+    if (config.appEnv === 'production' && payload.seller_id && payload.seller_id !== expectedSellerId) {
+      console.warn(`[Webhook Auth Failure] Invalid seller_id received: ${payload.seller_id}`);
+      res.status(403).json({ error: 'Unauthorized: Invalid seller_id' });
+      return;
+    }
+
     const billboardId =
       extractField('billboard_id', 'Selected Billboard / Landmark', 'Billboard ID') ||
       payload.billboard_id ||
       'unassigned';
+
+    // Prevent purchasing or overwriting the permanent Founder monument
+    if (billboardId === 'banner_founder_showcase') {
+      console.warn(`[Billboard Exploit Attempt] Attempted to purchase protected founder showcase: ${saleId}`);
+      res.status(400).json({ error: 'Founder monument is protected and cannot be purchased' });
+      return;
+    }
 
     const billboardName =
       extractField('billboard_name', 'Billboard Name') ||
@@ -1475,6 +1490,16 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
     const subtext = extractField('subtext', 'Subtext / Tagline') || payload.subtext || '';
 
     const targetUrl = extractField('destination url', 'target_url', 'target url', 'url', 'link') || payload.target_url || null;
+
+    // Strict URL sanitization: block javascript: and data: pseudo-protocols
+    let sanitizedTargetUrl: string | null = null;
+    if (targetUrl && typeof targetUrl === 'string') {
+      const trimmed = targetUrl.trim();
+      const lower = trimmed.toLowerCase();
+      if (!lower.startsWith('javascript:') && !lower.startsWith('data:') && !lower.startsWith('vbscript:')) {
+        sanitizedTargetUrl = (lower.startsWith('http://') || lower.startsWith('https://')) ? trimmed : `https://${trimmed}`;
+      }
+    }
 
     const bannerImageUrl = extractField('banner image url', 'image_url', 'logo link') || null;
 
@@ -1522,7 +1547,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
 
     // Check if billboard has an existing active sponsorship so extensions ADD +30 days cumulatively!
     const activeCheck = await query<any>(
-      `SELECT expires_at FROM billboard_orders 
+      `SELECT expires_at, buyer_email, citizen_id FROM billboard_orders 
        WHERE billboard_id = $1 AND status = 'live' AND expires_at > NOW() 
        ORDER BY expires_at DESC LIMIT 1`,
       [billboardId]
@@ -1530,12 +1555,25 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
 
     let startsAt = new Date();
     let expiresAt = new Date(startsAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+    let isSameOwner = false;
 
     if (activeCheck.rows[0]?.expires_at) {
       const existingExpiry = new Date(activeCheck.rows[0].expires_at);
-      if (existingExpiry > startsAt) {
-        // Add +30 days on top of remaining time
-        expiresAt = new Date(existingExpiry.getTime() + 30 * 24 * 60 * 60 * 1000);
+      isSameOwner = 
+        Boolean(activeCheck.rows[0].buyer_email && buyerEmail && activeCheck.rows[0].buyer_email.toLowerCase() === buyerEmail.toLowerCase()) ||
+        Boolean(citizenId && activeCheck.rows[0].citizen_id && activeCheck.rows[0].citizen_id === citizenId);
+
+      if (isSameOwner) {
+        // Same sponsor extending: stack +30 days on top of remaining time
+        if (existingExpiry > startsAt) {
+          expiresAt = new Date(existingExpiry.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
+      } else {
+        // Different buyer: queue the ad so it starts after existing sponsor's campaign ends!
+        if (existingExpiry > startsAt) {
+          startsAt = existingExpiry;
+          expiresAt = new Date(existingExpiry.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
       }
     }
 
@@ -1583,7 +1621,7 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
         citizenId,
         headline,
         subtext,
-        targetUrl,
+        sanitizedTargetUrl,
         bannerImageUrl,
         brandColor,
         priceCents,
@@ -1595,12 +1633,12 @@ apiRouter.post('/billboards/webhook', async (req, res) => {
       ]
     );
 
-    // If this was an extension on an existing slot, mark older live orders as 'extended'
-    if (activeCheck.rows[0]?.expires_at && upsertRes.rows[0]?.id) {
+    // If this was an extension by the same sponsor, mark older live orders as 'extended'
+    if (activeCheck.rows[0]?.expires_at && upsertRes.rows[0]?.id && isSameOwner) {
       await query(
         `UPDATE billboard_orders 
          SET status = 'extended', updated_at = NOW() 
-         WHERE billboard_id = $1 AND id != $2 AND status = 'live'`,
+         WHERE billboard_id = $1 AND status = 'live' AND id <> $2`,
         [billboardId, upsertRes.rows[0].id]
       );
     }
@@ -1793,7 +1831,9 @@ apiRouter.get('/billboards/active', async (_req, res) => {
        LEFT JOIN citizens c ON (bo.citizen_id IS NOT NULL AND c.id = bo.citizen_id) 
                             OR (c.email IS NOT NULL AND bo.buyer_email IS NOT NULL AND LOWER(c.email) = LOWER(bo.buyer_email))
        LEFT JOIN spots s ON s.owner_id = c.id
-       WHERE bo.status = 'live' AND (bo.expires_at IS NULL OR bo.expires_at > NOW())
+       WHERE bo.status = 'live' 
+         AND (bo.starts_at IS NULL OR bo.starts_at <= NOW()) 
+         AND (bo.expires_at IS NULL OR bo.expires_at > NOW())
        ORDER BY bo.created_at DESC`
     );
 
