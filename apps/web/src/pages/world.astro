@@ -1364,6 +1364,22 @@ import BannerModal from '../components/BannerModal.astro';
           closeNpcModal();
           closeJournalModal();
         },
+        onSnapshotLoaded: (snapshot) => {
+          const claimedCountEl = document.getElementById('hud-claimed-count');
+          if (claimedCountEl && typeof snapshot.claimedCount === 'number') {
+            claimedCountEl.textContent = String(snapshot.claimedCount);
+          }
+          const onlineCountEl = document.getElementById('hud-online-count');
+          if (onlineCountEl && typeof snapshot.onlineCount === 'number') {
+            onlineCountEl.textContent = String(Math.max(1, snapshot.onlineCount));
+          }
+        },
+        onPresenceChange: (onlineCount) => {
+          const onlineCountEl = document.getElementById('hud-online-count');
+          if (onlineCountEl) {
+            onlineCountEl.textContent = String(Math.max(1, onlineCount));
+          }
+        },
       });
 
       // If session citizen was resolved, ensure engine has full identity & plot camera
@@ -1377,6 +1393,15 @@ import BannerModal from '../components/BannerModal.astro';
         });
       }
 
+      function updateBillboardStatsHUD() {
+        const total = WORLD_BANNERS.length;
+        const sponsored = WORLD_BANNERS.filter(b => b.isSponsored).length;
+        const ratioEl = document.getElementById('hud-sponsor-ratio');
+        if (ratioEl) {
+          ratioEl.textContent = `${sponsored}/${total}`;
+        }
+      }
+
       // ── Fetch Dynamic Billboard Sponsorships ──────────────────────────────
       async function syncActiveBanners() {
         try {
@@ -1388,6 +1413,7 @@ import BannerModal from '../components/BannerModal.astro';
             }
           }
         } catch (_) {}
+        updateBillboardStatsHUD();
       }
 
       // Check any recent pending ads configured on this device (within 30 mins)
@@ -1858,6 +1884,19 @@ import BannerModal from '../components/BannerModal.astro';
           },
         });
       }
+    }
+  });
+
+  const btnHudSponsor = document.getElementById('hud-sponsor-pill');
+  btnHudSponsor?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const openBanner = WORLD_BANNERS.find((b) => !b.isSponsored && b.id !== 'banner_founder_showcase');
+    if (openBanner && engine) {
+      engine.camera.centerOn(openBanner.gx * 16 + 8, openBanner.gy * 16 + 8, 1.4, true);
+      showToast(`📍 Showing available billboard: ${openBanner.name}`, 'info');
+      setTimeout(() => openBannerModal(openBanner), 600);
+    } else {
+      showToast('All billboards currently occupied! Check back soon.', 'info');
     }
   });
 
