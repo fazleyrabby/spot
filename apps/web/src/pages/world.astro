@@ -849,8 +849,28 @@ import BannerModal from '../components/BannerModal.astro';
       if (bannerNotifyBtn) {
         bannerNotifyBtn.classList.add('secondary');
       }
-      if (bannerActionText) {
-        bannerActionText.textContent = 'Extend Sponsorship (30 Days) ⚡';
+
+      const isFounderMonument = banner.id === 'banner_founder_showcase';
+      let currentCitizenId = '';
+      try {
+        const saved = localStorage.getItem('spot_my_citizen');
+        if (saved) currentCitizenId = JSON.parse(saved)?.id || '';
+      } catch (_) {}
+
+      const isMySponsorship = currentCitizenId && banner.citizen?.id === currentCitizenId;
+
+      if (isFounderMonument) {
+        if (bannerActionText) {
+          bannerActionText.textContent = 'Partner / Sponsor Inquiry ✉';
+        }
+      } else if (isMySponsorship) {
+        if (bannerActionText) {
+          bannerActionText.textContent = 'Extend My Sponsorship (+30 Days) ⚡';
+        }
+      } else {
+        if (bannerActionText) {
+          bannerActionText.textContent = 'Occupied Spot • Find Open Billboard 🗺️';
+        }
       }
 
       // Pre-fill inputs with the sponsor's existing business data
@@ -953,6 +973,31 @@ import BannerModal from '../components/BannerModal.astro';
   bannerNotifyBtn?.addEventListener('click', () => {
     if (!currentBanner) return;
 
+    if (currentBanner.id === 'banner_founder_showcase') {
+      window.open('mailto:fazley111@gmail.com?subject=SPOT%20Partnership%20/%20Sponsorship%20Inquiry', '_blank');
+      return;
+    }
+
+    let currentCitizenId = '';
+    try {
+      const saved = localStorage.getItem('spot_my_citizen');
+      if (saved) currentCitizenId = JSON.parse(saved)?.id || '';
+    } catch (_) {}
+
+    const isMySponsorship = currentCitizenId && currentBanner.citizen?.id === currentCitizenId;
+    if (currentBanner.isSponsored && !isMySponsorship) {
+      closeBannerModal();
+      const openBanner = WORLD_BANNERS.find(b => !b.isSponsored && b.id !== 'banner_founder_showcase');
+      if (openBanner && engine) {
+        engine.camera.centerOn(openBanner.gx * 16 + 8, openBanner.gy * 16 + 8, 1.4, true);
+        showToast(`📍 Showing available billboard: ${openBanner.name}`, 'info');
+        setTimeout(() => openBannerModal(openBanner), 600);
+      } else {
+        showToast('All billboards currently occupied! Check back soon.', 'info');
+      }
+      return;
+    }
+
     // ── Form Extraction & Fallback Inheritance ─────────────────────────────
     let sponsorName = bannerInputName?.value.trim();
     let destUrl = bannerInputUrl?.value.trim();
@@ -985,13 +1030,9 @@ import BannerModal from '../components/BannerModal.astro';
       subtext = subtext || 'Featured Project / Brand';
     }
 
-    // Support test mode: automatically apply TESTDEV discount code on localhost or if ?test=true or ?promo=testdev is in URL
-    const isTestMode =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      new URLSearchParams(window.location.search).get('test') === 'true' ||
-      new URLSearchParams(window.location.search).get('promo') === 'testdev';
-    const discountPath = isTestMode ? '/TESTDEV' : '';
+    // In local development only, automatically apply the TESTDEV 100% discount code
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const discountPath = isLocal ? '/TESTDEV' : '';
 
     // Route each tier to its dedicated Gumroad product
     let productSlug = 'spot-billboard-scenic';
@@ -1036,7 +1077,7 @@ import BannerModal from '../components/BannerModal.astro';
       }
     } catch (_) {}
 
-    if (isTestMode) {
+    if (isLocal) {
       params.set('discount_code', 'TESTDEV');
     }
 
@@ -1251,6 +1292,7 @@ import BannerModal from '../components/BannerModal.astro';
           if (parsed?.displayName) displayName = parsed.displayName;
           if (parsed?.avatarId) avatarId = parsed.avatarId;
           if (parsed?.isVerified) isVerified = parsed.isVerified;
+          updateHUDCitizen(parsed);
         }
       } catch (_) {}
 
@@ -1285,7 +1327,7 @@ import BannerModal from '../components/BannerModal.astro';
           citizenId = sessionCitizen.id || citizenId;
           displayName = sessionCitizen.displayName || displayName;
           avatarId = sessionCitizen.avatarId || avatarId;
-          isVerified = sessionCitizen.isVerified ?? isVerified;
+          isVerified = Boolean(sessionCitizen.isVerified || sessionCitizen.githubUrl || sessionCitizen.githubId);
 
           // Cache for instant 0ms restoration on future page visits
           localStorage.setItem('spot_my_citizen', JSON.stringify({
@@ -1294,6 +1336,8 @@ import BannerModal from '../components/BannerModal.astro';
             avatarId,
             isVerified,
           }));
+
+          updateHUDCitizen({ displayName, isVerified, avatarId });
         }
 
         // Record visitor analytics hit
@@ -1322,10 +1366,21 @@ import BannerModal from '../components/BannerModal.astro';
         },
       });
 
+      // If session citizen was resolved, ensure engine has full identity & plot camera
+      if (citizenId && displayName !== 'Visitor') {
+        engine.updateCitizenIdentity({
+          citizenId,
+          displayName,
+          avatarId,
+          isVerified,
+          teleportToSpot: true,
+        });
+      }
+
       // ── Fetch Dynamic Billboard Sponsorships ──────────────────────────────
       async function syncActiveBanners() {
         try {
-          const billboardRes = await fetch(`${API_BASE}/api/billboards/active`);
+          const billboardRes = await fetch(`${API_BASE}/billboards/active`);
           if (billboardRes.ok) {
             const billboardData = await billboardRes.json();
             if (billboardData?.activeBanners) {
@@ -1747,6 +1802,108 @@ import BannerModal from '../components/BannerModal.astro';
     }
     showToast(TOD_LABELS[next], 'info');
   });
+
+  // ── HUD Citizen Identity & 1-Click Sign-In ─────────────────────────────────
+  function updateHUDCitizen(c: { displayName?: string; isVerified?: boolean; avatarId?: string } | null) {
+    const btn = document.getElementById('world-citizen-btn');
+    const nameEl = document.getElementById('world-citizen-name');
+    const badgeEl = document.getElementById('world-citizen-badge');
+    const iconEl = document.getElementById('world-citizen-icon');
+    if (!btn || !nameEl) return;
+
+    if (c && c.displayName && c.displayName !== 'Visitor') {
+      nameEl.textContent = c.displayName;
+      if (iconEl) iconEl.textContent = '👤';
+      if (badgeEl) {
+        badgeEl.style.display = c.isVerified ? 'inline-block' : 'none';
+      }
+      btn.classList.add('is-authenticated');
+      btn.title = `Signed in as ${c.displayName} (Click to teleport to your plot)`;
+    } else {
+      nameEl.textContent = 'Sign In';
+      if (iconEl) iconEl.textContent = '⚡';
+      if (badgeEl) badgeEl.style.display = 'none';
+      btn.classList.remove('is-authenticated');
+      btn.title = 'Sign In with GitHub';
+    }
+  }
+
+  const btnWorldCitizen = document.getElementById('world-citizen-btn');
+  btnWorldCitizen?.addEventListener('click', async () => {
+    const saved = localStorage.getItem('spot_my_citizen');
+    let currentCitizen = saved ? JSON.parse(saved) : null;
+    if (currentCitizen?.displayName && currentCitizen.displayName !== 'Visitor') {
+      // Teleport to own spot
+      const savedOwned = localStorage.getItem('spot_my_owned');
+      if (savedOwned) {
+        try {
+          const parsed = JSON.parse(savedOwned);
+          engine?.camera.centerOn(parsed.x * 16 + 8, parsed.y * 16 + 8, 1.4, true);
+          engine?.player.setPosition(parsed.x, parsed.y);
+          showToast(`🎯 Teleported to your Spot (${parsed.x}, ${parsed.y})`, 'info');
+          return;
+        } catch (_) {}
+      }
+      if (engine && currentCitizen.id) {
+        engine.updateCitizenIdentity({ citizenId: currentCitizen.id, teleportToSpot: true });
+      }
+    } else {
+      // 1-Click GitHub Sign In
+      if (supabase) {
+        showToast('Connecting to GitHub…', 'info');
+        await supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: {
+            redirectTo: `${window.location.origin}/world`,
+          },
+        });
+      }
+    }
+  });
+
+  // Listen to Supabase GitHub auth events live
+  if (supabase) {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = session.user;
+        const metadata = user.user_metadata || {};
+        try {
+          const syncRes = await syncGithubAuth({
+            githubId: user.id,
+            username: metadata.user_name || metadata.preferred_username || metadata.name,
+            email: user.email,
+            avatarUrl: metadata.avatar_url,
+            displayName: metadata.full_name || metadata.name || metadata.user_name,
+          });
+
+          if (syncRes?.citizen) {
+            const cit = syncRes.citizen;
+            cit.isVerified = Boolean(cit.isVerified || cit.githubUrl || (cit as any).githubId);
+            localStorage.setItem('spot_my_citizen', JSON.stringify({
+              id: cit.id,
+              displayName: cit.displayName,
+              avatarId: cit.avatarId,
+              isVerified: cit.isVerified,
+            }));
+            if (syncRes.ownedSpot) {
+              localStorage.setItem('spot_my_owned', JSON.stringify(syncRes.ownedSpot));
+            }
+            engine?.updateCitizenIdentity({
+              citizenId: cit.id,
+              displayName: cit.displayName,
+              avatarId: cit.avatarId,
+              isVerified: cit.isVerified,
+              teleportToSpot: true,
+            });
+            updateHUDCitizen(cit);
+            showToast(`👋 Welcome back, ${cit.displayName}!`, 'success');
+          }
+        } catch (err) {
+          console.error('Failed to sync auth in world:', err);
+        }
+      }
+    });
+  }
 
   // ── Boot ─────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => { void boot(); });
