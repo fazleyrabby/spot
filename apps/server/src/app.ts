@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { config } from './config.js';
 import { apiRouter } from './routes.js';
+import { globalApiLimiter } from './rateLimiter.js';
 
 export const app: express.Express = express();
 
@@ -41,8 +42,8 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Mount API router
-app.use('/api', apiRouter);
+// Mount API router with global sliding-window rate limiter
+app.use('/api', globalApiLimiter, apiRouter);
 
 // Serve static frontend in production if dist exists
 const webDistPath = process.env.WEB_DIST_PATH || path.resolve(process.cwd(), '../web/dist');

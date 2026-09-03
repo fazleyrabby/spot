@@ -14,7 +14,15 @@ import {
 } from './auth.js';
 import { config } from './config.js';
 import { sendSpotClaimNotification, sendBillboardPurchaseNotification } from './discord.js';
-import { citizenCreationLimiter, deviceFingerprintCreationLimiter, spotClaimLimiter, spotCommentLimiter } from './rateLimiter.js';
+import { 
+  citizenCreationLimiter, 
+  deviceFingerprintCreationLimiter, 
+  spotClaimLimiter, 
+  spotCommentLimiter,
+  searchLimiter,
+  ogFetchLimiter,
+  authSyncLimiter
+} from './rateLimiter.js';
 import {
   CreateCitizenSchema,
   UpdateCitizenSchema,
@@ -234,7 +242,7 @@ apiRouter.post('/auth/passkey/register/verify', requireAuthMiddleware, async (re
   }
 });
 
-apiRouter.post('/auth/passkey/authenticate/options', async (_req, res) => {
+apiRouter.post('/auth/passkey/authenticate/options', authSyncLimiter, async (_req, res) => {
   try {
     const options = await generateAuthenticationOptions({
       rpID: config.rpId,
@@ -249,7 +257,7 @@ apiRouter.post('/auth/passkey/authenticate/options', async (_req, res) => {
   }
 });
 
-apiRouter.post('/auth/passkey/authenticate/verify', async (req, res) => {
+apiRouter.post('/auth/passkey/authenticate/verify', authSyncLimiter, async (req, res) => {
   try {
     const credentialId = req.body?.id;
     const stored = await query<any>(
@@ -558,7 +566,7 @@ apiRouter.get('/citizens/me', optionalAuthMiddleware, async (req: AuthenticatedR
  * POST /api/auth/github/sync
  * Authenticate or link a citizen from Supabase GitHub OAuth
  */
-apiRouter.post('/auth/github/sync', async (req, res) => {
+apiRouter.post('/auth/github/sync', authSyncLimiter, async (req, res) => {
   const { githubId, username, email, avatarUrl, displayName } = req.body;
   if (!githubId) {
     res.status(400).json({ error: 'MissingGithubId' });
@@ -1050,7 +1058,7 @@ apiRouter.patch('/spots/:spotId/wall', requireAuthMiddleware, async (req: Authen
  * GET /api/citizens/search
  * Search citizens, handles, or taglines with associated spot coordinates.
  */
-apiRouter.get('/citizens/search', async (req, res) => {
+apiRouter.get('/citizens/search', searchLimiter, async (req, res) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   if (!q) {
     res.json({ results: [] });
@@ -1872,7 +1880,7 @@ apiRouter.get('/billboards/active', async (_req, res) => {
  * GET /api/billboards/fetch-og?url=...
  * Extracts OpenGraph image, title, and description from a destination URL
  */
-apiRouter.get('/billboards/fetch-og', async (req, res) => {
+apiRouter.get('/billboards/fetch-og', ogFetchLimiter, async (req, res) => {
   const targetUrl = req.query.url as string | undefined;
   if (!targetUrl || typeof targetUrl !== 'string') {
     res.status(400).json({ error: 'Missing url parameter' });
