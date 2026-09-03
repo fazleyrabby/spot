@@ -50,3 +50,56 @@ export async function sendSpotClaimNotification(input: DiscordClaimNotification)
     console.error('Discord webhook error:', err);
   }
 }
+
+export interface DiscordBillboardNotification {
+  billboardId: string;
+  billboardName: string;
+  tier: string;
+  buyerEmail: string;
+  buyerName?: string | null;
+  headline: string;
+  subtext?: string | null;
+  targetUrl?: string | null;
+  priceFormatted: string;
+  saleId: string;
+}
+
+export async function sendBillboardPurchaseNotification(input: DiscordBillboardNotification): Promise<void> {
+  const webhookUrl = config.discordWebhookUrl;
+  if (!webhookUrl) return;
+
+  const payload = {
+    embeds: [
+      {
+        title: `📡 Cyber Billboard Sponsored: ${input.billboardName}`,
+        description: `**${input.buyerName || 'Sponsor'}** (${input.buyerEmail}) just sponsored **${input.billboardName}**!`,
+        url: input.targetUrl || 'https://claimyourspot.lol/world',
+        color: 0x00f0ff, // Cyber Cyan
+        fields: [
+          { name: 'Billboard ID', value: `\`${input.billboardId}\``, inline: true },
+          { name: 'Tier / Location', value: input.tier || 'Standard', inline: true },
+          { name: 'Amount Paid', value: input.priceFormatted, inline: true },
+          { name: 'Headline', value: `**${input.headline}**`, inline: false },
+          ...(input.subtext ? [{ name: 'Subtext', value: input.subtext, inline: false }] : []),
+          ...(input.targetUrl ? [{ name: 'Destination Link', value: input.targetUrl, inline: false }] : []),
+          { name: 'Gumroad Sale ID', value: `\`${input.saleId}\``, inline: true },
+        ],
+        footer: { text: 'Spot World Cyber Billboard Network • claimyourspot.lol' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error(`Discord billboard webhook failed with status ${res.status}`);
+    }
+  } catch (err) {
+    console.error('Discord billboard webhook error:', err);
+  }
+}

@@ -28,6 +28,7 @@ import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
 import { SkyManager } from './sky-manager.js';
 import { NPCManager } from './npc-manager.js';
+import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
@@ -124,6 +125,7 @@ export class Renderer {
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
   hoveredGrid: { gx: number; gy: number } | null = null;
+  hoveredBanner: WorldBanner | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
   gpsTarget: { name: string; wx: number; wy: number } | null = null;
   timeOfDay: 'day' | 'twilight' | 'night' = 'night';
@@ -131,6 +133,7 @@ export class Renderer {
   private cityParticles: CityParticle[] = [];
   private animFrameId: number | null = null;
   private tick = 0;
+  private bannerImageCache = new Map<string, HTMLImageElement>();
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -249,6 +252,9 @@ export class Renderer {
 
     // 4a. Urban Props & Street Lamps
     this.collectCityProps(range, entities, lights);
+
+    // 4a-2. Cyber Billboard Banners (Sponsorship & Partner Placeholders)
+    this.collectBanners(range, entities, lights);
 
     // 4b. Passing Cyber Bullet Train
     if (this.train.active) {
@@ -1474,6 +1480,279 @@ export class Renderer {
         break;
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cyber Billboard Banners (Sponsorship Placeholders)
+  // ---------------------------------------------------------------------------
+
+  private collectBanners(
+    range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
+    entities: RenderableEntity[],
+    lights: LightSource[],
+  ): void {
+    const W = this.camera.viewportWidth;
+    const H = this.camera.viewportHeight;
+
+    for (const banner of WORLD_BANNERS) {
+      if (
+        banner.gx < range.minGx - 4 ||
+        banner.gx > range.maxGx + 4 ||
+        banner.gy < range.minGy - 4 ||
+        banner.gy > range.maxGy + 4
+      ) {
+        continue;
+      }
+
+      const wx = banner.gx * TILE_WIDTH + TILE_WIDTH / 2;
+      const wy = banner.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+      const screen = this.camera.worldToScreen(wx, wy);
+
+      if (screen.x < -100 || screen.x > W + 100 || screen.y < -100 || screen.y > H + 100) {
+        continue;
+      }
+
+      // Ambient Ground Spotlight
+      lights.push({
+        wx,
+        wy: wy - 4,
+        radius: banner.lightRadius,
+        color: banner.lightColor,
+      });
+
+      const isHovered = this.hoveredBanner?.id === banner.id;
+
+      entities.push({
+        depth: wy,
+        render: (ctx, z) => {
+          this.drawBillboard(ctx, banner, screen.x, screen.y, z, isHovered);
+        },
+      });
+    }
+  }
+
+  private drawBillboard(
+    ctx: CanvasRenderingContext2D,
+    banner: WorldBanner,
+    sx: number,
+    sy: number,
+    z: number,
+    isHovered: boolean,
+  ): void {
+    const pw = banner.pixelWidth * z;
+    const ph = banner.pixelHeight * z;
+    const poleH = 30 * z;
+    const halfW = pw / 2;
+
+    const screenTopY = sy - poleH - ph;
+    const screenBottomY = sy - poleH;
+
+    ctx.save();
+
+    // 1. Ground Drop Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, halfW * 0.92, 6 * z, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Concrete Anchor Footings
+    const legSpacing = halfW * 0.68;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(sx - legSpacing - 4.5 * z, sy - 4 * z, 9 * z, 4 * z);
+    ctx.fillRect(sx + legSpacing - 4.5 * z, sy - 4 * z, 9 * z, 4 * z);
+
+    // 3. Steel Lattice Truss Legs
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = Math.max(1.4, 2.8 * z);
+    ctx.beginPath();
+    // Left leg
+    ctx.moveTo(sx - legSpacing, sy);
+    ctx.lineTo(sx - legSpacing, screenBottomY);
+    // Right leg
+    ctx.moveTo(sx + legSpacing, sy);
+    ctx.lineTo(sx + legSpacing, screenBottomY);
+    ctx.stroke();
+
+    // Cross-bracing struts
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = Math.max(1.0, 1.6 * z);
+    ctx.beginPath();
+    ctx.moveTo(sx - legSpacing, sy - 4 * z);
+    ctx.lineTo(sx + legSpacing, screenBottomY + 4 * z);
+    ctx.moveTo(sx + legSpacing, sy - 4 * z);
+    ctx.lineTo(sx - legSpacing, screenBottomY + 4 * z);
+    ctx.stroke();
+
+    // 4. Backing & Outer Chassis
+    const chassisX = sx - halfW;
+    const chassisY = screenTopY;
+    const chassisW = pw;
+    const chassisH = ph;
+
+    ctx.fillStyle = '#090d16';
+    ctx.beginPath();
+    ctx.roundRect(chassisX - 3 * z, chassisY - 3 * z, chassisW + 6 * z, chassisH + 6 * z, 5 * z);
+    ctx.fill();
+
+    // Bezel Border with Neon Lighting
+    ctx.strokeStyle = isHovered ? '#ffffff' : banner.accentColor;
+    ctx.lineWidth = isHovered ? Math.max(1.8, 2.6 * z) : Math.max(1.2, 1.8 * z);
+    if (isHovered) {
+      ctx.shadowColor = banner.accentColor;
+      ctx.shadowBlur = 14 * z;
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 5. Obsidian Screen Glass Inside
+    ctx.fillStyle = 'rgba(11, 15, 23, 0.94)';
+    ctx.fillRect(chassisX, chassisY, chassisW, chassisH);
+
+    // 6. Scanline raster effect
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    const scanlineSpacing = Math.max(2, 2.8 * z);
+    for (let l = chassisY; l < chassisY + chassisH; l += scanlineSpacing) {
+      ctx.fillRect(chassisX, l, chassisW, Math.max(0.6, 0.9 * z));
+    }
+
+    // Moving scanline sweep
+    const sweepOffset = (this.tick * 0.75 * z) % chassisH;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
+    ctx.fillRect(chassisX, chassisY + sweepOffset, chassisW, Math.max(1, 1.8 * z));
+
+    // 7. Render Screen Content (Strict Priority Order: Image > Business Name/Title > Citizen Name)
+    const imageUrl = banner.bannerImageUrl;
+    let loadedImage: HTMLImageElement | null = null;
+    if (imageUrl) {
+      let cached = this.bannerImageCache.get(imageUrl);
+      if (!cached) {
+        cached = new Image();
+        cached.crossOrigin = 'anonymous';
+        cached.src = imageUrl;
+        this.bannerImageCache.set(imageUrl, cached);
+      }
+      if (cached.complete && cached.naturalWidth > 0) {
+        loadedImage = cached;
+      }
+    }
+
+    if (loadedImage) {
+      // ── Priority 1: Banner Image / Logo (Prominently rendered) ──
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(chassisX + 1.5 * z, chassisY + 1.5 * z, chassisW - 3 * z, chassisH - 3 * z, 3 * z);
+      ctx.clip();
+
+      const imgRatio = loadedImage.naturalWidth / loadedImage.naturalHeight;
+      const boxW = chassisW - 3 * z;
+      const boxH = chassisH - 3 * z;
+      const boxRatio = boxW / boxH;
+      let dw = boxW;
+      let dh = boxH;
+      if (imgRatio > boxRatio) {
+        dh = dw / imgRatio;
+      } else {
+        dw = dh * imgRatio;
+      }
+      const dx = chassisX + chassisW / 2 - dw / 2;
+      const dy = chassisY + chassisH / 2 - dh / 2;
+
+      ctx.drawImage(loadedImage, dx, dy, dw, dh);
+      ctx.restore();
+    } else {
+      // ── Priority 2: Business Name, Title / Headline OR Priority 3: Citizen Name ──
+      const isCitizen = !!banner.citizen;
+      const hasBusiness = !!(banner.buyerName || (banner.headline && banner.headline !== 'COMING SOON...'));
+
+      let topTag = banner.tag;
+      let mainTitle = banner.headline;
+      let subTitle = banner.subtext;
+
+      if (hasBusiness) {
+        // Priority 2: Business Name & Title
+        if (banner.buyerName) {
+          topTag = banner.buyerName.toUpperCase().slice(0, 22);
+        }
+        mainTitle = banner.headline;
+        subTitle = banner.subtext;
+      } else if (isCitizen && banner.citizen) {
+        // Priority 3: Citizen Name
+        topTag = 'CITIZEN SPONSOR';
+        mainTitle = banner.citizen.displayName.toUpperCase().slice(0, 22);
+        subTitle = banner.citizen.spot
+          ? `CITIZEN PLOT (${banner.citizen.spot.x}, ${banner.citizen.spot.y})`
+          : 'SPOT WORLD CITIZEN';
+      }
+
+      // LOD: At low zoom (< 0.5), hide text to keep satellite view clean & elegant
+      if (z < 0.5 && !isHovered) {
+        const barW = Math.max(12, pw * 0.6);
+        const barH = Math.max(2, 2.6 * z);
+        ctx.fillStyle = banner.accentColor;
+        ctx.globalAlpha = 0.75 + Math.sin(this.tick * 0.1) * 0.25;
+        ctx.fillRect(sx - barW / 2, chassisY + chassisH / 2 - barH / 2, barW, barH);
+        ctx.globalAlpha = 1.0;
+      } else {
+        // Medium to close zoom: Render crisp typography
+        // Upper Tag Pill
+        if (z >= 0.7 || isHovered) {
+          const tagFontH = Math.max(6.5, 8.5 * z);
+          ctx.font = `700 ${tagFontH}px 'Chakra Petch', sans-serif`;
+          ctx.fillStyle = banner.accentColor;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(topTag, sx, chassisY + 10 * z);
+        }
+
+        // Main Headline / Title / Citizen Name
+        const headFontH = Math.max(10, 13 * z);
+        ctx.font = `800 ${headFontH}px 'Chakra Petch', sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        if (isHovered || z >= 0.7) {
+          ctx.shadowColor = banner.accentColor;
+          ctx.shadowBlur = 8 * z;
+        }
+        const headY = (z >= 0.7 || isHovered) ? (chassisY + 24 * z) : (chassisY + chassisH / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(mainTitle, sx, headY);
+        ctx.shadowBlur = 0;
+
+        // Subtext / Tagline
+        if (subTitle && (z >= 0.8 || (isHovered && z >= 0.65))) {
+          const subFontH = Math.max(5.8, 7.5 * z);
+          ctx.font = `600 ${subFontH}px 'Outfit', sans-serif`;
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(subTitle, sx, chassisY + 37 * z);
+        }
+      }
+    }
+
+    // 8. Hover Reticle / Tooltip if Hovered
+    if (isHovered) {
+      const tooltipText = `📡 ${banner.name} • Click to Inspect`;
+      ctx.font = `700 10px 'Chakra Petch', sans-serif`;
+      const textW = ctx.measureText(tooltipText).width;
+      const pillW = textW + 16;
+      const pillH = 22;
+      const tipY = chassisY - 14;
+
+      ctx.fillStyle = 'rgba(11, 15, 23, 0.95)';
+      ctx.beginPath();
+      ctx.roundRect(sx - pillW / 2, tipY - pillH / 2, pillW, pillH, 5);
+      ctx.fill();
+
+      ctx.strokeStyle = banner.accentColor;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tooltipText, sx, tipY);
+    }
+
+    ctx.restore();
   }
 
   // ---------------------------------------------------------------------------

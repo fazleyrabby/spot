@@ -9,10 +9,12 @@ import { MonumentManager } from './monument-manager.js';
 import { worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
 import { getSecretAt, type WorldSecret } from './secrets.js';
+import { hitTestBanner, type WorldBanner } from './banner-manager.js';
 
 export interface InteractionEvents {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
   onSecretClick?: (secret: WorldSecret) => void;
+  onBannerClick?: (banner: WorldBanner) => void;
   onTileClick?: (gx: number, gy: number) => void;
 }
 
@@ -102,12 +104,19 @@ export class InteractionHandler {
         const world = this.screenToWorld(e.clientX, e.clientY);
         this.renderer.hoveredGrid = worldToGrid(world.x, world.y);
         const citizen = this.monuments.hitTest(world.x, world.y);
+        const banner = hitTestBanner(world.x, world.y);
 
         if (citizen) {
           this.renderer.hoveredCitizen = citizen;
+          this.renderer.hoveredBanner = null;
+          canvas.style.cursor = 'pointer';
+        } else if (banner) {
+          this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = banner;
           canvas.style.cursor = 'pointer';
         } else {
           this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = null;
           canvas.style.cursor = 'default';
         }
       }
@@ -136,6 +145,14 @@ export class InteractionHandler {
         if (citizen) {
           this.renderer.selectedCitizen = citizen;
           this.events.onCitizenClick?.(citizen);
+          return;
+        }
+
+        // 1b. Check if clicked directly on a sponsor billboard banner
+        const banner = hitTestBanner(world.x, world.y);
+        if (banner) {
+          this.renderer.selectedCitizen = null;
+          this.events.onBannerClick?.(banner);
           return;
         }
 
