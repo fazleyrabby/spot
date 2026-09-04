@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { query } from './db.js';
 
 export interface WelcomeClaimEmailInput {
   to: string;
@@ -25,12 +26,57 @@ interface SendEmailParams {
   subject: string;
   html: string;
   text: string;
+  kind?: string;
+  referenceId?: string;
 }
 
 /**
- * Dispatch transactional email via Resend REST API
+ * Check whether an email for this kind and reference ID has already been recorded
  */
-async function sendEmail({ to, subject, html, text }: SendEmailParams): Promise<boolean> {
+export async function hasEmailBeenSent(kind: string, referenceId: string): Promise<boolean> {
+  try {
+    const res = await query('SELECT 1 FROM email_logs WHERE kind = $1 AND reference_id = $2 LIMIT 1', [kind, referenceId]);
+    return res.rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Record sent email into database for idempotency & deliverability auditing
+ */
+export async function logEmailSent(
+  kind: string,
+  referenceId: string,
+  recipientEmail: string,
+  resendId: string | null,
+  status: 'sent' | 'failed' = 'sent'
+): Promise<void> {
+  try {
+    await query(
+      `INSERT INTO email_logs (kind, reference_id, recipient_email, resend_id, status)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (kind, reference_id) DO NOTHING`,
+      [kind, referenceId, recipientEmail, resendId, status]
+    );
+  } catch (err) {
+    console.error('[Mailer] Error logging email:', err);
+  }
+}
+
+/**
+ * Dispatch transactional email via Resend REST API with duplicate prevention
+ */
+async function sendEmail({ to, subject, html, text, kind, referenceId }: SendEmailParams): Promise<boolean> {
+  // Idempotency check: prevent duplicate sends for payment webhooks and duplicate claims
+  if (kind && referenceId) {
+    const alreadySent = await hasEmailBeenSent(kind, referenceId);
+    if (alreadySent) {
+      console.log(`[Mailer Idempotency] Email (${kind}:${referenceId}) already sent to ${to}; skipping duplicate.`);
+      return true;
+    }
+  }
+
   const apiKey = config.resendApiKey;
   if (!apiKey) {
     console.warn('[Mailer] RESEND_API_KEY is not configured; skipping email dispatch.');
@@ -56,14 +102,23 @@ async function sendEmail({ to, subject, html, text }: SendEmailParams): Promise<
     if (!res.ok) {
       const errBody = await res.text().catch(() => '');
       console.error(`[Mailer] Resend API error (${res.status}):`, errBody);
+      if (kind && referenceId) {
+        await logEmailSent(kind, referenceId, to, null, 'failed');
+      }
       return false;
     }
 
     const data = await res.json().catch(() => ({}));
     console.log(`[Mailer] Successfully sent email to ${to} (ID: ${data.id})`);
+    if (kind && referenceId) {
+      await logEmailSent(kind, referenceId, to, data?.id || null, 'sent');
+    }
     return true;
   } catch (err) {
     console.error('[Mailer] Network error sending email:', err);
+    if (kind && referenceId) {
+      await logEmailSent(kind, referenceId, to, null, 'failed');
+    }
     return false;
   }
 }
@@ -159,7 +214,14 @@ https://claimyourspot.lol`;
 </body>
 </html>`;
 
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+    kind: 'welcome_claim',
+    referenceId: citizenId,
+  });
 }
 
 /**
@@ -259,5 +321,12 @@ https://claimyourspot.lol`;
 </body>
 </html>`;
 
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+    kind: 'billboard_sponsor',
+    referenceId: saleId,
+  });
 }

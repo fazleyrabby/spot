@@ -55,6 +55,19 @@ export async function checkDbConnection(): Promise<boolean> {
       WHERE session_token_hash IS NOT NULL AND session_token_hash <> ''
       ON CONFLICT (token_hash) DO NOTHING;
     `).catch(() => {});
+    // Ensure email_logs table exists for transactional email tracking
+    await query(`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id SERIAL PRIMARY KEY,
+        kind VARCHAR(32) NOT NULL,
+        reference_id VARCHAR(128) NOT NULL,
+        recipient_email VARCHAR(255) NOT NULL,
+        resend_id VARCHAR(64),
+        status VARCHAR(16) DEFAULT 'sent',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        CONSTRAINT email_logs_kind_reference_unique UNIQUE (kind, reference_id)
+      );
+    `).catch(() => {});
     return true;
   } catch (err) {
     console.error('[Database Connection Failed]', err);
