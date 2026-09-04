@@ -93,9 +93,13 @@ async function sendEmail({ to, subject, html, text, kind, referenceId }: SendEma
       body: JSON.stringify({
         from: config.emailFrom,
         to: [to],
+        reply_to: 'welcome@claimyourspot.lol',
         subject,
         html,
         text,
+        headers: {
+          'X-Entity-Ref-ID': referenceId || 'spot-system',
+        },
       }),
     });
 
