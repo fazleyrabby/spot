@@ -202,7 +202,10 @@ export const WORLD_SECRETS: WorldSecret[] = [
 
 export function getSecretAt(gx: number, gy: number): WorldSecret | null {
   for (const s of WORLD_SECRETS) {
-    if (Math.abs(s.gx - gx) <= 1 && Math.abs(s.gy - gy) <= 1) {
+    const dx = Math.abs(s.gx - gx);
+    const dy = Math.abs(s.gy - gy);
+    const xDist = s.id === 'dev_library' ? 2 : 1;
+    if (dx <= xDist && dy <= 1) {
       return s;
     }
   }

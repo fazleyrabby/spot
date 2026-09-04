@@ -326,7 +326,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   if (gx === 44 && gy === 52) {
     return {
       gx, gy, type: 'dev_library', wx, wy,
-      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 95,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.35)', lightRadius: 140,
     };
   }
 
