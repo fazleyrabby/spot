@@ -48,6 +48,13 @@ export async function checkDbConnection(): Promise<boolean> {
   try {
     const res = await query('SELECT 1 as health, count(*) as spot_count FROM spots');
     console.log(`[Database Connected] Spots in registry: ${res.rows[0].spot_count}`);
+    // Automatically migrate any legacy single-token session hashes into multi-session table
+    await query(`
+      INSERT INTO citizen_sessions (citizen_id, token_hash)
+      SELECT id, session_token_hash FROM citizens
+      WHERE session_token_hash IS NOT NULL AND session_token_hash <> ''
+      ON CONFLICT (token_hash) DO NOTHING;
+    `).catch(() => {});
     return true;
   } catch (err) {
     console.error('[Database Connection Failed]', err);

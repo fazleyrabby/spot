@@ -197,6 +197,11 @@ spotsRouter.post(
         citizen = citizenRes.rows[0];
         createdCitizenId = citizenRes.rows[0].id;
         rawToken = newRawToken;
+        await query(
+          `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+           ON CONFLICT (token_hash) DO NOTHING`,
+          [createdCitizenId, tokenHash]
+        );
         res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
       } catch (err: any) {
         console.error('Error creating citizen during claim:', err);
