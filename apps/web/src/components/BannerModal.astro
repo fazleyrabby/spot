@@ -65,25 +65,13 @@
 
         <div class="banner-inputs-grid">
           <div class="banner-field">
-            <label for="banner-input-headline" class="banner-field-label">Headline / Marquee Text *</label>
+            <label for="banner-input-name" class="banner-field-label">Brand / Sponsor Name *</label>
             <input
               type="text"
-              id="banner-input-headline"
-              class="banner-text-input mono-font"
-              placeholder="E.g. DEPLOY WITH ACME"
-              maxlength="24"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="banner-field">
-            <label for="banner-input-subtext" class="banner-field-label">Tagline / Subtext</label>
-            <input
-              type="text"
-              id="banner-input-subtext"
+              id="banner-input-name"
               class="banner-text-input"
-              placeholder="E.g. Instant cloud hosting for builders"
-              maxlength="45"
+              placeholder="E.g. Acme Cloud Corp"
+              maxlength="30"
               autocomplete="off"
             />
           </div>
@@ -100,24 +88,36 @@
           </div>
 
           <div class="banner-field">
+            <label for="banner-input-headline" class="banner-field-label">Headline / Marquee Text (Optional)</label>
+            <input
+              type="text"
+              id="banner-input-headline"
+              class="banner-text-input mono-font"
+              placeholder="E.g. DEPLOY WITH ACME"
+              maxlength="24"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="banner-field">
+            <label for="banner-input-subtext" class="banner-field-label">Tagline / Subtext (Optional)</label>
+            <input
+              type="text"
+              id="banner-input-subtext"
+              class="banner-text-input"
+              placeholder="E.g. Instant cloud hosting for builders"
+              maxlength="45"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="banner-field">
             <label for="banner-input-image" class="banner-field-label">Logo or Banner Image Link (Optional)</label>
             <input
               type="url"
               id="banner-input-image"
               class="banner-text-input mono-font"
               placeholder="https://yourproduct.com/logo.png"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="banner-field">
-            <label for="banner-input-name" class="banner-field-label">Brand / Sponsor Name</label>
-            <input
-              type="text"
-              id="banner-input-name"
-              class="banner-text-input"
-              placeholder="E.g. Acme Cloud Corp"
-              maxlength="30"
               autocomplete="off"
             />
           </div>
@@ -201,7 +201,7 @@
   .banner-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(8, 11, 18, 0.82);
+    background: rgba(8, 11, 18, 0.84);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     display: none;
@@ -222,19 +222,37 @@
 
   .banner-card {
     position: relative;
-    width: 92vw;
-    max-width: 480px;
+    width: min(92vw, 490px);
     background: rgba(11, 15, 23, 0.96);
     border: 1px solid rgba(245, 158, 11, 0.35);
     border-radius: 12px;
-    padding: 24px;
+    padding: 22px 20px;
     box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
+  }
+
+  .banner-card::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .banner-card::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .banner-card::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.3);
+    border-radius: 4px;
+  }
+
+  .banner-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.5);
   }
 
   @keyframes modalPop {
@@ -246,8 +264,8 @@
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     color: var(--text-muted);
     background: rgba(255, 255, 255, 0.04);
@@ -257,6 +275,7 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.15s ease;
+    z-index: 2;
   }
 
   .modal-close-btn:hover {
@@ -268,12 +287,13 @@
   .banner-modal-header {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    padding-right: 36px;
   }
 
   .banner-icon-badge {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     border-radius: 8px;
     background: rgba(245, 158, 11, 0.12);
     border: 1px solid rgba(245, 158, 11, 0.35);
@@ -302,11 +322,12 @@
 
   .banner-modal-title {
     font-family: var(--font-tech);
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--text-primary);
-    line-height: 1.2;
-    letter-spacing: 0.03em;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    word-break: break-word;
   }
 
   .banner-coords {
@@ -321,14 +342,13 @@
     background: #080c14;
     border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 10px;
-    padding: 22px 20px 18px;
+    padding: 16px 14px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     overflow: hidden;
-    margin-bottom: 16px;
     box-shadow: inset 0 0 28px rgba(245, 158, 11, 0.08), 0 8px 24px rgba(0, 0, 0, 0.55);
   }
 
@@ -349,7 +369,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .screen-tag {
@@ -368,9 +388,9 @@
   .screen-cover-wrap {
     position: relative;
     width: 100%;
-    max-height: 140px;
-    margin: 8px 0 12px 0;
-    border-radius: 8px;
+    max-height: 130px;
+    margin: 4px 0 10px 0;
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.16);
     background: #05080f;
@@ -382,7 +402,7 @@
 
   .screen-cover-image {
     width: 100%;
-    height: 140px;
+    height: 130px;
     object-fit: cover;
     object-position: center;
     display: block;
@@ -402,26 +422,31 @@
 
   .screen-headline {
     font-family: var(--font-tech);
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     color: #f8fafc;
     text-shadow: 0 0 14px rgba(245, 158, 11, 0.6);
     line-height: 1.25;
-    margin: 2px 0 6px 0;
+    margin: 2px 0 4px 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .screen-subtext {
     font-family: var(--font-sans);
     font-size: 0.8rem;
     color: #94a3b8;
-    margin: 0 0 14px 0;
-    line-height: 1.4;
+    margin: 0 0 10px 0;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .screen-status-bar {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     font-family: var(--font-tech);
     font-size: 0.72rem;
@@ -432,6 +457,9 @@
     border: 1px solid rgba(56, 189, 248, 0.3);
     padding: 4px 12px;
     border-radius: 20px;
+    flex-wrap: wrap;
+    max-width: 100%;
+    word-break: break-word;
   }
 
   .screen-led-pip {
@@ -440,6 +468,7 @@
     border-radius: 50%;
     background: #38bdf8;
     box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
+    flex-shrink: 0;
   }
 
   .screen-expiry-badge {
@@ -455,6 +484,7 @@
     background: rgba(56, 189, 248, 0.2);
     border: 1px solid rgba(56, 189, 248, 0.4);
     letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .screen-expiry-badge.urgent {
@@ -464,7 +494,13 @@
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
   }
 
-  /* ── Live Ad Customizer Form ─────────────────────────────────────────── */
+  /* ── Modal Body & Customizer Form ─────────────────────────────────────── */
+  .banner-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .banner-customizer-card {
     display: flex;
     flex-direction: column;
@@ -481,6 +517,8 @@
     justify-content: space-between;
     padding-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   .customizer-badge {
@@ -519,13 +557,15 @@
 
   .banner-text-input {
     width: 100%;
-    padding: 7px 10px;
+    padding: 8px 10px;
+    min-height: 36px;
     background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 5px;
+    border-radius: 6px;
     color: var(--text-primary);
     font-size: 0.78rem;
     outline: none;
+    box-sizing: border-box;
     transition: all 0.15s ease;
   }
 
@@ -551,8 +591,10 @@
   }
 
   .color-pip {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
     border-radius: 50%;
     background: var(--pip-color);
     border: 2px solid transparent;
@@ -605,12 +647,14 @@
     flex-direction: column;
     gap: 3px;
     min-width: 0;
+    flex: 1;
   }
 
   .citizen-card-header {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
   }
 
   .citizen-name {
@@ -618,6 +662,9 @@
     font-size: 0.88rem;
     font-weight: 800;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .citizen-verified-pip {
@@ -631,12 +678,14 @@
     color: #0b0f17;
     font-size: 0.6rem;
     font-weight: 900;
+    flex-shrink: 0;
   }
 
   .citizen-card-sub {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
 
   .citizen-plot-btn {
@@ -686,6 +735,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
 
   .guest-card-title {
@@ -700,26 +750,35 @@
     color: var(--text-muted);
   }
 
+  .banner-modal-desc {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-secondary, #94a3b8);
+    margin: 0;
+    padding: 2px 2px;
+  }
+
   /* ── Footer Actions ──────────────────────────────────────────────────── */
   .banner-modal-footer {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 6px;
     width: 100%;
   }
 
   .btn-banner-visit {
     width: 100%;
+    min-height: 42px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 11px 18px;
+    padding: 10px 16px;
     background: #00f0ff;
     color: #0b0f17;
     font-family: var(--font-tech);
-    font-size: 0.86rem;
+    font-size: 0.84rem;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -727,8 +786,8 @@
     text-decoration: none;
     box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
     transition: all 0.15s ease;
-    white-space: nowrap;
     box-sizing: border-box;
+    text-align: center;
   }
 
   .btn-banner-visit:hover {
@@ -739,18 +798,19 @@
 
   .banner-footer-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
     width: 100%;
   }
 
   .btn-banner-notify {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px 14px;
+    padding: 9px 12px;
     background: #f59e0b;
     color: #0c0f17;
     font-family: var(--font-tech);
@@ -763,8 +823,9 @@
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3), 0 2px 8px rgba(245, 158, 11, 0.25);
     cursor: pointer;
     transition: all 0.15s ease;
-    white-space: nowrap;
     box-sizing: border-box;
+    text-align: center;
+    line-height: 1.25;
   }
 
   .btn-banner-notify.secondary {
@@ -786,10 +847,12 @@
   }
 
   .btn-banner-dismiss {
+    flex: 0 0 auto;
+    min-height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 16px;
+    padding: 9px 14px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-secondary);
     font-family: var(--font-tech);
@@ -802,10 +865,81 @@
     transition: all 0.15s ease;
     white-space: nowrap;
     box-sizing: border-box;
+    text-align: center;
   }
 
   .btn-banner-dismiss:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
+  }
+
+  /* ── Responsive Adaptations ──────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .banner-modal-backdrop {
+      padding: 8px;
+    }
+
+    .banner-card {
+      padding: 16px 14px;
+      gap: 12px;
+      max-height: calc(100dvh - 16px);
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .banner-modal-header {
+      padding-right: 32px;
+      gap: 10px;
+    }
+
+    .banner-icon-badge {
+      width: 38px;
+      height: 38px;
+    }
+
+    .banner-modal-title {
+      font-size: 1.1rem;
+    }
+
+    .banner-preview-screen {
+      padding: 12px 10px 10px;
+    }
+
+    .screen-headline {
+      font-size: 1.15rem;
+    }
+
+    .screen-subtext {
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+    }
+
+    .screen-cover-wrap {
+      max-height: 105px;
+    }
+
+    .screen-cover-image {
+      height: 105px;
+    }
+
+    .screen-status-bar {
+      font-size: 0.68rem;
+      padding: 3px 8px;
+    }
+
+    .banner-footer-row {
+      flex-direction: column-reverse;
+      gap: 6px;
+    }
+
+    .btn-banner-notify {
+      width: 100%;
+      min-height: 38px;
+    }
+
+    .btn-banner-dismiss {
+      width: 100%;
+      min-height: 36px;
+    }
   }
 </style>
