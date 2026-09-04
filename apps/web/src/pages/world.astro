@@ -1345,6 +1345,12 @@ import BannerModal from '../components/BannerModal.astro';
             });
             if (syncRes?.citizen) {
               sessionCitizen = syncRes.citizen;
+              if (syncRes.sessionToken) {
+                localStorage.setItem('spot_session_token', syncRes.sessionToken);
+              }
+              if (syncRes.ownedSpot) {
+                localStorage.setItem('spot_my_owned', JSON.stringify(syncRes.ownedSpot));
+              }
             }
           }
         }
@@ -1353,6 +1359,9 @@ import BannerModal from '../components/BannerModal.astro';
           const session = await fetchMySession();
           if (session?.citizen) {
             sessionCitizen = session.citizen;
+            if (session.ownedSpot) {
+              localStorage.setItem('spot_my_owned', JSON.stringify(session.ownedSpot));
+            }
           }
         }
 
@@ -1958,7 +1967,7 @@ import BannerModal from '../components/BannerModal.astro';
   // Listen to Supabase GitHub auth events live
   if (supabase) {
     supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         const user = session.user;
         const metadata = user.user_metadata || {};
         try {
@@ -1973,6 +1982,9 @@ import BannerModal from '../components/BannerModal.astro';
           if (syncRes?.citizen) {
             const cit = syncRes.citizen;
             cit.isVerified = Boolean(cit.isVerified || cit.githubUrl || (cit as any).githubId);
+            if (syncRes.sessionToken) {
+              localStorage.setItem('spot_session_token', syncRes.sessionToken);
+            }
             localStorage.setItem('spot_my_citizen', JSON.stringify({
               id: cit.id,
               displayName: cit.displayName,

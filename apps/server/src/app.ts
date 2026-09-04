@@ -13,6 +13,15 @@ export const app: express.Express = express();
 // Trust proxy for accurate IP rate limiting behind multi-hop Cloudflare/Traefik reverse proxy
 app.set('trust proxy', true);
 
+// Canonical Domain Redirect: enforce apex domain https://claimyourspot.lol in production
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase();
+  if (config.isProd && host.startsWith('www.claimyourspot.lol')) {
+    return res.redirect(301, `https://claimyourspot.lol${req.originalUrl}`);
+  }
+  next();
+});
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 

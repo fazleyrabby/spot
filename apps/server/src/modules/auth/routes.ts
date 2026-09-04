@@ -212,6 +212,13 @@ authRouter.post('/github/sync', authSyncLimiter, async (req, res) => {
       citizen = insertRes.rows[0];
     }
 
+    // Persist multi-device session in citizen_sessions table so other devices are not logged out
+    await query(
+      `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+       ON CONFLICT (token_hash) DO NOTHING`,
+      [citizen.id, tokenHash]
+    );
+
     const spotRes = await query<any>(`SELECT id, x, y, claimed_at as "claimedAt" FROM spots WHERE owner_id = $1 LIMIT 1`, [citizen.id]);
 
     res.cookie(COOKIE_NAME, rawToken, COOKIE_OPTIONS);

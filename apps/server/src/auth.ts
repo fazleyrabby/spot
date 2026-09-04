@@ -6,12 +6,18 @@ import type { Citizen } from '@spot/shared';
 
 export const COOKIE_NAME = 'spot_session_token';
 
+const cookieDomain =
+  config.isProd && config.rpId?.includes('claimyourspot.lol')
+    ? '.claimyourspot.lol'
+    : undefined;
+
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: config.isProd,
   sameSite: 'lax' as const,
   maxAge: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years (permanent identity)
   path: '/',
+  domain: cookieDomain,
 };
 
 /**
