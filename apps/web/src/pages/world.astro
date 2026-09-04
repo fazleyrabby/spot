@@ -813,17 +813,28 @@ import BannerModal from '../components/BannerModal.astro';
     if (bannerDistrict) bannerDistrict.textContent = banner.district;
     if (bannerTitle) bannerTitle.textContent = banner.name;
     if (bannerCoords) bannerCoords.textContent = `Grid: (${banner.gx}, ${banner.gy})`;
+    selectedAccentColor = banner.accentColor || '#00f0ff';
+    if (bannerPreviewScreen) bannerPreviewScreen.style.borderColor = selectedAccentColor;
+    if (bannerPreviewLed) bannerPreviewLed.style.background = selectedAccentColor;
     if (bannerTag) {
       bannerTag.textContent = banner.tag;
-      bannerTag.style.color = banner.accentColor;
+      bannerTag.style.color = selectedAccentColor;
     }
     if (bannerHeadline) {
       bannerHeadline.textContent = banner.headline;
-      bannerHeadline.style.textShadow = `0 0 12px ${banner.accentColor}`;
+      bannerHeadline.style.textShadow = `0 0 12px ${selectedAccentColor}`;
     }
     if (bannerSubtext) bannerSubtext.textContent = banner.subtext;
     if (bannerStatus) bannerStatus.textContent = banner.statusText;
     if (bannerDesc) bannerDesc.textContent = banner.description;
+
+    colorPips.forEach((pip) => {
+      if (pip.dataset.color?.toLowerCase() === selectedAccentColor.toLowerCase()) {
+        pip.classList.add('active');
+      } else {
+        pip.classList.remove('active');
+      }
+    });
 
     // Reset or initialize customizer values
     if (bannerInputHeadline) bannerInputHeadline.value = '';
