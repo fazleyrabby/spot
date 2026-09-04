@@ -160,6 +160,10 @@ export async function requireAuthMiddleware(
 }
 
 export function clientIp(req: Request): string | null {
+  const cfIp = req.headers['cf-connecting-ip'] as string;
+  if (cfIp) return cfIp.trim();
+  const realIp = req.headers['x-real-ip'] as string;
+  if (realIp) return realIp.trim();
   const fwd = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim();
   return fwd || req.socket?.remoteAddress || req.ip || null;
 }
