@@ -296,6 +296,7 @@
     align-items: center;
     gap: 12px;
     padding-right: 36px;
+    flex-shrink: 0;
   }
 
   .banner-icon-badge {
@@ -346,6 +347,10 @@
   /* ── Holographic Screen Preview ────────────────────────────────────────── */
   .banner-preview-screen {
     position: relative;
+    flex-shrink: 0;
+    min-height: 124px;
+    width: 100%;
+    box-sizing: border-box;
     background: #080c14;
     border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 10px;
@@ -797,6 +802,7 @@
     flex-direction: column;
     gap: 8px;
     width: 100%;
+    flex-shrink: 0;
   }
 
   .btn-banner-visit {
@@ -935,6 +941,7 @@
 
     .banner-preview-screen {
       padding: 12px 10px 10px;
+      min-height: 110px;
     }
 
     .screen-headline {
