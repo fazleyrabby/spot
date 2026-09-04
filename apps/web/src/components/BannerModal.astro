@@ -132,6 +132,13 @@
               <button type="button" class="color-pip" data-color="#c084fc" style="--pip-color: #c084fc;" title="Cosmic Violet"></button>
             </div>
           </div>
+
+          <div class="banner-policy-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="policy-icon">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span><strong>Guidelines:</strong> Tech tools, SaaS, startups, portfolios & creator products only. Crypto/tokens, gambling, alcohol/drinks, and adult/NSFW content are strictly prohibited.</span>
+          </div>
         </div>
       </div>
 
@@ -165,7 +172,7 @@
       </div>
 
       <p class="banner-modal-desc" id="banner-modal-desc">
-        Spot World is introducing spatial brand & project placements. Feature your developer tool, startup, Web3 project, or open-source community directly in front of thousands of active digital citizens.
+        Spot World features spatial project & brand placements. Promote your developer tool, SaaS, startup, or open-source community directly in front of thousands of active digital citizens.
       </p>
     </div>
 
@@ -610,6 +617,31 @@
     border-color: #ffffff;
     box-shadow: 0 0 10px var(--pip-color);
     transform: scale(1.18);
+  }
+
+  .banner-policy-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-top: 4px;
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  .banner-policy-note strong {
+    color: #fbbf24;
+  }
+
+  .policy-icon {
+    color: #fbbf24;
+    flex-shrink: 0;
+    margin-top: 2px;
   }
 
   /* ── Citizen & Guest Sponsor Cards ───────────────────────────────────── */
