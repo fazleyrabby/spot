@@ -923,128 +923,344 @@ export class Renderer {
 
       case 'dev_library': {
         const isHovered = this.hoveredSecret?.id === 'dev_library';
-        const bob = Math.sin(this.tick * 0.08) * 2 * z;
+        const bob = Math.sin(this.tick * 0.07) * 2.5 * z;
 
-        // 1. Ground Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        // 1. Broad Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
         ctx.beginPath();
-        ctx.ellipse(sx, sy + 2 * z, 26 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy + 3 * z, 58 * z, 14 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 2. Foundation Steps
+        // 2. Three-Tier Grand Granite Steps & Foundation Terrace (Wide Base ~108px base)
+        // Level 1: Plaza Base
+        ctx.fillStyle = '#0a0f1d';
+        ctx.beginPath();
+        ctx.roundRect(sx - 54 * z, sy - 2 * z, 108 * z, 7 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Level 2: Mid Step
         ctx.fillStyle = '#0f172a';
         ctx.beginPath();
-        ctx.roundRect(sx - 24 * z, sy - 4 * z, 48 * z, 8 * z, 2 * z);
+        ctx.roundRect(sx - 50 * z, sy - 5 * z, 100 * z, 5 * z, 1.5 * z);
         ctx.fill();
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 1 * z;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
         ctx.stroke();
 
-        // 3. Main Cyber Facade
-        ctx.fillStyle = isHovered ? '#0f1a36' : '#0a1024';
+        // Level 3: Upper Terrace
+        ctx.fillStyle = '#131d33';
         ctx.beginPath();
-        ctx.roundRect(sx - 20 * z, sy - 34 * z, 40 * z, 32 * z, 4 * z);
+        ctx.roundRect(sx - 46 * z, sy - 8 * z, 92 * z, 4 * z, 1.5 * z);
         ctx.fill();
-        ctx.strokeStyle = isHovered ? '#00f0ff' : 'rgba(0, 240, 255, 0.4)';
-        ctx.lineWidth = 1.5 * z;
-        ctx.stroke();
 
-        // 4. Vertical Neon Pillars (Cyan LED Accent)
-        ctx.fillStyle = '#00f0ff';
-        ctx.fillRect(sx - 19 * z, sy - 32 * z, 2.5 * z, 30 * z);
-        ctx.fillRect(sx + 16.5 * z, sy - 32 * z, 2.5 * z, 30 * z);
-
-        // 5. Arched Entrance with Warm Interior Light
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
-        ctx.beginPath();
-        ctx.arc(sx, sy - 14 * z, 8 * z, Math.PI, 0);
-        ctx.lineTo(sx + 8 * z, sy - 2 * z);
-        ctx.lineTo(sx - 8 * z, sy - 2 * z);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
-        ctx.lineWidth = 1 * z;
-        ctx.stroke();
-
-        // Interior Bookshelves (Visible through open cyber-arch)
-        const bookColors = ['#00f0ff', '#f59e0b', '#ec4899', '#10b981', '#a855f7'];
-        for (let b = 0; b < 4; b++) {
-          ctx.fillStyle = bookColors[b % bookColors.length];
-          ctx.fillRect(sx - 5.5 * z + b * 2.8 * z, sy - 12 * z, 2 * z, 5 * z);
-          ctx.fillRect(sx - 5.5 * z + b * 2.8 * z, sy - 6 * z, 2 * z, 4 * z);
+        // Plaza Twin Pedestal Lanterns (Outer Edges)
+        for (const lx of [sx - 49 * z, sx + 49 * z]) {
+          // Pedestal base
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(lx - 2 * z, sy - 8 * z, 4 * z, 6 * z);
+          // Amber glow lamp
+          ctx.fillStyle = isHovered ? 'rgba(251, 191, 36, 0.95)' : 'rgba(251, 191, 36, 0.75)';
+          ctx.beginPath();
+          ctx.arc(lx, sy - 10 * z, 2.5 * z, 0, Math.PI * 2);
+          ctx.fill();
+          // Soft ambient glow
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.15)';
+          ctx.beginPath();
+          ctx.arc(lx, sy - 10 * z, 7 * z, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        // 6. Cyber Marquee Header & Signboard
-        ctx.fillStyle = '#1e293b';
+        // 3. West & East Wings (Colonnaded Reading Halls)
+        const wingW = 28 * z;
+        const wingH = 34 * z;
+        const wingY = sy - 40 * z;
+
+        // West Wing
+        ctx.fillStyle = isHovered ? '#10172c' : '#0b1122';
         ctx.beginPath();
-        ctx.roundRect(sx - 18 * z, sy - 32 * z, 36 * z, 9 * z, 2 * z);
+        ctx.roundRect(sx - 44 * z, wingY, wingW, wingH, [3 * z, 0, 0, 0]);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.lineWidth = 1 * z;
         ctx.stroke();
 
-        if (z >= 0.65) {
-          ctx.font = `bold ${Math.max(6, Math.floor(6.5 * z))}px monospace`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#00f0ff';
-          ctx.fillText('🏛️ THE CODEX', sx, sy - 27.5 * z);
+        // East Wing
+        ctx.beginPath();
+        ctx.roundRect(sx + 16 * z, wingY, wingW, wingH, [0, 3 * z, 0, 0]);
+        ctx.fill();
+        ctx.stroke();
+
+        // Wing Roof Cornice & Balustrades
+        ctx.fillStyle = '#1a243a';
+        ctx.fillRect(sx - 45 * z, wingY - 2.5 * z, wingW + 1 * z, 3 * z);
+        ctx.fillRect(sx + 16 * z, wingY - 2.5 * z, wingW + 1 * z, 3 * z);
+
+        // Balustrade notches along wings
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        for (let bx = -43; bx <= -19; bx += 4) {
+          ctx.fillRect(sx + bx * z, wingY - 4.5 * z, 2 * z, 2.5 * z);
+        }
+        for (let bx = 17; bx <= 41; bx += 4) {
+          ctx.fillRect(sx + bx * z, wingY - 4.5 * z, 2 * z, 2.5 * z);
         }
 
-        // 7. Roof Pediment / Cyber Crest
-        ctx.fillStyle = '#1e1b4b';
+        // Arched Stained Glass Windows on Wings (4 Windows Total with Interior Bookshelves Visible!)
+        const windowCenters = [sx - 37 * z, sx - 23 * z, sx + 23 * z, sx + 37 * z];
+        const bookPalette = ['#38bdf8', '#fbbf24', '#f472b6', '#34d399', '#a78bfa'];
+
+        for (let i = 0; i < windowCenters.length; i++) {
+          const wx = windowCenters[i];
+          const wy = sy - 34 * z;
+          const ww = 8 * z;
+          const wh = 18 * z;
+
+          // Window Frame & Warm Glow
+          ctx.fillStyle = isHovered ? 'rgba(245, 158, 11, 0.32)' : 'rgba(245, 158, 11, 0.18)';
+          ctx.beginPath();
+          ctx.arc(wx, wy, ww / 2, Math.PI, 0);
+          ctx.lineTo(wx + ww / 2, wy + wh);
+          ctx.lineTo(wx - ww / 2, wy + wh);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+          ctx.lineWidth = 0.8 * z;
+          ctx.stroke();
+
+          // Interior Bookcases visible inside window pane
+          for (let b = 0; b < 3; b++) {
+            ctx.fillStyle = bookPalette[(i + b * 2) % bookPalette.length];
+            ctx.fillRect(wx - 3 * z + b * 2.2 * z, wy + 4 * z, 1.8 * z, 5 * z);
+            ctx.fillRect(wx - 3 * z + b * 2.2 * z, wy + 11 * z, 1.8 * z, 5 * z);
+          }
+
+          // Window Mullions (Crossbars)
+          ctx.strokeStyle = '#0b1122';
+          ctx.lineWidth = 0.8 * z;
+          ctx.beginPath();
+          ctx.moveTo(wx, wy - ww / 2);
+          ctx.lineTo(wx, wy + wh);
+          ctx.moveTo(wx - ww / 2, wy + wh / 2);
+          ctx.lineTo(wx + ww / 2, wy + wh / 2);
+          ctx.stroke();
+        }
+
+        // 4. Grand Central Portico / Entrance Pavilion (Elevated & Prominent)
+        const porticoW = 34 * z;
+        const porticoH = 40 * z;
+        const porticoY = sy - 46 * z;
+
+        ctx.fillStyle = isHovered ? '#151f38' : '#0f172c';
         ctx.beginPath();
-        ctx.moveTo(sx - 22 * z, sy - 34 * z);
-        ctx.lineTo(sx, sy - 42 * z);
-        ctx.lineTo(sx + 22 * z, sy - 34 * z);
-        ctx.closePath();
+        ctx.roundRect(sx - porticoW / 2, porticoY, porticoW, porticoH, 2 * z);
         ctx.fill();
-        ctx.strokeStyle = '#818cf8';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
         ctx.lineWidth = 1.2 * z;
         ctx.stroke();
 
-        // 8. Floating Holographic Tome (Glow & Bob)
-        const tomeY = sy - 48 * z + bob;
-        // Floating holo aura
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
-        ctx.beginPath();
-        ctx.arc(sx, tomeY, 9 * z, 0, Math.PI * 2);
-        ctx.fill();
+        // 4 Neoclassical Fluted Columns in Front of Portico
+        const colPositions = [sx - 14 * z, sx - 5 * z, sx + 5 * z, sx + 14 * z];
+        for (const cx of colPositions) {
+          // Column Base Plinth
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(cx - 2.5 * z, sy - 11 * z, 5 * z, 3 * z);
+          // Column Shaft
+          ctx.fillStyle = isHovered ? '#e2e8f0' : '#cbd5e1';
+          ctx.fillRect(cx - 1.8 * z, sy - 38 * z, 3.6 * z, 27 * z);
+          // Fluted Center Groove (depth highlight)
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(cx - 0.4 * z, sy - 38 * z, 0.8 * z, 27 * z);
+          // Column Capital Cap
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(cx - 2.5 * z, sy - 40 * z, 5 * z, 2.5 * z);
+        }
 
-        // Open pixel book glyph
+        // Grand Arched Main Entrance
+        const doorW = 14 * z;
+        const doorH = 21 * z;
+        const doorY = sy - 28 * z;
+
+        // Warm foyer glow spilling onto the terrace
+        ctx.fillStyle = isHovered ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.22)';
+        ctx.beginPath();
+        ctx.arc(sx, doorY, doorW / 2, Math.PI, 0);
+        ctx.lineTo(sx + doorW / 2, sy - 7 * z);
+        ctx.lineTo(sx - doorW / 2, sy - 7 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Deep interior library stacks & reading hall
+        for (let b = 0; b < 5; b++) {
+          ctx.fillStyle = bookPalette[b % bookPalette.length];
+          ctx.fillRect(sx - 5 * z + b * 2.2 * z, doorY - 1 * z, 1.8 * z, 6 * z);
+          ctx.fillRect(sx - 5 * z + b * 2.2 * z, doorY + 8 * z, 1.8 * z, 5 * z);
+        }
+
+        // Half-open mahogany entrance doors
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(sx - 6.5 * z, doorY + 6 * z, 3.5 * z, 13 * z);
+        ctx.fillRect(sx + 3 * z, doorY + 6 * z, 3.5 * z, 13 * z);
+        // Brass door handles
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(sx - 4 * z, doorY + 12 * z, 0.8 * z, 2 * z);
+        ctx.fillRect(sx + 3.2 * z, doorY + 12 * z, 0.8 * z, 2 * z);
+
+        // 5. Classical Cyber Frieze & Header Sign
+        const friezeW = 38 * z;
+        const friezeY = sy - 45 * z;
+        ctx.fillStyle = '#162035';
+        ctx.beginPath();
+        ctx.roundRect(sx - friezeW / 2, friezeY, friezeW, 8.5 * z, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        if (z >= 0.55) {
+          ctx.font = `bold ${Math.max(6, Math.floor(6.5 * z))}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText('🏛️ THE GRAND CODEX', sx, friezeY + 4.5 * z);
+        }
+
+        // 6. Triangular Classical Cyber Pediment (Gable)
+        const pedY = sy - 46 * z;
+        const pedApexY = sy - 56 * z;
+        ctx.fillStyle = '#1c2742';
+        ctx.beginPath();
+        ctx.moveTo(sx - 20 * z, pedY);
+        ctx.lineTo(sx, pedApexY);
+        ctx.lineTo(sx + 20 * z, pedY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // Central Tympanum Relief Medallion (Golden Open Book Emblem)
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
-        ctx.roundRect(sx - 6 * z, tomeY - 4 * z, 12 * z, 8 * z, 1.5 * z);
+        ctx.arc(sx, pedY - 3.5 * z, 3 * z, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
+
+        // 7. Central Observatory Dome & Spire (Cupola)
+        const domeR = 10 * z;
+        const domeY = pedApexY - 1 * z;
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(sx, domeY, domeR, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Dome ribs
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 5 * z, domeY);
+        ctx.lineTo(sx, domeY - domeR);
+        ctx.moveTo(sx + 5 * z, domeY);
+        ctx.lineTo(sx, domeY - domeR);
+        ctx.stroke();
+
+        // Spire & Golden Finial
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, domeY - domeR);
+        ctx.lineTo(sx, domeY - domeR - 8 * z);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(sx, domeY - domeR - 8 * z, 1.8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 8. Floating Holographic Tome Beacon (Animated Bob & Levitating Aura)
+        const tomeY = domeY - domeR - 18 * z + bob;
+
+        // Holographic particle glints
+        const glintOffset = Math.sin(this.tick * 0.12);
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.beginPath();
+        ctx.arc(sx - 10 * z + glintOffset * 2 * z, tomeY - 2 * z, 1.2 * z, 0, Math.PI * 2);
+        ctx.arc(sx + 10 * z - glintOffset * 2 * z, tomeY + 2 * z, 1.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Floating holo aura
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.beginPath();
+        ctx.arc(sx, tomeY, 11 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Open 3D Tome - Left Page & Right Page
+        // Covers
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 8 * z, tomeY - 5 * z, 16 * z, 10 * z, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.lineWidth = 0.8 * z;
         ctx.stroke();
 
-        // Book pages spine
+        // Luminous Pages
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(sx - 0.5 * z, tomeY - 3.5 * z, 1 * z, 7 * z);
+        ctx.beginPath();
+        ctx.roundRect(sx - 7 * z, tomeY - 4 * z, 14 * z, 8 * z, 1 * z);
+        ctx.fill();
 
-        // 9. Interactive Hover Reticle Tooltip
+        // Book spine & text lines
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 0.5 * z, tomeY - 4 * z, 1 * z, 8 * z);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(sx - 5.5 * z, tomeY - 2 * z, 4 * z, 0.8 * z);
+        ctx.fillRect(sx - 5.5 * z, tomeY + 0.5 * z, 4 * z, 0.8 * z);
+        ctx.fillRect(sx + 1.5 * z, tomeY - 2 * z, 4 * z, 0.8 * z);
+        ctx.fillRect(sx + 1.5 * z, tomeY + 0.5 * z, 4 * z, 0.8 * z);
+
+        // 9. Interactive Hover Reticle Tooltip (Impeccable Quiet Luxury)
         if (isHovered) {
-          const pillY = sy - 60 * z + bob;
-          const text = '📚 The Grand Codex • Click to Enter';
-          ctx.font = `bold ${Math.max(9, Math.floor(10 * z))}px sans-serif`;
-          const tw = ctx.measureText(text).width;
-          const pw = tw + 18 * z;
-          const ph = 18 * z;
+          const pillY = tomeY - 14 * z;
+          const title = '📚 The Grand Codex';
+          const sub = 'Click to Enter';
 
-          ctx.fillStyle = 'rgba(11, 17, 32, 0.94)';
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+
+          // Drop Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 5 * z);
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
           ctx.fill();
-          ctx.strokeStyle = '#00f0ff';
-          ctx.lineWidth = 1.2 * z;
+
+          // Card Body
+          ctx.fillStyle = '#0d121c';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+
+          // Hairline Border
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+          ctx.lineWidth = 1 * z;
           ctx.stroke();
 
+          // Text
           ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(text, sx, pillY);
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+
+          ctx.font = `500 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
         }
         break;
       }
