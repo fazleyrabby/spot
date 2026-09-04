@@ -1,0 +1,1045 @@
+---
+/**
+ * LibraryModal — The Grand Codex: Curated Developer Vault & Resource Library in Spot World.
+ */
+import { LIBRARY_RESOURCES } from '../data/library-resources.js';
+---
+
+<div class="library-modal-backdrop" id="library-modal-backdrop" aria-hidden="true">
+  <div class="library-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="library-modal-title">
+    <button class="modal-close-btn" id="library-modal-close" aria-label="Close library">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Top Header -->
+    <div class="library-header">
+      <div class="library-header-main">
+        <div class="library-icon-frame">
+          <span class="library-icon">🏛️</span>
+        </div>
+        <div>
+          <div class="library-location-chip">📍 Grand Central Plaza • Sector (44, 52)</div>
+          <h2 class="library-title" id="library-modal-title">THE GRAND CODEX</h2>
+          <p class="library-subtitle">Curated Developer Vault & High-Utility Resources</p>
+        </div>
+      </div>
+
+      <div class="library-header-actions">
+        <button type="button" class="suggest-btn" id="library-suggest-toggle-btn">
+          <span>💡 Suggest a Tool</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Category Filters -->
+    <div class="library-toolbar">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          id="library-search-input"
+          placeholder="Search by name, tag, or topic (e.g. charts, bundle size, svg, sqlite)..."
+          autocomplete="off"
+        />
+        <button type="button" id="library-search-clear" class="clear-search-btn" style="display: none;">✕</button>
+      </div>
+
+      <div class="category-pills" id="library-category-pills">
+        <button type="button" class="cat-pill active" data-category="all">All ({LIBRARY_RESOURCES.length})</button>
+        <button type="button" class="cat-pill" data-category="featured">🌟 Featured</button>
+        <button type="button" class="cat-pill" data-category="visualizers">📊 Data & Charts</button>
+        <button type="button" class="cat-pill" data-category="devtools">🛠️ Dev Tools</button>
+        <button type="button" class="cat-pill" data-category="architecture">🧠 Architecture</button>
+        <button type="button" class="cat-pill" data-category="frontend">⚡ Frontend</button>
+        <button type="button" class="cat-pill" data-category="inspiration">🎨 Design & UI</button>
+      </div>
+    </div>
+
+    <!-- Suggestion Panel (Drawer / Toggle) -->
+    <div class="library-suggest-drawer" id="library-suggest-drawer" style="display: none;">
+      <div class="suggest-drawer-card">
+        <div class="suggest-drawer-header">
+          <h3>💡 Recommend a Dev Tool or Learning Gem</h3>
+          <button type="button" id="library-suggest-close-btn" class="drawer-close-btn">✕</button>
+        </div>
+        <p class="suggest-desc">
+          Know an awesome open-source project, developer tool, or interactive visualizer? Submit it for inclusion in The Grand Codex!
+        </p>
+
+        <form id="library-suggest-form" class="suggest-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="suggest-title">Tool / Project Name *</label>
+              <input type="text" id="suggest-title" required placeholder="e.g. Vizly" maxlength="100" />
+            </div>
+            <div class="form-group">
+              <label for="suggest-url">Website or GitHub URL *</label>
+              <input type="url" id="suggest-url" required placeholder="https://..." maxlength="500" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="suggest-category">Category</label>
+              <select id="suggest-category">
+                <option value="Data & Charts">Data & Charts</option>
+                <option value="Dev Tools">Dev Tools</option>
+                <option value="Architecture & Systems">Architecture & Systems</option>
+                <option value="Frontend">Frontend</option>
+                <option value="Design & UI">Design & UI</option>
+                <option value="AI & ML">AI & ML</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="suggest-author">Your Name or Citizen Handle</label>
+              <input type="text" id="suggest-author" placeholder="Optional" maxlength="50" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="suggest-desc-input">Why is this great? (1 sentence)</label>
+            <input type="text" id="suggest-desc-input" placeholder="e.g. Fast, modular web-native data visualization engine" maxlength="300" />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" id="suggest-cancel-btn">Cancel</button>
+            <button type="submit" class="btn-submit" id="suggest-submit-btn">Submit Recommendation →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bento Grid of Resources -->
+    <div class="library-grid-container" id="library-grid-container">
+      <div class="library-bento-grid" id="library-bento-grid">
+        {LIBRARY_RESOURCES.map((item) => (
+          <div
+            class={`resource-card ${item.featured ? 'is-featured' : ''}`}
+            data-category={item.category}
+            data-featured={item.featured ? 'true' : 'false'}
+            data-title={item.title.toLowerCase()}
+            data-tags={item.tags.join(' ').toLowerCase()}
+            data-desc={item.description.toLowerCase()}
+            style={`--accent-color: ${item.accentColor};`}
+          >
+            <div class="card-glow-overlay"></div>
+
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="title-row">
+                  <h3 class="card-title">{item.title}</h3>
+                  {item.badge && <span class="card-badge">{item.badge}</span>}
+                </div>
+                <div class="card-tagline">{item.tagline}</div>
+              </div>
+
+              <div class="card-creator">
+                {item.creatorUrl ? (
+                  <a href={item.creatorUrl} target="_blank" rel="noopener noreferrer" class="creator-link">
+                    by <span>{item.creator}</span> ↗
+                  </a>
+                ) : (
+                  <span class="creator-text">by {item.creator}</span>
+                )}
+              </div>
+            </div>
+
+            <p class="card-description">{item.description}</p>
+
+            <div class="card-tags">
+              {item.tags.map((tag) => (
+                <span class="tag-chip">{tag}</span>
+              ))}
+            </div>
+
+            <div class="card-footer">
+              <button type="button" class="copy-link-btn" data-url={item.url} title="Copy link to clipboard">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy</span>
+              </button>
+
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="launch-btn"
+              >
+                <span>Open {item.title}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Empty State -->
+      <div class="library-empty-state" id="library-empty-state" style="display: none;">
+        <span class="empty-icon">🔍</span>
+        <h4>No resources found</h4>
+        <p>Try searching for another keyword or suggest this tool using the button above!</p>
+      </div>
+    </div>
+
+    <!-- Footer Stats -->
+    <div class="library-footer">
+      <div class="footer-note">
+        🏛️ Curated by the SPOT Developer Community • Knowledge is free & permanent
+      </div>
+      <button type="button" class="dismiss-btn" id="library-dismiss-btn">Close Codex</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .library-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 9, 17, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .library-modal-backdrop.is-open {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .library-card {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    max-height: 90vh;
+    background: #0b1120;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 16px;
+    box-shadow:
+      0 12px 48px rgba(0, 0, 0, 0.8),
+      0 0 32px rgba(0, 240, 255, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    animation: libraryCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes libraryCardPop {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    z-index: 10;
+  }
+
+  .modal-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+  }
+
+  /* Header */
+  .library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px 16px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(0, 240, 255, 0.05) 0%, transparent 100%);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .library-header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .library-icon-frame {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+    flex-shrink: 0;
+  }
+
+  .library-location-chip {
+    font-size: 11px;
+    font-family: monospace;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  .library-title {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    margin: 0;
+    text-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+  }
+
+  .library-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 2px 0 0 0;
+  }
+
+  .suggest-btn {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    color: #c4b5fd;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .suggest-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: #a78bfa;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  /* Toolbar */
+  .library-toolbar {
+    padding: 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    color: #64748b;
+    pointer-events: none;
+  }
+
+  .search-box input {
+    width: 100%;
+    background: rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 10px 36px 10px 36px;
+    font-size: 14px;
+    color: #f1f5f9;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+
+  .search-box input:focus {
+    outline: none;
+    border-color: #00f0ff;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .clear-search-btn:hover {
+    color: #f1f5f9;
+  }
+
+  .category-pills {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .category-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .cat-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f1f5f9;
+  }
+
+  .cat-pill.active {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: #00f0ff;
+    color: #00f0ff;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+  }
+
+  /* Suggest Drawer */
+  .library-suggest-drawer {
+    padding: 16px 28px;
+    background: rgba(15, 23, 42, 0.9);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+    animation: slideDown 0.2s ease forwards;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .suggest-drawer-card {
+    background: #0c1427;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .suggest-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .suggest-drawer-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #c4b5fd;
+    font-weight: 800;
+  }
+
+  .drawer-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  .suggest-desc {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 0 0 16px 0;
+  }
+
+  .suggest-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .suggest-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .suggest-form label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .suggest-form input,
+  .suggest-form select {
+    background: rgba(2, 6, 23, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 13px;
+  }
+
+  .suggest-form input:focus,
+  .suggest-form select:focus {
+    outline: none;
+    border-color: #a78bfa;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .btn-cancel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .btn-submit {
+    background: #8b5cf6;
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: opacity 0.15s ease;
+  }
+
+  .btn-submit:hover {
+    opacity: 0.9;
+  }
+
+  /* Grid Area */
+  .library-grid-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+
+  .library-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .resource-card {
+    position: relative;
+    background: #0e1628;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+
+  .resource-card:hover {
+    border-color: var(--accent-color, #00f0ff);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 240, 255, 0.1);
+  }
+
+  /* Flagship Spotlight (Vizly) */
+  .resource-card.is-featured {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #0d1a33 0%, #091222 100%);
+    border: 1.5px solid rgba(0, 240, 255, 0.6);
+    box-shadow: 0 0 28px rgba(0, 240, 255, 0.18);
+  }
+
+  .resource-card.is-featured:hover {
+    border-color: #00f0ff;
+    box-shadow: 0 0 36px rgba(0, 240, 255, 0.3);
+  }
+
+  .card-glow-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-color, #00f0ff);
+    opacity: 0.6;
+  }
+
+  .card-header {
+    margin-bottom: 12px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .card-badge {
+    font-size: 10px;
+    font-weight: 800;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-tagline {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-color, #38bdf8);
+    margin-bottom: 4px;
+  }
+
+  .card-creator {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .creator-link {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .creator-link span {
+    color: #cbd5e1;
+    font-weight: 600;
+  }
+
+  .creator-link:hover {
+    color: #00f0ff;
+  }
+
+  .card-description {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #94a3b8;
+    margin: 0 0 16px 0;
+    flex: 1;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .tag-chip {
+    font-size: 10px;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .copy-link-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+
+  .copy-link-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .launch-btn {
+    flex: 1;
+    background: var(--accent-color, #00f0ff);
+    color: #060911 !important;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: opacity 0.15s ease;
+  }
+
+  .launch-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* Empty state */
+  .library-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+  }
+
+  .empty-icon {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .library-empty-state h4 {
+    font-size: 16px;
+    color: #ffffff;
+    margin: 0 0 6px 0;
+  }
+
+  .library-empty-state p {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  /* Footer */
+  .library-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(11, 17, 32, 0.8);
+    font-size: 12px;
+  }
+
+  .footer-note {
+    color: #64748b;
+  }
+
+  .dismiss-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  @media (max-width: 768px) {
+    .library-header {
+      padding: 18px 20px;
+    }
+    .library-toolbar {
+      padding: 12px 20px;
+    }
+    .library-grid-container {
+      padding: 16px 20px;
+    }
+    .resource-card.is-featured {
+      grid-column: span 1;
+    }
+    .suggest-form .form-row {
+      grid-template-columns: 1fr;
+    }
+    .library-footer {
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  // Client-side interactions for The Grand Codex Library Modal
+  const backdrop = document.getElementById('library-modal-backdrop');
+  const closeBtn = document.getElementById('library-modal-close');
+  const dismissBtn = document.getElementById('library-dismiss-btn');
+  const searchInput = document.getElementById('library-search-input') as HTMLInputElement | null;
+  const searchClear = document.getElementById('library-search-clear');
+  const categoryPills = document.querySelectorAll<HTMLButtonElement>('.cat-pill');
+  const resourceCards = document.querySelectorAll<HTMLElement>('.resource-card');
+  const emptyState = document.getElementById('library-empty-state');
+
+  const suggestToggleBtn = document.getElementById('library-suggest-toggle-btn');
+  const suggestDrawer = document.getElementById('library-suggest-drawer');
+  const suggestCloseBtn = document.getElementById('library-suggest-close-btn');
+  const suggestCancelBtn = document.getElementById('suggest-cancel-btn');
+  const suggestForm = document.getElementById('library-suggest-form') as HTMLFormElement | null;
+  const suggestSubmitBtn = document.getElementById('suggest-submit-btn') as HTMLButtonElement | null;
+
+  let activeCategory = 'all';
+  let activeSearch = '';
+
+  export function openLibraryModal() {
+    if (backdrop) {
+      backdrop.classList.add('is-open');
+      backdrop.setAttribute('aria-hidden', 'false');
+      searchInput?.focus();
+    }
+  }
+
+  export function closeLibraryModal() {
+    if (backdrop) {
+      backdrop.classList.remove('is-open');
+      backdrop.setAttribute('aria-hidden', 'true');
+      if (suggestDrawer) suggestDrawer.style.display = 'none';
+    }
+  }
+
+  // Expose globally for world engine and navigation
+  (window as any).openLibraryModal = openLibraryModal;
+  (window as any).closeLibraryModal = closeLibraryModal;
+
+  closeBtn?.addEventListener('click', closeLibraryModal);
+  dismissBtn?.addEventListener('click', closeLibraryModal);
+
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) {
+      closeLibraryModal();
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('is-open')) {
+      closeLibraryModal();
+    }
+  });
+
+  // Filter & Search Logic
+  function filterCards() {
+    let visibleCount = 0;
+    const query = activeSearch.toLowerCase().trim();
+
+    resourceCards.forEach((card) => {
+      const category = card.getAttribute('data-category');
+      const isFeatured = card.getAttribute('data-featured') === 'true';
+      const title = card.getAttribute('data-title') || '';
+      const tags = card.getAttribute('data-tags') || '';
+      const desc = card.getAttribute('data-desc') || '';
+
+      const matchesCategory =
+        activeCategory === 'all' ||
+        (activeCategory === 'featured' && isFeatured) ||
+        category === activeCategory;
+
+      const matchesQuery =
+        !query ||
+        title.includes(query) ||
+        tags.includes(query) ||
+        desc.includes(query);
+
+      if (matchesCategory && matchesQuery) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (emptyState) {
+      emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  categoryPills.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      categoryPills.forEach((p) => p.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.getAttribute('data-category') || 'all';
+      filterCards();
+    });
+  });
+
+  searchInput?.addEventListener('input', () => {
+    activeSearch = searchInput.value;
+    if (searchClear) {
+      searchClear.style.display = activeSearch ? 'block' : 'none';
+    }
+    filterCards();
+  });
+
+  searchClear?.addEventListener('click', () => {
+    if (searchInput) {
+      searchInput.value = '';
+      activeSearch = '';
+      searchClear.style.display = 'none';
+      filterCards();
+      searchInput.focus();
+    }
+  });
+
+  // Copy Link Buttons
+  document.querySelectorAll<HTMLButtonElement>('.copy-link-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const url = btn.getAttribute('data-url');
+      if (url) {
+        try {
+          await navigator.clipboard.writeText(url);
+          const span = btn.querySelector('span');
+          if (span) {
+            const orig = span.textContent;
+            span.textContent = 'Copied!';
+            btn.style.borderColor = '#10b981';
+            btn.style.color = '#10b981';
+            setTimeout(() => {
+              span.textContent = orig;
+              btn.style.borderColor = '';
+              btn.style.color = '';
+            }, 1800);
+          }
+        } catch (_) {}
+      }
+    });
+  });
+
+  // Suggest Drawer Toggle
+  suggestToggleBtn?.addEventListener('click', () => {
+    if (suggestDrawer) {
+      const isHidden = suggestDrawer.style.display === 'none';
+      suggestDrawer.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        document.getElementById('suggest-title')?.focus();
+      }
+    }
+  });
+
+  suggestCloseBtn?.addEventListener('click', () => {
+    if (suggestDrawer) suggestDrawer.style.display = 'none';
+  });
+
+  suggestCancelBtn?.addEventListener('click', () => {
+    if (suggestDrawer) suggestDrawer.style.display = 'none';
+  });
+
+  // Submit Suggestion Form
+  suggestForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!suggestSubmitBtn) return;
+
+    const titleInput = document.getElementById('suggest-title') as HTMLInputElement | null;
+    const urlInput = document.getElementById('suggest-url') as HTMLInputElement | null;
+    const catInput = document.getElementById('suggest-category') as HTMLSelectElement | null;
+    const authorInput = document.getElementById('suggest-author') as HTMLInputElement | null;
+    const descInput = document.getElementById('suggest-desc-input') as HTMLInputElement | null;
+
+    if (!titleInput?.value || !urlInput?.value) return;
+
+    suggestSubmitBtn.disabled = true;
+    suggestSubmitBtn.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/library/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: titleInput.value,
+          url: urlInput.value,
+          category: catInput?.value || 'General',
+          description: descInput?.value || '',
+          submitterName: authorInput?.value || '',
+        }),
+      });
+
+      if (res.ok) {
+        suggestForm.reset();
+        if (suggestDrawer) suggestDrawer.style.display = 'none';
+        alert('🎉 Recommendation received! Thank you for curating The Grand Codex.');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Could not submit recommendation. Please try again.');
+      }
+    } catch (err) {
+      alert('Network error submitting recommendation.');
+    } finally {
+      suggestSubmitBtn.disabled = false;
+      suggestSubmitBtn.textContent = 'Submit Recommendation →';
+    }
+  });
+</script>

@@ -8,6 +8,7 @@ import JournalModal from '../components/JournalModal.astro';
 import WorldChatBar from '../components/WorldChatBar.astro';
 import SearchModal from '../components/SearchModal.astro';
 import BannerModal from '../components/BannerModal.astro';
+import LibraryModal from '../components/LibraryModal.astro';
 ---
 
 <Layout
@@ -35,6 +36,9 @@ import BannerModal from '../components/BannerModal.astro';
 
     <!-- Secret discovery modal -->
     <SecretModal />
+
+    <!-- The Grand Codex Curated Developer Library Modal -->
+    <LibraryModal />
 
     <!-- Street NPC interaction dialogue modal -->
     <NpcModal />
@@ -1395,8 +1399,20 @@ import BannerModal from '../components/BannerModal.astro';
         displayName,
         isVerified,
         onCitizenClick: (spot) => openProfileModal(spot),
-        onSecretClick: (secret) => openSecretModal(secret),
-        onSecretDiscovered: (secret) => openSecretModal(secret),
+        onSecretClick: (secret) => {
+          if (secret.id === 'dev_library') {
+            (window as any).openLibraryModal?.();
+          } else {
+            openSecretModal(secret);
+          }
+        },
+        onSecretDiscovered: (secret) => {
+          if (secret.id === 'dev_library') {
+            (window as any).openLibraryModal?.();
+          } else {
+            openSecretModal(secret);
+          }
+        },
         onBannerClick: (banner) => openBannerModal(banner),
         onNpcInteract: (npc) => openNpcModal(npc),
         onEmptyClick: (_gx, _gy) => {
@@ -1405,6 +1421,7 @@ import BannerModal from '../components/BannerModal.astro';
           closeBannerModal();
           closeNpcModal();
           closeJournalModal();
+          (window as any).closeLibraryModal?.();
         },
         onSnapshotLoaded: (snapshot) => {
           const claimedCountEl = document.getElementById('hud-claimed-count');
@@ -1598,6 +1615,25 @@ import BannerModal from '../components/BannerModal.astro';
         e.stopPropagation();
         openSearchModal();
       });
+
+      // ── Grand Codex Library HUD Wiring & Deep-linking ─────────────────────
+      const btnWorldLibrary = document.getElementById('world-library-btn');
+      btnWorldLibrary?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSearchModal();
+        closeProfileModal();
+        closeSecretModal();
+        closeBannerModal();
+        (window as any).openLibraryModal?.();
+      });
+
+      // Auto-open library if deep-linked via ?modal=library or ?zone=library
+      const worldUrlParams = new URLSearchParams(window.location.search);
+      if (worldUrlParams.get('modal') === 'library' || worldUrlParams.get('zone') === 'library') {
+        setTimeout(() => {
+          (window as any).openLibraryModal?.();
+        }, 350);
+      }
 
       searchCloseBtn?.addEventListener('click', closeSearchModal);
       searchBackdrop?.addEventListener('click', (e) => {

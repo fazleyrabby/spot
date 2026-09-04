@@ -19,6 +19,7 @@ import { worldRouter, invalidateWorldCache } from './modules/world/routes.js';
 import { citizensRouter } from './modules/citizens/routes.js';
 import { spotsRouter } from './modules/spots/routes.js';
 import { billboardsRouter } from './modules/billboards/routes.js';
+import { libraryRouter } from './modules/library/routes.js';
 import { metaRouter } from './modules/meta/routes.js';
 
 export const apiRouter: express.Router = express.Router();
@@ -31,6 +32,7 @@ apiRouter.use('/world', worldRouter);
 apiRouter.use('/citizens', citizensRouter);
 apiRouter.use('/spots', spotsRouter);
 apiRouter.use('/billboards', billboardsRouter);
+apiRouter.use('/library', libraryRouter);
 apiRouter.use('/', metaRouter);
 
 // Backwards compatibility re-exports

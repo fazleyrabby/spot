@@ -101,22 +101,31 @@ export class InteractionHandler {
           return;
         }
 
-        const world = this.screenToWorld(e.clientX, e.clientY);
-        this.renderer.hoveredGrid = worldToGrid(world.x, world.y);
+        const grid = worldToGrid(world.x, world.y);
+        this.renderer.hoveredGrid = grid;
         const citizen = this.monuments.hitTest(world.x, world.y);
         const banner = hitTestBanner(world.x, world.y);
+        const secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
 
         if (citizen) {
           this.renderer.hoveredCitizen = citizen;
           this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
           canvas.style.cursor = 'pointer';
         } else if (banner) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = banner;
+          this.renderer.hoveredSecret = null;
+          canvas.style.cursor = 'pointer';
+        } else if (secret) {
+          this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = secret;
           canvas.style.cursor = 'pointer';
         } else {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
           canvas.style.cursor = 'default';
         }
       }

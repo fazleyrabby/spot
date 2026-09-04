@@ -94,6 +94,12 @@
 
   <!-- Cluster 3: Interaction & Camera Controls -->
   <div class="hud-group hud-group-controls">
+    <!-- Grand Codex Library Quick Button -->
+    <button class="hud-library-btn" id="world-library-btn" title="Open The Grand Codex Developer Vault">
+      <span class="hud-library-icon">📚</span>
+      <span>Library</span>
+    </button>
+
     <!-- Search / Find Citizen Button -->
     <button class="hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -421,6 +427,28 @@
       box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
       border-color: rgba(251, 191, 36, 0.8);
     }
+  }
+
+  .hud-library-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-family: var(--font-tech);
+    color: #38bdf8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-library-btn:hover {
+    background: rgba(0, 240, 255, 0.18);
+    border-color: #00f0ff;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
   }
 
   .hud-search-btn {
