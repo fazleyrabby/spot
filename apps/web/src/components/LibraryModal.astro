@@ -1,14 +1,15 @@
 ---
 /**
  * LibraryModal — The Grand Codex: Curated Developer Vault & Resource Library in Spot World.
+ * Designed with restrained, luxury craft: deep dark neutrals, hairline borders, no garish colored outlines.
  */
 import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 ---
 
 <div class="library-modal-backdrop" id="library-modal-backdrop" aria-hidden="true">
-  <div class="library-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="library-modal-title">
+  <div class="library-card" role="dialog" aria-modal="true" aria-labelledby="library-modal-title">
     <button class="modal-close-btn" id="library-modal-close" aria-label="Close library">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
       </svg>
@@ -20,16 +21,16 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
         <div class="library-icon-frame">
           <span class="library-icon">🏛️</span>
         </div>
-        <div>
-          <div class="library-location-chip">📍 Grand Central Plaza • Sector (44, 52)</div>
-          <h2 class="library-title" id="library-modal-title">THE GRAND CODEX</h2>
-          <p class="library-subtitle">Curated Developer Vault & High-Utility Resources</p>
+        <div class="library-header-copy">
+          <div class="library-location-chip">Grand Central Plaza • Sector (44, 52)</div>
+          <h2 class="library-title" id="library-modal-title">The Grand Codex</h2>
+          <p class="library-subtitle">Curated developer vault of high-utility tools & learning resources</p>
         </div>
       </div>
 
       <div class="library-header-actions">
         <button type="button" class="suggest-btn" id="library-suggest-toggle-btn">
-          <span>💡 Suggest a Tool</span>
+          <span>Suggest a Tool</span>
         </button>
       </div>
     </div>
@@ -37,14 +38,14 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     <!-- Search & Category Filters -->
     <div class="library-toolbar">
       <div class="search-box">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <input
           type="text"
           id="library-search-input"
-          placeholder="Search by name, tag, or topic (e.g. charts, bundle size, svg, sqlite)..."
+          placeholder="Filter by name, tag, or technology (e.g. charts, bundle size, svg, wasm)..."
           autocomplete="off"
         />
         <button type="button" id="library-search-clear" class="clear-search-btn" style="display: none;">✕</button>
@@ -52,30 +53,30 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 
       <div class="category-pills" id="library-category-pills">
         <button type="button" class="cat-pill active" data-category="all">All ({LIBRARY_RESOURCES.length})</button>
-        <button type="button" class="cat-pill" data-category="featured">🌟 Featured</button>
-        <button type="button" class="cat-pill" data-category="visualizers">📊 Data & Charts</button>
-        <button type="button" class="cat-pill" data-category="devtools">🛠️ Dev Tools</button>
-        <button type="button" class="cat-pill" data-category="architecture">🧠 Architecture</button>
-        <button type="button" class="cat-pill" data-category="frontend">⚡ Frontend</button>
-        <button type="button" class="cat-pill" data-category="inspiration">🎨 Design & UI</button>
+        <button type="button" class="cat-pill" data-category="featured">Featured</button>
+        <button type="button" class="cat-pill" data-category="visualizers">Data & Charts</button>
+        <button type="button" class="cat-pill" data-category="devtools">Dev Tools</button>
+        <button type="button" class="cat-pill" data-category="architecture">Architecture</button>
+        <button type="button" class="cat-pill" data-category="frontend">Frontend</button>
+        <button type="button" class="cat-pill" data-category="inspiration">Design & UI</button>
       </div>
     </div>
 
-    <!-- Suggestion Panel (Drawer / Toggle) -->
+    <!-- Suggestion Panel Drawer -->
     <div class="library-suggest-drawer" id="library-suggest-drawer" style="display: none;">
       <div class="suggest-drawer-card">
         <div class="suggest-drawer-header">
-          <h3>💡 Recommend a Dev Tool or Learning Gem</h3>
+          <h3>Recommend a Dev Tool</h3>
           <button type="button" id="library-suggest-close-btn" class="drawer-close-btn">✕</button>
         </div>
         <p class="suggest-desc">
-          Know an awesome open-source project, developer tool, or interactive visualizer? Submit it for inclusion in The Grand Codex!
+          Know an exceptional open-source project or developer tool? Submit it for review into The Grand Codex.
         </p>
 
         <form id="library-suggest-form" class="suggest-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="suggest-title">Tool / Project Name *</label>
+              <label for="suggest-title">Project Name *</label>
               <input type="text" id="suggest-title" required placeholder="e.g. Vizly" maxlength="100" />
             </div>
             <div class="form-group">
@@ -98,19 +99,19 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
               </select>
             </div>
             <div class="form-group">
-              <label for="suggest-author">Your Name or Citizen Handle</label>
+              <label for="suggest-author">Your Name or Handle</label>
               <input type="text" id="suggest-author" placeholder="Optional" maxlength="50" />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="suggest-desc-input">Why is this great? (1 sentence)</label>
+            <label for="suggest-desc-input">Why should developers use this? (1 sentence)</label>
             <input type="text" id="suggest-desc-input" placeholder="e.g. Fast, modular web-native data visualization engine" maxlength="300" />
           </div>
 
           <div class="form-actions">
             <button type="button" class="btn-cancel" id="suggest-cancel-btn">Cancel</button>
-            <button type="submit" class="btn-submit" id="suggest-submit-btn">Submit Recommendation →</button>
+            <button type="submit" class="btn-submit" id="suggest-submit-btn">Submit Recommendation</button>
           </div>
         </form>
       </div>
@@ -127,10 +128,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
             data-title={item.title.toLowerCase()}
             data-tags={item.tags.join(' ').toLowerCase()}
             data-desc={item.description.toLowerCase()}
-            style={`--accent-color: ${item.accentColor};`}
           >
-            <div class="card-glow-overlay"></div>
-
             <div class="card-header">
               <div class="card-title-group">
                 <div class="title-row">
@@ -143,7 +141,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
               <div class="card-creator">
                 {item.creatorUrl ? (
                   <a href={item.creatorUrl} target="_blank" rel="noopener noreferrer" class="creator-link">
-                    by <span>{item.creator}</span> ↗
+                    by <span>{item.creator}</span>
                   </a>
                 ) : (
                   <span class="creator-text">by {item.creator}</span>
@@ -160,8 +158,8 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
             </div>
 
             <div class="card-footer">
-              <button type="button" class="copy-link-btn" data-url={item.url} title="Copy link to clipboard">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="copy-link-btn" data-url={item.url} title="Copy link">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
@@ -175,7 +173,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
                 class="launch-btn"
               >
                 <span>Open {item.title}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                   <polyline points="15 3 21 3 21 9"></polyline>
                   <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -189,17 +187,17 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
       <!-- Empty State -->
       <div class="library-empty-state" id="library-empty-state" style="display: none;">
         <span class="empty-icon">🔍</span>
-        <h4>No resources found</h4>
-        <p>Try searching for another keyword or suggest this tool using the button above!</p>
+        <h4>No matching resources</h4>
+        <p>Try searching for a different keyword or suggest a new tool above.</p>
       </div>
     </div>
 
     <!-- Footer Stats -->
     <div class="library-footer">
       <div class="footer-note">
-        🏛️ Curated by the SPOT Developer Community • Knowledge is free & permanent
+        Curated by the SPOT Community • Free & Open Knowledge
       </div>
-      <button type="button" class="dismiss-btn" id="library-dismiss-btn">Close Codex</button>
+      <button type="button" class="dismiss-btn" id="library-dismiss-btn">Close</button>
     </div>
   </div>
 </div>
@@ -208,16 +206,16 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   .library-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(6, 9, 17, 0.82);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(3, 6, 12, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 300;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 20px;
     box-sizing: border-box;
   }
@@ -232,25 +230,25 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     position: relative;
     width: 100%;
     max-width: 960px;
-    max-height: 90vh;
-    background: #0b1120;
-    border: 1px solid rgba(0, 240, 255, 0.35);
-    border-radius: 16px;
+    max-height: 88vh;
+    background: #0d121c;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
     box-shadow:
-      0 12px 48px rgba(0, 0, 0, 0.8),
-      0 0 32px rgba(0, 240, 255, 0.15);
+      0 24px 64px -12px rgba(0, 0, 0, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    animation: libraryCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: libraryCardPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes libraryCardPop {
     from {
       opacity: 0;
-      transform: scale(0.96) translateY(12px);
+      transform: scale(0.97) translateY(8px);
     }
     to {
       opacity: 1;
@@ -260,13 +258,13 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 
   .modal-close-btn {
     position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
     color: #94a3b8;
     cursor: pointer;
     display: flex;
@@ -277,9 +275,9 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   }
 
   .modal-close-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #ef4444;
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
   }
 
   /* Header */
@@ -287,9 +285,9 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 28px 16px 28px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: linear-gradient(180deg, rgba(0, 240, 255, 0.05) 0%, transparent 100%);
+    padding: 22px 26px 18px 26px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
     gap: 16px;
     flex-wrap: wrap;
   }
@@ -297,39 +295,41 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   .library-header-main {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   .library-icon-frame {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
-    background: rgba(0, 240, 255, 0.1);
-    border: 1px solid rgba(0, 240, 255, 0.4);
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+    font-size: 22px;
     flex-shrink: 0;
+  }
+
+  .library-header-copy {
+    display: flex;
+    flex-direction: column;
   }
 
   .library-location-chip {
     font-size: 11px;
-    font-family: monospace;
-    color: #38bdf8;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
     margin-bottom: 2px;
   }
 
   .library-title {
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #f8fafc;
     margin: 0;
-    text-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
   }
 
   .library-subtitle {
@@ -339,35 +339,31 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   }
 
   .suggest-btn {
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.5);
-    color: #c4b5fd;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #cbd5e1;
     font-size: 13px;
-    font-weight: 700;
-    padding: 8px 16px;
-    border-radius: 8px;
+    font-weight: 600;
+    padding: 7px 15px;
+    border-radius: 7px;
     cursor: pointer;
     transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
   }
 
   .suggest-btn:hover {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: #a78bfa;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
     color: #ffffff;
-    transform: translateY(-1px);
   }
 
   /* Toolbar */
   .library-toolbar {
-    padding: 16px 28px;
+    padding: 14px 26px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(15, 23, 42, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.12);
   }
 
   .search-box {
@@ -385,11 +381,11 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 
   .search-box input {
     width: 100%;
-    background: rgba(2, 6, 23, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 10px 36px 10px 36px;
-    font-size: 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    padding: 9px 34px 9px 34px;
+    font-size: 13px;
     color: #f1f5f9;
     box-sizing: border-box;
     transition: border-color 0.15s ease;
@@ -397,8 +393,8 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 
   .search-box input:focus {
     outline: none;
-    border-color: #00f0ff;
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   }
 
   .clear-search-btn {
@@ -417,9 +413,9 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 
   .category-pills {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
     scrollbar-width: none;
   }
 
@@ -428,62 +424,56 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   }
 
   .cat-pill {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     color: #94a3b8;
     font-size: 12px;
-    font-weight: 600;
-    padding: 6px 14px;
-    border-radius: 999px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.15s ease;
   }
 
   .cat-pill:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
     color: #f1f5f9;
   }
 
   .cat-pill.active {
-    background: rgba(0, 240, 255, 0.15);
-    border-color: #00f0ff;
-    color: #00f0ff;
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    background: #f1f5f9;
+    border-color: #f1f5f9;
+    color: #0b101b;
+    font-weight: 600;
   }
 
   /* Suggest Drawer */
   .library-suggest-drawer {
-    padding: 16px 28px;
-    background: rgba(15, 23, 42, 0.9);
-    border-bottom: 1px solid rgba(139, 92, 246, 0.3);
-    animation: slideDown 0.2s ease forwards;
-  }
-
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    padding: 16px 26px;
+    background: rgba(13, 18, 28, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .suggest-drawer-card {
-    background: #0c1427;
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    border-radius: 12px;
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 18px;
   }
 
   .suggest-drawer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   .suggest-drawer-header h3 {
     margin: 0;
-    font-size: 16px;
-    color: #c4b5fd;
-    font-weight: 800;
+    font-size: 15px;
+    color: #f8fafc;
+    font-weight: 600;
   }
 
   .drawer-close-btn {
@@ -491,43 +481,42 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     border: none;
     color: #94a3b8;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .suggest-desc {
     font-size: 13px;
     color: #94a3b8;
-    margin: 0 0 16px 0;
+    margin: 0 0 14px 0;
   }
 
   .suggest-form .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .suggest-form .form-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .suggest-form label {
     font-size: 11px;
-    font-weight: 700;
-    color: #cbd5e1;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
   }
 
   .suggest-form input,
   .suggest-form select {
-    background: rgba(2, 6, 23, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 7px 11px;
     color: #ffffff;
     font-size: 13px;
   }
@@ -535,35 +524,36 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   .suggest-form input:focus,
   .suggest-form select:focus {
     outline: none;
-    border-color: #a78bfa;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 14px;
+    gap: 8px;
+    margin-top: 12px;
   }
 
   .btn-cancel {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #cbd5e1;
-    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    padding: 7px 14px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 500;
   }
 
   .btn-submit {
-    background: #8b5cf6;
+    background: #f1f5f9;
     border: none;
-    color: #ffffff;
-    font-weight: 700;
-    padding: 8px 18px;
+    color: #0b101b;
+    font-weight: 600;
+    padding: 7px 16px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     transition: opacity 0.15s ease;
   }
 
@@ -575,59 +565,48 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   .library-grid-container {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 28px;
+    padding: 22px 26px;
   }
 
   .library-bento-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    gap: 14px;
   }
 
   .resource-card {
     position: relative;
-    background: #0e1628;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
+    transition: all 0.15s ease;
   }
 
   .resource-card:hover {
-    border-color: var(--accent-color, #00f0ff);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 240, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.5);
   }
 
   /* Flagship Spotlight (Vizly) */
   .resource-card.is-featured {
     grid-column: span 2;
-    background: linear-gradient(135deg, #0d1a33 0%, #091222 100%);
-    border: 1.5px solid rgba(0, 240, 255, 0.6);
-    box-shadow: 0 0 28px rgba(0, 240, 255, 0.18);
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .resource-card.is-featured:hover {
-    border-color: #00f0ff;
-    box-shadow: 0 0 36px rgba(0, 240, 255, 0.3);
-  }
-
-  .card-glow-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--accent-color, #00f0ff);
-    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.16);
   }
 
   .card-header {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .title-row {
@@ -635,77 +614,76 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .card-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f8fafc;
     margin: 0;
   }
 
   .card-badge {
     font-size: 10px;
-    font-weight: 800;
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    padding: 2px 8px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
   }
 
   .card-tagline {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--accent-color, #38bdf8);
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
     margin-bottom: 4px;
   }
 
   .card-creator {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
   }
 
   .creator-link {
-    color: #94a3b8;
+    color: #64748b;
     text-decoration: none;
     transition: color 0.15s ease;
   }
 
   .creator-link span {
-    color: #cbd5e1;
-    font-weight: 600;
+    color: #94a3b8;
+    font-weight: 500;
   }
 
-  .creator-link:hover {
-    color: #00f0ff;
+  .creator-link:hover span {
+    color: #f8fafc;
   }
 
   .card-description {
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.5;
     color: #94a3b8;
-    margin: 0 0 16px 0;
+    margin: 0 0 14px 0;
     flex: 1;
   }
 
   .card-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 16px;
+    gap: 5px;
+    margin-bottom: 14px;
   }
 
   .tag-chip {
     font-size: 10px;
-    font-family: monospace;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #cbd5e1;
-    padding: 2px 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    padding: 2px 7px;
     border-radius: 4px;
   }
 
@@ -713,16 +691,16 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .copy-link-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #94a3b8;
     font-size: 12px;
-    padding: 7px 12px;
+    padding: 6px 11px;
     border-radius: 6px;
     cursor: pointer;
     display: flex;
@@ -732,24 +710,24 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   }
 
   .copy-link-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
   }
 
   .launch-btn {
     flex: 1;
-    background: var(--accent-color, #00f0ff);
-    color: #060911 !important;
-    font-size: 13px;
-    font-weight: 700;
+    background: #f1f5f9;
+    color: #0b101b !important;
+    font-size: 12px;
+    font-weight: 600;
     text-align: center;
     text-decoration: none;
-    padding: 7px 14px;
+    padding: 6px 12px;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     transition: opacity 0.15s ease;
   }
 
@@ -760,24 +738,25 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   /* Empty state */
   .library-empty-state {
     text-align: center;
-    padding: 48px 24px;
+    padding: 44px 20px;
   }
 
   .empty-icon {
-    font-size: 36px;
+    font-size: 28px;
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    opacity: 0.6;
   }
 
   .library-empty-state h4 {
-    font-size: 16px;
-    color: #ffffff;
-    margin: 0 0 6px 0;
+    font-size: 15px;
+    color: #f8fafc;
+    margin: 0 0 4px 0;
   }
 
   .library-empty-state p {
     font-size: 13px;
-    color: #94a3b8;
+    color: #64748b;
     margin: 0;
   }
 
@@ -786,9 +765,9 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 28px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(11, 17, 32, 0.8);
+    padding: 14px 26px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
     font-size: 12px;
   }
 
@@ -797,30 +776,30 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   }
 
   .dismiss-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
     font-size: 12px;
-    font-weight: 600;
-    padding: 7px 16px;
+    font-weight: 500;
+    padding: 6px 14px;
     border-radius: 6px;
     cursor: pointer;
   }
 
   .dismiss-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
   }
 
   @media (max-width: 768px) {
     .library-header {
-      padding: 18px 20px;
+      padding: 16px 18px;
     }
     .library-toolbar {
-      padding: 12px 20px;
+      padding: 10px 18px;
     }
     .library-grid-container {
-      padding: 16px 20px;
+      padding: 14px 18px;
     }
     .resource-card.is-featured {
       grid-column: span 1;
@@ -837,7 +816,6 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
 </style>
 
 <script>
-  // Client-side interactions for The Grand Codex Library Modal
   const backdrop = document.getElementById('library-modal-backdrop');
   const closeBtn = document.getElementById('library-modal-close');
   const dismissBtn = document.getElementById('library-dismiss-btn');
@@ -873,7 +851,6 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     }
   }
 
-  // Expose globally for world engine and navigation
   (window as any).openLibraryModal = openLibraryModal;
   (window as any).closeLibraryModal = closeLibraryModal;
 
@@ -892,7 +869,6 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     }
   });
 
-  // Filter & Search Logic
   function filterCards() {
     let visibleCount = 0;
     const query = activeSearch.toLowerCase().trim();
@@ -966,12 +942,8 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
           if (span) {
             const orig = span.textContent;
             span.textContent = 'Copied!';
-            btn.style.borderColor = '#10b981';
-            btn.style.color = '#10b981';
             setTimeout(() => {
               span.textContent = orig;
-              btn.style.borderColor = '';
-              btn.style.color = '';
             }, 1800);
           }
         } catch (_) {}
@@ -1030,7 +1002,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
       if (res.ok) {
         suggestForm.reset();
         if (suggestDrawer) suggestDrawer.style.display = 'none';
-        alert('🎉 Recommendation received! Thank you for curating The Grand Codex.');
+        alert('Thank you! Recommendation submitted for review.');
       } else {
         const data = await res.json().catch(() => ({}));
         alert(data.message || 'Could not submit recommendation. Please try again.');
@@ -1039,7 +1011,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
       alert('Network error submitting recommendation.');
     } finally {
       suggestSubmitBtn.disabled = false;
-      suggestSubmitBtn.textContent = 'Submit Recommendation →';
+      suggestSubmitBtn.textContent = 'Submit Recommendation';
     }
   });
 </script>
