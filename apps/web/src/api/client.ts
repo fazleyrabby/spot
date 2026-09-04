@@ -202,6 +202,11 @@ export async function checkServerHealth(): Promise<boolean> {
   return false;
 }
 
+let activeSyncPromise: Promise<MySessionResponse> | null = null;
+let lastSyncedGithubId: string | null = null;
+let lastSyncTimestamp = 0;
+let lastSyncResult: MySessionResponse | null = null;
+
 export async function syncGithubAuth(data: {
   githubId: string;
   username?: string;
@@ -209,35 +214,61 @@ export async function syncGithubAuth(data: {
   avatarUrl?: string;
   displayName?: string;
 }): Promise<MySessionResponse> {
-  if (API_BASE) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/github/sync`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok) {
-        if (json.sessionToken) {
-          localStorage.setItem('spot_session_token', json.sessionToken);
-        }
-        return json;
-      }
-      // If server is 503/502/504, fall back to direct Supabase session
-      if (res.status === 503 || res.status === 502 || res.status === 504) {
-        console.warn('Authoritative server offline (503), resolving session directly from Supabase...');
-        return await fetchSessionDirect();
-      }
-      const err: any = new Error(json.message || json.error || 'Failed to sync GitHub');
-      err.status = res.status;
-      throw err;
-    } catch (err: any) {
-      if (err?.status && err.status !== 503 && err.status !== 502 && err.status !== 504) throw err;
-      console.warn('API /auth/github/sync unreachable, falling back to direct mode:', err);
-    }
+  const now = Date.now();
+  // Return cached result if synced within 15 seconds for the same GitHub account
+  if (
+    lastSyncResult &&
+    lastSyncedGithubId === data.githubId &&
+    now - lastSyncTimestamp < 15000
+  ) {
+    return lastSyncResult;
   }
-  return await fetchSessionDirect();
+
+  // Deduplicate concurrent in-flight requests
+  if (activeSyncPromise) {
+    return activeSyncPromise;
+  }
+
+  activeSyncPromise = (async () => {
+    try {
+      if (API_BASE) {
+        try {
+          const res = await fetch(`${API_BASE}/auth/github/sync`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            credentials: 'include',
+            body: JSON.stringify(data),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (res.ok) {
+            if (json.sessionToken) {
+              localStorage.setItem('spot_session_token', json.sessionToken);
+            }
+            lastSyncedGithubId = data.githubId;
+            lastSyncTimestamp = Date.now();
+            lastSyncResult = json;
+            return json;
+          }
+          // If rate-limited (429) or server is 503/502/504, fall back smoothly
+          if (res.status === 429 || res.status === 503 || res.status === 502 || res.status === 504) {
+            console.warn(`Auth sync fallback (${res.status}), resolving session directly...`);
+            return await fetchSessionDirect();
+          }
+          const err: any = new Error(json.message || json.error || 'Failed to sync GitHub');
+          err.status = res.status;
+          throw err;
+        } catch (err: any) {
+          if (err?.status && err.status !== 429 && err.status !== 503 && err.status !== 502 && err.status !== 504) throw err;
+          console.warn('API /auth/github/sync unreachable, falling back to direct mode:', err);
+        }
+      }
+      return await fetchSessionDirect();
+    } finally {
+      activeSyncPromise = null;
+    }
+  })();
+
+  return activeSyncPromise;
 }
 
 export interface ClaimInputData {

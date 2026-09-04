@@ -137,9 +137,9 @@ export const ogFetchLimiter = new SlidingWindowRateLimiter(
   'Too many link preview requests. Please wait a moment.'
 ).middleware();
 
-// 7. Auth / Sync Limiter: Max 15 auth sync requests per minute per IP
+// 7. Auth / Sync Limiter: Max 60 auth sync requests per minute per IP
 export const authSyncLimiter = new SlidingWindowRateLimiter(
-  15,
+  60,
   60 * 1000,
   'Too many authentication requests. Please wait.'
 ).middleware();

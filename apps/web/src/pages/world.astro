@@ -1447,7 +1447,7 @@ import BannerModal from '../components/BannerModal.astro';
       // ── Fetch Dynamic Billboard Sponsorships ──────────────────────────────
       async function syncActiveBanners() {
         try {
-          const billboardRes = await fetch(`${API_BASE}/billboards/active`);
+          const billboardRes = await fetch(`${API_BASE}/api/billboards/active`);
           if (billboardRes.ok) {
             const billboardData = await billboardRes.json();
             if (billboardData?.activeBanners) {
@@ -1908,7 +1908,7 @@ import BannerModal from '../components/BannerModal.astro';
       }
       if (!spotSummary) {
         try {
-          const res = await fetch(`${API_BASE}/citizens/me`, { credentials: 'include' });
+          const res = await fetch(`${API_BASE}/api/citizens/me`, { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
             if (data.citizen) {
