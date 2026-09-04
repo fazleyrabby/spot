@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  PROHIBITED_CRYPTO_TERMS,
+  PROHIBITED_GAMBLING_TERMS,
+  PROHIBITED_ALCOHOL_DRUG_TERMS,
+  PROHIBITED_ADULT_NSFW_TERMS,
+} from './moderation.js';
 
 // Robust profanity, slurs, and hate-speech blocklist
 export const BLOCKED_WORDS = [
@@ -14,6 +20,14 @@ export const BLOCKED_WORDS = [
   'nigger', 'nigga', 'n1gger', 'n1gga', 'chink', 'gook', 'kike', 'kyke',
   'spic', 'faggot', 'fag', 'f@g', 'f@ggot', 'dyke', 'tranny', 'retard',
   'retarded', 'pedophile', 'pedo', 'hitler', 'nazi', 'terrorist',
+];
+
+export const ALL_RESTRICTED_TERMS = [
+  ...BLOCKED_WORDS,
+  ...PROHIBITED_CRYPTO_TERMS,
+  ...PROHIBITED_GAMBLING_TERMS,
+  ...PROHIBITED_ALCOHOL_DRUG_TERMS,
+  ...PROHIBITED_ADULT_NSFW_TERMS,
 ];
 
 /**
@@ -41,8 +55,8 @@ export function containsBlockedWord(text?: string | null): boolean {
   const rawLower = text.toLowerCase();
   const normalized = normalizeText(text);
 
-  // Check against raw and normalized strings
-  for (const w of BLOCKED_WORDS) {
+  // Check against raw and normalized strings across all restricted lists
+  for (const w of ALL_RESTRICTED_TERMS) {
     const wordPattern = w.toLowerCase();
 
     // 1. Direct word boundary match
