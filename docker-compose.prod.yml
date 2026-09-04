@@ -36,6 +36,8 @@ services:
       RP_ORIGIN: ${RP_ORIGIN:-https://claimyourspot.lol}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       VISITOR_DISCORD_WEBHOOK_URL: ${VISITOR_DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/1545095473432371310/V-BOmxj2kg4OVQr-ouCajIkNoKZqZ68y09sM5srQYy5o3BpAupasITRfFT2NtAZGMIcW}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-SPOT <welcome@claimyourspot.lol>}
     depends_on:
       spot-postgres:
         condition: service_healthy
