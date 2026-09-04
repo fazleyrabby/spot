@@ -24,6 +24,7 @@ import {
   sanitizeDisplayName,
 } from '@spot/shared';
 import { sendSpotClaimNotification } from '../../discord.js';
+import { sendWelcomeClaimEmail } from '../../mailer.js';
 import { broadcastRealtimeEvent } from '../realtime/routes.js';
 import { invalidateWorldCache } from '../world/routes.js';
 import {
@@ -327,6 +328,18 @@ spotsRouter.post(
         websiteUrl: citizen.websiteUrl,
         claimedAt: claimedSpot.claimedAt,
       });
+
+      const recipientEmail = input.email || citizen.email;
+      if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.includes('@')) {
+        void sendWelcomeClaimEmail({
+          to: recipientEmail.trim(),
+          displayName: citizen.displayName,
+          x: Number(x),
+          y: Number(y),
+          avatarId: citizen.avatarId,
+          citizenId: citizen.id,
+        });
+      }
 
       res.status(200).json({
         success: true,

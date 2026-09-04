@@ -42,6 +42,7 @@ export interface Citizen {
   instagramUrl?: string;
   youtubeUrl?: string;
   linkedinUrl?: string;
+  email?: string;
   isVerified?: boolean;
   createdAt: string;
   updatedAt?: string;

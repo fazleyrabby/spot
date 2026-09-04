@@ -2,6 +2,7 @@ import express from 'express';
 import { query } from '../../db.js';
 import { config } from '../../config.js';
 import { sendBillboardPurchaseNotification } from '../../discord.js';
+import { sendBillboardSponsoredEmail } from '../../mailer.js';
 import { ogFetchLimiter } from '../../rateLimiter.js';
 import { validateAdPolicy } from '@spot/shared';
 
@@ -284,6 +285,19 @@ billboardsRouter.post('/webhook', async (req, res) => {
       priceFormatted,
       saleId,
     }).catch((err) => console.error('[Discord Webhook Error]', err));
+
+    if (buyerEmail && buyerEmail.includes('@') && !buyerEmail.includes('unknown@gumroad.com')) {
+      sendBillboardSponsoredEmail({
+        to: buyerEmail.trim(),
+        billboardName,
+        tier,
+        headline,
+        subtext,
+        targetUrl: sanitizedTargetUrl,
+        priceFormatted,
+        saleId,
+      }).catch((err) => console.error('[Mailer Billboard Error]', err));
+    }
 
     res.json({
       success: true,

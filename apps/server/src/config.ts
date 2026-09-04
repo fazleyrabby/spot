@@ -34,4 +34,6 @@ export const config = {
   discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
   visitorDiscordWebhookUrl: process.env.VISITOR_DISCORD_WEBHOOK_URL || '',
   adminSecret: process.env.ADMIN_SECRET || process.env.SHOWCASE_ADMIN_TOKEN || 'spot_admin_secret_key',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  emailFrom: process.env.EMAIL_FROM || 'SPOT <welcome@claimyourspot.lol>',
 };
