@@ -39,6 +39,8 @@ export class SlidingWindowRateLimiter {
   middleware(keyResolver?: (req: Request) => string) {
     return (req: Request, res: Response, next: NextFunction): void => {
       const ip =
+        (req.headers['cf-connecting-ip'] as string)?.trim() ||
+        (req.headers['x-real-ip'] as string)?.trim() ||
         (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
         req.socket.remoteAddress ||
         'unknown_ip';
@@ -97,7 +99,7 @@ export const deviceFingerprintCreationLimiter = new SlidingWindowRateLimiter(
   const fingerprint = req.headers['x-spot-device-fingerprint'];
   return typeof fingerprint === 'string' && fingerprint.startsWith('dfp_')
     ? `fp:${fingerprint}`
-    : `ip:${(req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown_ip'}`;
+    : `ip:${(req.headers['cf-connecting-ip'] as string)?.trim() || (req.headers['x-real-ip'] as string)?.trim() || (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown_ip'}`;
 });
 
 // 2. Spot claim limiter: Max 3 claim attempts per IP per minute
