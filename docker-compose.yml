@@ -12,6 +12,12 @@ services:
     volumes:
       - spot_pgdata:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spot_user -d spot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   spot_pgdata:

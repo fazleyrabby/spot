@@ -6,6 +6,7 @@ import fs from 'fs';
 import { config } from './config.js';
 import { apiRouter } from './routes.js';
 import { globalApiLimiter } from './rateLimiter.js';
+import { query } from './db.js';
 
 export const app: express.Express = express();
 
@@ -37,9 +38,40 @@ app.use(
 
 app.use(cookieParser(config.cookieSecret));
 
-// Healthcheck endpoint
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+// Deep healthcheck endpoint reporting DB connectivity, spot count, and memory stats
+app.get('/health', async (_req, res) => {
+  const startTime = Date.now();
+  try {
+    const dbRes = await query<{ count: number }>('SELECT count(*)::int AS count FROM spots');
+    const dbLatencyMs = Date.now() - startTime;
+    const spotCount = dbRes.rows[0]?.count ?? 0;
+    const mem = process.memoryUsage();
+
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      database: {
+        status: 'connected',
+        spots: spotCount,
+        latencyMs: dbLatencyMs,
+      },
+      memory: {
+        rssMb: Math.round(mem.rss / 1024 / 1024),
+        heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+      },
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      database: {
+        status: 'disconnected',
+        error: err instanceof Error ? err.message : 'Database check failed',
+      },
+    });
+  }
 });
 
 // Mount API router with global sliding-window rate limiter
