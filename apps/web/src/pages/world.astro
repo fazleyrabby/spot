@@ -194,7 +194,7 @@ import BannerModal from '../components/BannerModal.astro';
   import { WORLD_SECRETS } from '../world/secrets.js';
   import { applyActiveSponsorships, WORLD_BANNERS } from '../world/banner-manager.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
-  import { containsBlockedWord, formatSocialUrl, type OccupiedSpotSummary } from '@spot/shared';
+  import { containsBlockedWord, formatSocialUrl, validateAdPolicy, type OccupiedSpotSummary } from '@spot/shared';
   import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment, recordVisit } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
@@ -1028,6 +1028,28 @@ import BannerModal from '../components/BannerModal.astro';
 
       headline = headline || sponsorName.toUpperCase();
       subtext = subtext || 'Featured Project / Brand';
+    }
+
+    // ── Strict Content Policy Enforcement ───────────────────────────────────
+    // Prohibits Crypto/Tokens, Gambling/Haram, Alcohol/Drinks/Drugs, and NSFW/Adult
+    const policyCheck = validateAdPolicy({
+      headline,
+      subtext,
+      brandName: sponsorName,
+      targetUrl: destUrl,
+      bannerImageUrl: bannerImage,
+    });
+
+    if (!policyCheck.isValid) {
+      showToast(`🚫 Policy Violation: ${policyCheck.reason}`, 'error');
+      if (destUrl && policyCheck.reason?.includes('destination')) {
+        bannerInputUrl?.focus();
+      } else if (headline && policyCheck.violatingTerm && headline.toLowerCase().includes(policyCheck.violatingTerm.toLowerCase())) {
+        bannerInputHeadline?.focus();
+      } else {
+        bannerInputName?.focus();
+      }
+      return;
     }
 
     // In local development only, automatically apply the TESTDEV 100% discount code

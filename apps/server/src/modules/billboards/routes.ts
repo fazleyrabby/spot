@@ -3,6 +3,7 @@ import { query } from '../../db.js';
 import { config } from '../../config.js';
 import { sendBillboardPurchaseNotification } from '../../discord.js';
 import { ogFetchLimiter } from '../../rateLimiter.js';
+import { validateAdPolicy } from '@spot/shared';
 
 export const billboardsRouter: express.Router = express.Router();
 
@@ -153,6 +154,20 @@ billboardsRouter.post('/webhook', async (req, res) => {
     } else if (!isTestPromo && priceCents < requiredPriceCents) {
       console.warn(`[Billboard Fraud Alert] Sale ${saleId}: Paid ${priceCents}¢ for ${billboardId} (requires ${requiredPriceCents}¢). Flagged as underpaid.`);
       status = 'underpaid';
+    }
+
+    // Strict Content Moderation Policy (Blocks Crypto, Gambling/Haram, Alcohol/Drinks/Drugs, Adult/NSFW)
+    const policyCheck = validateAdPolicy({
+      headline,
+      subtext,
+      brandName: buyerName,
+      targetUrl: sanitizedTargetUrl,
+      bannerImageUrl: sanitizedBannerImageUrl,
+    });
+
+    if (!policyCheck.isValid) {
+      console.warn(`[Billboard Policy Violation] Sale ${saleId} rejected: ${policyCheck.reason}`);
+      status = 'rejected_policy';
     }
 
     // Extract citizenId if passed from logged-in citizen
