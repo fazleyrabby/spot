@@ -8,6 +8,48 @@ All notable changes to SPOT are documented here.
 
 ---
 
+## 2026-09-05
+
+### Added
+- **Transactional Email Delivery System via Resend REST API (`mailer.ts`):**
+  - Built zero-dependency, lightweight transactional email client using native `fetch` against Resend REST API (`https://api.resend.com/emails`).
+  - **Welcome Plot Deed Email (`sendWelcomeClaimEmail`):** Sent immediately upon claiming a grid spot, featuring sector coordinates, Citizen ID, cyberpunk plot deed layout, and direct links to grid view and 2D virtual world.
+  - **Cyber Billboard Sponsorship Confirmation (`sendBillboardSponsoredEmail`):** Sent upon successful Gumroad sponsor webhook, rendering tier badge, active holographic preview, target URL, and Gumroad order ID.
+- **Database Email Tracking & Idempotency Safeguards (`email_logs`):**
+  - Created `database/migrations/011_email_logs.sql` with `UNIQUE(kind, reference_id)` constraint.
+  - Intercepts duplicate dispatch attempts at the application layer before making outgoing HTTP requests to Resend, ensuring zero duplicate emails from payment webhook retries or multi-clicks.
+  - Records delivery status, recipient, timestamp, and Resend tracking ID for full auditability.
+- **Email Deliverability & Anti-Spam Hardening:**
+  - Added strict DMARC record to DNS (`_dmarc.claimyourspot.lol` with `v=DMARC1; p=none; sp=none; aspf=r;`).
+  - Updated root SPF record to include Amazon SES / Resend (`include:amazonses.com`).
+  - Removed duplicate bare DKIM key from root `@` and isolated to `resend._domainkey`.
+  - Added `reply_to: 'welcome@claimyourspot.lol'` and `X-Entity-Ref-ID` headers to avoid automated spam filter penalties.
+
+### Fixed
+- **Ad Banner Modal Visual Clipping & Layout Squishing:**
+  - Added `min-height: 124px`, `box-sizing: border-box`, and `flex-shrink: 0` to prevent holographic preview screen squishing in `BannerModal.astro`.
+  - Synchronized modal accent color, LED border glow, and color pip with active canvas state in `world.astro`.
+
+---
+
+## 2026-09-04
+
+### Added
+- **Multi-Device Persistent Session Architecture (`citizen_sessions`):**
+  - Replaced single-device session overwrite on `citizens` table with multi-session token storage in `citizen_sessions` with 10-year lifespan.
+  - Enabled multi-device sign-in (phone + desktop) without premature session invalidation.
+  - Implemented automatic legacy migration on server boot to copy existing active session hashes into `citizen_sessions`.
+- **Domain & Cookie Unification:**
+  - Scoped production session cookie domain to `.claimyourspot.lol` so authentication is seamlessly shared across root and `www`.
+  - Added canonical 301 permanent redirect from `www.claimyourspot.lol` to `https://claimyourspot.lol` to eliminate session cookie fragmentation.
+  - Added client-side fallback to `localStorage` (`spot_session_token`) and Supabase `INITIAL_SESSION` hydration in `apps/web/src/pages/world.astro`.
+- **Deep System Healthcheck & Monitoring (`/health`):**
+  - Upgraded `/health` endpoint to perform live database query latency measurements, spot count validation, Node process uptime, and RSS/heap memory tracking.
+  - Returns HTTP 503 Service Unavailable if database is unreachable.
+  - Mapped `127.0.0.1:4323:4323` to host in `docker-compose.prod.yml` and added container healthcheck probes.
+
+---
+
 ## 2026-09-03
 
 ### Added
