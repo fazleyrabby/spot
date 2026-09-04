@@ -29,6 +29,7 @@ import { TrainManager } from './train-manager.js';
 import { SkyManager } from './sky-manager.js';
 import { NPCManager } from './npc-manager.js';
 import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
+import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
 // ---------------------------------------------------------------------------
@@ -126,6 +127,7 @@ export class Renderer {
   hoveredCitizen: OccupiedSpotSummary | null = null;
   hoveredGrid: { gx: number; gy: number } | null = null;
   hoveredBanner: WorldBanner | null = null;
+  hoveredSecret: WorldSecret | null = null;
   selectedCitizen: OccupiedSpotSummary | null = null;
   gpsTarget: { name: string; wx: number; wy: number } | null = null;
   timeOfDay: 'day' | 'twilight' | 'night' = 'night';
@@ -920,34 +922,130 @@ export class Renderer {
       }
 
       case 'dev_library': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        const isHovered = this.hoveredSecret?.id === 'dev_library';
+        const bob = Math.sin(this.tick * 0.08) * 2 * z;
+
+        // 1. Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
-        ctx.ellipse(sx, sy, 14 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy + 2 * z, 26 * z, 10 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#78350f';
+        // 2. Foundation Steps
+        ctx.fillStyle = '#0f172a';
         ctx.beginPath();
-        ctx.roundRect(sx - 11 * z, sy - 22 * z, 22 * z, 22 * z, 3 * z);
+        ctx.roundRect(sx - 24 * z, sy - 4 * z, 48 * z, 8 * z, 2 * z);
         ctx.fill();
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
 
-        ctx.fillStyle = '#451a03';
-        ctx.fillRect(sx - 9 * z, sy - 19 * z, 18 * z, 8 * z);
-        ctx.fillRect(sx - 9 * z, sy - 9 * z, 18 * z, 7 * z);
-
-        const colors = ['#38bdf8', '#f43f5e', '#10b981', '#fbbf24', '#c084fc'];
-        for (let b = 0; b < 5; b++) {
-          ctx.fillStyle = colors[b % colors.length];
-          ctx.fillRect(sx - 8 * z + b * 3.2 * z, sy - 18 * z, 2.4 * z, 6.5 * z);
-          ctx.fillRect(sx - 8 * z + b * 3.2 * z, sy - 8 * z, 2.4 * z, 5.5 * z);
-        }
-
-        ctx.fillStyle = '#6366f1';
+        // 3. Main Cyber Facade
+        ctx.fillStyle = isHovered ? '#0f1a36' : '#0a1024';
         ctx.beginPath();
-        ctx.moveTo(sx - 13 * z, sy - 22 * z);
-        ctx.lineTo(sx, sy - 27 * z);
-        ctx.lineTo(sx + 13 * z, sy - 22 * z);
+        ctx.roundRect(sx - 20 * z, sy - 34 * z, 40 * z, 32 * z, 4 * z);
+        ctx.fill();
+        ctx.strokeStyle = isHovered ? '#00f0ff' : 'rgba(0, 240, 255, 0.4)';
+        ctx.lineWidth = 1.5 * z;
+        ctx.stroke();
+
+        // 4. Vertical Neon Pillars (Cyan LED Accent)
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(sx - 19 * z, sy - 32 * z, 2.5 * z, 30 * z);
+        ctx.fillRect(sx + 16.5 * z, sy - 32 * z, 2.5 * z, 30 * z);
+
+        // 5. Arched Entrance with Warm Interior Light
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 14 * z, 8 * z, Math.PI, 0);
+        ctx.lineTo(sx + 8 * z, sy - 2 * z);
+        ctx.lineTo(sx - 8 * z, sy - 2 * z);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Interior Bookshelves (Visible through open cyber-arch)
+        const bookColors = ['#00f0ff', '#f59e0b', '#ec4899', '#10b981', '#a855f7'];
+        for (let b = 0; b < 4; b++) {
+          ctx.fillStyle = bookColors[b % bookColors.length];
+          ctx.fillRect(sx - 5.5 * z + b * 2.8 * z, sy - 12 * z, 2 * z, 5 * z);
+          ctx.fillRect(sx - 5.5 * z + b * 2.8 * z, sy - 6 * z, 2 * z, 4 * z);
+        }
+
+        // 6. Cyber Marquee Header & Signboard
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 18 * z, sy - 32 * z, 36 * z, 9 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        if (z >= 0.65) {
+          ctx.font = `bold ${Math.max(6, Math.floor(6.5 * z))}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#00f0ff';
+          ctx.fillText('🏛️ THE CODEX', sx, sy - 27.5 * z);
+        }
+
+        // 7. Roof Pediment / Cyber Crest
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.moveTo(sx - 22 * z, sy - 34 * z);
+        ctx.lineTo(sx, sy - 42 * z);
+        ctx.lineTo(sx + 22 * z, sy - 34 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#818cf8';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // 8. Floating Holographic Tome (Glow & Bob)
+        const tomeY = sy - 48 * z + bob;
+        // Floating holo aura
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
+        ctx.beginPath();
+        ctx.arc(sx, tomeY, 9 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Open pixel book glyph
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 6 * z, tomeY - 4 * z, 12 * z, 8 * z, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.8 * z;
+        ctx.stroke();
+
+        // Book pages spine
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(sx - 0.5 * z, tomeY - 3.5 * z, 1 * z, 7 * z);
+
+        // 9. Interactive Hover Reticle Tooltip
+        if (isHovered) {
+          const pillY = sy - 60 * z + bob;
+          const text = '📚 The Grand Codex • Click to Enter';
+          ctx.font = `bold ${Math.max(9, Math.floor(10 * z))}px sans-serif`;
+          const tw = ctx.measureText(text).width;
+          const pw = tw + 18 * z;
+          const ph = 18 * z;
+
+          ctx.fillStyle = 'rgba(11, 17, 32, 0.94)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 5 * z);
+          ctx.fill();
+          ctx.strokeStyle = '#00f0ff';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(text, sx, pillY);
+        }
         break;
       }
 

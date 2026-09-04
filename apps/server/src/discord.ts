@@ -193,3 +193,53 @@ export async function sendVisitorNotification(input: DiscordVisitorNotification)
     console.error('Discord visitor webhook error:', err);
   }
 }
+
+export interface DiscordLibrarySuggestionNotification {
+  title: string;
+  url: string;
+  category: string;
+  description: string;
+  submitterName?: string | null;
+  submitterCitizenId?: string | null;
+}
+
+export async function sendLibrarySuggestionNotification(input: DiscordLibrarySuggestionNotification): Promise<void> {
+  const webhookUrl = config.discordWebhookUrl;
+  if (!webhookUrl) return;
+
+  const payload = {
+    embeds: [
+      {
+        title: `📚 New Resource Suggested for The Grand Codex!`,
+        description: `**[${input.title}](${input.url})**\n${input.description}`,
+        color: 0x8b5cf6, // Vibrant Violet
+        fields: [
+          { name: 'Category', value: `\`${input.category}\``, inline: true },
+          { name: 'Direct Link', value: input.url, inline: true },
+          {
+            name: 'Suggested By',
+            value: input.submitterName
+              ? `**${input.submitterName}**${input.submitterCitizenId ? ` (\`${input.submitterCitizenId}\`)` : ''}`
+              : 'Anonymous Visitor',
+            inline: false,
+          },
+        ],
+        footer: { text: 'SPOT Grand Codex • Curated Dev Vault' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error(`Discord library suggestion webhook failed with status ${res.status}`);
+    }
+  } catch (err) {
+    console.error('Discord library suggestion webhook error:', err);
+  }
+}
