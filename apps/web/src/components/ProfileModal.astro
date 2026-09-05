@@ -18,7 +18,19 @@
         </div>
 
         <div class="profile-meta">
-          <div class="spot-tag mono-num" id="profile-spot-id">Spot (42, 42)</div>
+          <div class="profile-meta-top">
+            <div class="spot-tag mono-num" id="profile-spot-id">Spot (42, 42)</div>
+            <button type="button" class="profile-share-chip" id="profile-share-chip" title="Share this spot or get GitHub README badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span>Share & Embed</span>
+            </button>
+          </div>
           <div class="profile-name-row">
             <h2 class="profile-name" id="profile-name">Fazley Rabbi</h2>
             <span class="github-verified-badge" id="profile-verified-badge" title="GitHub Verified Citizen" style="display: none;">
@@ -457,6 +469,38 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+  }
+
+  .profile-meta-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .profile-share-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 6px;
+    color: #38bdf8;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .profile-share-chip:hover {
+    background: rgba(56, 189, 248, 0.22);
+    color: #f8fafc;
+    border-color: rgba(56, 189, 248, 0.5);
+    transform: translateY(-1px);
   }
 
   .spot-tag {

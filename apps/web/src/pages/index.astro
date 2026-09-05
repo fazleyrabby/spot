@@ -8,6 +8,7 @@ import SearchModal from '../components/SearchModal.astro';
 import SupportModal from '../components/SupportModal.astro';
 import AboutModal from '../components/AboutModal.astro';
 import TransferModal from '../components/TransferModal.astro';
+import ShareModal from '../components/ShareModal.astro';
 ---
 
 <Layout>
@@ -20,6 +21,7 @@ import TransferModal from '../components/TransferModal.astro';
     <SupportModal />
     <AboutModal />
     <TransferModal />
+    <ShareModal />
     <div id="toast-container" class="toast-container"></div>
   </main>
 </Layout>
@@ -751,27 +753,28 @@ import TransferModal from '../components/TransferModal.astro';
     checkUrlDeepLink();
   });
 
-  // Copy Spot Share Link
+  // Copy Spot Share Link & Open Viral Embed Modal
   const btnCopySpotLink = document.getElementById('btn-copy-spot-link');
-  const btnCopySpotLinkText = document.getElementById('btn-copy-spot-link-text');
-  btnCopySpotLink?.addEventListener('click', () => {
+  const profileShareChip = document.getElementById('profile-share-chip');
+
+  function openViralShareForCurrentOccupied() {
     if (!currentViewingOccupied) return;
-    const url = `${window.location.origin}/api/share?x=${currentViewingOccupied.x}&y=${currentViewingOccupied.y}`;
-    const shareData = {
-      title: `${currentViewingOccupied.displayName} · SPOT`,
-      text: `Visit ${currentViewingOccupied.displayName}'s spot in SPOT`,
-      url,
-    };
-    const sharePromise = navigator.share
-      ? navigator.share(shareData).catch(() => navigator.clipboard.writeText(url))
-      : navigator.clipboard.writeText(url);
-    sharePromise.then(() => {
-      if (btnCopySpotLinkText) btnCopySpotLinkText.textContent = 'Copied!';
-      showToast('🔗 Spot link copied to clipboard!', 'success');
-      setTimeout(() => {
-        if (btnCopySpotLinkText) btnCopySpotLinkText.textContent = 'Share Spot';
-      }, 2000);
+    (window as any).openShareModal?.({
+      citizenName: currentViewingOccupied.displayName,
+      x: currentViewingOccupied.x,
+      y: currentViewingOccupied.y,
+      spotId: `${currentViewingOccupied.x},${currentViewingOccupied.y}`,
     });
+  }
+
+  profileShareChip?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openViralShareForCurrentOccupied();
+  });
+
+  btnCopySpotLink?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openViralShareForCurrentOccupied();
   });
 
   btnInviteNeighbor?.addEventListener('click', async () => {

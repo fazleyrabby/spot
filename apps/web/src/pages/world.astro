@@ -10,6 +10,7 @@ import SearchModal from '../components/SearchModal.astro';
 import BannerModal from '../components/BannerModal.astro';
 import LibraryModal from '../components/LibraryModal.astro';
 import ArcadeModal from '../components/ArcadeModal.astro';
+import ShareModal from '../components/ShareModal.astro';
 ---
 
 <Layout
@@ -58,6 +59,9 @@ import ArcadeModal from '../components/ArcadeModal.astro';
 
     <!-- Citizen Search & GPS Modal -->
     <SearchModal />
+
+    <!-- 1-Click Viral Share & Embed Modal -->
+    <ShareModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -413,6 +417,7 @@ import ArcadeModal from '../components/ArcadeModal.astro';
 
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');
+    currentViewingSpotSummary = spot;
   }
 
   // ── Spot Wall / Guestbook Comments ─────────────────────────────────────────
@@ -423,6 +428,7 @@ import ArcadeModal from '../components/ArcadeModal.astro';
   const spotWallSubmit = document.getElementById('spot-wall-submit') as HTMLButtonElement | null;
   const spotWallSelfNote = document.getElementById('spot-wall-self-note');
   let currentViewingSpotId = '';
+  let currentViewingSpotSummary: OccupiedSpotSummary | null = null;
 
   function renderSpotComments(comments: Array<{ authorName: string; body: string; createdAt: string }>): void {
     if (!spotWallComments) return;
@@ -543,6 +549,42 @@ import ArcadeModal from '../components/ArcadeModal.astro';
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeProfileModal();
+  });
+
+  // ── Share & Flex Modal Triggers ──────────────────────────────────────────
+  const profileShareChip = document.getElementById('profile-share-chip');
+  const btnCopySpotLink = document.getElementById('btn-copy-spot-link');
+  const btnWorldShare = document.getElementById('world-share-btn');
+
+  function triggerShareModalForCurrent() {
+    (window as any).openShareModal?.({
+      citizenName: currentViewingSpotSummary?.displayName || 'Citizen',
+      x: currentViewingSpotSummary?.x,
+      y: currentViewingSpotSummary?.y,
+      spotId: currentViewingSpotSummary ? `${currentViewingSpotSummary.x},${currentViewingSpotSummary.y}` : undefined,
+    });
+  }
+
+  profileShareChip?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    triggerShareModalForCurrent();
+  });
+
+  btnCopySpotLink?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    triggerShareModalForCurrent();
+  });
+
+  btnWorldShare?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeProfileModal();
+    closeSecretModal();
+    closeBannerModal();
+    (window as any).openShareModal?.({
+      citizenName: currentViewingSpotSummary?.displayName || 'Citizen',
+      x: currentViewingSpotSummary?.x ?? 50,
+      y: currentViewingSpotSummary?.y ?? 50,
+    });
   });
 
   // ── Secret Discovery Modal Wiring ─────────────────────────────────────────
@@ -1749,7 +1791,38 @@ import ArcadeModal from '../components/ArcadeModal.astro';
         (window as any).openLibraryModal?.();
       });
 
-      // Auto-open library if deep-linked via ?modal=library or ?zone=library
+      // Auto-open modal or glide camera if deep-linked via URL parameters
+      function flyCameraToSpot(x: number, y: number): void {
+        if (!engine) return;
+        const targetWx = x * 16 + 8;
+        const targetWy = y * 16 + 8;
+        engine.camera.centerOn(targetWx, targetWy, 1.4);
+        const plot = engine.plots.getPlotAt(x, y);
+        if (plot) {
+          engine.renderer.selectedCitizen = plot;
+          setTimeout(() => {
+            openProfileModal(plot);
+          }, 350);
+        }
+      }
+
+      async function flyCameraToCitizen(username: string): Promise<void> {
+        if (!engine) return;
+        try {
+          const res = await fetch(`/api/citizens/search?q=${encodeURIComponent(username)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const match = data.results?.find((r: any) =>
+            r.displayName?.toLowerCase() === username.toLowerCase() ||
+            r.githubUrl?.toLowerCase().includes(username.toLowerCase())
+          ) || data.results?.[0];
+
+          if (match && typeof match.x === 'number' && typeof match.y === 'number') {
+            flyCameraToSpot(match.x, match.y);
+          }
+        } catch (_) {}
+      }
+
       const worldUrlParams = new URLSearchParams(window.location.search);
       if (worldUrlParams.get('modal') === 'library' || worldUrlParams.get('zone') === 'library') {
         setTimeout(() => {
@@ -1759,6 +1832,20 @@ import ArcadeModal from '../components/ArcadeModal.astro';
         setTimeout(() => {
           (window as any).openArcadeModal?.();
         }, 350);
+      } else if (worldUrlParams.get('modal') === 'share') {
+        setTimeout(() => {
+          (window as any).openShareModal?.();
+        }, 350);
+      } else if (worldUrlParams.has('spot')) {
+        const parts = (worldUrlParams.get('spot') || '').split(',').map(Number);
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          setTimeout(() => flyCameraToSpot(parts[0], parts[1]), 400);
+        }
+      } else if (worldUrlParams.has('citizen')) {
+        const targetCitizen = (worldUrlParams.get('citizen') || '').trim();
+        if (targetCitizen) {
+          setTimeout(() => flyCameraToCitizen(targetCitizen), 400);
+        }
       }
 
       searchCloseBtn?.addEventListener('click', closeSearchModal);
