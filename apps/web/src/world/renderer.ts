@@ -1378,6 +1378,56 @@ export class Renderer {
         break;
       }
 
+      case 'cyber_glitch_byte':
+      case 'cyber_glitch_mantis':
+      case 'cyber_glitch_null': {
+        const isByte = secret.id === 'cyber_glitch_byte';
+        const isMantis = secret.id === 'cyber_glitch_mantis';
+        const primaryColor = isByte ? '#00f0ff' : isMantis ? '#10b981' : '#f59e0b';
+        const glowColor = isByte ? 'rgba(0, 240, 255, 0.35)' : isMantis ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)';
+
+        const hoverBob = Math.sin(this.tick * 0.15 + (isByte ? 0 : isMantis ? 2 : 4)) * 3 * z;
+        const wingFlap = Math.sin(this.tick * 0.5) * 4 * z;
+
+        // 1. Contact Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 7 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Ambient Pulsing Neon Aura
+        ctx.fillStyle = glowColor;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 8 * z + hoverBob, 12 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Translucent Fluttering Wings
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.ellipse(sx - 4 * z, sy - 11 * z + hoverBob + wingFlap, 5 * z, 2.5 * z, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 4 * z, sy - 11 * z + hoverBob + wingFlap, 5 * z, 2.5 * z, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Pixel Bug Core Body
+        ctx.fillStyle = primaryColor;
+        ctx.beginPath();
+        ctx.roundRect(sx - 3.5 * z, sy - 10 * z + hoverBob, 7 * z, 7 * z, 2 * z);
+        ctx.fill();
+
+        // 5. Glowing Eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(sx - 2 * z, sy - 9 * z + hoverBob, 1.5 * z, 1.5 * z);
+        ctx.fillRect(sx + 0.5 * z, sy - 9 * z + hoverBob, 1.5 * z, 1.5 * z);
+
+        // 6. Floating Sparkle Particles
+        const sparkOffset = (this.tick * 0.4) % 12;
+        ctx.fillStyle = primaryColor;
+        ctx.fillRect(sx + Math.sin(this.tick * 0.2) * 6 * z, sy - 14 * z + hoverBob - sparkOffset * z * 0.5, 1.5 * z, 1.5 * z);
+        break;
+      }
+
       case 'glitch_void': {
         const glitchPulse = Math.sin(this.tick * 0.12) * 2 * z;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';

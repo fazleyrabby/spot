@@ -200,6 +200,54 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“The tide always returns what was lost to the deep.”',
     reward: 'Reef Explorer',
   },
+  {
+    id: 'cyber_glitch_byte',
+    name: 'Glitch Byte (Bug Bounty)',
+    district: 'Tech Corridor',
+    icon: '🪲',
+    gx: 32,
+    gy: 38,
+    category: 'fun',
+    title: 'Daily Glitch Byte #01',
+    subtitle: 'Rogue neon bytecode critter',
+    description:
+      'A flickering cyber bug with iridescent wings fluttering near the tech plaza. You caught it before it could cause a stack overflow!',
+    clue: 'Look for a glowing cyan bug fluttering around the neon tech corridor at (32, 38).',
+    quote: '“Stack overflow averted! Clean compile achieved.”',
+    reward: 'Bug Bounty: Glitch Catcher ✦',
+  },
+  {
+    id: 'cyber_glitch_mantis',
+    name: 'Memory Leak Mantis (Bug Bounty)',
+    district: 'Central Park Green',
+    icon: '🦗',
+    gx: 60,
+    gy: 44,
+    category: 'fun',
+    title: 'Daily Glitch Critter #02',
+    subtitle: 'Consuming RAM among the reeds',
+    description:
+      'A crystalline neon-green mantis nibbling on uncollected garbage data in Central Park. Safely deallocated!',
+    clue: 'Searching through the tall grass in Central Park near (60, 44) reveals a green glowing critter.',
+    quote: '“Garbage collector ran: 512MB RAM reclaimed.”',
+    reward: 'Bug Bounty: Memory Cleaner ✦',
+  },
+  {
+    id: 'cyber_glitch_null',
+    name: 'NullPointer Sprite (Bug Bounty)',
+    district: 'Boardwalk Coast',
+    icon: '✨',
+    gx: 48,
+    gy: 82,
+    category: 'fun',
+    title: 'Daily Glitch Sprite #03',
+    subtitle: 'Undefined reference near the surf',
+    description:
+      'A playful golden spark dancing over the ocean spray near the boardwalk. Successfully handled with an optional chain!',
+    clue: 'Near the warm coastal boardwalk at (48, 82), a golden spark skips over the surf.',
+    quote: '“Cannot read properties of undefined? Handled safely with ?.”',
+    reward: 'Bug Bounty: Master Debugger ✦',
+  },
 ];
 
 export function getSecretAt(gx: number, gy: number): WorldSecret | null {
@@ -265,9 +313,28 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     checkUnlocked: (secrets) => secrets.includes('hermit_cabin'),
   },
   {
+    id: 'badge_bug_hunter',
+    name: 'Glitch Hunter',
+    description: 'Caught a rogue Cyber Glitch Bug on the island',
+    icon: '🪲',
+    color: '#10b981',
+    checkUnlocked: (secrets) => secrets.some((s) => s.startsWith('cyber_glitch_')),
+  },
+  {
+    id: 'badge_bug_master',
+    name: 'Master Debugger',
+    description: 'Captured all 3 daily Cyber Glitch critters',
+    icon: '🏆',
+    color: '#f59e0b',
+    checkUnlocked: (secrets) =>
+      secrets.includes('cyber_glitch_byte') &&
+      secrets.includes('cyber_glitch_mantis') &&
+      secrets.includes('cyber_glitch_null'),
+  },
+  {
     id: 'badge_metropolis_master',
     name: 'World Explorer',
-    description: 'Discovered all 11 landmarks across SPOT World',
+    description: 'Discovered all landmarks across SPOT World',
     icon: '👑',
     color: '#f59e0b',
     checkUnlocked: (secrets) => secrets.length >= WORLD_SECRETS.length,
