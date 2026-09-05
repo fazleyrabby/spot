@@ -13,6 +13,7 @@ import ShareModal from '../components/ShareModal.astro';
 
 <Layout>
   <main class="spot-app">
+    <h1 class="sr-only">SPOT — A Persistent 10,000-Plot Cyber Metropolis for Builders, Creators & Hackers</h1>
     <Header />
     <SpotCanvas />
     <ProfileModal />
@@ -152,6 +153,38 @@ import ShareModal from '../components/ShareModal.astro';
   const inputLinkedin = document.getElementById('input-linkedin') as HTMLInputElement;
   const inputYoutube = document.getElementById('input-youtube') as HTMLInputElement;
   const inputGithub = document.getElementById('input-github') as HTMLInputElement;
+
+  // Auto-normalize link inputs on blur so @handles and URLs format cleanly to https://
+  function bindUrlNormalizer(
+    input: HTMLInputElement | null,
+    platform: 'website' | 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube' | 'github'
+  ) {
+    if (!input) return;
+    input.addEventListener('blur', () => {
+      const raw = input.value.trim();
+      if (!raw) return;
+      const formatted = formatSocialUrl(raw, platform);
+      if (formatted) {
+        input.value = formatted;
+      }
+    });
+  }
+
+  bindUrlNormalizer(inputWebsite, 'website');
+  bindUrlNormalizer(inputTwitter, 'twitter');
+  bindUrlNormalizer(inputFacebook, 'facebook');
+  bindUrlNormalizer(inputInstagram, 'instagram');
+  bindUrlNormalizer(inputLinkedin, 'linkedin');
+  bindUrlNormalizer(inputYoutube, 'youtube');
+  bindUrlNormalizer(inputGithub, 'github');
+
+  bindUrlNormalizer(editWebsite, 'website');
+  bindUrlNormalizer(editTwitter, 'twitter');
+  bindUrlNormalizer(editFacebook, 'facebook');
+  bindUrlNormalizer(editInstagram, 'instagram');
+  bindUrlNormalizer(editLinkedin, 'linkedin');
+  bindUrlNormalizer(editYoutube, 'youtube');
+  bindUrlNormalizer(editGithub, 'github');
 
   // Custom Avatar Elements (Claim Modal)
   const inputCustomAvatarFile = document.getElementById('input-custom-avatar-file') as HTMLInputElement;
@@ -1087,13 +1120,13 @@ import ShareModal from '../components/ShareModal.astro';
     const newDisplayName = editDisplayName.value.trim();
     const newAvatarId = editSelectedAvatarId;
     const newTagline = editTagline.value.trim() || undefined;
-    const newWebsite = editWebsite.value.trim() || undefined;
-    const newTwitter = editTwitter.value.trim() || undefined;
-    const newFacebook = editFacebook.value.trim() || undefined;
-    const newInstagram = editInstagram.value.trim() || undefined;
-    const newLinkedin = editLinkedin.value.trim() || undefined;
-    const newYoutube = editYoutube.value.trim() || undefined;
-    const newGithub = editGithub.value.trim() || undefined;
+    const newWebsite = formatSocialUrl(editWebsite.value.trim(), 'website');
+    const newTwitter = formatSocialUrl(editTwitter.value.trim(), 'twitter');
+    const newFacebook = formatSocialUrl(editFacebook.value.trim(), 'facebook');
+    const newInstagram = formatSocialUrl(editInstagram.value.trim(), 'instagram');
+    const newLinkedin = formatSocialUrl(editLinkedin.value.trim(), 'linkedin');
+    const newYoutube = formatSocialUrl(editYoutube.value.trim(), 'youtube');
+    const newGithub = formatSocialUrl(editGithub.value.trim(), 'github');
 
     if (containsBlockedWord(newDisplayName) || containsBlockedWord(newTagline)) {
       showToast('That name/tagline contains blocked language. Please choose something respectful.', 'error');
@@ -1807,13 +1840,13 @@ import ShareModal from '../components/ShareModal.astro';
         avatarId: selectedAvatarId,
         customAvatarData: claimCustomAvatarData || undefined,
         tagline: inputTagline.value.trim() || undefined,
-        websiteUrl: inputWebsite.value.trim() || undefined,
-        twitterUrl: inputTwitter.value.trim() || undefined,
-        facebookUrl: inputFacebook.value.trim() || undefined,
-        instagramUrl: inputInstagram.value.trim() || undefined,
-        linkedinUrl: inputLinkedin.value.trim() || undefined,
-        youtubeUrl: inputYoutube.value.trim() || undefined,
-        githubUrl: inputGithub.value.trim() || undefined,
+        websiteUrl: formatSocialUrl(inputWebsite.value.trim(), 'website'),
+        twitterUrl: formatSocialUrl(inputTwitter.value.trim(), 'twitter'),
+        facebookUrl: formatSocialUrl(inputFacebook.value.trim(), 'facebook'),
+        instagramUrl: formatSocialUrl(inputInstagram.value.trim(), 'instagram'),
+        linkedinUrl: formatSocialUrl(inputLinkedin.value.trim(), 'linkedin'),
+        youtubeUrl: formatSocialUrl(inputYoutube.value.trim(), 'youtube'),
+        githubUrl: formatSocialUrl(inputGithub.value.trim(), 'github'),
         referrerSpotId: referralSpotId || undefined,
       });
       referralSpotId = null;

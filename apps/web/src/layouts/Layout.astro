@@ -23,7 +23,7 @@ const author = 'Md. Fazley Rabbi';
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -55,13 +55,18 @@ const author = 'Md. Fazley Rabbi';
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={url} />
     <meta property="twitter:url" content={url} />
+    <meta name="twitter:title" content={title} />
     <meta property="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <meta property="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
     <meta property="twitter:image" content={image} />
-    <meta property="twitter:creator" content="@fazleyrabby" />
-    <meta property="twitter:site" content="@fazleyrabby" />
+    <meta name="twitter:creator" content="@fazleyrabby" />
+    <meta name="twitter:site" content="@fazleyrabby" />
 
     <!-- Google tag (gtag.js) -->
     <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-R7ZVE6FQJ3"></script>

@@ -186,7 +186,7 @@ export class WorldCanvasRenderer {
         if (occupied) {
           this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, false, isSelected);
           if (this.isPrimeSpot(gx, gy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, isSelected);
-          if (this.camera.zoom > 1.2 && !isSelected) {
+          if (this.camera.zoom >= 1.35 && !isSelected) {
             backgroundLabelsToRender.push({ x: worldPos.x, y: worldPos.y, size: spotSize, occupied });
           }
         } else {
@@ -196,9 +196,9 @@ export class WorldCanvasRenderer {
       }
     }
 
-    // 2. Pass 2: Draw background labels
+    // 2. Pass 2: Draw background labels (strictly bounded within each tile)
     for (const item of backgroundLabelsToRender) {
-      this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, false);
+      this.renderSpotLabel(ctx, item.x, item.y, item.size, item.occupied, false, false);
     }
 
     // 3. Pass 3: Draw Selected Spot (if it is NOT the hovered spot)
@@ -219,7 +219,7 @@ export class WorldCanvasRenderer {
       if (occupied) {
         this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, false, true);
         if (this.isPrimeSpot(sx, sy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
-        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, false);
+        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, false, true);
       } else {
         this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, false, true);
         if (this.isPrimeSpot(sx, sy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
@@ -247,7 +247,7 @@ export class WorldCanvasRenderer {
       if (occupied) {
         this.renderOccupiedSpot(ctx, worldPos.x, worldPos.y, spotSize, occupied, true, isSelected);
         if (this.isPrimeSpot(hx, hy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
-        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, true);
+        this.renderSpotLabel(ctx, worldPos.x, worldPos.y, spotSize, occupied, true, isSelected);
       } else {
         this.renderEmptySpot(ctx, worldPos.x, worldPos.y, spotSize, true, isSelected);
         if (this.isPrimeSpot(hx, hy)) this.renderPrimeSpot(ctx, worldPos.x, worldPos.y, spotSize, true);
@@ -479,48 +479,81 @@ export class WorldCanvasRenderer {
     }
   }
 
+  private fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (truncated.length > 0 && ctx.measureText(truncated + '…').width > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated ? truncated + '…' : '';
+  }
+
   private renderSpotLabel(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
     size: number,
     occupied: OccupiedSpotSummary,
-    isHovered: boolean
+    isHovered: boolean,
+    isSelected: boolean = false
   ): void {
-    ctx.font = '600 10px "Outfit", -apple-system, sans-serif';
-    const text = occupied.displayName.length > 14 ? occupied.displayName.slice(0, 13) + '…' : occupied.displayName;
-    const metrics = ctx.measureText(text);
-    const textWidth = metrics.width;
-    const pillWidth = Math.max(size, textWidth + 12);
-    const pillHeight = 16;
-    const pillX = x + size / 2 - pillWidth / 2;
-    const pillY = y + size + 4;
-
-    ctx.save();
     if (isHovered) {
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 2;
+      // Elevated floating focus pill for hovered spot (drawn on top layer)
+      ctx.save();
+      ctx.font = '600 11px "Outfit", -apple-system, sans-serif';
+      const text = this.fitText(ctx, occupied.displayName, 140);
+      const textMetrics = ctx.measureText(text);
+      const pillWidth = Math.max(size, textMetrics.width + 16);
+      const pillHeight = 20;
+      const pillX = x + size / 2 - pillWidth / 2;
+      // Position above spot if space permits, else below
+      const pillY = y >= 26 ? y - pillHeight - 6 : y + size + 6;
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 3;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = isSelected ? '#10b981' : '#f59e0b';
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + size / 2, pillY + pillHeight / 2);
+      ctx.restore();
+    } else {
+      // In-tile docked nameplate: strictly bounded within the tile so it NEVER overflows into adjacent plots
+      ctx.save();
+      const pillWidth = size - 4;
+      const pillHeight = 9.5;
+      const pillX = x + 2;
+      const pillY = y + size - pillHeight - 1.5;
+
+      ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(10, 13, 20, 0.88)';
+      ctx.strokeStyle = isSelected ? '#10b981' : 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 2.5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '700 7px "Outfit", "JetBrains Mono", sans-serif';
+      const text = this.fitText(ctx, occupied.displayName, pillWidth - 3);
+      ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(241, 245, 249, 0.92)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + size / 2, pillY + pillHeight / 2);
+      ctx.restore();
     }
-
-    // Dark glass capsule background behind text
-    ctx.fillStyle = isHovered ? '#0f172a' : 'rgba(10, 12, 18, 0.85)';
-    ctx.strokeStyle = isHovered ? '#f59e0b' : 'rgba(255, 255, 255, 0.18)';
-    ctx.lineWidth = isHovered ? 1.5 : 1;
-
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 4);
-    ctx.fill();
-    ctx.stroke();
-
-    // Text
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.fillStyle = isHovered ? '#ffffff' : 'rgba(241, 245, 249, 0.95)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + size / 2, pillY + pillHeight / 2);
-    ctx.restore();
   }
 
   private renderSelectedBeacon(
