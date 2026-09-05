@@ -488,3 +488,53 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
   }
 </style>
+
+<script>
+  const hud = document.getElementById('header-hud');
+  if (hud) {
+    // 1. Wheel scroll converts to horizontal scroll
+    hud.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0 && e.deltaX === 0) {
+        hud.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // 2. Touch and drag scroll
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let hasMoved = false;
+
+    hud.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDown = true;
+      hasMoved = false;
+      startX = e.clientX;
+      scrollLeft = hud.scrollLeft;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 3) {
+        hasMoved = true;
+        hud.scrollLeft = scrollLeft - dx;
+      }
+    });
+
+    const endDrag = () => {
+      isDown = false;
+    };
+
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+
+    hud.addEventListener('click', (e) => {
+      if (hasMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+</script>
