@@ -1983,32 +1983,299 @@ export class Renderer {
         break;
       }
 
-      case 'fountain': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      case 'fountain':
+      case 'wishing_fountain': {
+        const isHovered = this.hoveredSecret?.id === 'wishing_fountain';
+        // 1. Contact Drop Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
-        ctx.ellipse(sx, sy, 22 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy, 26 * z, 12 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#475569';
+        // 2. Ornate Hexagonal Carved Granite Basin
+        ctx.fillStyle = isHovered ? '#38bdf8' : '#64748b';
         ctx.beginPath();
-        ctx.ellipse(sx, sy - 2 * z, 20 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy - 2 * z, 24 * z, 11 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 3 * z, 21 * z, 9.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Shimmering Turquoise Water with Animated Ripples
+        const ripple = (this.tick * 0.05) % 1;
         ctx.fillStyle = '#0284c7';
         ctx.beginPath();
-        ctx.ellipse(sx, sy - 3 * z, 17 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy - 4 * z, 19 * z, 8 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(sx - 3 * z, sy - 16 * z, 6 * z, 14 * z);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1 * z;
         ctx.beginPath();
-        ctx.ellipse(sx, sy - 16 * z, 8 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy - 4 * z, (10 + ripple * 8) * z, (4 + ripple * 3.5) * z, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 4. Floating Wishing Coins in the Water
+        const coins = [
+          { dx: -8, dy: -3, c: '#f59e0b' },
+          { dx: 7, dy: -2, c: '#fbbf24' },
+          { dx: -2, dy: -6, c: '#38bdf8' },
+          { dx: 5, dy: -5, c: '#e2e8f0' },
+          { dx: -6, dy: -5, c: '#f59e0b' },
+        ];
+        for (const coin of coins) {
+          ctx.fillStyle = coin.c;
+          ctx.beginPath();
+          ctx.ellipse(sx + coin.dx * z, sy + coin.dy * z, 1.8 * z, 1.2 * z, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 5. Central Spire & Pedestal
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 4 * z, sy - 18 * z, 8 * z, 15 * z);
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 18 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        const jetHeight = (8 + Math.sin(this.tick * 0.15) * 2) * z;
+        // 6. Water Jets with Ambient Mist
+        const jetHeight = (9 + Math.sin(this.tick * 0.15) * 2.5) * z;
         ctx.fillStyle = '#bae6fd';
         ctx.beginPath();
-        ctx.ellipse(sx, sy - 18 * z - jetHeight, 3.5 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy - 20 * z - jetHeight, 4 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Little water drops splashing
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.8)';
+        for (let i = 0; i < 4; i++) {
+          const dropOff = ((this.tick * 0.3 + i * 8) % 20) * z;
+          const dropX = sx + Math.sin(i * 1.5 + this.tick * 0.1) * (6 + dropOff * 0.4) * z;
+          const dropY = sy - 20 * z + dropOff * 0.6;
+          ctx.fillRect(dropX, dropY, 1.5 * z, 1.5 * z);
+        }
+
+        // 7. Interactive Hover Indicator
+        if (isHovered) {
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = `bold ${Math.round(8 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('🪙 TOSS COIN', sx, sy - 34 * z);
+        }
+        break;
+      }
+
+      case 'city_hall': {
+        const isHovered = this.hoveredSecret?.id === 'city_hall';
+        // 1. Broad Ambient Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 42 * z, 14 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Grand Granite Steps & Podium
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 36 * z, sy - 8 * z, 72 * z, 12 * z, 3 * z);
+        ctx.fill();
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(sx - 32 * z, sy - 14 * z, 64 * z, 10 * z, 2 * z);
+        ctx.fill();
+
+        // 3. Classical Cyber Pillars (4 Front Pillars)
+        const pillarX = [-24, -8, 8, 24];
+        for (const px of pillarX) {
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect((sx + px * z) - 3 * z, sy - 44 * z, 6 * z, 31 * z);
+          // Capital & Base
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect((sx + px * z) - 4 * z, sy - 46 * z, 8 * z, 3 * z);
+          ctx.fillRect((sx + px * z) - 4 * z, sy - 15 * z, 8 * z, 2 * z);
+        }
+
+        // 4. Central Hall Facade & Glass Atrium
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 28 * z, sy - 44 * z, 56 * z, 30 * z);
+        // Amber Windows
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+        ctx.fillRect(sx - 18 * z, sy - 38 * z, 8 * z, 14 * z);
+        ctx.fillRect(sx + 10 * z, sy - 38 * z, 8 * z, 14 * z);
+        // Central Golden Door
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(sx - 5 * z, sy - 28 * z, 10 * z, 14 * z);
+
+        // 5. Entablature & Pediment (Triangle Roof)
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(sx - 34 * z, sy - 46 * z);
+        ctx.lineTo(sx, sy - 64 * z);
+        ctx.lineTo(sx + 34 * z, sy - 46 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = isHovered ? '#f59e0b' : '#64748b';
+        ctx.lineWidth = 1.5 * z;
+        ctx.stroke();
+
+        // 6. Central Clock Tower & Holographic Dome
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 10 * z, sy - 82 * z, 20 * z, 19 * z);
+        // Glowing Clock Face
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 72 * z, 6 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 72 * z);
+        ctx.lineTo(sx + 3 * z, sy - 72 * z);
+        ctx.moveTo(sx, sy - 72 * z);
+        ctx.lineTo(sx, sy - 75 * z);
+        ctx.stroke();
+
+        // 7. Golden Spire & Beacon
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 82 * z);
+        ctx.lineTo(sx, sy - 94 * z);
+        ctx.stroke();
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 94 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 8. Scrolling LED Census Marquee
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(sx - 24 * z, sy - 52 * z, 48 * z, 7 * z);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = `bold ${Math.round(5 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('✦ 10,000 PLOTS • SPOT REGISTRY ✦', sx, sy - 47 * z);
+        break;
+      }
+
+      case 'cafe_storefront': {
+        const isHovered = this.hoveredSecret?.id === 'cafe_storefront';
+        // 1. Ground Drop Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 26 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Warm Red Terracotta Brick Facade
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.roundRect(sx - 22 * z, sy - 34 * z, 44 * z, 34 * z, 2 * z);
+        ctx.fill();
+
+        // 3. Large Amber-Glow Bay Windows
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+        ctx.fillRect(sx - 18 * z, sy - 24 * z, 14 * z, 16 * z);
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 18 * z, sy - 24 * z, 14 * z, 16 * z);
+        // Window mullions
+        ctx.beginPath();
+        ctx.moveTo(sx - 11 * z, sy - 24 * z); ctx.lineTo(sx - 11 * z, sy - 8 * z);
+        ctx.moveTo(sx - 18 * z, sy - 16 * z); ctx.lineTo(sx - 4 * z, sy - 16 * z);
+        ctx.stroke();
+
+        // 4. Wooden Entrance Door with Brass Knob
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(sx + 1 * z, sy - 24 * z, 12 * z, 24 * z);
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx + 10 * z, sy - 12 * z, 1.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Classic Striped Awning (Amber & Cream)
+        const awningW = 46 * z;
+        const awningH = 9 * z;
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(sx - awningW / 2, sy - 36 * z, awningW, awningH);
+        // Amber stripes
+        ctx.fillStyle = '#d97706';
+        for (let i = 0; i < 5; i++) {
+          ctx.fillRect(sx - 22 * z + i * 9 * z, sy - 36 * z, 4.5 * z, awningH);
+        }
+
+        // 6. Glowing Neon "SPOT CAFE" Sign
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 16 * z, sy - 46 * z, 32 * z, 9 * z);
+        ctx.strokeStyle = isHovered ? '#38bdf8' : '#f59e0b';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 16 * z, sy - 46 * z, 32 * z, 9 * z);
+        ctx.fillStyle = isHovered ? '#38bdf8' : '#f59e0b';
+        ctx.font = `bold ${Math.round(5.5 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('☕ SPOT CAFE', sx, sy - 39.5 * z);
+
+        // 7. Chimney with Rising Coffee Roast Steam
+        ctx.fillStyle = '#57534e';
+        ctx.fillRect(sx - 18 * z, sy - 52 * z, 6 * z, 12 * z);
+        ctx.fillStyle = 'rgba(254, 243, 199, 0.45)';
+        for (let i = 0; i < 3; i++) {
+          const steamOff = ((this.tick * 0.3 + i * 16) % 36) * z;
+          const steamX = sx - 15 * z + Math.sin(this.tick * 0.1 + i) * 3 * z;
+          ctx.beginPath();
+          ctx.arc(steamX, sy - 54 * z - steamOff, (2 + steamOff * 0.1) * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'grand_station': {
+        const isHovered = this.hoveredSecret?.id === 'grand_station';
+        // 1. Broad Drop Shadow across Railway Concourse
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 46 * z, 14 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. High-Tech Steel Concourse Archway
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(sx - 40 * z, sy - 32 * z, 80 * z, 32 * z, 4 * z);
+        ctx.fill();
+
+        // Cyan glass facade
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.fillRect(sx - 34 * z, sy - 28 * z, 68 * z, 22 * z);
+        ctx.strokeStyle = isHovered ? '#00f0ff' : 'rgba(56, 189, 248, 0.5)';
+        ctx.lineWidth = 1.5 * z;
+        ctx.strokeRect(sx - 34 * z, sy - 28 * z, 68 * z, 22 * z);
+
+        // Truss diagonal supports
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        for (let x = -30; x <= 30; x += 15) {
+          ctx.moveTo(sx + x * z, sy - 28 * z);
+          ctx.lineTo(sx + (x + 8) * z, sy - 6 * z);
+        }
+        ctx.stroke();
+
+        // 3. Elevated Transit Sign & Departure Board
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(sx - 26 * z, sy - 44 * z, 52 * z, 11 * z);
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.2 * z;
+        ctx.strokeRect(sx - 26 * z, sy - 44 * z, 52 * z, 11 * z);
+
+        ctx.fillStyle = '#00f0ff';
+        ctx.font = `bold ${Math.round(5.5 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🚄 GRAND METRO TERMINAL', sx, sy - 36.5 * z);
+
+        // 4. Dual Flashing Railway Aviation Signals
+        const signalBlink = Math.floor(this.tick / 30) % 2 === 0;
+        ctx.fillStyle = signalBlink ? '#ef4444' : '#10b981';
+        ctx.beginPath();
+        ctx.arc(sx - 36 * z, sy - 40 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.arc(sx + 36 * z, sy - 40 * z, 2.5 * z, 0, Math.PI * 2);
         ctx.fill();
         break;
       }

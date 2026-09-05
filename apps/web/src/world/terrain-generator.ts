@@ -78,6 +78,10 @@ export type UrbanPropType =
   | 'starfish'
   | 'mountain_pine'
   | 'railway_signal'
+  | 'city_hall'
+  | 'cafe_storefront'
+  | 'grand_station'
+  | 'wishing_fountain'
   | null;
 
 export interface CityProp {
@@ -386,10 +390,31 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     };
   }
 
+  if (gx === 50 && gy === 46) {
+    return {
+      gx, gy, type: 'city_hall', wx, wy,
+      hasLight: true, lightColor: 'rgba(245, 158, 11, 0.65)', lightRadius: 130,
+    };
+  }
+
+  if (gx === 20 && gy === 68) {
+    return {
+      gx, gy, type: 'cafe_storefront', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.55)', lightRadius: 100,
+    };
+  }
+
+  if (gx === 50 && gy === 0) {
+    return {
+      gx, gy, type: 'grand_station', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.65)', lightRadius: 120,
+    };
+  }
+
   if (gx === 50 && gy === 50) {
     return {
-      gx, gy, type: 'fountain', wx, wy,
-      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 100,
+      gx, gy, type: 'wishing_fountain', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 110,
     };
   }
 

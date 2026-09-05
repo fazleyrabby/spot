@@ -725,6 +725,41 @@ import ShareModal from '../components/ShareModal.astro';
         secretActionBtn.firstElementChild!.textContent = secret.actionLabel;
         secretActionBtn.onclick = (e) => {
           e.preventDefault();
+          if (secret.id === 'cafe_storefront') {
+            engine?.renderer.npcs.activateSpeedBoost(30);
+            engine?.player.say('☕ Fresh espresso! Speed boosted +50%!', 200);
+            closeSecretModal();
+            showToast('☕ Espresso Boost Active! (+50% walking speed for 30s)', 'success');
+            return;
+          }
+          if (secret.id === 'wishing_fountain') {
+            const wishes = [
+              '“May all our code build without warnings and our servers stay up.” 🪙✨',
+              '“Wishing for quiet evenings, good friends, and creative breakthroughs.” 🪙✨',
+              '“Left a coin in the waters for the next traveler crossing the grid.” 🪙✨',
+              '“May your side project find its first hundred true fans.” 🪙✨',
+            ];
+            const wish = wishes[Math.floor(Math.random() * wishes.length)];
+            engine?.player.say('🪙 Tossed a coin into the fountain!', 240);
+            if (secretQuote) secretQuote.textContent = wish;
+            if (secretQuoteBox) secretQuoteBox.style.display = 'block';
+            showToast('🪙 Coin tossed into the fountain! Wish recorded.', 'success');
+            return;
+          }
+          if (secret.id === 'grand_station') {
+            engine?.audio.playTrainSound(1.0);
+            if (secretQuote) secretQuote.textContent = '“🚄 Next Cyber Express arriving at track #1 from the Northern Pass.”';
+            if (secretQuoteBox) secretQuoteBox.style.display = 'block';
+            showToast('🚄 High-speed train schedule checked!', 'info');
+            return;
+          }
+          if (secret.id === 'city_hall') {
+            const claimed = engine?.plots.getAllPlots().length || 501;
+            if (secretQuote) secretQuote.textContent = `“Metropolis Census: 10,000 plots surveyed. ${claimed} citizens registered. Digital heritage preserved.”`;
+            if (secretQuoteBox) secretQuoteBox.style.display = 'block';
+            return;
+          }
+
           const fortunes = [
             '“Midnight Tonic: The city breathes in rhythm with its wanderers.”',
             '“Electric Rain: Neon reflections on quiet asphalt at 2 AM.”',

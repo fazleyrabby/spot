@@ -248,13 +248,82 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Cannot read properties of undefined? Handled safely with ?.”',
     reward: 'Bug Bounty: Master Debugger ✦',
   },
+  {
+    id: 'wishing_fountain',
+    name: 'The Cyber Wishing Fountain',
+    district: 'Grand Central Plaza',
+    icon: '⛲',
+    gx: 50,
+    gy: 50,
+    category: 'interactive',
+    title: 'The Cyber Wishing Fountain',
+    subtitle: 'Reservoir of Travelers’ Hopes',
+    description:
+      'A luminous stone fountain in the center of the Grand Plaza. Travelers from around the world toss glowing coins into its shimmering waters and leave permanent wishes for future wanderers.',
+    clue: 'In the center of the Grand Plaza at (50, 50), glowing waters hold the wishes of travelers.',
+    actionLabel: 'Toss a Coin 🪙',
+    quote: '“Every ripple in the water carries a dream into the digital horizon.”',
+    reward: 'Plaza Wishmaker',
+  },
+  {
+    id: 'city_hall',
+    name: 'Metropolis City Hall & Registry Tower',
+    district: 'Grand Central Plaza',
+    icon: '🏛️',
+    gx: 50,
+    gy: 46,
+    category: 'resource',
+    title: 'Metropolis City Hall & Civic Registry',
+    subtitle: 'Authoritative archive of 10,000 plots',
+    description:
+      'The monumental civic center anchoring the island. Its illuminated clock tower and scrolling holographic marquee display live census data, registered deed ledgers, and founder monuments.',
+    clue: 'Anchoring the northern side of Grand Plaza at (50, 46), the City Hall tower overlooks the civic center.',
+    actionLabel: 'View Citizen Registry 📜',
+    quote: '“Ten thousand coordinates, one united digital republic.”',
+    reward: 'Civic Citizen',
+  },
+  {
+    id: 'cafe_storefront',
+    name: "Kiro's Cyber Cafe & Lounge",
+    district: 'Cafe Promenade',
+    icon: '☕',
+    gx: 20,
+    gy: 68,
+    category: 'interactive',
+    title: "Kiro's Cyber Cafe & Lounge",
+    subtitle: 'Fresh roast & cozy founder haven',
+    description:
+      'A warm brick cafe storefront with glowing amber windows and striped awnings. Steam drifts from the espresso roaster while citizens sip warm brew and exchange ideas.',
+    clue: 'Beside Midnight the cat in Cafe Promenade at (20, 68), a cozy cafe serves steaming espresso.',
+    actionLabel: 'Order Warm Espresso ☕',
+    quote: '“A shot of dark roast and a quiet moment between builds.”',
+    reward: 'Cafe Regular',
+  },
+  {
+    id: 'grand_station',
+    name: 'Grand Railway Terminal Concourse',
+    district: 'Northern Transit Border',
+    icon: '🚄',
+    gx: 50,
+    gy: 0,
+    category: 'interactive',
+    title: 'Grand Northern Transit Concourse',
+    subtitle: 'High-speed gateway to the metropolis',
+    description:
+      'A glass-and-steel transit concourse bridging the mountain line. High-speed bullet trains arrive every minute, carrying new explorers into Spot Metropolis.',
+    clue: 'Along the northern border at (50, 0), the grand terminal welcomes travelers arriving by high-speed rail.',
+    actionLabel: 'Check Train Schedule ⏱️',
+    quote: '“Next express departing on schedule. The journey never stops.”',
+    reward: 'Transit Pioneer',
+  },
 ];
 
 export function getSecretAt(gx: number, gy: number): WorldSecret | null {
   for (const s of WORLD_SECRETS) {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
-    const xDist = (s.id === 'dev_library' || s.id === 'retro_arcade') ? 2 : 1;
+    const wideLandmarks = ['dev_library', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station', 'wishing_fountain'];
+    const xDist = wideLandmarks.includes(s.id) ? 2 : 1;
     if (dx <= xDist && dy <= 1) {
       return s;
     }
