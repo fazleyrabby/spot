@@ -1,8 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
-
 :root {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-tech: 'Chakra Petch', -apple-system, sans-serif;
+  --font-tech: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Chakra Petch', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Curated Palette: Deep Obsidian Slate + Warm Amber & Jade */

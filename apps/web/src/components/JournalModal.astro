@@ -19,10 +19,22 @@
       <h2 class="journal-title" id="journal-title">Spot Discovery Journal</h2>
       <p class="journal-subtitle">Explore the 10,000-tile grid to uncover digital landmarks, easter eggs, and cyber relics.</p>
 
+      <!-- Sub-Navigation Tabs: Landmarks vs Collector Badges -->
+      <div class="journal-nav-tabs">
+        <button type="button" class="journal-tab-btn active" id="journal-tab-landmarks">
+          <span class="tab-label">🏛️ Landmarks</span>
+          <span class="tab-pill" id="tab-landmarks-count">0/11</span>
+        </button>
+        <button type="button" class="journal-tab-btn" id="journal-tab-badges">
+          <span class="tab-label">🏅 Badges</span>
+          <span class="tab-pill" id="tab-badges-count">0/6</span>
+        </button>
+      </div>
+
       <!-- Progress bar -->
       <div class="journal-progress-box">
         <div class="progress-labels">
-          <span class="progress-title">Metropolis Mapped</span>
+          <span class="progress-title" id="journal-progress-title">Metropolis Mapped</span>
           <span class="progress-count" id="journal-progress-text">0 / 11 Discovered</span>
         </div>
         <div class="progress-track">
@@ -31,8 +43,13 @@
       </div>
     </div>
 
-    <!-- Scrollable Landmark Cards -->
+    <!-- View 1: Scrollable Landmark Cards -->
     <div class="journal-list" id="journal-list">
+      <!-- Populated dynamically via client-side script -->
+    </div>
+
+    <!-- View 2: Scrollable Badges Grid -->
+    <div class="journal-badges-grid" id="journal-badges-grid" style="display: none;">
       <!-- Populated dynamically via client-side script -->
     </div>
   </div>
@@ -42,9 +59,9 @@
   .journal-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(10, 12, 18, 0.82);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(4, 7, 13, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -52,7 +69,7 @@
     z-index: 260;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease-out;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .journal-modal-backdrop.open {
@@ -64,14 +81,17 @@
     position: relative;
     max-width: 580px;
     width: 100%;
-    max-height: 88vh;
+    max-height: calc(100dvh - 32px);
     display: flex;
     flex-direction: column;
-    background: rgba(15, 23, 42, 0.96);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    border-radius: 20px;
+    background: rgba(13, 18, 28, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
     padding: 1.75rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.7),
+      0 32px 64px -12px rgba(0, 0, 0, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
@@ -154,7 +174,7 @@
 
   .progress-count {
     color: #00f0ff;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
   }
 
   .progress-track {
@@ -247,7 +267,7 @@
   :global(.journal-item-coords) {
     font-size: 0.7rem;
     color: #00f0ff;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
   }
 
   :global(.journal-item-district) {
@@ -267,5 +287,145 @@
   :global(.journal-item.discovered .journal-item-clue) {
     color: #cbd5e1;
     font-style: normal;
+  }
+
+  /* Sub-Navigation Tabs */
+  .journal-nav-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 12px;
+  }
+
+  .journal-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .journal-tab-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .journal-tab-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .tab-pill {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-family: var(--font-mono);
+  }
+
+  .journal-tab-btn.active .tab-pill {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+  }
+
+  /* Badges Grid View */
+  .journal-badges-grid {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+    padding-right: 4px;
+    align-content: start;
+  }
+
+  .journal-badges-grid::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .journal-badges-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+
+  :global(.journal-badge-card) {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.15s;
+  }
+
+  :global(.journal-badge-card.unlocked) {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  :global(.journal-badge-card.locked) {
+    opacity: 0.65;
+  }
+
+  :global(.badge-card-icon) {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+  }
+
+  :global(.journal-badge-card.locked .badge-card-icon) {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    filter: grayscale(1);
+  }
+
+  :global(.badge-card-content) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  :global(.badge-card-top) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  :global(.badge-card-name) {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+  }
+
+  :global(.badge-card-status) {
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  :global(.badge-card-desc) {
+    font-size: 0.74rem;
+    line-height: 1.4;
+    color: #94a3b8;
+    margin: 0;
   }
 </style>

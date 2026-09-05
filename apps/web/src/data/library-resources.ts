@@ -5,7 +5,7 @@ export interface LibraryResource {
   creator: string;
   creatorUrl?: string;
   url: string;
-  category: 'visualizers' | 'devtools' | 'architecture' | 'frontend' | 'ai' | 'inspiration';
+  category: 'visualizers' | 'devtools' | 'architecture' | 'frontend' | 'ai' | 'inspiration' | 'learning';
   categoryLabel: string;
   featured?: boolean;
   badge?: string;
@@ -90,9 +90,9 @@ export const LIBRARY_RESOURCES: LibraryResource[] = [
     tagline: 'Community-driven developer roadmaps & skill trees',
     creator: 'Kamran Ahmed',
     url: 'https://roadmap.sh/',
-    category: 'devtools',
-    categoryLabel: 'Dev Tools',
-    featured: false,
+    category: 'learning',
+    categoryLabel: 'Learning & Roadmaps',
+    featured: true,
     badge: 'Learning Hub',
     tags: ['Roadmaps', 'Fullstack', 'DevOps', 'Cybersecurity', 'AI'],
     description:
@@ -197,5 +197,94 @@ export const LIBRARY_RESOURCES: LibraryResource[] = [
     description:
       'Copy-and-paste accessible React and Tailwind components that you own and can customize completely without third-party library locks.',
     accentColor: '#ffffff',
+  },
+  {
+    id: 'aws-skill-builder',
+    title: 'AWS Skill Builder',
+    tagline: 'Official digital learning center for Amazon Web Services',
+    creator: 'Amazon Web Services',
+    creatorUrl: 'https://aws.amazon.com',
+    url: 'https://skillbuilder.aws/',
+    category: 'learning',
+    categoryLabel: 'Cloud & Infrastructure',
+    featured: true,
+    badge: 'Cloud Authority',
+    tags: ['AWS', 'Cloud Architecture', 'DevOps', 'Certifications', 'Serverless', 'Free Labs'],
+    description:
+      '600+ free digital courses, self-paced learning plans, and certification prep paths created by AWS experts to build scalable cloud architectures, serverless backends, and AI pipelines.',
+    accentColor: '#ff9900',
+  },
+  {
+    id: 'datacamp',
+    title: 'DataCamp',
+    tagline: 'Hands-on interactive data science, Python, SQL & AI learning',
+    creator: 'DataCamp Team',
+    creatorUrl: 'https://www.datacamp.com',
+    url: 'https://www.datacamp.com/',
+    category: 'learning',
+    categoryLabel: 'Data Science & AI',
+    featured: true,
+    badge: 'Data & AI',
+    tags: ['Python', 'SQL', 'Data Science', 'Machine Learning', 'AI', 'Analytics'],
+    description:
+      'Interactive in-browser coding exercises covering Python, SQL, Power BI, data engineering, and generative AI with instant feedback and structured career tracks.',
+    accentColor: '#03ef62',
+  },
+  {
+    id: 'freecodecamp',
+    title: 'freeCodeCamp',
+    tagline: 'Free verified coding curriculum, projects & certifications',
+    creator: 'Quincy Larson',
+    url: 'https://www.freecodecamp.org/',
+    category: 'learning',
+    categoryLabel: 'Fullstack Learning',
+    featured: false,
+    badge: 'Open Curriculum',
+    tags: ['Fullstack', 'JavaScript', 'Python', 'Algorithms', 'Certifications', '100% Free'],
+    description:
+      'Thousands of hours of interactive, hands-on programming challenges and real-world fullstack projects ranging from responsive web design to scientific computing, APIs, and machine learning.',
+    accentColor: '#38bdf8',
+  },
+  {
+    id: 'fast-ai',
+    title: 'fast.ai',
+    tagline: 'Making neural networks & deep learning accessible',
+    creator: 'Jeremy Howard & Rachel Thomas',
+    url: 'https://www.fast.ai/',
+    category: 'learning',
+    categoryLabel: 'Machine Learning',
+    featured: false,
+    tags: ['PyTorch', 'Deep Learning', 'LLMs', 'Neural Nets', 'Computer Vision'],
+    description:
+      'Pragmatic, top-down deep learning education for coders. Learn to build, fine-tune, and deploy state-of-the-art AI models with PyTorch without needing advanced mathematics.',
+    accentColor: '#00e5ff',
+  },
+  {
+    id: 'the-odin-project',
+    title: 'The Odin Project',
+    tagline: 'Free open-source fullstack curriculum for self-taught developers',
+    creator: 'Open Source Community',
+    url: 'https://www.theodinproject.com/',
+    category: 'learning',
+    categoryLabel: 'Fullstack Learning',
+    featured: false,
+    tags: ['Ruby on Rails', 'Node.js', 'React', 'Git', 'Open Source', 'Fullstack'],
+    description:
+      'Meticulously curated project-based curriculum guiding aspiring software engineers from raw fundamentals through fullstack mastery with real command-line workflows and portfolio projects.',
+    accentColor: '#e3b341',
+  },
+  {
+    id: 'kaggle-learn',
+    title: 'Kaggle Learn',
+    tagline: 'Fast, practical micro-courses in ML, Pandas, and feature engineering',
+    creator: 'Kaggle / Google',
+    url: 'https://www.kaggle.com/learn',
+    category: 'learning',
+    categoryLabel: 'Data Science & AI',
+    featured: false,
+    tags: ['Kaggle', 'Pandas', 'Intro to ML', 'Deep Learning', 'Data Viz'],
+    description:
+      'Hands-on Jupyter notebook-based micro-courses that teach the essentials of machine learning, exploratory data analysis, and model validation in hours.',
+    accentColor: '#20beff',
   },
 ];

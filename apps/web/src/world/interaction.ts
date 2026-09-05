@@ -101,6 +101,7 @@ export class InteractionHandler {
           return;
         }
 
+        const world = this.screenToWorld(e.clientX, e.clientY);
         const grid = worldToGrid(world.x, world.y);
         this.renderer.hoveredGrid = grid;
         const citizen = this.monuments.hitTest(world.x, world.y);

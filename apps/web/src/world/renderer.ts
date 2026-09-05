@@ -28,6 +28,7 @@ import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
 import { SkyManager } from './sky-manager.js';
 import { NPCManager } from './npc-manager.js';
+import { WeatherManager, type WeatherMode } from './weather-manager.js';
 import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
 import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
@@ -122,6 +123,7 @@ export class Renderer {
   readonly train: TrainManager;
   readonly sky: SkyManager;
   readonly npcs: NPCManager;
+  readonly weather: WeatherManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
@@ -157,6 +159,7 @@ export class Renderer {
     this.train = new TrainManager();
     this.sky = new SkyManager();
     this.npcs = new NPCManager();
+    this.weather = new WeatherManager();
 
     this.initCityParticles();
   }
@@ -349,7 +352,9 @@ export class Renderer {
       ctx.restore();
     }
 
-    // 9. Floating ambient particles
+    // 9. Floating ambient particles & Dynamic Weather (Cyber Neon Rain / Motes)
+    this.weather.tick(W, H);
+    this.weather.render(ctx, W, H);
     this.drawCityParticles(ctx);
 
     // 9b. Sky Layer (Drifting Clouds, Cyber Blimp & High-Altitude Birds)
@@ -670,6 +675,19 @@ export class Renderer {
         const prop = getCityProp(gx, gy);
         if (!prop) continue;
 
+        // Skip spawning nature/tree props on coordinates occupied by citizens
+        if (
+          prop.type === 'park_tree' ||
+          prop.type === 'cherry_tree' ||
+          prop.type === 'mountain_pine' ||
+          prop.type === 'palm_tree' ||
+          prop.type === 'tree_planter'
+        ) {
+          if (this.monuments.hasEntityNear(prop.wx, prop.wy, 14)) {
+            continue;
+          }
+        }
+
         const screen = this.camera.worldToScreen(prop.wx, prop.wy);
         if (screen.x < -70 || screen.x > W + 70 || screen.y < -70 || screen.y > H + 70) continue;
 
@@ -690,6 +708,17 @@ export class Renderer {
         });
       }
     }
+  }
+
+  private isEntityBehindTree(treeWx: number, treeWy: number): boolean {
+    if (
+      Math.abs(this.player.wx - treeWx) <= 18 &&
+      this.player.wy >= treeWy - 36 &&
+      this.player.wy <= treeWy + 4
+    ) {
+      return true;
+    }
+    return this.monuments.isEntityInTreeCanopy(treeWx, treeWy);
   }
 
   private drawCityProp(
@@ -790,6 +819,12 @@ export class Renderer {
         const topX = sx + 4 * z + windSway;
         const topY = sy - 28 * z;
 
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
         const frondColors = ['#064e3b', '#047857', '#059669'];
         for (let f = 0; f < 6; f++) {
           const angle = (f * Math.PI) / 3 + windSway * 0.05;
@@ -801,6 +836,10 @@ export class Renderer {
           const endY = topY + Math.sin(angle) * 10 * z + 5 * z;
           ctx.quadraticCurveTo(topX + Math.cos(angle) * 10 * z, topY - 3 * z, endX, endY);
           ctx.stroke();
+        }
+
+        if (isOccluding) {
+          ctx.restore();
         }
         break;
       }
@@ -850,6 +889,12 @@ export class Renderer {
         ctx.fillStyle = '#451a03';
         ctx.fillRect(sx - 2 * z, sy - 8 * z, 4 * z, 8 * z);
 
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
         const pineColors = ['#064e3b', '#065f46', '#047857'];
         for (let t = 0; t < 3; t++) {
           ctx.fillStyle = pineColors[t];
@@ -861,6 +906,10 @@ export class Renderer {
           ctx.lineTo(sx + pw / 2, py);
           ctx.closePath();
           ctx.fill();
+        }
+
+        if (isOccluding) {
+          ctx.restore();
         }
         break;
       }
@@ -1458,36 +1507,397 @@ export class Renderer {
       }
 
       case 'retro_arcade': {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        const isHovered = this.hoveredSecret?.id === 'retro_arcade';
+        const bob = Math.sin(this.tick * 0.08) * 2.5 * z;
+
+        // 1. Broad Neon Ambient Underglow & Shadow
+        ctx.fillStyle = isHovered ? 'rgba(236, 72, 153, 0.22)' : 'rgba(236, 72, 153, 0.12)';
         ctx.beginPath();
-        ctx.ellipse(sx, sy, 12 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy + 3 * z, 56 * z, 14 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 1.2;
-        ctx.fillRect(sx - 10 * z, sy - 28 * z, 20 * z, 28 * z);
-        ctx.strokeRect(sx - 10 * z, sy - 28 * z, 20 * z, 28 * z);
+        ctx.fillStyle = isHovered ? 'rgba(6, 182, 212, 0.20)' : 'rgba(6, 182, 212, 0.10)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 4 * z, 44 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(sx - 9 * z, sy - 27 * z, 18 * z, 5 * z);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.round(6 * z)}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillText('SPACE', sx, sy - 23 * z);
+        // 2. Cyber Gaming Plaza Platform (Elevated Synthwave Floor Grid)
+        const platW = 90 * z;
+        const platH = 14 * z;
+        const platX = sx - platW / 2;
+        const platY = sy - 6 * z;
 
-        ctx.fillStyle = '#022c22';
-        ctx.fillRect(sx - 8 * z, sy - 21 * z, 16 * z, 10 * z);
-        ctx.fillStyle = '#22c55e';
-        ctx.fillRect(sx - 2 * z, sy - 18 * z, 4 * z, 3 * z);
-        ctx.fillRect(sx - 4 * z, sy - 16 * z, 8 * z, 2 * z);
+        // Platform base
+        ctx.fillStyle = '#0a0d18';
+        ctx.beginPath();
+        ctx.roundRect(platX, platY, platW, platH, 4 * z);
+        ctx.fill();
+        ctx.strokeStyle = isHovered ? '#ec4899' : 'rgba(236, 72, 153, 0.45)';
+        ctx.lineWidth = isHovered ? 1.5 * z : 1 * z;
+        ctx.stroke();
 
+        // High-Tech Synthwave Checkerboard Floor Tiles (6 Columns)
+        const cols = 6;
+        const colW = (platW - 8 * z) / cols;
+        for (let c = 0; c < cols; c++) {
+          ctx.fillStyle = c % 2 === 0 ? '#13112c' : '#0c1222';
+          ctx.fillRect(platX + 4 * z + c * colW, platY + 2 * z, colW - 1 * z, platH - 4 * z);
+        }
+
+        // Front Neon Edge Accent Lines
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.65)';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.moveTo(platX + 6 * z, platY + platH - 2 * z);
+        ctx.lineTo(platX + platW - 6 * z, platY + platH - 2 * z);
+        ctx.stroke();
+
+        // 3. Entrance Neon Stanchions (Cyan & Magenta Beacons)
+        // Left Cyan Stanchion
+        const leftSx = platX + 5 * z;
         ctx.fillStyle = '#1e293b';
-        ctx.fillRect(sx - 9 * z, sy - 10 * z, 18 * z, 4 * z);
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(sx - 5 * z, sy - 12 * z, 2 * z, 3 * z);
+        ctx.fillRect(leftSx - 1.5 * z, sy - 18 * z, 3 * z, 16 * z);
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.arc(leftSx, sy - 19 * z, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.28)';
+        ctx.beginPath();
+        ctx.arc(leftSx, sy - 19 * z, 8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Right Magenta Stanchion
+        const rightSx = platX + platW - 5 * z;
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(rightSx - 1.5 * z, sy - 18 * z, 3 * z, 16 * z);
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.arc(rightSx, sy - 19 * z, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(236, 72, 153, 0.28)';
+        ctx.beginPath();
+        ctx.arc(rightSx, sy - 19 * z, 8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Industrial Overhead Support Trusses
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2 * z;
+        ctx.beginPath();
+        ctx.moveTo(platX + 10 * z, sy - 6 * z);
+        ctx.lineTo(platX + 10 * z, sy - 52 * z);
+        ctx.moveTo(platX + platW - 10 * z, sy - 6 * z);
+        ctx.lineTo(platX + platW - 10 * z, sy - 52 * z);
+        ctx.stroke();
+
+        // Cross-struts on pillars
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1 * z;
+        for (let py = -10; py > -50; py -= 10) {
+          ctx.beginPath();
+          ctx.moveTo(platX + 8 * z, sy + py * z);
+          ctx.lineTo(platX + 12 * z, sy + (py - 6) * z);
+          ctx.moveTo(platX + platW - 12 * z, sy + py * z);
+          ctx.lineTo(platX + platW - 8 * z, sy + (py - 6) * z);
+          ctx.stroke();
+        }
+
+        // 5. Trio of Physical Arcade Cabinets
+        // ── Cabinet A (Left: "CYBER VOID" Shooter) ──
+        const cabLW = 18 * z;
+        const cabLH = 32 * z;
+        const cabLX = sx - 28 * z;
+        const cabLY = sy - 34 * z;
+
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(cabLX, cabLY, cabLW, cabLH);
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(cabLX, cabLY, cabLW, cabLH);
+
+        // Cab A Marquee
+        ctx.fillStyle = '#0891b2';
+        ctx.fillRect(cabLX + 1 * z, cabLY + 1 * z, cabLW - 2 * z, 5 * z);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(6, Math.round(5 * z))}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('VOID', cabLX + cabLW / 2, cabLY + 5 * z);
+
+        // Cab A Screen (Animated Starfield)
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(cabLX + 2 * z, cabLY + 8 * z, cabLW - 4 * z, 12 * z);
         ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(sx + 3 * z, sy - 9 * z, 2 * z, 2 * z);
+        for (let s = 0; s < 4; s++) {
+          const sX = cabLX + 3 * z + ((s * 3.5 + this.tick * 0.2) % (cabLW - 6 * z));
+          const sY = cabLY + 9 * z + ((s * 2.7) % 10 * z);
+          ctx.fillRect(sX, sY, 1.2 * z, 1.2 * z);
+        }
+
+        // Cab A Controls
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(cabLX + 1 * z, cabLY + 21 * z, cabLW - 2 * z, 5 * z);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(cabLX + 4 * z, cabLY + 20 * z, 2 * z, 2 * z); // Stick
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(cabLX + 11 * z, cabLY + 22 * z, 2 * z, 2 * z); // Button
+
+        // ── Cabinet B (Right: "NEON FIGHTER") ──
+        const cabRW = 18 * z;
+        const cabRH = 32 * z;
+        const cabRX = sx + 10 * z;
+        const cabRY = sy - 34 * z;
+
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(cabRX, cabRY, cabRW, cabRH);
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(cabRX, cabRY, cabRW, cabRH);
+
+        // Cab B Marquee
+        ctx.fillStyle = '#db2777';
+        ctx.fillRect(cabRX + 1 * z, cabRY + 1 * z, cabRW - 2 * z, 5 * z);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(6, Math.round(5 * z))}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('FIGHT', cabRX + cabRW / 2, cabLY + 5 * z);
+
+        // Cab B Screen (Animated Fighter Healthbars)
+        ctx.fillStyle = '#180d24';
+        ctx.fillRect(cabRX + 2 * z, cabRY + 8 * z, cabRW - 4 * z, 12 * z);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(cabRX + 3 * z, cabRY + 9 * z, 4 * z, 1.5 * z);
+        ctx.fillStyle = '#ec4899';
+        ctx.fillRect(cabRX + cabRW - 7 * z, cabRY + 9 * z, 4 * z, 1.5 * z);
+        // Little pixel sprites
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(cabRX + 4 * z, cabRY + 13 * z, 3 * z, 5 * z);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(cabRX + cabRW - 7 * z, cabRY + 13 * z, 3 * z, 5 * z);
+
+        // Cab B Controls
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(cabRX + 1 * z, cabRY + 21 * z, cabRW - 2 * z, 5 * z);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(cabRX + 4 * z, cabRY + 20 * z, 2 * z, 2 * z);
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(cabRX + 11 * z, cabRY + 22 * z, 2 * z, 2 * z);
+
+        // ── Cabinet C (Center Flagship: "BYTE SNAKE 2084") ──
+        const cabCW = 24 * z;
+        const cabCH = 42 * z;
+        const cabCX = sx - cabCW / 2;
+        const cabCY = sy - 44 * z;
+
+        // Shadow & Body
+        ctx.fillStyle = '#060911';
+        ctx.fillRect(cabCX, cabCY, cabCW, cabCH);
+        ctx.strokeStyle = isHovered ? '#fbbf24' : '#f59e0b';
+        ctx.lineWidth = isHovered ? 1.8 * z : 1.2 * z;
+        ctx.strokeRect(cabCX, cabCY, cabCW, cabCH);
+
+        // Side Art Stripes
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.moveTo(cabCX + 2 * z, cabCY + 8 * z);
+        ctx.lineTo(cabCX + 2 * z, cabCY + cabCH - 8 * z);
+        ctx.moveTo(cabCX + cabCW - 2 * z, cabCY + 8 * z);
+        ctx.lineTo(cabCX + cabCW - 2 * z, cabCY + cabCH - 8 * z);
+        ctx.stroke();
+
+        // Flagship Marquee ("BYTE SNAKE")
+        ctx.fillStyle = isHovered ? '#f59e0b' : '#d97706';
+        ctx.fillRect(cabCX + 1 * z, cabCY + 1 * z, cabCW - 2 * z, 7 * z);
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${Math.max(7, Math.round(6.5 * z))}px 'Outfit', monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('SNAKE', sx, cabCY + 6.5 * z);
+
+        // Flagship CRT Screen (Active Animated Snake mini-game)
+        const scrW = cabCW - 4 * z;
+        const scrH = 15 * z;
+        const scrX = cabCX + 2 * z;
+        const scrY = cabCY + 10 * z;
+
+        ctx.fillStyle = '#022c22'; // Phosphor Dark Green
+        ctx.fillRect(scrX, scrY, scrW, scrH);
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.4)';
+        ctx.lineWidth = 0.8 * z;
+        ctx.strokeRect(scrX, scrY, scrW, scrH);
+
+        // Score display on screen
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.7)';
+        ctx.font = `${Math.max(5, Math.round(4 * z))}px monospace`;
+        ctx.textAlign = 'right';
+        ctx.fillText('2084', scrX + scrW - 1 * z, scrY + 4 * z);
+
+        // Animated Retro Snake crawling across screen
+        const snakeStep = (this.tick * 0.15) % 12;
+        ctx.fillStyle = '#22c55e'; // Bright green snake body
+        ctx.fillRect(scrX + 3 * z + snakeStep * 0.8 * z, scrY + 8 * z, 2.5 * z, 2 * z);
+        ctx.fillRect(scrX + 1.5 * z + snakeStep * 0.8 * z, scrY + 8 * z, 2 * z, 2 * z);
+        ctx.fillRect(scrX + 1.5 * z + snakeStep * 0.8 * z, scrY + 10 * z, 2 * z, 2 * z);
+        ctx.fillRect(scrX + 0 * z + snakeStep * 0.8 * z, scrY + 10 * z, 2 * z, 2 * z);
+
+        // Glowing Apple Target
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(scrX + scrW - 4 * z, scrY + 8 * z, 2.5 * z, 2.5 * z);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(scrX + scrW - 3.5 * z, scrY + 7 * z, 1.2 * z, 1 * z); // leaf
+
+        // CRT Scanline Overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        for (let l = 1; l < scrH; l += 2 * z) {
+          ctx.fillRect(scrX, scrY + l, scrW, 1 * z);
+        }
+
+        // Flagship Control Deck
+        const deckY = cabCY + 26 * z;
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(cabCX + 1 * z, deckY, cabCW - 2 * z, 6 * z);
+
+        // Joystick (Red balltop)
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(cabCX + 5 * z, deckY - 2 * z, 1 * z, 4 * z);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(cabCX + 5.5 * z, deckY - 3 * z, 2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Action Buttons (Cyan, Yellow, Red, Green)
+        const btnColors = ['#06b6d4', '#eab308', '#ef4444', '#22c55e'];
+        for (let b = 0; b < 4; b++) {
+          ctx.fillStyle = btnColors[b];
+          ctx.beginPath();
+          ctx.arc(cabCX + 12 * z + (b % 2) * 4 * z, deckY + 1.5 * z + Math.floor(b / 2) * 2.5 * z, 1.2 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Coin Door & Pulsing 25¢ Insert Slot
+        const coinY = cabCY + 33 * z;
+        ctx.fillStyle = '#0b0f19';
+        ctx.fillRect(cabCX + 4 * z, coinY, cabCW - 8 * z, 8 * z);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 0.8 * z;
+        ctx.strokeRect(cabCX + 4 * z, coinY, cabCW - 8 * z, 8 * z);
+
+        // Twin Orange glowing coin slots
+        ctx.fillStyle = isHovered ? '#fbbf24' : '#f59e0b';
+        ctx.fillRect(cabCX + 7 * z, coinY + 2 * z, 1.2 * z, 4 * z);
+        ctx.fillRect(cabCX + cabCW - 8.2 * z, coinY + 2 * z, 1.2 * z, 4 * z);
+
+        // 6. Overhead Grand Animated Marquee Sign ("🕹️ BYTE CADE")
+        const marqW = 84 * z;
+        const marqH = 18 * z;
+        const marqX = sx - marqW / 2;
+        const marqY = sy - 64 * z;
+
+        // Sign Backing & Drop Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(marqX + 2 * z, marqY + 3 * z, marqW, marqH, 5 * z);
+        ctx.fill();
+
+        ctx.fillStyle = isHovered ? '#0b1020' : '#070a14';
+        ctx.beginPath();
+        ctx.roundRect(marqX, marqY, marqW, marqH, 4 * z);
+        ctx.fill();
+        ctx.strokeStyle = isHovered ? '#ec4899' : 'rgba(236, 72, 153, 0.6)';
+        ctx.lineWidth = isHovered ? 2 * z : 1.2 * z;
+        ctx.stroke();
+
+        // Running Neon Border Chase Lights (Alternating Cyan/Yellow/Pink Dots)
+        const numChase = 24;
+        const chaseStep = (this.tick * 0.25) % numChase;
+        for (let i = 0; i < numChase; i++) {
+          const frac = (i + chaseStep) / numChase;
+          let lx = marqX + 3 * z;
+          let ly = marqY + 2 * z;
+          if (frac < 0.35) {
+            lx = marqX + 3 * z + frac * (marqW - 6 * z) / 0.35;
+            ly = marqY + 2 * z;
+          } else if (frac < 0.5) {
+            lx = marqX + marqW - 3 * z;
+            ly = marqY + 2 * z + (frac - 0.35) * (marqH - 4 * z) / 0.15;
+          } else if (frac < 0.85) {
+            lx = marqX + marqW - 3 * z - (frac - 0.5) * (marqW - 6 * z) / 0.35;
+            ly = marqY + marqH - 2 * z;
+          } else {
+            lx = marqX + 3 * z;
+            ly = marqY + marqH - 2 * z - (frac - 0.85) * (marqH - 4 * z) / 0.15;
+          }
+
+          const dotColors = ['#ec4899', '#06b6d4', '#fbbf24', '#a855f7'];
+          ctx.fillStyle = dotColors[i % dotColors.length];
+          ctx.beginPath();
+          ctx.arc(lx, ly, 1.2 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Marquee Text ("🕹️ BYTE CADE")
+        ctx.font = `800 ${Math.max(9, Math.round(9.5 * z))}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        // Neon Glow Drop
+        ctx.fillStyle = isHovered ? 'rgba(236, 72, 153, 0.8)' : 'rgba(236, 72, 153, 0.45)';
+        ctx.fillText('🕹️ BYTE CADE', sx, marqY + 12.5 * z + 1 * z);
+        // Crisp Text
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('🕹️ BYTE CADE', sx, marqY + 12.5 * z);
+
+        // 7. Floating Animated Holographic Game Beacon
+        const beaconY = marqY - 14 * z + bob;
+
+        // Floating Pixel Joystick/Gamepad Halo
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+        ctx.beginPath();
+        ctx.arc(sx, beaconY, 10 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Little floating pill: "PLAY 60FPS"
+        ctx.fillStyle = isHovered ? '#fbbf24' : 'rgba(251, 191, 36, 0.9)';
+        ctx.beginPath();
+        ctx.roundRect(sx - 20 * z, beaconY - 5 * z, 40 * z, 10 * z, 5 * z);
+        ctx.fill();
+        ctx.fillStyle = '#0c0e14';
+        ctx.font = `bold ${Math.max(7, Math.round(6.5 * z))}px 'Outfit', monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('PLAY 60FPS', sx, beaconY + 2.5 * z);
+
+        // 8. Interactive Hover Tooltip (Quiet Luxury Elevation)
+        if (isHovered) {
+          const pillY = beaconY - 18 * z;
+          const title = '🕹️ The Byte Cade';
+          const sub = 'Click to Play Byte Snake 2084';
+
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px 'Outfit', sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = Math.max(tw + 28 * z, 160 * z);
+          const ph = 26 * z;
+
+          // Drop Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 7 * z);
+          ctx.fill();
+
+          // Card Body
+          ctx.fillStyle = '#0d121c';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 7 * z);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(236, 72, 153, 0.55)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          // Title
+          ctx.fillStyle = '#f8fafc';
+          ctx.textAlign = 'center';
+          ctx.fillText(title, sx, pillY - 2 * z);
+
+          // Subtitle
+          ctx.fillStyle = '#ec4899';
+          ctx.font = `600 ${Math.max(8, Math.floor(8.5 * z))}px 'Outfit', sans-serif`;
+          ctx.fillText(sub, sx, pillY + 8 * z);
+        }
         break;
       }
 
@@ -1565,6 +1975,12 @@ export class Renderer {
         const cx = sx + windSway;
         const cy = sy - 26 * z;
 
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
         ctx.fillStyle = '#db2777';
         ctx.beginPath();
         ctx.arc(cx, cy + 3 * z, 15 * z, 0, Math.PI * 2);
@@ -1580,6 +1996,10 @@ export class Renderer {
         ctx.beginPath();
         ctx.arc(cx - 1 * z, cy - 6 * z, 9 * z, 0, Math.PI * 2);
         ctx.fill();
+
+        if (isOccluding) {
+          ctx.restore();
+        }
         break;
       }
 
@@ -1597,6 +2017,12 @@ export class Renderer {
         const tx = sx + windSway;
         const ty = sy - 28 * z;
 
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
         ctx.fillStyle = '#14532d';
         ctx.beginPath();
         ctx.arc(tx, ty + 3 * z, 16 * z, 0, Math.PI * 2);
@@ -1612,6 +2038,10 @@ export class Renderer {
         ctx.beginPath();
         ctx.arc(tx - 1 * z, ty - 7 * z, 10 * z, 0, Math.PI * 2);
         ctx.fill();
+
+        if (isOccluding) {
+          ctx.restore();
+        }
         break;
       }
 
@@ -1630,6 +2060,12 @@ export class Renderer {
         const px = sx + windSway * 0.7;
         const py = sy - 24 * z;
 
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
         ctx.fillStyle = '#14532d';
         ctx.beginPath();
         ctx.arc(px, py + 2 * z, 12 * z, 0, Math.PI * 2);
@@ -1644,6 +2080,10 @@ export class Renderer {
         ctx.beginPath();
         ctx.arc(px - 1 * z, py - 5 * z, 7 * z, 0, Math.PI * 2);
         ctx.fill();
+
+        if (isOccluding) {
+          ctx.restore();
+        }
         break;
       }
 

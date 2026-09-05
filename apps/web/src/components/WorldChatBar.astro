@@ -1,31 +1,74 @@
 ---
 /**
  * WorldChatBar — Floating quick emote & chat action bar in Spot World.
+ *
+ * Merged input + emoji popover:
+ * - Inside the input bar: [ 😊 ] [ Type a message or press 1-6... ] [ ✈️ ]
+ * - Clicking [ 😊 ] toggles a floating quick-reaction emoji popover above the input.
  */
 ---
 
 <div class="world-chat-dock" id="world-chat-dock">
-  <!-- Quick Emotes Pill -->
-  <div class="emote-bar glass-panel">
-    <button type="button" class="emote-btn" data-emote="👋" title="Wave (1)">👋</button>
-    <button type="button" class="emote-btn" data-emote="☕" title="Coffee (2)">☕</button>
-    <button type="button" class="emote-btn" data-emote="✨" title="Sparkle (3)">✨</button>
-    <button type="button" class="emote-btn" data-emote="❤️" title="Love (4)">❤️</button>
-    <button type="button" class="emote-btn" data-emote="🚀" title="Rocket (5)">🚀</button>
-    <button type="button" class="emote-btn" data-emote="🎮" title="Game (6)">🎮</button>
+  <!-- Quick Emotes Popover Dropdown (Aligned above emoji trigger) -->
+  <div class="emote-popover glass-panel" id="world-emote-popover" aria-hidden="true">
+    <div class="emote-popover-header">
+      <span class="emote-popover-title">Quick Reactions</span>
+      <span class="emote-popover-hint">Hotkeys 1–6</span>
+    </div>
+    <div class="emote-grid">
+      <button type="button" class="emote-btn" data-emote="👋" title="Wave (1)">
+        <span class="emote-icon">👋</span>
+        <span class="emote-kbd">1</span>
+      </button>
+      <button type="button" class="emote-btn" data-emote="☕" title="Coffee (2)">
+        <span class="emote-icon">☕</span>
+        <span class="emote-kbd">2</span>
+      </button>
+      <button type="button" class="emote-btn" data-emote="✨" title="Sparkle (3)">
+        <span class="emote-icon">✨</span>
+        <span class="emote-kbd">3</span>
+      </button>
+      <button type="button" class="emote-btn" data-emote="❤️" title="Love (4)">
+        <span class="emote-icon">❤️</span>
+        <span class="emote-kbd">4</span>
+      </button>
+      <button type="button" class="emote-btn" data-emote="🚀" title="Rocket (5)">
+        <span class="emote-icon">🚀</span>
+        <span class="emote-kbd">5</span>
+      </button>
+      <button type="button" class="emote-btn" data-emote="🎮" title="Game (6)">
+        <span class="emote-icon">🎮</span>
+        <span class="emote-kbd">6</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Chat Input Form -->
+  <!-- Merged Chat Form -->
   <form class="chat-form glass-panel" id="world-chat-form">
+    <!-- Emoji Dropdown Trigger Button -->
+    <button
+      type="button"
+      class="chat-emoji-trigger"
+      id="world-emoji-trigger"
+      title="Quick Emotes & Reactions (Hotkeys 1-6)"
+      aria-expanded="false"
+      aria-haspopup="true"
+    >
+      <span class="emoji-trigger-icon" id="world-emoji-icon" aria-hidden="true">😊</span>
+    </button>
+
+    <!-- Chat Message Text Input -->
     <input
       type="text"
       id="world-chat-input"
       class="chat-input"
       maxlength="60"
-      placeholder="Type a message or press 1-6 for emotes… (Enter to speak)"
+      placeholder="Type a message or press 1–6 for emotes… (Enter to speak)"
       autocomplete="off"
     />
-    <button type="submit" class="chat-send-btn" id="world-chat-send" title="Send message">
+
+    <!-- Send Button -->
+    <button type="submit" class="chat-send-btn" id="world-chat-send" title="Send message (Enter)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"></line>
         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -43,7 +86,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
     z-index: 50;
     pointer-events: auto;
     width: 90vw;
@@ -51,60 +93,179 @@
     user-select: none;
   }
 
-  .emote-bar {
+  /* ── Quick Emote Floating Popover ───────────────────────────────────────── */
+  .emote-popover {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 4px;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(13, 18, 28, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 16px 36px -4px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 52;
+    animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .emote-popover.open {
+    display: flex;
+  }
+
+  @keyframes popoverFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .emote-popover-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 9999px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 4px 4px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .emote-popover-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: var(--font-tech, inherit);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .emote-popover-hint {
+    font-size: 0.62rem;
+    font-family: var(--font-mono, monospace);
+    color: #64748b;
+  }
+
+  .emote-grid {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .emote-btn {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    font-size: 1.15rem;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
+    width: 36px;
+    height: 38px;
+    padding: 2px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
     cursor: pointer;
-    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .emote-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+
+  .emote-kbd {
+    font-size: 0.54rem;
+    font-family: var(--font-mono, monospace);
+    color: #64748b;
+    line-height: 1;
+    margin-top: 2px;
   }
 
   .emote-btn:hover {
-    transform: scale(1.25) translateY(-2px);
     background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+  }
+
+  .emote-btn:hover .emote-icon {
+    transform: scale(1.15);
+  }
+
+  .emote-btn:hover .emote-kbd {
+    color: #fbbf24;
   }
 
   .emote-btn:active {
     transform: scale(0.95);
   }
 
+  /* ── Merged Chat Form Capsule ──────────────────────────────────────────── */
   .chat-form {
     display: flex;
     align-items: center;
     width: 100%;
-    gap: 8px;
-    padding: 4px 6px 4px 14px;
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    gap: 6px;
+    padding: 4px 6px 4px 6px;
+    background: rgba(13, 18, 28, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 9999px;
-    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(14px);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 12px 32px -4px rgba(0, 0, 0, 0.75),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .chat-form:focus-within {
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 12px 36px rgba(0, 0, 0, 0.7);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow:
+      0 0 0 2px rgba(245, 158, 11, 0.25),
+      0 14px 36px -4px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
+  /* ── Inside-Input Emoji Trigger Button ─────────────────────────────────── */
+  .chat-emoji-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .chat-emoji-trigger:hover,
+  .chat-emoji-trigger.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: scale(1.08);
+    color: #ffffff;
+  }
+
+  .chat-emoji-trigger:active {
+    transform: scale(0.95);
+  }
+
+  /* ── Chat Input ────────────────────────────────────────────────────────── */
   .chat-input {
     flex: 1;
     min-width: 0;
@@ -112,33 +273,38 @@
     background: transparent;
     color: #f8fafc;
     font-size: 0.84rem;
-    font-family: inherit;
+    font-family: var(--font-sans, inherit);
     outline: none;
+    padding: 0 4px;
   }
 
   .chat-input::placeholder {
     color: #64748b;
-    font-size: 0.8rem;
+    font-size: 0.80rem;
+    font-family: var(--font-sans, inherit);
   }
 
+  /* ── Send Button ───────────────────────────────────────────────────────── */
   .chat-send-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     background: #f59e0b;
     color: #0f172a;
     cursor: pointer;
-    transition: transform 0.15s ease, background 0.15s ease;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px rgba(245, 158, 11, 0.35);
   }
 
   .chat-send-btn:hover {
     transform: scale(1.08);
     background: #fbbf24;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 12px rgba(245, 158, 11, 0.5);
   }
 
   .chat-send-btn:active {
@@ -148,7 +314,66 @@
   @media (max-width: 600px) {
     .world-chat-dock {
       bottom: 12px;
-      max-width: calc(100vw - 24px);
+      max-width: calc(100vw - 20px);
+    }
+    .chat-input::placeholder {
+      font-size: 0.74rem;
     }
   }
 </style>
+
+<script>
+  // ── Emote Popover Toggle & Auto-Close Logic ──────────────────────────────
+  const emojiTrigger = document.getElementById('world-emoji-trigger');
+  const emotePopover = document.getElementById('world-emote-popover');
+  const chatDock = document.getElementById('world-chat-dock');
+  const emoteBtns = document.querySelectorAll('.emote-btn');
+
+  function openPopover() {
+    if (!emotePopover) return;
+    emotePopover.classList.add('open');
+    emotePopover.setAttribute('aria-hidden', 'false');
+    emojiTrigger?.classList.add('active');
+    emojiTrigger?.setAttribute('aria-expanded', 'true');
+  }
+
+  function closePopover() {
+    if (!emotePopover) return;
+    emotePopover.classList.remove('open');
+    emotePopover.setAttribute('aria-hidden', 'true');
+    emojiTrigger?.classList.remove('active');
+    emojiTrigger?.setAttribute('aria-expanded', 'false');
+  }
+
+  function togglePopover(e: MouseEvent) {
+    e.stopPropagation();
+    if (emotePopover?.classList.contains('open')) {
+      closePopover();
+    } else {
+      openPopover();
+    }
+  }
+
+  emojiTrigger?.addEventListener('click', togglePopover);
+
+  // Close popover when any emote is selected
+  emoteBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      closePopover();
+    });
+  });
+
+  // Close popover on outside click
+  document.addEventListener('click', (e) => {
+    if (!chatDock?.contains(e.target as Node)) {
+      closePopover();
+    }
+  });
+
+  // Close popover on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && emotePopover?.classList.contains('open')) {
+      closePopover();
+    }
+  });
+</script>

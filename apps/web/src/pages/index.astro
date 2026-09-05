@@ -1456,6 +1456,12 @@ import TransferModal from '../components/TransferModal.astro';
     if (e.target === aboutBackdrop) closeAboutModal();
   });
 
+  const aboutClaimBtn = document.getElementById('about-btn-claim-action');
+  aboutClaimBtn?.addEventListener('click', () => {
+    closeAboutModal();
+    headerClaimBtn?.click();
+  });
+
   // 11. Claim Modal Controller
   function openClaimModal(gx: number, gy: number) {
     if (myOwnedSpot) {
