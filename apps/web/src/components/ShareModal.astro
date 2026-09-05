@@ -1,15 +1,14 @@
 ---
 /**
  * ShareModal — Viral Share & Embed Modal for Spot Citizens.
- * Provides 1-click social sharing (X, LinkedIn, Reddit, Bluesky)
- * and dynamic GitHub Profile README Markdown/HTML badge snippets.
+ * Coherent with Spot's signature Cyber-Glass & Terminal UI design system.
  */
 ---
 
 <div class="share-modal-backdrop modal-backdrop" id="share-modal-backdrop" aria-hidden="true">
   <div class="share-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="share-title">
     <button class="modal-close-btn" id="share-modal-close" aria-label="Close share dialog">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
       </svg>
@@ -23,7 +22,7 @@
       </div>
       <h2 class="share-title" id="share-title">Flex Your Spot</h2>
       <p class="share-subtitle">
-        Embed your live citizen badge on your GitHub Profile README and share your permanent coordinates with the world.
+        Embed your live citizen badge on your GitHub Profile README and share your permanent coordinates.
       </p>
 
       <!-- Active Citizen / Plot Pill -->
@@ -38,14 +37,14 @@
     <!-- Badge Style Toggle Tabs -->
     <div class="share-style-tabs">
       <button type="button" class="style-tab-btn active" id="tab-badge-style" data-style="badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="7" width="20" height="10" rx="3"></rect>
           <line x1="8" y1="7" x2="8" y2="17"></line>
         </svg>
         <span>Compact Pill Badge</span>
       </button>
       <button type="button" class="style-tab-btn" id="tab-card-style" data-style="card">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="4" width="20" height="16" rx="4"></rect>
           <path d="M7 9h4m-4 4h10m-10 4h6"></path>
         </svg>
@@ -53,11 +52,11 @@
       </button>
     </div>
 
-    <!-- Live Preview Container -->
+    <!-- Live Preview Container (Direct Dynamic Inline SVG) -->
     <div class="badge-preview-container">
       <div class="badge-preview-label">LIVE EMBED PREVIEW</div>
       <div class="badge-preview-screen" id="badge-preview-screen">
-        <img id="badge-preview-img" src="/api/badge/50,50.svg?style=badge" alt="Spot Badge Preview" loading="lazy" />
+        <!-- Injected via JavaScript for instant, zero-latency rendering -->
       </div>
     </div>
 
@@ -74,7 +73,7 @@
       <div class="code-box-wrapper">
         <pre class="code-box" id="share-code-snippet"><code>[![Spot Citizen](https://claimyourspot.lol/api/badge/50,50.svg)](https://claimyourspot.lol/world?spot=50,50)</code></pre>
         <button type="button" class="copy-code-btn" id="btn-copy-code" title="Copy snippet to clipboard">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
@@ -89,7 +88,7 @@
       <div class="social-btn-grid">
         <!-- Twitter / X -->
         <a id="btn-share-x" href="#" target="_blank" rel="noopener noreferrer" class="social-share-btn x-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
           </svg>
           <span>Share on X</span>
@@ -97,7 +96,7 @@
 
         <!-- LinkedIn -->
         <a id="btn-share-linkedin" href="#" target="_blank" rel="noopener noreferrer" class="social-share-btn linkedin-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
           </svg>
           <span>LinkedIn</span>
@@ -105,7 +104,7 @@
 
         <!-- Reddit -->
         <a id="btn-share-reddit" href="#" target="_blank" rel="noopener noreferrer" class="social-share-btn reddit-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.702z"/>
           </svg>
           <span>Reddit</span>
@@ -113,7 +112,7 @@
 
         <!-- Bluesky -->
         <a id="btn-share-bluesky" href="#" target="_blank" rel="noopener noreferrer" class="social-share-btn bluesky-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566 1.01 1.05 1.74 1.002 4.148c-.046 2.308.57 11.533 1.004 12.83 1.282 3.826 4.956 4.787 7.994 2.81 3.73-2.427 4.72-6.52 4.72-6.52s.99 4.093 4.72 6.52c3.038 1.977 6.712 1.016 7.994-2.81.434-1.297 1.05-10.522 1.004-12.83-.048-2.408-1.564-3.138-4.2-1.343C16.046 4.747 13.087 8.686 12 10.8z"/>
           </svg>
           <span>Bluesky</span>
@@ -134,7 +133,7 @@
     position: fixed;
     inset: 0;
     z-index: 10005;
-    background: rgba(4, 7, 15, 0.82);
+    background: rgba(3, 7, 18, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     display: flex;
@@ -143,7 +142,7 @@
     padding: 1rem;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s ease;
   }
 
   .share-modal-backdrop.open {
@@ -154,18 +153,19 @@
   .share-card {
     position: relative;
     width: 100%;
-    max-width: 560px;
-    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94) 0%, rgba(9, 14, 26, 0.98) 100%);
-    border: 1px solid rgba(56, 189, 248, 0.28);
-    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 35px -8px rgba(56, 189, 248, 0.15);
-    border-radius: 20px;
-    padding: 1.75rem;
-    color: #f8fafc;
+    max-width: 520px;
+    background: rgba(11, 15, 23, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: var(--text-primary, #f8fafc);
     box-sizing: border-box;
-    transform: translateY(16px) scale(0.98);
-    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 92vh;
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
     overflow-y: auto;
+    font-family: var(--font-sans, inherit);
   }
 
   .share-modal-backdrop.open .share-card {
@@ -174,75 +174,79 @@
 
   .modal-close-btn {
     position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary, #94a3b8);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.16s ease;
+    transition: all 0.15s ease;
   }
 
   .modal-close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #f8fafc;
-    border-color: rgba(56, 189, 248, 0.4);
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   /* Header */
   .share-header {
     text-align: center;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
   }
 
   .share-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    border-radius: 9999px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 2px 8px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 4px;
+    font-family: var(--font-tech, inherit);
     font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: #38bdf8;
-    margin-bottom: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent-amber, #f59e0b);
+    margin-bottom: 0.5rem;
+  }
+
+  .share-badge-icon {
+    font-size: 0.75rem;
   }
 
   .share-title {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-family: var(--font-tech, inherit);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: #f8fafc;
-    margin: 0 0 0.4rem 0;
+    margin: 0 0 0.35rem 0;
   }
 
   .share-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.80rem;
     line-height: 1.45;
-    color: #94a3b8;
-    margin: 0 0 0.85rem 0;
+    color: var(--text-muted, #94a3b8);
+    margin: 0 0 0.75rem 0;
   }
 
   .share-target-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.28rem 0.75rem;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(51, 65, 85, 0.8);
-    border-radius: 8px;
-    font-size: 0.78rem;
+    padding: 3px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.75rem;
     font-weight: 600;
   }
 
@@ -251,7 +255,7 @@
     height: 6px;
     border-radius: 50%;
     background: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
   }
 
   .pill-name {
@@ -263,19 +267,18 @@
   }
 
   .pill-coords {
-    color: #38bdf8;
-    font-family: 'SF Mono', Menlo, monospace;
+    color: var(--accent-amber, #f59e0b);
   }
 
   /* Style Tabs */
   .share-style-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 0.3rem;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 1rem;
   }
 
@@ -284,15 +287,16 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
     background: transparent;
-    border: none;
-    color: #94a3b8;
-    font-size: 0.8rem;
+    border: 1px solid transparent;
+    color: var(--text-secondary, #94a3b8);
+    font-family: var(--font-tech, inherit);
+    font-size: 0.76rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.16s ease;
+    transition: all 0.15s ease;
   }
 
   .style-tab-btn:hover {
@@ -301,104 +305,98 @@
   }
 
   .style-tab-btn.active {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
   }
 
   /* Preview Container */
   .badge-preview-container {
-    background: rgba(11, 17, 30, 0.85);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    border-radius: 12px;
+    background: #070a12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
     padding: 1rem;
-    margin-bottom: 1.15rem;
+    margin-bottom: 1rem;
     text-align: center;
   }
 
   .badge-preview-label {
+    font-family: var(--font-tech, inherit);
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.1em;
-    color: #64748b;
-    margin-bottom: 0.65rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 0.75rem;
   }
 
   .badge-preview-screen {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 60px;
-    padding: 0.5rem 0;
+    min-height: 52px;
     overflow-x: auto;
-  }
-
-  #badge-preview-img {
-    max-width: 100%;
-    height: auto;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+    padding: 4px 0;
   }
 
   /* Embed Section */
   .embed-section {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1.15rem;
+    margin-bottom: 1rem;
   }
 
   .embed-tabs-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.45rem;
   }
 
   .embed-section-title {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    color: #38bdf8;
+    font-family: var(--font-tech, inherit);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #64748b);
   }
 
   .format-toggle {
     display: flex;
-    gap: 0.25rem;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.2rem;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 2px;
     border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .fmt-btn {
-    padding: 0.2rem 0.5rem;
+    padding: 2px 8px;
     border-radius: 4px;
-    border: none;
     background: transparent;
-    color: #94a3b8;
-    font-size: 0.7rem;
+    border: none;
+    color: var(--text-muted, #94a3b8);
+    font-family: var(--font-tech, inherit);
+    font-size: 0.70rem;
     font-weight: 600;
     cursor: pointer;
   }
 
   .fmt-btn.active {
-    background: rgba(56, 189, 248, 0.2);
-    color: #38bdf8;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
   }
 
   .code-box-wrapper {
     position: relative;
-    background: #090d16;
-    border: 1px solid rgba(51, 65, 85, 0.7);
+    background: #050811;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     overflow: hidden;
   }
 
   .code-box {
     margin: 0;
-    padding: 0.75rem 1rem;
-    font-family: 'SF Mono', Menlo, Consolas, monospace;
-    font-size: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
     color: #cbd5e1;
     overflow-x: auto;
     white-space: pre-wrap;
@@ -412,20 +410,21 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    padding: 0.55rem;
-    background: rgba(56, 189, 248, 0.08);
+    padding: 0.5rem;
+    background: rgba(245, 158, 11, 0.08);
     border: none;
-    border-top: 1px solid rgba(51, 65, 85, 0.7);
-    color: #38bdf8;
-    font-size: 0.78rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fbbf24;
+    font-family: var(--font-tech, inherit);
+    font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.16s ease;
+    transition: all 0.15s ease;
   }
 
   .copy-code-btn:hover {
-    background: rgba(56, 189, 248, 0.18);
-    color: #f8fafc;
+    background: rgba(245, 158, 11, 0.18);
+    color: #fef08a;
   }
 
   .copy-code-btn.copied {
@@ -437,20 +436,21 @@
   .social-broadcast-section {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.55rem;
   }
 
   .social-section-title {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    color: #64748b;
+    font-family: var(--font-tech, inherit);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #64748b);
   }
 
   .social-btn-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   @media (max-width: 520px) {
@@ -463,97 +463,99 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.78rem;
+    gap: 0.4rem;
+    padding: 0.5rem 0.4rem;
+    border-radius: 6px;
+    font-family: var(--font-tech, inherit);
+    font-size: 0.76rem;
     font-weight: 700;
     text-decoration: none;
-    transition: all 0.16s ease;
+    transition: all 0.15s ease;
   }
 
   .x-btn {
     background: #000000;
     color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
   .x-btn:hover {
-    background: #111827;
     border-color: rgba(255, 255, 255, 0.4);
     transform: translateY(-1px);
   }
 
   .linkedin-btn {
-    background: #0a66c2;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(10, 102, 194, 0.12);
+    color: #38bdf8;
+    border: 1px solid rgba(10, 102, 194, 0.35);
   }
   .linkedin-btn:hover {
-    background: #084e96;
+    background: rgba(10, 102, 194, 0.25);
+    color: #f8fafc;
     transform: translateY(-1px);
   }
 
   .reddit-btn {
-    background: #ff4500;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 69, 0, 0.12);
+    color: #ff6534;
+    border: 1px solid rgba(255, 69, 0, 0.35);
   }
   .reddit-btn:hover {
-    background: #d83a00;
+    background: rgba(255, 69, 0, 0.25);
+    color: #f8fafc;
     transform: translateY(-1px);
   }
 
   .bluesky-btn {
-    background: #0285ff;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(18, 133, 254, 0.12);
+    color: #60a5fa;
+    border: 1px solid rgba(18, 133, 254, 0.35);
   }
   .bluesky-btn:hover {
-    background: #0266c8;
+    background: rgba(18, 133, 254, 0.25);
+    color: #f8fafc;
     transform: translateY(-1px);
   }
 
   /* Direct Link Row */
   .direct-link-row {
     display: flex;
-    gap: 0.4rem;
-    margin-top: 0.35rem;
+    gap: 0.45rem;
+    margin-top: 0.25rem;
   }
 
   .direct-link-input {
     flex: 1;
-    background: #090d16;
-    border: 1px solid rgba(51, 65, 85, 0.8);
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    color: #94a3b8;
-    font-family: 'SF Mono', Menlo, Consolas, monospace;
-    font-size: 0.76rem;
+    background: #050811;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+    color: var(--text-secondary, #94a3b8);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.74rem;
     outline: none;
   }
 
   .direct-copy-btn {
-    padding: 0.5rem 0.85rem;
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    border-radius: 8px;
-    color: #38bdf8;
-    font-size: 0.78rem;
+    padding: 0.45rem 0.85rem;
+    background: #f59e0b;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #0c0f17;
+    font-family: var(--font-tech, inherit);
+    font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.16s ease;
+    transition: all 0.15s ease;
   }
 
   .direct-copy-btn:hover {
-    background: rgba(56, 189, 248, 0.25);
-    color: #f8fafc;
+    background: #fbbf24;
   }
 
   .direct-copy-btn.copied {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: #10b981;
-    color: #10b981;
+    background: #10b981;
+    color: #ffffff;
   }
 </style>
 
@@ -578,7 +580,7 @@
   const closeBtn = document.getElementById('share-modal-close');
   const targetName = document.getElementById('share-target-name');
   const targetCoords = document.getElementById('share-target-coords');
-  const previewImg = document.getElementById('badge-preview-img') as HTMLImageElement | null;
+  const previewScreen = document.getElementById('badge-preview-screen');
   const codeSnippet = document.getElementById('share-code-snippet');
   const btnCopyCode = document.getElementById('btn-copy-code');
   const btnCopyCodeText = document.getElementById('btn-copy-code-text');
@@ -595,6 +597,35 @@
   const btnShareReddit = document.getElementById('btn-share-reddit') as HTMLAnchorElement | null;
   const btnShareBluesky = document.getElementById('btn-share-bluesky') as HTMLAnchorElement | null;
 
+  function renderInlineSvg(name: string, x: number | string, y: number | string, style: 'badge' | 'card'): string {
+    const hasPlot = x !== '?' && y !== '?' && typeof x === 'number';
+    const coordsStr = hasPlot ? `(${x}, ${y})` : 'Plot';
+
+    if (style === 'badge') {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="310" height="28" viewBox="0 0 310 28" fill="none">
+        <rect width="310" height="28" rx="6" fill="#0b0f19" stroke="#1e293b" stroke-width="1.2"/>
+        <rect x="1" y="1" width="62" height="26" rx="5" fill="#f59e0b" fill-opacity="0.15"/>
+        <text x="32" y="17.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#f59e0b">SPOT</text>
+        <circle cx="75" cy="14" r="3" fill="#10b981"/>
+        <text x="85" y="17.5" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#f8fafc">@${name}</text>
+        <rect x="238" y="4" width="66" height="20" rx="4" fill="#111827" stroke="#334155" stroke-width="1"/>
+        <text x="271" y="17" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9.5" font-weight="700" fill="#38bdf8">${coordsStr}</text>
+      </svg>`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="110" viewBox="0 0 440 110" fill="none">
+      <rect width="440" height="110" rx="10" fill="#080c16" stroke="#1e293b" stroke-width="1.5"/>
+      <rect x="14" y="14" width="82" height="82" rx="8" fill="#0f172a" stroke="#334155"/>
+      <text x="55" y="65" text-anchor="middle" font-size="40" fill="#f59e0b">✦</text>
+      <text x="110" y="32" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" letter-spacing="1.5" fill="#f59e0b">SPOT · INTERNET CANVAS</text>
+      <text x="110" y="56" font-family="sans-serif" font-size="18" font-weight="800" fill="#f8fafc">@${name}</text>
+      <text x="110" y="74" font-family="sans-serif" font-size="11" fill="#94a3b8">Permanent plot owner on the decentralized cyber grid.</text>
+      <rect x="110" y="82" width="88" height="18" rx="4" fill="#1e293b"/>
+      <text x="154" y="94.5" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#38bdf8">PLOT ${coordsStr}</text>
+      <text x="426" y="95" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="8.5" fill="#64748b">claimyourspot.lol</text>
+    </svg>`;
+  }
+
   function updateModalContent() {
     const origin = window.location.origin;
     const name = currentTarget.citizenName || 'Citizen';
@@ -606,17 +637,17 @@
     if (targetName) targetName.textContent = `@${name}`;
     if (targetCoords) targetCoords.textContent = hasPlot ? `Plot ${coordsStr}` : 'Citizen';
 
-    // Identifier for badge API
-    const badgeIdentifier = name && name !== 'Citizen' ? encodeURIComponent(name) : (spotParam || '50,50');
-    const badgeUrl = `${origin}/api/badge/${badgeIdentifier}.svg?style=${activeBadgeStyle}`;
-    const pageUrl = spotParam ? `${origin}/world?spot=${spotParam}` : `${origin}/world?citizen=${encodeURIComponent(name)}`;
-
-    // Preview image
-    if (previewImg) {
-      previewImg.src = badgeUrl;
+    // Preview inline SVG
+    if (previewScreen) {
+      previewScreen.innerHTML = renderInlineSvg(name, currentTarget.x ?? '?', currentTarget.y ?? '?', activeBadgeStyle);
     }
 
-    // Snippet code
+    // Snippet code (points to production badge endpoint for GitHub profile README)
+    const liveOrigin = 'https://claimyourspot.lol';
+    const badgeIdentifier = name && name !== 'Citizen' ? encodeURIComponent(name) : (spotParam || '50,50');
+    const badgeUrl = `${liveOrigin}/api/badge/${badgeIdentifier}.svg?style=${activeBadgeStyle}`;
+    const pageUrl = spotParam ? `${liveOrigin}/world?spot=${spotParam}` : `${liveOrigin}/world?citizen=${encodeURIComponent(name)}`;
+
     let snippet = '';
     if (activeFormat === 'markdown') {
       snippet = `[![Spot Citizen](${badgeUrl})](${pageUrl})`;
@@ -634,7 +665,7 @@
 
     // Direct URL
     if (directUrlInput) {
-      directUrlInput.value = pageUrl;
+      directUrlInput.value = spotParam ? `${origin}/world?spot=${spotParam}` : `${origin}/world?citizen=${encodeURIComponent(name)}`;
     }
 
     // Social URLs
@@ -721,7 +752,6 @@
         btnCopyCode?.classList.remove('copied');
       }, 2000);
     } catch {
-      // Fallback
       const range = document.createRange();
       if (codeSnippet) {
         range.selectNodeContents(codeSnippet);

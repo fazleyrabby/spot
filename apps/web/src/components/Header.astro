@@ -96,8 +96,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
-      <span class="claim-full-label">Choose a Spot</span>
-      <span class="claim-short-label">Claim</span>
+      <span class="claim-btn-text">Choose a Spot</span>
     </button>
   </div>
 </header>
@@ -113,14 +112,14 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     top: 14px;
     left: 50%;
     transform: translateX(-50%);
-    display: inline-flex;
+    display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
+    justify-content: flex-start;
+    gap: 12px;
     height: 44px;
-    padding: 0 10px 0 8px;
+    padding: 0 10px;
     background: rgba(11, 15, 23, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -130,9 +129,20 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     z-index: 40;
     pointer-events: auto;
     width: max-content;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 16px);
     box-sizing: border-box;
     white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .header-hud::-webkit-scrollbar {
+    display: none;
   }
 
   .activity-ticker {
@@ -441,28 +451,26 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
-  .claim-short-label {
-    display: none;
+  .hud-left,
+  .hud-center,
+  .hud-right,
+  .stat-pill,
+  .brand-badge,
+  .hud-world-btn,
+  .hud-library-btn,
+  .hud-search-btn,
+  .cta-claim-btn {
+    flex-shrink: 0;
   }
 
-  /* Responsive Media Queries across ALL device form factors */
+  /* Responsive styling across all devices */
   @media (max-width: 768px) {
     .header-hud {
       top: 8px;
-      width: calc(100% - 16px);
-      max-width: calc(100vw - 16px);
-      box-sizing: border-box;
-      padding: 0 8px;
-      gap: 6px;
       height: 40px;
-    }
-
-    .mini-bar {
-      display: none;
-    }
-
-    .search-shortcut {
-      display: none;
+      padding: 0 8px;
+      gap: 8px;
+      max-width: calc(100vw - 12px);
     }
 
     .activity-ticker {
@@ -470,134 +478,13 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
   }
 
-  @media (max-width: 600px) {
-    .header-hud {
-      gap: 5px;
-      padding: 0 6px;
-      width: calc(100% - 12px);
-      max-width: calc(100vw - 12px);
-      box-sizing: border-box;
-    }
-
-    .hud-center {
-      gap: 5px;
-    }
-
-    .visitors-pill,
-    .stat-divider-visitors {
-      display: none !important;
-    }
-
-    .library-btn-label {
-      display: none !important;
-    }
-
-    .hud-library-btn {
-      padding: 0 6px;
-    }
-
-    .stat-text {
-      display: none;
-    }
-
-    .stat-total {
-      display: none;
-    }
-
-    .stat-slash {
-      display: none;
-    }
-
-    .search-label {
-      display: none;
-    }
-
-    .world-btn-label {
-      display: none;
-    }
-
-    .hud-search-btn {
-      padding: 4px 6px;
-    }
-
-    .hud-world-btn {
-      padding: 4px 6px;
-    }
-
-    .claim-full-label {
-      display: none;
-    }
-
-    .claim-short-label {
-      display: inline;
-    }
-
-    .cta-claim-btn {
-      padding: 0 8px;
-      font-size: 0.72rem;
-      gap: 4px;
-    }
-  }
-
-  @media (max-width: 440px) {
+  @media (max-width: 480px) {
     .header-hud {
       top: 6px;
       height: 38px;
-      padding: 0 5px;
-      gap: 3px;
-      width: calc(100% - 10px);
+      padding: 0 6px;
+      gap: 6px;
       max-width: calc(100vw - 10px);
-    }
-
-    .brand-title {
-      font-size: 0.76rem;
-      letter-spacing: 0.08em;
-    }
-
-    .brand-badge {
-      padding: 2px 4px;
-      gap: 4px;
-    }
-
-    .hud-center {
-      gap: 3px;
-    }
-
-    .stat-pill {
-      gap: 3px;
-      font-size: 0.72rem;
-    }
-
-    .hud-right {
-      gap: 3px;
-    }
-
-    .hud-world-btn,
-    .hud-library-btn,
-    .hud-search-btn {
-      padding: 0;
-      width: 26px;
-      height: 26px;
-      justify-content: center;
-      min-width: 26px;
-    }
-
-    .cta-claim-btn {
-      padding: 0 7px;
-      height: 26px;
-      font-size: 0.68rem;
-      gap: 3px;
-    }
-
-    .claim-icon {
-      width: 11px;
-      height: 11px;
-    }
-  }
-
-  @media (max-width: 360px) {
-    .brand-title {
-      display: none;
     }
   }
 </style>
