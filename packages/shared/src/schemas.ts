@@ -274,40 +274,43 @@ export function formatSocialUrl(
   // Strip leading @
   clean = clean.replace(/^@+/, '');
 
+  // Strip leading www. if followed by domain of known platform
+  const withoutWww = clean.replace(/^www\./i, '');
+
   switch (platform) {
     case 'twitter':
-      if (clean.startsWith('x.com/') || clean.startsWith('twitter.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('x.com/') || withoutWww.startsWith('twitter.com/')) {
+        return `https://${withoutWww}`;
       }
       return `https://x.com/${clean}`;
 
     case 'facebook':
-      if (clean.startsWith('facebook.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('facebook.com/')) {
+        return `https://${withoutWww}`;
       }
       return `https://facebook.com/${clean}`;
 
     case 'instagram':
-      if (clean.startsWith('instagram.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('instagram.com/')) {
+        return `https://${withoutWww}`;
       }
       return `https://instagram.com/${clean}`;
 
     case 'youtube':
-      if (clean.startsWith('youtube.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('youtube.com/')) {
+        return `https://${withoutWww}`;
       }
       return clean.startsWith('UC') ? `https://youtube.com/channel/${clean}` : `https://youtube.com/@${clean}`;
 
     case 'github':
-      if (clean.startsWith('github.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('github.com/')) {
+        return `https://${withoutWww}`;
       }
       return `https://github.com/${clean}`;
 
     case 'linkedin':
-      if (clean.startsWith('linkedin.com/')) {
-        return `https://${clean}`;
+      if (withoutWww.startsWith('linkedin.com/')) {
+        return `https://${withoutWww}`;
       }
       return clean.startsWith('in/') ? `https://linkedin.com/${clean}` : `https://linkedin.com/in/${clean}`;
 

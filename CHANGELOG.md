@@ -35,6 +35,19 @@ All notable changes to SPOT are documented here.
   - Created a 5-phase strategic expansion plan covering GitHub README badges, founder districts, mini-plot decorators, and 2.5D isometric view toggle.
 
 ### Fixed
+- **Link Normalization & Form Validation (`ClaimModal.astro`, `ProfileModal.astro`, `schemas.ts`, `index.astro`):**
+  - Converted all social and project link inputs from `type="text"` to `type="url"` with `inputmode="url"` across both the Claim and Profile edit forms.
+  - Implemented live client-side blur normalization to instantly format handles (e.g., `@handle` -> `https://x.com/handle`, `githubuser` -> `https://github.com/githubuser`, `myproject.com` -> `https://myproject.com`).
+  - Enhanced `formatSocialUrl` in `@spot/shared` to handle `www.` prefixes, root domains, and channel formats gracefully.
+- **Twitter / X Large Image Card Meta Tag (`Layout.astro`):**
+  - Updated Twitter Card meta tag to use `name="twitter:card"` (`summary_large_image`) conforming strictly to Twitter crawler specifications, ensuring rich visual preview cards when sharing links on X/Twitter.
+- **Mobile Viewport Pinch Zoom (`Layout.astro`):**
+  - Removed restrictive `maximum-scale=1.0, user-scalable=no` flags from the viewport meta tag, restoring native pinch-to-zoom for Android and iOS users inspecting dense pixel art.
+- **Accessible Semantic SEO Headings (`index.astro`, `world.astro`, `global.css`):**
+  - Added accessible `.sr-only` `<h1>` headings to both the main canvas landing page and the multiplayer top-down world page for optimal search engine indexing and screen-reader hierarchy.
+- **Non-Overlapping In-Tile Nameplates (`renderer.ts`):**
+  - Re-architected grid canvas nameplates: background labels are docked strictly inside tile bounds (width: `size - 4`, height: `9.5px`) with dynamic pixel-measured text truncation (`fitText`), eliminating label overflow onto neighbouring plots.
+  - Elevated hovered and selected spots into floating focus capsules on the top rendering pass with vibrant borders and drop shadows.
 - **Citizen Badges Context Isolation (`world.astro`):**
   - Resolved an issue where clicking on any other citizen's spot mistakenly displayed the local viewer's own exploration badges (`Cartographer`, `Arcade Legend`, etc.).
   - Replaced with strict contextual and verified citizen badges:
