@@ -6,7 +6,7 @@ export default defineConfig({
   site: 'https://www.claimyourspot.lol',
   integrations: [sitemap()],
   server: {
-    port: 4322,
+    port: 4321,
     host: true
   }
 });
