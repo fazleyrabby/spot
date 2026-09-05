@@ -140,10 +140,41 @@ export class PlayerManager {
   onInteract?: () => void;
   onStep?: () => void;
 
+  isInputBlocked(): boolean {
+    if (typeof document === 'undefined') return false;
+
+    // 1. Don't capture keys if typing in an input, textarea, select, or editable element
+    const active = document.activeElement as HTMLElement | null;
+    if (active && (['input', 'textarea', 'select'].includes(active.tagName.toLowerCase()) || active.isContentEditable)) {
+      return true;
+    }
+
+    // 2. Don't capture keys if any modal backdrop or dialog is open
+    const openModal = document.querySelector(
+      '.modal-backdrop.open, .modal-backdrop.is-open, .library-modal-backdrop.is-open, .library-modal-backdrop.open, .search-backdrop.open, [role="dialog"]:not([aria-hidden="true"])'
+    );
+    if (openModal) {
+      return true;
+    }
+
+    return false;
+  }
+
+  clearMovement(): void {
+    this.keys.clear();
+    this.targetDestination = null;
+    if (this.state === 'walking') {
+      this.state = 'idle';
+      this.frame = 0;
+      this.animTimer = 0;
+    }
+  }
+
   bindInput(): void {
     window.addEventListener('keydown', (e) => {
-      // Don't capture keys if typing in an input/textarea
-      if (['input', 'textarea', 'select'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+      // Don't capture keys if an input is active or any modal is open
+      if (this.isInputBlocked()) {
+        this.clearMovement();
         return;
       }
 
@@ -162,7 +193,12 @@ export class PlayerManager {
     });
 
     window.addEventListener('blur', () => {
-      this.keys.clear();
+      this.clearMovement();
+    });
+
+    // Clear movement whenever a modal opens
+    window.addEventListener('spot:modal-opened', () => {
+      this.clearMovement();
     });
   }
 
@@ -176,6 +212,7 @@ export class PlayerManager {
   targetDestination: { wx: number; wy: number } | null = null;
 
   walkTo(wx: number, wy: number): void {
+    if (this.isInputBlocked()) return;
     this.targetDestination = {
       wx: Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, wx)),
       wy: Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, wy)),
@@ -187,6 +224,14 @@ export class PlayerManager {
     this.tick++;
     this.updateChatBubble();
     this.updateSpeedTrail();
+
+    // If modal opened or input focused while moving, freeze player in place immediately
+    if (this.isInputBlocked()) {
+      if (this.keys.size > 0 || this.targetDestination) {
+        this.clearMovement();
+      }
+    }
+
     let dx = 0;
     let dy = 0;
 
