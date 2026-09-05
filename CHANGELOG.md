@@ -17,6 +17,11 @@ All notable changes to SPOT are documented here.
   - Dynamic prismatic iridescent foil glare (`mix-blend-mode: color-dodge`) that tracks cursor/touch angle across the card surface.
   - Multi-plane spatial depth layering: background cyber-grid (`translateZ(2px)`), scanline beam (`translateZ(8px)`), glowing voxel pedestal (`translateZ(12px)`), elevated pixel sprite (`translateZ(26px)`), and floating archetype badge (`translateZ(34px)`).
   - Added 360° inspect spin on click or tapping the `✦ 3D HOLO` button.
+- **Purposeful Civic & Social Landmarks (`terrain-generator.ts`, `secrets.ts`, `renderer.ts`, `world.astro`):**
+  - **The Cyber Wishing Fountain (`50, 50`):** Luminous hexagonal granite fountain in the central plaza with shimmering animated water ripples and floating coins. Allows travelers and citizens to click "Toss a Coin 🪙" to leave permanent traveler wishes and unlock the `Plaza Wishmaker` reward.
+  - **Metropolis City Hall & Civic Registry (`50, 46`):** Monumental classical-cyber civic tower with illuminated clock face, golden spire, and scrolling LED marquee (`✦ 10,000 PLOTS • SPOT REGISTRY ✦`). Allows visitors to inspect authoritative city census and plot records.
+  - **Kiro's Cyber Cafe & Lounge (`20, 68`):** Cozy red terracotta storefront in Cafe Promenade with striped awnings, glowing amber windows, rising chimney steam, and neon sign (`☕ SPOT CAFE`). Ordering a warm espresso activates a +50% walking speed boost for 30s with audio chime and player chat bubble.
+  - **Grand Railway Terminal Concourse (`50, 0`):** High-tech glass-and-steel transit gateway along the northern border with illuminated departure board and animated aviation signals.
 - **Daily Cyber Bug Bounty Scavenger Hunt (`secrets.ts`, `renderer.ts`):**
   - Added 3 animated cyber glitch critters across the island:
     - *Glitch Byte #01* at coordinates `(32, 38)` in the Tech Corridor (cyan wings & particles).
