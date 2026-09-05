@@ -11,6 +11,24 @@ All notable changes to SPOT are documented here.
 ## 2026-09-05
 
 ### Added
+- **Cyber World Expansion & Interactive Arcade System (`ArcadeModal.astro`):**
+  - **Retro-Futuristic CRT Arcade Cabinet:** Built an interactive arcade zone running "Cyber Viper / Neon Snake" with custom CRT scanline shader, phosphor glow, high-score tracking, and synthesized 8-bit audio effects.
+  - **Multi-Controller Input Engine:** Engineered five distinct input controller modes, selectable via instant UI tabs and persisted in `localStorage` (`spot_snake_ctrl_mode`):
+    1. *Virtual Joystick:* Analog thumb-puck with 360° spring physics, dynamic radial boundary clamping, and angle-to-vector steering.
+    2. *Tactile D-Pad:* Low-latency directional cross with instant `pointerdown` reaction and glowing active state feedback.
+    3. *Swipe Touchpad:* Dedicated gesture-flick touchpad calibrated for fluid one-handed mobile play.
+    4. *Direct Canvas Drag:* Touch/drag directly onto the game board with gesture velocity tracking.
+    5. *Physical Keyboard:* Full WASD / Arrow key mappings with reverse-direction safety locks.
+- **The Grand Codex — Cyber Library Landmark (`LibraryModal.astro`, `library-resources.ts`):**
+  - Erected neoclassical cyber library landmark at Sector 3 with golden dome and dynamic glow pillars.
+  - **Curated Knowledge & Learning Hub:** Added top-tier developer and data science platforms including AWS Skill Builder, DataCamp, freeCodeCamp, fast.ai, The Odin Project, and Kaggle Learn alongside Vizly spotlight.
+  - Added real-time category filtering (All, Learning Hub, Dev Tools, Design, Reading, Community), search queries, and direct navigation links.
+- **Atmospheric Weather Simulation (`weather-manager.ts`, `renderer.ts`):**
+  - Added procedural weather states: Neon Rain (streaking cyan raindrops with surface splash particles), Cyber Motes (drifting golden ambient dust), and Day/Night illumination shifts.
+- **Explorer Journal & Citizen Milestones (`JournalModal.astro`):**
+  - Built interactive world journal tracking landmark discoveries, secret caches, district exploration, and profile badge unlocks.
+- **Proximity Emotes & Ambient Synthesis (`WorldChatBar.astro`):**
+  - Added floating proximity emotes dock with spatial broadcast, audio pings via Web Audio API oscillator, and speech bubble rendering over avatars.
 - **Transactional Email Delivery System via Resend REST API (`mailer.ts`):**
   - Built zero-dependency, lightweight transactional email client using native `fetch` against Resend REST API (`https://api.resend.com/emails`).
   - **Welcome Plot Deed Email (`sendWelcomeClaimEmail`):** Sent immediately upon claiming a grid spot, featuring sector coordinates, Citizen ID, cyberpunk plot deed layout, and direct links to grid view and 2D virtual world.
@@ -26,6 +44,12 @@ All notable changes to SPOT are documented here.
   - Added `reply_to: 'welcome@claimyourspot.lol'` and `X-Entity-Ref-ID` headers to avoid automated spam filter penalties.
 
 ### Fixed
+- **Tree Foliage X-Ray Canopy & Citizen Occlusion (`renderer.ts`, `monument-manager.ts`):**
+  - Implemented dynamic X-ray alpha transparency (`globalAlpha = 0.32`) when player avatars or citizens walk behind tree canopies.
+  - Added entity clearance checks (`hasEntityNear`) to prevent trees, monuments, and foliage from generating on occupied citizen plots.
+- **AI Slop & Dev Humor Purge:**
+  - Audited and purged placeholder developer memes (`git rebase`, `QUACK!`, `Glitch Cola`, `+50 Peace of Mind`) from secrets lore, dialogue, and UI modals in favor of cohesive cyberpunk universe lore.
+  - Replaced tacky colored border stripes in `SecretModal.astro` and `NpcModal.astro` with quiet luxury aesthetics and subtle `✦` badges.
 - **Ad Banner Modal Visual Clipping & Layout Squishing:**
   - Added `min-height: 124px`, `box-sizing: border-box`, and `flex-shrink: 0` to prevent holographic preview screen squishing in `BannerModal.astro`.
   - Synchronized modal accent color, LED border glow, and color pip with active canvas state in `world.astro`.
