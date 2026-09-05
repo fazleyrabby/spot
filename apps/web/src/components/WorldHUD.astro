@@ -194,6 +194,7 @@
     pointer-events: auto;
     width: max-content;
     max-width: calc(100vw - 16px);
+    box-sizing: border-box;
     white-space: nowrap;
     user-select: none;
     overflow-x: auto;
@@ -567,7 +568,7 @@
     text-align: center;
   }
 
-  /* ── Intelligent Non-Wrapping Compaction ────────────────────────────────── */
+  /* ── Intelligent Non-Wrapping Compaction across ALL device form factors ── */
   @media (max-width: 1240px) {
     .hud-stat-badge {
       display: none;
@@ -596,6 +597,9 @@
     .hud-search-btn .hud-btn-text {
       display: none;
     }
+    .hud-share-btn .hud-btn-text {
+      display: none;
+    }
     .hud-back-btn .hud-back-text {
       display: none;
     }
@@ -608,6 +612,9 @@
     .hud-zoom-btn:not(.hud-recenter-btn) {
       display: none;
     }
+    .hud-zoom-level {
+      display: none;
+    }
     .world-hud {
       gap: 4px;
       padding: 0 6px;
@@ -617,10 +624,14 @@
   @media (max-width: 680px) {
     .world-hud {
       top: 8px;
-      height: 36px;
-      min-height: 36px;
+      height: 38px;
+      min-height: 38px;
       gap: 3px;
-      padding: 0 5px;
+      padding: 0 6px;
+      width: calc(100% - 12px);
+      max-width: calc(100vw - 12px);
+      box-sizing: border-box;
+      justify-content: space-between;
     }
     .hud-divider {
       margin: 0;
@@ -631,12 +642,57 @@
     .hud-citizen-badge {
       display: none !important;
     }
+    .hud-sponsor-pill {
+      display: none !important;
+    }
+    #hud-secrets-btn {
+      display: none !important;
+    }
+    .hud-zoom-group {
+      display: none !important;
+    }
     .hud-stat-pill {
       padding: 2px 5px;
       font-size: 0.70rem;
     }
-    .hud-tool-btn:not(#world-search-btn):not(#world-audio-btn):not(#world-weather-btn) {
-      display: none;
+    .hud-tool-btn {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      padding: 0 !important;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .world-hud {
+      top: 6px;
+      height: 36px;
+      min-height: 36px;
+      gap: 2px;
+      padding: 0 4px;
+      width: calc(100% - 10px);
+      max-width: calc(100vw - 10px);
+    }
+    #world-weather-btn,
+    #world-tod-btn {
+      display: none !important;
+    }
+    .hud-tool-btn {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      font-size: 0.75rem;
+    }
+    .hud-stat-pill {
+      padding: 2px 4px;
+      font-size: 0.68rem;
+    }
+    .hud-citizen-btn {
+      padding: 2px 5px;
+    }
+    .hud-back-btn {
+      padding: 2px 5px;
     }
   }
 </style>

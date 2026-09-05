@@ -71,6 +71,17 @@ import ShareModal from '../components/ShareModal.astro';
   const activityText = document.getElementById('activity-text');
   const worldLoader = document.getElementById('world-loader');
   const headerClaimBtn = document.getElementById('header-claim-btn') as HTMLButtonElement;
+  function setHeaderClaimBtnState(fullText: string, shortText?: string) {
+    if (!headerClaimBtn) return;
+    headerClaimBtn.innerHTML = `
+      <svg class="claim-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span class="claim-full-label">${fullText}</span>
+      <span class="claim-short-label">${shortText || fullText}</span>
+    `;
+  }
   const btnAddPasskey = document.getElementById('btn-add-passkey') as HTMLButtonElement;
   const btnUsePasskey = document.getElementById('btn-use-passkey') as HTMLButtonElement;
   const headerSearchBtn = document.getElementById('header-search-btn') as HTMLButtonElement;
@@ -334,9 +345,7 @@ import ShareModal from '../components/ShareModal.astro';
     if (saved) {
       myOwnedSpot = JSON.parse(saved);
       if (myOwnedSpot) {
-        if (headerClaimBtn) {
-          headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
-        }
+        setHeaderClaimBtnState(`My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})`, 'My Spot');
         if (!window.location.search.includes('spot=')) {
           renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
         }
@@ -426,9 +435,7 @@ import ShareModal from '../components/ShareModal.astro';
       if (sessionOwnedSpot) {
         myOwnedSpot = sessionOwnedSpot;
         localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
-        if (headerClaimBtn) {
-          headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
-        }
+        setHeaderClaimBtnState(`My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})`, 'My Spot');
         if (!window.location.search.includes('spot=')) {
           renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
           if (coordText) coordText.textContent = `Spot: (${myOwnedSpot.x}, ${myOwnedSpot.y})`;
@@ -438,13 +445,7 @@ import ShareModal from '../components/ShareModal.astro';
           }
         }
       } else if (!myOwnedSpot && headerClaimBtn) {
-        headerClaimBtn.innerHTML = `
-          <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Claim a Spot</span>
-        `;
+        setHeaderClaimBtnState('Choose a Spot', 'Claim');
       }
     } catch (err) {
       console.warn('Session check fallback:', err);
@@ -533,7 +534,7 @@ import ShareModal from '../components/ShareModal.astro';
       renderer.setSnapshot(worldSnapshot);
 
       if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-      if (headerClaimBtn) headerClaimBtn.innerHTML = `<span>My Spot (${gx}, ${gy})</span>`;
+      setHeaderClaimBtnState(`My Spot (${gx}, ${gy})`, 'My Spot');
 
       // Clean hash from URL bar
       if (window.location.hash) {
@@ -590,9 +591,7 @@ import ShareModal from '../components/ShareModal.astro';
         myOwnedSpot = { id: spotId, x: gx, y: gy };
         localStorage.setItem('spot_my_owned', JSON.stringify(myOwnedSpot));
         
-        if (headerClaimBtn) {
-          headerClaimBtn.innerHTML = `<span>My Spot (${gx}, ${gy})</span>`;
-        }
+      setHeaderClaimBtnState(`My Spot (${gx}, ${gy})`, 'My Spot');
 
         setTimeout(() => {
           const worldPos = renderer.grid.gridToWorld(gx, gy);
@@ -608,8 +607,8 @@ import ShareModal from '../components/ShareModal.astro';
         if (session.authenticated && session.citizen) {
           myCitizen = session.citizen;
           if (session.ownedSpot) myOwnedSpot = session.ownedSpot;
-          if (myOwnedSpot && headerClaimBtn) {
-            headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+          if (myOwnedSpot) {
+            setHeaderClaimBtnState(`My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})`, 'My Spot');
           }
           if (myOwnedSpot) {
             const worldPos = renderer.grid.gridToWorld(myOwnedSpot.x, myOwnedSpot.y);
@@ -708,8 +707,8 @@ import ShareModal from '../components/ShareModal.astro';
       const session = await authenticateWithPasskey();
       myCitizen = session.citizen;
       myOwnedSpot = session.ownedSpot;
-      if (myOwnedSpot && headerClaimBtn) {
-        headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+      if (myOwnedSpot) {
+        setHeaderClaimBtnState(`My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})`, 'My Spot');
         renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.2);
       }
       showToast('🔓 Passkey verified. Welcome back.', 'success');
@@ -735,8 +734,8 @@ import ShareModal from '../components/ShareModal.astro';
         if ((syncRes.authenticated || syncRes.success) && syncRes.citizen) {
           myCitizen = syncRes.citizen;
           myOwnedSpot = syncRes.ownedSpot;
-          if (myOwnedSpot && headerClaimBtn) {
-            headerClaimBtn.innerHTML = `<span>My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})</span>`;
+          if (myOwnedSpot) {
+            setHeaderClaimBtnState(`My Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})`, 'My Spot');
           }
 
           if (!myOwnedSpot && syncRes.citizen) {
@@ -1217,15 +1216,7 @@ import ShareModal from '../components/ShareModal.astro';
       } catch {}
 
       if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-      if (headerClaimBtn) {
-        headerClaimBtn.innerHTML = `
-          <svg class="claim-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Choose a Spot</span>
-        `;
-      }
+      setHeaderClaimBtnState('Choose a Spot', 'Claim');
 
       closeProfileModal();
       showToast('🗑️ Spot released and profile deleted.', 'success');
@@ -1855,7 +1846,7 @@ import ShareModal from '../components/ShareModal.astro';
       renderer.setSnapshot(worldSnapshot);
 
       if (hudClaimedCount) hudClaimedCount.textContent = worldSnapshot.claimedCount.toLocaleString();
-      if (headerClaimBtn) headerClaimBtn.innerHTML = `<span>My Spot (${currentTargetSpot.x}, ${currentTargetSpot.y})</span>`;
+      setHeaderClaimBtnState(`My Spot (${currentTargetSpot.x}, ${currentTargetSpot.y})`, 'My Spot');
 
       closeClaimModal();
       showToast(`🎉 Spot (${currentTargetSpot.x}, ${currentTargetSpot.y}) is now yours forever!`, 'success');

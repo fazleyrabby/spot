@@ -149,9 +149,9 @@ export class PlayerManager {
       return true;
     }
 
-    // 2. Don't capture keys if any modal backdrop or dialog is open
+    // 2. Don't capture keys if any modal backdrop or dialog is actively open
     const openModal = document.querySelector(
-      '.modal-backdrop.open, .modal-backdrop.is-open, .library-modal-backdrop.is-open, .library-modal-backdrop.open, .search-backdrop.open, [role="dialog"]:not([aria-hidden="true"])'
+      '.modal-backdrop.open, .modal-backdrop.is-open, .library-modal-backdrop.is-open, .library-modal-backdrop.open, .search-backdrop.open, .arcade-modal-backdrop.open, .share-modal-backdrop.open, .about-modal-backdrop.open'
     );
     if (openModal) {
       return true;
