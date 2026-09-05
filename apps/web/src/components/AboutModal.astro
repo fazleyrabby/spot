@@ -1,105 +1,131 @@
 ---
-// About Modal Component
+// About Modal Component — Apple / Linear style welcoming introduction
 ---
 
 <div class="modal-backdrop" id="about-modal-backdrop" aria-hidden="true">
   <div class="about-modal-box" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
-    <!-- Header -->
+    
+    <!-- Top Header -->
     <div class="about-header">
       <div class="about-header-left">
         <div class="about-icon-circle">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17" fill="none" stroke="currentColor" stroke-width="2"></polyline>
           </svg>
         </div>
         <div class="about-title-group">
           <div class="about-badge">INTERNET EXPERIMENT</div>
-          <h2 class="about-title" id="about-modal-title">About SPOT</h2>
+          <h2 class="about-title" id="about-modal-title">Welcome to SPOT</h2>
         </div>
       </div>
       <button type="button" class="about-close-btn" id="about-modal-close" aria-label="Close modal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6L6 18M6 6l12 12"></path>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
 
     <!-- Body Content -->
     <div class="about-body">
-      <!-- Overview Card -->
-      <div class="about-overview-card">
-        <h3 class="about-tagline">Your permanent place on the Internet</h3>
+      <!-- Hero Narrative -->
+      <div class="about-hero-block">
+        <h3 class="about-tagline">A permanent home for 10,000 internet makers.</h3>
         <p class="about-desc">
-          SPOT is a shared Internet canvas with <strong>10,000 places</strong>. Pick an avatar, choose your spot, and leave your mark among makers, coders, and internet wanderers.
+          SPOT is a living, persistent internet canvas. Pick your coordinates, customize a pixel avatar, and leave your mark among builders, developers, creators, and digital wanderers.
         </p>
       </div>
 
-      <!-- How it Works Steps -->
-      <div class="about-section-label">HOW IT WORKS</div>
-      <div class="about-steps-grid">
-        <div class="about-step-card">
-          <div class="step-num-badge">1</div>
-          <div class="step-content">
-            <h4 class="step-title">Pick an Avatar</h4>
-            <p class="step-desc">Choose from our pixel sprite catalog or upload a custom image avatar.</p>
+      <!-- 3-Step Journey -->
+      <div class="about-journey-flow">
+        <div class="journey-item">
+          <div class="journey-badge">1</div>
+          <div class="journey-text">
+            <h4 class="journey-title">Pick Your Avatar</h4>
+            <p class="journey-desc">Choose a handcrafted pixel character or convert your own photo into an 8-bit sprite.</p>
           </div>
         </div>
 
-        <div class="about-step-card">
-          <div class="step-num-badge">2</div>
-          <div class="step-content">
-            <h4 class="step-title">Claim Any Spot</h4>
-            <p class="step-desc">Browse the 100×100 grid and pick an available coordinate anywhere in the city.</p>
+        <div class="journey-line" aria-hidden="true"></div>
+
+        <div class="journey-item">
+          <div class="journey-badge">2</div>
+          <div class="journey-text">
+            <h4 class="journey-title">Claim Your Free Spot</h4>
+            <p class="journey-desc">Browse the 100×100 grid, pick any open tile, and secure your permanent coordinate.</p>
           </div>
         </div>
 
-        <div class="about-step-card">
-          <div class="step-num-badge">3</div>
-          <div class="step-content">
-            <h4 class="step-title">Leave Your Mark</h4>
-            <p class="step-desc">Add your name, bio, and a link to your portfolio, blog, or project.</p>
+        <div class="journey-line" aria-hidden="true"></div>
+
+        <div class="journey-item">
+          <div class="journey-badge">3</div>
+          <div class="journey-text">
+            <h4 class="journey-title">Leave Your Legacy</h4>
+            <p class="journey-desc">Link your projects, portfolio, and socials. Visitors can explore your plot and leave wall notes.</p>
           </div>
         </div>
       </div>
 
-      <!-- Key Highlights -->
-      <div class="about-highlights-grid">
-        <div class="highlight-item">
-          <span class="highlight-icon">🗺️</span>
-          <div class="highlight-text">
-            <strong>10,000 Unique Spots</strong>
-            <span>One spot per human on a persistent map</span>
+      <!-- Pillars Bento Grid -->
+      <div class="about-pillars-grid">
+        <div class="pillar-card">
+          <span class="pillar-icon">🗺️</span>
+          <div class="pillar-info">
+            <strong class="pillar-name">10,000 Unique Spots</strong>
+            <span class="pillar-sub">Permanent, finite digital real estate</span>
           </div>
         </div>
-        <div class="highlight-item">
-          <span class="highlight-icon">✨</span>
-          <div class="highlight-text">
-            <strong>100% Free Forever</strong>
-            <span>No subscription or paywalls required</span>
+
+        <div class="pillar-card">
+          <span class="pillar-icon">✨</span>
+          <div class="pillar-info">
+            <strong class="pillar-name">100% Free Forever</strong>
+            <span class="pillar-sub">No subscriptions, no paywalls, ever</span>
           </div>
         </div>
-        <div class="highlight-item">
-          <span class="highlight-icon">🛡️</span>
-          <div class="highlight-text">
-            <strong>GitHub Verified</strong>
-            <span>Link GitHub to get your verified citizen badge</span>
+
+        <div class="pillar-card">
+          <span class="pillar-icon">🛡️</span>
+          <div class="pillar-info">
+            <strong class="pillar-name">Verified Citizens</strong>
+            <span class="pillar-sub">Connect GitHub for official badge</span>
           </div>
         </div>
-        <div class="highlight-item">
-          <span class="highlight-icon">🎮</span>
-          <div class="highlight-text">
-            <strong>Living Spot World</strong>
-            <span>Explore in full top-down isometric view</span>
+
+        <div class="pillar-card">
+          <span class="pillar-icon">🎮</span>
+          <div class="pillar-info">
+            <strong class="pillar-name">Living 2D World</strong>
+            <span class="pillar-sub">Multiplayer avatars, emotes & secrets</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="about-modal-footer">
-      <span class="about-footer-note">Free to join • Built for the open web</span>
+      <!-- Welcoming Actions (Eliminates tab bounce) -->
+      <div class="about-actions-box">
+        <button type="button" class="about-btn-primary" id="about-btn-claim-action">
+          <span>🚀 Claim Your Free Spot</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+
+        <a href="/world" class="about-btn-secondary" id="about-btn-world-action">
+          <span>🗺️ Explore World View</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Trust Note -->
+      <div class="about-footer-meta">
+        <span>Public good experiment • Crafted with care for the open web</span>
+      </div>
     </div>
   </div>
 </div>
@@ -108,9 +134,9 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(4, 7, 13, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -128,21 +154,25 @@
 
   .about-modal-box {
     width: 100%;
-    max-width: 520px;
-    max-height: 90vh;
+    max-width: 510px;
+    max-height: calc(100dvh - 32px);
     display: flex;
     flex-direction: column;
-    background: #141720;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 20px;
+    background: rgba(13, 18, 28, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
     padding: 24px;
-    box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    transform: scale(0.95) translateY(10px);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.7),
+      0 32px 64px -12px rgba(0, 0, 0, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: scale(0.96) translateY(10px);
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     color: #f8fafc;
-    font-family: inherit;
     box-sizing: border-box;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 
   .about-modal-box * {
@@ -156,28 +186,28 @@
   /* Header */
   .about-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
     flex-shrink: 0;
   }
 
   .about-header-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
   .about-icon-circle {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #1e2430;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.22);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-amber, #f59e0b);
+    color: #38bdf8;
     flex-shrink: 0;
   }
 
@@ -189,29 +219,30 @@
 
   .about-badge {
     font-family: var(--font-tech, sans-serif);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--accent-amber, #f59e0b);
+    letter-spacing: 0.1em;
+    color: #38bdf8;
     text-transform: uppercase;
   }
 
   .about-title {
     font-family: var(--font-tech, sans-serif);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 800;
-    color: #f8fafc;
-    letter-spacing: 0.03em;
+    color: #ffffff;
+    letter-spacing: -0.01em;
     margin: 0;
+    line-height: 1.2;
   }
 
   .about-close-btn {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: transparent;
-    border: none;
-    color: #64748b;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #94a3b8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -220,21 +251,27 @@
   }
 
   .about-close-btn:hover {
-    color: #f8fafc;
-    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .about-close-btn:active {
+    transform: scale(0.95);
   }
 
   /* Body */
   .about-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
   }
 
-  .about-overview-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+  /* Hero Block */
+  .about-hero-block {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
     padding: 14px 16px;
   }
 
@@ -242,144 +279,211 @@
     margin: 0 0 6px 0;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: #ffffff;
+    letter-spacing: -0.01em;
   }
 
   .about-desc {
     margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.5;
+    font-size: 0.83rem;
+    line-height: 1.55;
     color: #94a3b8;
   }
 
-  .about-desc strong {
-    color: #f1f5f9;
-  }
-
-  .about-section-label {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: #64748b;
-    margin-top: 2px;
-  }
-
-  .about-steps-grid {
+  /* 3-Step Journey */
+  .about-journey-flow {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px 14px;
   }
 
-  .about-step-card {
+  .journey-item {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    background: #171b24;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 10px 14px;
+    padding: 6px 0;
   }
 
-  .step-num-badge {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: var(--accent-amber, #f59e0b);
+  .journey-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
     font-family: var(--font-mono, monospace);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    margin-top: 1px;
+    margin-top: 2px;
   }
 
-  .step-content {
+  .journey-line {
+    width: 2px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-left: 10px;
+  }
+
+  .journey-text {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
-  .step-title {
+  .journey-title {
     margin: 0;
     font-size: 0.85rem;
     font-weight: 700;
     color: #f1f5f9;
   }
 
-  .step-desc {
+  .journey-desc {
     margin: 0;
     font-size: 0.78rem;
-    line-height: 1.4;
-    color: #94a3b8;
+    line-height: 1.45;
+    color: #8fa1b8;
   }
 
-  .about-highlights-grid {
+  /* Pillars Grid */
+  .about-pillars-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
-  .highlight-item {
+  .pillar-card {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
+    gap: 9px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: 9px 11px;
+    transition: background 0.15s ease, border-color 0.15s ease;
   }
 
-  .highlight-icon {
-    font-size: 1rem;
+  .pillar-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .pillar-icon {
+    font-size: 1.1rem;
     flex-shrink: 0;
-    line-height: 1.2;
+    line-height: 1;
   }
 
-  .highlight-text {
+  .pillar-info {
     display: flex;
     flex-direction: column;
     gap: 1px;
     min-width: 0;
   }
 
-  .highlight-text strong {
+  .pillar-name {
     font-size: 0.76rem;
+    font-weight: 700;
     color: #e2e8f0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .highlight-text span {
-    font-size: 0.68rem;
+  .pillar-sub {
+    font-size: 0.67rem;
     color: #64748b;
-    line-height: 1.3;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* Footer */
-  .about-modal-footer {
-    margin-top: 18px;
+  /* Welcoming Actions */
+  .about-actions-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .about-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 18px;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #090d16;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .about-btn-primary:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.22);
+  }
+
+  .about-btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .about-btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.16s ease;
+  }
+
+  .about-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+  }
+
+  .about-btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  /* Footer Note */
+  .about-footer-meta {
     text-align: center;
-    flex-shrink: 0;
-  }
-
-  .about-footer-note {
-    font-size: 0.76rem;
-    color: #64748b;
+    font-size: 0.72rem;
+    color: #526173;
     font-family: var(--font-tech, sans-serif);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
   }
 
   @media (max-width: 520px) {
     .about-modal-box {
-      padding: 18px 14px;
+      padding: 20px 16px;
     }
-    .about-highlights-grid {
+    .about-pillars-grid {
       grid-template-columns: 1fr;
     }
   }

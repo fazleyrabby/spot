@@ -9,6 +9,7 @@ import WorldChatBar from '../components/WorldChatBar.astro';
 import SearchModal from '../components/SearchModal.astro';
 import BannerModal from '../components/BannerModal.astro';
 import LibraryModal from '../components/LibraryModal.astro';
+import ArcadeModal from '../components/ArcadeModal.astro';
 ---
 
 <Layout
@@ -39,6 +40,9 @@ import LibraryModal from '../components/LibraryModal.astro';
 
     <!-- The Grand Codex Curated Developer Library Modal -->
     <LibraryModal />
+
+    <!-- 1984 Retro Cyber Arcade Cabinet Modal -->
+    <ArcadeModal />
 
     <!-- Street NPC interaction dialogue modal -->
     <NpcModal />
@@ -195,7 +199,7 @@ import LibraryModal from '../components/LibraryModal.astro';
 
 <script>
   import { Engine } from '../world/engine.js';
-  import { WORLD_SECRETS } from '../world/secrets.js';
+  import { WORLD_SECRETS, BADGE_DEFINITIONS, getUnlockedBadges } from '../world/secrets.js';
   import { applyActiveSponsorships, WORLD_BANNERS } from '../world/banner-manager.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import { containsBlockedWord, formatSocialUrl, validateAdPolicy, type OccupiedSpotSummary } from '@spot/shared';
@@ -355,8 +359,33 @@ import LibraryModal from '../components/LibraryModal.astro';
 
       if (spotWallSection) spotWallSection.style.display = '';
 
-      // Reset Spot Wall to closed/clean state by default
-      if (spotWallForm) {
+    // Citizen Achievement Badges
+    const profileBadgesRow = document.getElementById('profile-badges-row');
+    const profileBadgesList = document.getElementById('profile-badges-list');
+    if (profileBadgesRow && profileBadgesList) {
+      const discovered = getDiscoveredSecrets();
+      const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
+      const unlocked = getUnlockedBadges(Array.from(discovered), arcadeScore);
+
+      if (unlocked.length > 0) {
+        profileBadgesRow.style.display = 'flex';
+        profileBadgesList.innerHTML = unlocked
+          .map(
+            (b) => `
+          <div class="profile-badge-chip" title="${b.description}" style="border-color: ${b.color}40; background: ${b.color}15;">
+            <span>${b.icon}</span>
+            <span style="color: ${b.color}; font-weight: 700;">${b.name}</span>
+          </div>
+        `
+          )
+          .join('');
+      } else {
+        profileBadgesRow.style.display = 'none';
+      }
+    }
+
+    // Reset Spot Wall to closed/clean state by default
+    if (spotWallForm) {
         spotWallForm.hidden = true;
         spotWallForm.style.display = 'none';
       }
@@ -589,9 +618,10 @@ import LibraryModal from '../components/LibraryModal.astro';
         secretActionBtn.onclick = (e) => {
           e.preventDefault();
           const fortunes = [
-            '“Glitch Cola: Your next commit will have 0 merge conflicts.”',
-            '“Cyber Matcha: Fullstack clarity +100. Write clean code.”',
-            '“Overclocked Cold Brew: Fast compilation & instant hot-reloads.”',
+            '“Midnight Tonic: The city breathes in rhythm with its wanderers.”',
+            '“Electric Rain: Neon reflections on quiet asphalt at 2 AM.”',
+            '“Starlight Espresso: Calm focus under a canopy of digital stars.”',
+            '“Amber Mist: A moment of pause before the next journey.”',
           ];
           if (secretQuote) secretQuote.textContent = fortunes[Math.floor(Math.random() * fortunes.length)];
           if (secretQuoteBox) secretQuoteBox.style.display = 'block';
@@ -616,6 +646,18 @@ import LibraryModal from '../components/LibraryModal.astro';
       localStorage.setItem('spot_world_secrets', JSON.stringify(Array.from(discovered)));
       updateSecretsHUD();
       showToast(`✨ Discovered: ${secret.name} (${discovered.size}/${TOTAL_SECRETS})`, 'success');
+
+      // Check for newly unlocked badges
+      const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
+      const newlyUnlocked = BADGE_DEFINITIONS.filter(b => 
+        b.checkUnlocked(Array.from(discovered), { arcadeHighScore: arcadeScore }) &&
+        !b.checkUnlocked(Array.from(discovered).filter(id => id !== secret.id), { arcadeHighScore: arcadeScore })
+      );
+      for (const badge of newlyUnlocked) {
+        setTimeout(() => {
+          showToast(`🏅 Badge Unlocked: ${badge.name}!`, 'success');
+        }, 900);
+      }
     }
 
     secretBackdrop.classList.add('open');
@@ -876,15 +918,15 @@ import LibraryModal from '../components/LibraryModal.astro';
 
       if (isFounderMonument) {
         if (bannerActionText) {
-          bannerActionText.textContent = 'Partner / Sponsor Inquiry ✉';
+          bannerActionText.textContent = 'Partner Inquiry ✉';
         }
       } else if (isMySponsorship) {
         if (bannerActionText) {
-          bannerActionText.textContent = 'Extend My Sponsorship (+30 Days) ⚡';
+          bannerActionText.textContent = 'Extend (+30 Days) ⚡';
         }
       } else {
         if (bannerActionText) {
-          bannerActionText.textContent = 'Occupied Spot • Find Open Billboard 🗺️';
+          bannerActionText.textContent = 'Find Available Billboard';
         }
       }
 
@@ -1224,60 +1266,125 @@ import LibraryModal from '../components/LibraryModal.astro';
   const journalBackdrop = document.getElementById('journal-modal-backdrop');
   const journalCloseBtn = document.getElementById('journal-modal-close');
   const journalList = document.getElementById('journal-list');
+  const journalBadgesGrid = document.getElementById('journal-badges-grid');
+  const journalTabLandmarks = document.getElementById('journal-tab-landmarks');
+  const journalTabBadges = document.getElementById('journal-tab-badges');
+  const tabLandmarksCount = document.getElementById('tab-landmarks-count');
+  const tabBadgesCount = document.getElementById('tab-badges-count');
+  const journalProgressTitle = document.getElementById('journal-progress-title');
   const journalProgressText = document.getElementById('journal-progress-text');
   const journalProgressFill = document.getElementById('journal-progress-fill');
   const hudSecretsBtn = document.getElementById('hud-secrets-btn');
 
-  function openJournalModal(): void {
-    if (!journalBackdrop || !journalList) return;
+  let activeJournalTab: 'landmarks' | 'badges' = 'landmarks';
+
+  function updateJournalView(): void {
+    if (!journalBackdrop || !journalList || !journalBadgesGrid) return;
     const discovered = getDiscoveredSecrets();
-    const total = WORLD_SECRETS.length;
-    const pct = Math.round((discovered.size / total) * 100);
+    const totalLandmarks = WORLD_SECRETS.length;
+    const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
+    const unlockedBadges = getUnlockedBadges(Array.from(discovered), arcadeScore);
+    const totalBadges = BADGE_DEFINITIONS.length;
 
-    if (journalProgressText) {
-      journalProgressText.textContent = `${discovered.size} / ${total} Discovered (${pct}%)`;
-    }
-    if (journalProgressFill) {
-      journalProgressFill.style.width = `${pct}%`;
-    }
+    if (tabLandmarksCount) tabLandmarksCount.textContent = `${discovered.size}/${totalLandmarks}`;
+    if (tabBadgesCount) tabBadgesCount.textContent = `${unlockedBadges.length}/${totalBadges}`;
 
-    journalList.innerHTML = '';
-    for (const secret of WORLD_SECRETS) {
-      const isFound = discovered.has(secret.id);
-      const card = document.createElement('div');
-      card.className = `journal-item ${isFound ? 'discovered' : ''}`;
+    if (activeJournalTab === 'landmarks') {
+      journalList.style.display = 'flex';
+      journalBadgesGrid.style.display = 'none';
+      journalTabLandmarks?.classList.add('active');
+      journalTabBadges?.classList.remove('active');
 
-      if (isFound) {
-        card.innerHTML = `
-          <div class="journal-item-icon">${secret.icon}</div>
-          <div class="journal-item-content">
-            <div class="journal-item-top">
-              <h4 class="journal-item-name">${secret.name}</h4>
-              <span class="journal-item-coords">(${secret.gx}, ${secret.gy})</span>
+      const pct = Math.round((discovered.size / totalLandmarks) * 100);
+      if (journalProgressTitle) journalProgressTitle.textContent = 'Metropolis Mapped';
+      if (journalProgressText) journalProgressText.textContent = `${discovered.size} / ${totalLandmarks} Discovered (${pct}%)`;
+      if (journalProgressFill) journalProgressFill.style.width = `${pct}%`;
+
+      journalList.innerHTML = '';
+      for (const secret of WORLD_SECRETS) {
+        const isFound = discovered.has(secret.id);
+        const card = document.createElement('div');
+        card.className = `journal-item ${isFound ? 'discovered' : ''}`;
+
+        if (isFound) {
+          card.innerHTML = `
+            <div class="journal-item-icon">${secret.icon}</div>
+            <div class="journal-item-content">
+              <div class="journal-item-top">
+                <h4 class="journal-item-name">${secret.name}</h4>
+                <span class="journal-item-coords">(${secret.gx}, ${secret.gy})</span>
+              </div>
+              <div class="journal-item-district">${secret.district} • <span style="color:#00f0ff;">✓ Discovered</span></div>
+              <p class="journal-item-clue">“${secret.quote || secret.description}”</p>
             </div>
-            <div class="journal-item-district">${secret.district} • <span style="color:#00f0ff;">✓ Discovered</span></div>
-            <p class="journal-item-clue">“${secret.quote || secret.description}”</p>
-          </div>
-        `;
-      } else {
-        card.innerHTML = `
-          <div class="journal-item-icon">❓</div>
-          <div class="journal-item-content">
-            <div class="journal-item-top">
-              <h4 class="journal-item-name">Undiscovered Landmark</h4>
-              <span class="journal-item-coords">[???, ???]</span>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="journal-item-icon">❓</div>
+            <div class="journal-item-content">
+              <div class="journal-item-top">
+                <h4 class="journal-item-name">Undiscovered Landmark</h4>
+                <span class="journal-item-coords">[???, ???]</span>
+              </div>
+              <div class="journal-item-district">${secret.district} • <span style="color:#f59e0b;">Undiscovered</span></div>
+              <p class="journal-item-clue">🔍 Riddle: “${secret.clue}”</p>
             </div>
-            <div class="journal-item-district">${secret.district} • <span style="color:#f59e0b;">Undiscovered</span></div>
-            <p class="journal-item-clue">🔍 Riddle: “${secret.clue}”</p>
-          </div>
-        `;
+          `;
+        }
+        journalList.appendChild(card);
       }
-      journalList.appendChild(card);
-    }
+    } else {
+      journalList.style.display = 'none';
+      journalBadgesGrid.style.display = 'grid';
+      journalTabLandmarks?.classList.remove('active');
+      journalTabBadges?.classList.add('active');
 
+      const pct = Math.round((unlockedBadges.length / totalBadges) * 100);
+      if (journalProgressTitle) journalProgressTitle.textContent = 'Badges Earned';
+      if (journalProgressText) journalProgressText.textContent = `${unlockedBadges.length} / ${totalBadges} Badges (${pct}%)`;
+      if (journalProgressFill) journalProgressFill.style.width = `${pct}%`;
+
+      journalBadgesGrid.innerHTML = '';
+      for (const badge of BADGE_DEFINITIONS) {
+        const isUnlocked = badge.checkUnlocked(Array.from(discovered), { arcadeHighScore: arcadeScore });
+        const card = document.createElement('div');
+        card.className = `journal-badge-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+        card.innerHTML = `
+          <div class="badge-card-icon" style="background: ${isUnlocked ? badge.color + '15' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isUnlocked ? badge.color + '40' : 'rgba(255,255,255,0.08)'};">
+            ${badge.icon}
+          </div>
+          <div class="badge-card-content">
+            <div class="badge-card-top">
+              <h4 class="badge-card-name">${badge.name}</h4>
+              <span class="badge-card-status" style="color: ${isUnlocked ? badge.color : '#64748b'};">
+                ${isUnlocked ? '✓ Unlocked' : '🔒 Locked'}
+              </span>
+            </div>
+            <p class="badge-card-desc">${badge.description}</p>
+          </div>
+        `;
+        journalBadgesGrid.appendChild(card);
+      }
+    }
+  }
+
+  function openJournalModal(): void {
+    if (!journalBackdrop) return;
+    updateJournalView();
     journalBackdrop.classList.add('open');
     journalBackdrop.setAttribute('aria-hidden', 'false');
   }
+
+  journalTabLandmarks?.addEventListener('click', () => {
+    activeJournalTab = 'landmarks';
+    updateJournalView();
+  });
+
+  journalTabBadges?.addEventListener('click', () => {
+    activeJournalTab = 'badges';
+    updateJournalView();
+  });
 
   function closeJournalModal(): void {
     if (!journalBackdrop) return;
@@ -1402,6 +1509,8 @@ import LibraryModal from '../components/LibraryModal.astro';
         onSecretClick: (secret) => {
           if (secret.id === 'dev_library') {
             (window as any).openLibraryModal?.();
+          } else if (secret.id === 'retro_arcade') {
+            (window as any).openArcadeModal?.();
           } else {
             openSecretModal(secret);
           }
@@ -1409,6 +1518,8 @@ import LibraryModal from '../components/LibraryModal.astro';
         onSecretDiscovered: (secret) => {
           if (secret.id === 'dev_library') {
             (window as any).openLibraryModal?.();
+          } else if (secret.id === 'retro_arcade') {
+            (window as any).openArcadeModal?.();
           } else {
             openSecretModal(secret);
           }
@@ -1422,6 +1533,7 @@ import LibraryModal from '../components/LibraryModal.astro';
           closeNpcModal();
           closeJournalModal();
           (window as any).closeLibraryModal?.();
+          (window as any).closeArcadeModal?.();
         },
         onSnapshotLoaded: (snapshot) => {
           const claimedCountEl = document.getElementById('hud-claimed-count');
@@ -1450,6 +1562,11 @@ import LibraryModal from '../components/LibraryModal.astro';
           isVerified,
           teleportToSpot: true,
         });
+      }
+
+      // Sync initial weather HUD icon
+      if (worldWeatherIcon && engine) {
+        worldWeatherIcon.textContent = WEATHER_ICONS[engine.renderer.weather.getWeather()] || '✨';
       }
 
       function updateBillboardStatsHUD() {
@@ -1632,6 +1749,10 @@ import LibraryModal from '../components/LibraryModal.astro';
       if (worldUrlParams.get('modal') === 'library' || worldUrlParams.get('zone') === 'library') {
         setTimeout(() => {
           (window as any).openLibraryModal?.();
+        }, 350);
+      } else if (worldUrlParams.get('modal') === 'arcade' || worldUrlParams.get('game') === 'snake') {
+        setTimeout(() => {
+          (window as any).openArcadeModal?.();
         }, 350);
       }
 
@@ -1905,6 +2026,37 @@ import LibraryModal from '../components/LibraryModal.astro';
       worldTodIcon.textContent = TOD_ICONS[next];
     }
     showToast(TOD_LABELS[next], 'info');
+  });
+
+  // ── Dynamic Weather Switcher (Clear / Neon Rain / Cyber Motes) ──────────────
+  const btnWorldWeather = document.getElementById('world-weather-btn');
+  const worldWeatherIcon = document.getElementById('world-weather-icon');
+
+  const WEATHER_MODES: Array<'clear' | 'rain' | 'motes'> = ['clear', 'rain', 'motes'];
+  const WEATHER_ICONS: Record<'clear' | 'rain' | 'motes', string> = {
+    clear: '☀️',
+    rain: '🌧️',
+    motes: '✨',
+  };
+  const WEATHER_LABELS: Record<'clear' | 'rain' | 'motes', string> = {
+    clear: '☀️ Clear Cyber Skies',
+    rain: '🌧️ Neon Rainstorm with Ground Ripples',
+    motes: '✨ Floating Cyber Fireflies & Motes',
+  };
+
+  btnWorldWeather?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+
+    const current = engine.renderer.weather.getWeather();
+    const nextIdx = (WEATHER_MODES.indexOf(current) + 1) % WEATHER_MODES.length;
+    const next = WEATHER_MODES[nextIdx];
+
+    engine.renderer.weather.setWeather(next);
+    if (worldWeatherIcon) {
+      worldWeatherIcon.textContent = WEATHER_ICONS[next];
+    }
+    showToast(WEATHER_LABELS[next], 'info');
   });
 
   // ── HUD Citizen Identity & 1-Click Sign-In ─────────────────────────────────

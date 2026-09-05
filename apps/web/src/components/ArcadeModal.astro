@@ -1,0 +1,1430 @@
+---
+/**
+ * ArcadeModal — Playable 1984 CRT Cyber Arcade Cabinet ("The Byte Cade").
+ * Features 60fps "Byte Snake" mini-game, Web Audio procedural sound,
+ * high score persistence, and "Arcade Legend" badge unlocks.
+ */
+---
+
+<div class="arcade-modal-backdrop modal-backdrop" id="arcade-modal-backdrop" aria-hidden="true">
+  <div class="arcade-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="arcade-title">
+    
+    <!-- Top Cabinet Header -->
+    <div class="arcade-header">
+      <div class="arcade-header-left">
+        <div class="arcade-icon-badge">👾</div>
+        <div class="arcade-title-group">
+          <div class="arcade-badge">THE BYTE CADE • VINTAGE 1984</div>
+          <h2 class="arcade-title" id="arcade-title">Byte Snake 2084</h2>
+        </div>
+      </div>
+
+      <div class="arcade-header-actions">
+        <button type="button" class="arcade-tool-btn" id="arcade-sound-btn" title="Toggle Sound">
+          <span id="arcade-sound-icon">🔊</span>
+        </button>
+        <button type="button" class="arcade-close-btn" id="arcade-modal-close" aria-label="Close Arcade">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Telemetry Bar -->
+    <div class="arcade-score-bar">
+      <div class="score-pill">
+        <span class="score-label">SCORE</span>
+        <span class="score-val mono-num" id="arcade-current-score">000</span>
+      </div>
+      <div class="score-pill high-score">
+        <span class="score-label">HIGH SCORE</span>
+        <span class="score-val mono-num" id="arcade-best-score">000</span>
+      </div>
+      <div class="score-pill badge-pill" id="arcade-badge-status" title="Score 50+ to unlock Arcade Legend badge">
+        <span class="score-label">BADGE</span>
+        <span class="score-badge-text" id="arcade-badge-text">Locked 🔒</span>
+      </div>
+    </div>
+
+    <!-- CRT Bezel Screen Frame -->
+    <div class="crt-screen-frame">
+      <canvas id="arcade-game-canvas" width="400" height="400" class="arcade-canvas"></canvas>
+      <div class="crt-scanlines"></div>
+      <div class="crt-glare"></div>
+
+      <!-- Start / Game Over Overlay -->
+      <div class="crt-overlay" id="arcade-overlay">
+        <div class="crt-overlay-content">
+          <div class="crt-title" id="overlay-title">BYTE SNAKE</div>
+          <p class="crt-subtitle" id="overlay-subtitle">Press SPACE or Tap to Start</p>
+          <div class="crt-instructions">
+            <span>Controls: <strong>Touch Joystick</strong>, <strong>Screen Drag</strong>, or <strong>Arrow Keys</strong></span>
+            <span>Target: <strong>50+ pts</strong> to unlock Arcade Badge</span>
+          </div>
+          <button type="button" class="crt-start-btn" id="overlay-action-btn">INSERT COIN (START)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controller Mode Selector Tabs -->
+    <div class="arcade-ctrl-tabs" id="arcade-ctrl-tabs" role="tablist" aria-label="Controller Selection">
+      <button type="button" class="ctrl-tab-btn active" data-mode="joystick" role="tab" aria-selected="true">
+        <span class="tab-icon">🕹️</span>
+        <span class="tab-label">Joystick</span>
+      </button>
+      <button type="button" class="ctrl-tab-btn" data-mode="dpad" role="tab" aria-selected="false">
+        <span class="tab-icon">🎮</span>
+        <span class="tab-label">D-Pad</span>
+      </button>
+      <button type="button" class="ctrl-tab-btn" data-mode="swipe" role="tab" aria-selected="false">
+        <span class="tab-icon">👆</span>
+        <span class="tab-label">Swipe Pad</span>
+      </button>
+    </div>
+
+    <!-- Mode 1: Virtual Touch Joystick -->
+    <div class="arcade-ctrl-panel panel-joystick" id="ctrl-panel-joystick">
+      <div class="joystick-base" id="joystick-base" role="region" aria-label="Virtual Joystick">
+        <div class="joystick-ring-outer"></div>
+        <div class="joystick-ring-inner"></div>
+        <span class="joy-indicator joy-up" id="joy-dir-up">▲</span>
+        <span class="joy-indicator joy-left" id="joy-dir-left">◀</span>
+        <span class="joy-indicator joy-right" id="joy-dir-right">▶</span>
+        <span class="joy-indicator joy-down" id="joy-dir-down">▼</span>
+        <div class="joystick-thumb" id="joystick-thumb">
+          <div class="thumb-inner"></div>
+        </div>
+      </div>
+      <div class="ctrl-helper-label">Touch & slide joystick in 360° to steer</div>
+    </div>
+
+    <!-- Mode 2: Tactile 4-Way D-Pad -->
+    <div class="arcade-ctrl-panel panel-dpad" id="ctrl-panel-dpad" style="display: none;">
+      <div class="arcade-dpad-grid">
+        <button type="button" class="dpad-btn dpad-up" data-dir="UP" aria-label="Steer Up">
+          <span class="dpad-arrow">▲</span>
+        </button>
+        <div class="dpad-middle-row">
+          <button type="button" class="dpad-btn dpad-left" data-dir="LEFT" aria-label="Steer Left">
+            <span class="dpad-arrow">◀</span>
+          </button>
+          <button type="button" class="dpad-btn dpad-center" id="dpad-center-btn" aria-label="Start Game">
+            <span class="dpad-dot">●</span>
+          </button>
+          <button type="button" class="dpad-btn dpad-right" data-dir="RIGHT" aria-label="Steer Right">
+            <span class="dpad-arrow">▶</span>
+          </button>
+        </div>
+        <button type="button" class="dpad-btn dpad-down" data-dir="DOWN" aria-label="Steer Down">
+          <span class="dpad-arrow">▼</span>
+        </button>
+      </div>
+      <div class="ctrl-helper-label">Tap arrow keys to turn instantly</div>
+    </div>
+
+    <!-- Mode 3: Screen Swipe & Gesture Pad -->
+    <div class="arcade-ctrl-panel panel-swipe" id="ctrl-panel-swipe" style="display: none;">
+      <div class="swipe-touchpad" id="swipe-touchpad" role="region" aria-label="Swipe Touchpad">
+        <div class="swipe-guide-arrow guide-up" id="swipe-arrow-up">▲</div>
+        <div class="swipe-guide-mid">
+          <span class="swipe-guide-arrow guide-left" id="swipe-arrow-left">◀</span>
+          <div class="swipe-guide-core">
+            <span class="swipe-icon">👆</span>
+            <span class="swipe-hint">Swipe anywhere</span>
+          </div>
+          <span class="swipe-guide-arrow guide-right" id="swipe-arrow-right">▶</span>
+        </div>
+        <div class="swipe-guide-arrow guide-down" id="swipe-arrow-down">▼</div>
+      </div>
+      <div class="ctrl-helper-label">Flick or swipe anywhere on the pad or game screen</div>
+    </div>
+
+    <!-- Cabinet Footer Note -->
+    <div class="arcade-footer-meta">
+      <span>Coin-op Relic preserved in Downtown Cyber District • Free Play</span>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .arcade-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 15, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+  }
+
+  .arcade-modal-backdrop.open {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .arcade-card {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: rgba(13, 18, 28, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.7),
+      0 32px 64px -12px rgba(0, 0, 0, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    color: #f8fafc;
+    box-sizing: border-box;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+  }
+
+  /* Header */
+  .arcade-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .arcade-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .arcade-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .arcade-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .arcade-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #c084fc;
+    text-transform: uppercase;
+  }
+
+  .arcade-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .arcade-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .arcade-tool-btn,
+  .arcade-close-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .arcade-tool-btn:hover,
+  .arcade-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .arcade-tool-btn:active,
+  .arcade-close-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Score Bar */
+  .arcade-score-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .score-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    gap: 2px;
+  }
+
+  .score-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #64748b;
+  }
+
+  .score-val {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #38bdf8;
+    line-height: 1;
+  }
+
+  .score-pill.high-score .score-val {
+    color: #fbbf24;
+  }
+
+  .score-badge-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+
+  .score-pill.badge-unlocked .score-badge-text {
+    color: #34d399;
+  }
+
+  /* CRT Bezel Frame */
+  .crt-screen-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 380px;
+    background: #060910;
+    border-radius: 12px;
+    border: 2px solid #1a2234;
+    overflow: hidden;
+    box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.6);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .arcade-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  .crt-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.02) 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
+
+  .crt-glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  /* Overlay */
+  .crt-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 9, 16, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    transition: opacity 0.2s ease;
+  }
+
+  .crt-overlay.hidden {
+    display: none;
+  }
+
+  .crt-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .crt-title {
+    font-family: var(--font-display, monospace);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  }
+
+  .crt-subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+  }
+
+  .crt-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  .crt-instructions strong {
+    color: #e2e8f0;
+  }
+
+  .crt-start-btn {
+    margin-top: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #090d16;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+    transition: all 0.15s ease;
+  }
+
+  .crt-start-btn:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+  }
+
+  .crt-start-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Controller Selection Tabs */
+  .arcade-ctrl-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 4px;
+    user-select: none;
+  }
+
+  .ctrl-tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  .ctrl-tab-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .ctrl-tab-btn.active {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.32);
+    color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .tab-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .tab-label {
+    letter-spacing: 0.02em;
+  }
+
+  /* Controller Panels Shared */
+  .arcade-ctrl-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-height: 148px;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .ctrl-helper-label {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
+  /* Mode 1: Virtual Touch Joystick */
+  .joystick-base {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.95) 0%, rgba(8, 12, 22, 0.98) 100%);
+    border: 1.5px solid rgba(56, 189, 248, 0.28);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.8),
+      0 12px 28px -4px rgba(0, 0, 0, 0.7),
+      inset 0 0 20px rgba(56, 189, 248, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .joystick-base:active {
+    cursor: grabbing;
+  }
+
+  .joystick-ring-outer {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    border: 1px dashed rgba(56, 189, 248, 0.16);
+    pointer-events: none;
+  }
+
+  .joystick-ring-inner {
+    position: absolute;
+    inset: 26px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+  }
+
+  .joy-indicator {
+    position: absolute;
+    font-size: 0.7rem;
+    color: rgba(148, 163, 184, 0.35);
+    pointer-events: none;
+    transition: color 0.12s, transform 0.12s, text-shadow 0.12s;
+    line-height: 1;
+  }
+
+  .joy-up { top: 8px; left: 50%; transform: translateX(-50%); }
+  .joy-down { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .joy-left { left: 8px; top: 50%; transform: translateY(-50%); }
+  .joy-right { right: 8px; top: 50%; transform: translateY(-50%); }
+
+  .joy-indicator.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+    transform: translateX(-50%) scale(1.3);
+  }
+  .joy-left.active, .joy-right.active {
+    transform: translateY(-50%) scale(1.3);
+  }
+
+  .joystick-thumb {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 60%, #0369a1 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.6),
+      0 0 16px rgba(56, 189, 248, 0.45),
+      inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    will-change: transform;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .joystick-thumb.dragging {
+    transition: none;
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.7),
+      0 0 22px rgba(56, 189, 248, 0.65),
+      inset 0 2px 5px rgba(255, 255, 255, 0.55);
+  }
+
+  .thumb-inner {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+  }
+
+  /* Mode 2: Tactile 4-Way D-Pad */
+  .arcade-dpad-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .dpad-middle-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .dpad-btn {
+    width: 52px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    transition: all 0.1s ease;
+  }
+
+  .dpad-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .dpad-btn:active,
+  .dpad-btn.active {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: scale(0.93);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+  }
+
+  .dpad-center {
+    background: rgba(56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.25);
+    color: #38bdf8;
+  }
+
+  .dpad-arrow {
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .dpad-dot {
+    font-size: 0.8rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* Mode 3: Screen Swipe Gesture Pad */
+  .swipe-touchpad {
+    width: 100%;
+    max-width: 280px;
+    height: 116px;
+    border-radius: 12px;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.9) 0%, rgba(8, 12, 22, 0.95) 100%);
+    border: 1px dashed rgba(56, 189, 248, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.6);
+  }
+
+  .swipe-touchpad:active {
+    cursor: grabbing;
+    border-color: rgba(56, 189, 248, 0.5);
+  }
+
+  .swipe-guide-mid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .swipe-guide-core {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    pointer-events: none;
+  }
+
+  .swipe-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .swipe-hint {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .swipe-guide-arrow {
+    font-size: 0.72rem;
+    color: rgba(148, 163, 184, 0.35);
+    pointer-events: none;
+    transition: color 0.12s, text-shadow 0.12s, transform 0.12s;
+    line-height: 1;
+  }
+
+  .swipe-guide-arrow.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+    transform: scale(1.3);
+  }
+
+  .arcade-footer-meta {
+    text-align: center;
+    font-size: 0.68rem;
+    color: #64748b;
+  }
+</style>
+
+<script>
+  // ── Procedural Web Audio 8-Bit Synthesizer ─────────────────────────────────
+  let audioCtx: AudioContext | null = null;
+  let soundEnabled = true;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq: number, type: OscillatorType = 'square', duration = 0.08, gainVal = 0.06) {
+    if (!soundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (_) {}
+  }
+
+  function playEatSound() {
+    playTone(520, 'sine', 0.06, 0.08);
+    setTimeout(() => playTone(880, 'square', 0.08, 0.07), 40);
+  }
+
+  function playGameOverSound() {
+    playTone(220, 'sawtooth', 0.15, 0.1);
+    setTimeout(() => playTone(140, 'sawtooth', 0.2, 0.09), 100);
+    setTimeout(() => playTone(70, 'sawtooth', 0.3, 0.08), 220);
+  }
+
+  // ── Byte Snake Game Engine ────────────────────────────────────────────────
+  const canvas = document.getElementById('arcade-game-canvas') as HTMLCanvasElement | null;
+  const overlay = document.getElementById('arcade-overlay');
+  const overlayTitle = document.getElementById('overlay-title');
+  const overlaySubtitle = document.getElementById('overlay-subtitle');
+  const overlayBtn = document.getElementById('overlay-action-btn');
+  const scoreDisplay = document.getElementById('arcade-current-score');
+  const bestScoreDisplay = document.getElementById('arcade-best-score');
+  const badgeStatus = document.getElementById('arcade-badge-status');
+  const badgeText = document.getElementById('arcade-badge-text');
+  const soundBtn = document.getElementById('arcade-sound-btn');
+  const soundIcon = document.getElementById('arcade-sound-icon');
+
+  const GRID_SIZE = 20; // 20x20 grid
+  const CELL_SIZE = 20; // 20px per cell = 400x400
+
+  interface Point { x: number; y: number }
+  let snake: Point[] = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
+  let dir: Point = { x: 0, y: -1 };
+  let nextDir: Point = { x: 0, y: -1 };
+  let food: Point = { x: 5, y: 5 };
+  let score = 0;
+  let bestScore = 0;
+  let gameRunning = false;
+  let gameLoopId: number | null = null;
+  let lastTickTime = 0;
+  let speedMs = 120;
+
+  // Restore Best Score from LocalStorage
+  try {
+    const savedBest = localStorage.getItem('spot_arcade_best_score');
+    if (savedBest) {
+      bestScore = parseInt(savedBest, 10) || 0;
+      if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore.toString().padStart(3, '0');
+      if (bestScore >= 50 && badgeText && badgeStatus) {
+        badgeText.textContent = 'Unlocked 🏆';
+        badgeStatus.classList.add('badge-unlocked');
+      }
+    }
+  } catch (_) {}
+
+  // Sound toggle
+  soundBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    soundEnabled = !soundEnabled;
+    if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+  });
+
+  function spawnFood(): void {
+    let valid = false;
+    while (!valid) {
+      food = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+      valid = !snake.some((s) => s.x === food.x && s.y === food.y);
+    }
+  }
+
+  function startGame(): void {
+    initAudio();
+    snake = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
+    dir = { x: 0, y: -1 };
+    nextDir = { x: 0, y: -1 };
+    score = 0;
+    speedMs = 120;
+    spawnFood();
+    gameRunning = true;
+    if (scoreDisplay) scoreDisplay.textContent = '000';
+    if (overlay) overlay.classList.add('hidden');
+    lastTickTime = performance.now();
+    if (gameLoopId) cancelAnimationFrame(gameLoopId);
+    gameLoopId = requestAnimationFrame(gameLoop);
+    playTone(440, 'sine', 0.08, 0.05);
+  }
+
+  function gameOver(): void {
+    gameRunning = false;
+    playGameOverSound();
+
+    if (score > bestScore) {
+      bestScore = score;
+      try {
+        localStorage.setItem('spot_arcade_best_score', bestScore.toString());
+      } catch (_) {}
+      if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore.toString().padStart(3, '0');
+    }
+
+    if (bestScore >= 50) {
+      if (badgeText && badgeStatus) {
+        badgeText.textContent = 'Unlocked 🏆';
+        badgeStatus.classList.add('badge-unlocked');
+      }
+      try {
+        const unlockedBadges = JSON.parse(localStorage.getItem('spot_unlocked_badges') || '[]');
+        if (!unlockedBadges.includes('badge_arcade_legend')) {
+          unlockedBadges.push('badge_arcade_legend');
+          localStorage.setItem('spot_unlocked_badges', JSON.stringify(unlockedBadges));
+          window.dispatchEvent(new CustomEvent('spot:badge-unlocked', { detail: { id: 'badge_arcade_legend' } }));
+        }
+      } catch (_) {}
+    }
+
+    if (overlayTitle) overlayTitle.textContent = 'GAME OVER';
+    if (overlaySubtitle) overlaySubtitle.innerHTML = `Score: <strong>${score}</strong> • Best: <strong>${bestScore}</strong>`;
+    if (overlayBtn) overlayBtn.textContent = 'PLAY AGAIN (SPACE)';
+    if (overlay) overlay.classList.remove('hidden');
+  }
+
+  function gameLoop(timestamp: number): void {
+    if (!gameRunning) return;
+
+    if (timestamp - lastTickTime >= speedMs) {
+      lastTickTime = timestamp;
+      tickGame();
+    }
+
+    renderGame();
+    gameLoopId = requestAnimationFrame(gameLoop);
+  }
+
+  function tickGame(): void {
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    // Wall Collision
+    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+      gameOver();
+      return;
+    }
+
+    // Self Collision
+    if (snake.some((s) => s.x === head.x && s.y === head.y)) {
+      gameOver();
+      return;
+    }
+
+    snake.unshift(head);
+
+    // Eat Food
+    if (head.x === food.x && head.y === food.y) {
+      score += 10;
+      playEatSound();
+      if (scoreDisplay) scoreDisplay.textContent = score.toString().padStart(3, '0');
+      spawnFood();
+      // Slight speedup
+      speedMs = Math.max(65, 120 - Math.floor(score / 30) * 8);
+    } else {
+      snake.pop();
+    }
+  }
+
+  function renderGame(): void {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear Screen (Dark CRT background)
+    ctx.fillStyle = '#060910';
+    ctx.fillRect(0, 0, 400, 400);
+
+    // Subtle Grid Lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= GRID_SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE, 0);
+      ctx.lineTo(i * CELL_SIZE, 400);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE);
+      ctx.lineTo(400, i * CELL_SIZE);
+      ctx.stroke();
+    }
+
+    // Draw Food (Golden Glowing Data Bit)
+    const fx = food.x * CELL_SIZE;
+    const fy = food.y * CELL_SIZE;
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(fx + 3, fy + 3, CELL_SIZE - 6, CELL_SIZE - 6);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(fx + 6, fy + 6, CELL_SIZE - 12, CELL_SIZE - 12);
+    ctx.shadowBlur = 0;
+
+    // Draw Snake (Neon Cyan Body)
+    snake.forEach((seg, idx) => {
+      const sx = seg.x * CELL_SIZE;
+      const sy = seg.y * CELL_SIZE;
+      const isHead = idx === 0;
+
+      if (isHead) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(sx + 2, sy + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(sx + 4, sy + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+        ctx.shadowBlur = 0;
+      } else {
+        const opacity = Math.max(0.35, 1 - idx / (snake.length + 4));
+        ctx.fillStyle = `rgba(56, 189, 248, ${opacity})`;
+        ctx.fillRect(sx + 2, sy + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+      }
+    });
+  }
+
+  // Keyboard Handlers
+  window.addEventListener('keydown', (e) => {
+    const backdrop = document.getElementById('arcade-modal-backdrop');
+    if (!backdrop || !backdrop.classList.contains('open')) return;
+
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      if (!gameRunning) startGame();
+      return;
+    }
+
+    if (!gameRunning) return;
+
+    switch (e.key.toLowerCase()) {
+      case 'arrowup':
+      case 'w':
+        if (dir.y === 0) { nextDir = { x: 0, y: -1 }; playTone(300, 'sine', 0.03, 0.03); }
+        e.preventDefault();
+        break;
+      case 'arrowdown':
+      case 's':
+        if (dir.y === 0) { nextDir = { x: 0, y: 1 }; playTone(300, 'sine', 0.03, 0.03); }
+        e.preventDefault();
+        break;
+      case 'arrowleft':
+      case 'a':
+        if (dir.x === 0) { nextDir = { x: -1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
+        e.preventDefault();
+        break;
+      case 'arrowright':
+      case 'd':
+        if (dir.x === 0) { nextDir = { x: 1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
+        e.preventDefault();
+        break;
+    }
+  });
+
+  // Overlay button trigger
+  overlayBtn?.addEventListener('click', startGame);
+
+  // ── Controller Mode Selector Tabs ─────────────────────────────────────────
+  const ctrlTabBtns = document.querySelectorAll<HTMLButtonElement>('.ctrl-tab-btn');
+  const ctrlPanels: Record<string, HTMLElement | null> = {
+    joystick: document.getElementById('ctrl-panel-joystick'),
+    dpad: document.getElementById('ctrl-panel-dpad'),
+    swipe: document.getElementById('ctrl-panel-swipe'),
+  };
+
+  function setControllerMode(mode: 'joystick' | 'dpad' | 'swipe') {
+    ctrlTabBtns.forEach((btn) => {
+      const isActive = btn.dataset.mode === mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    if (ctrlPanels.joystick) ctrlPanels.joystick.style.display = mode === 'joystick' ? 'flex' : 'none';
+    if (ctrlPanels.dpad) ctrlPanels.dpad.style.display = mode === 'dpad' ? 'flex' : 'none';
+    if (ctrlPanels.swipe) ctrlPanels.swipe.style.display = mode === 'swipe' ? 'flex' : 'none';
+
+    try {
+      localStorage.setItem('spot_snake_ctrl_mode', mode);
+    } catch (_) {}
+  }
+
+  ctrlTabBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const mode = (btn.dataset.mode || 'joystick') as 'joystick' | 'dpad' | 'swipe';
+      setControllerMode(mode);
+    });
+  });
+
+  // Restore saved controller mode
+  try {
+    const savedMode = (localStorage.getItem('spot_snake_ctrl_mode') || 'joystick') as 'joystick' | 'dpad' | 'swipe';
+    if (savedMode in ctrlPanels) {
+      setControllerMode(savedMode);
+    }
+  } catch (_) {}
+
+  // ── Mode 1: Virtual Touch & Drag Joystick ─────────────────────────────────
+  const joyBase = document.getElementById('joystick-base');
+  const joyThumb = document.getElementById('joystick-thumb');
+  const joyUp = document.getElementById('joy-dir-up');
+  const joyDown = document.getElementById('joy-dir-down');
+  const joyLeft = document.getElementById('joy-dir-left');
+  const joyRight = document.getElementById('joy-dir-right');
+
+  let joyActivePointerId: number | null = null;
+  let joyCenterX = 0;
+  let joyCenterY = 0;
+  const JOY_MAX_DIST = 36; // maximum stick displacement in px
+  const JOY_DEADZONE = 9;  // minimum deadzone to detect direction
+
+  function setJoyDirActive(direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | null) {
+    joyUp?.classList.toggle('active', direction === 'UP');
+    joyDown?.classList.toggle('active', direction === 'DOWN');
+    joyLeft?.classList.toggle('active', direction === 'LEFT');
+    joyRight?.classList.toggle('active', direction === 'RIGHT');
+  }
+
+  function handleJoyMove(clientX: number, clientY: number) {
+    const dx = clientX - joyCenterX;
+    const dy = clientY - joyCenterY;
+    const dist = Math.hypot(dx, dy);
+
+    // Clamp stick to max distance
+    const clampDist = Math.min(dist, JOY_MAX_DIST);
+    const angle = Math.atan2(dy, dx);
+    const px = Math.cos(angle) * clampDist;
+    const py = Math.sin(angle) * clampDist;
+
+    if (joyThumb) {
+      joyThumb.style.transform = `translate3d(${px}px, ${py}px, 0)`;
+    }
+
+    // Direction calculation when outside deadzone
+    if (dist >= JOY_DEADZONE) {
+      let chosenDir: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+      if (Math.abs(dx) > Math.abs(dy)) {
+        chosenDir = dx > 0 ? 'RIGHT' : 'LEFT';
+      } else {
+        chosenDir = dy > 0 ? 'DOWN' : 'UP';
+      }
+
+      setJoyDirActive(chosenDir);
+
+      let changed = false;
+      if (chosenDir === 'UP' && dir.y === 0 && nextDir.y !== -1) {
+        nextDir = { x: 0, y: -1 };
+        changed = true;
+      } else if (chosenDir === 'DOWN' && dir.y === 0 && nextDir.y !== 1) {
+        nextDir = { x: 0, y: 1 };
+        changed = true;
+      } else if (chosenDir === 'LEFT' && dir.x === 0 && nextDir.x !== -1) {
+        nextDir = { x: -1, y: 0 };
+        changed = true;
+      } else if (chosenDir === 'RIGHT' && dir.x === 0 && nextDir.x !== 1) {
+        nextDir = { x: 1, y: 0 };
+        changed = true;
+      }
+
+      if (changed) {
+        playTone(320, 'sine', 0.03, 0.03);
+      }
+    } else {
+      setJoyDirActive(null);
+    }
+  }
+
+  if (joyBase) {
+    joyBase.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      joyActivePointerId = e.pointerId;
+      try {
+        joyBase.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      const rect = joyBase.getBoundingClientRect();
+      joyCenterX = rect.left + rect.width / 2;
+      joyCenterY = rect.top + rect.height / 2;
+
+      joyThumb?.classList.add('dragging');
+
+      if (!gameRunning) {
+        startGame();
+      }
+
+      handleJoyMove(e.clientX, e.clientY);
+    });
+
+    joyBase.addEventListener('pointermove', (e: PointerEvent) => {
+      if (joyActivePointerId !== e.pointerId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleJoyMove(e.clientX, e.clientY);
+    });
+
+    const endJoy = (e: PointerEvent) => {
+      if (joyActivePointerId !== e.pointerId) return;
+      joyActivePointerId = null;
+      try {
+        joyBase.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      joyThumb?.classList.remove('dragging');
+      if (joyThumb) {
+        joyThumb.style.transform = 'translate3d(0, 0, 0)';
+      }
+      setJoyDirActive(null);
+    };
+
+    joyBase.addEventListener('pointerup', endJoy);
+    joyBase.addEventListener('pointercancel', endJoy);
+  }
+
+  // ── Mode 2: Tactile D-Pad Listeners ───────────────────────────────────────
+  document.querySelectorAll<HTMLButtonElement>('.dpad-btn[data-dir]').forEach((btn) => {
+    const handleDirAction = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!gameRunning) {
+        startGame();
+      }
+
+      const d = btn.dataset.dir;
+      let changed = false;
+      if (d === 'UP' && dir.y === 0 && nextDir.y !== -1) {
+        nextDir = { x: 0, y: -1 };
+        changed = true;
+      } else if (d === 'DOWN' && dir.y === 0 && nextDir.y !== 1) {
+        nextDir = { x: 0, y: 1 };
+        changed = true;
+      } else if (d === 'LEFT' && dir.x === 0 && nextDir.x !== -1) {
+        nextDir = { x: -1, y: 0 };
+        changed = true;
+      } else if (d === 'RIGHT' && dir.x === 0 && nextDir.x !== 1) {
+        nextDir = { x: 1, y: 0 };
+        changed = true;
+      }
+
+      if (changed) {
+        playTone(320, 'sine', 0.03, 0.03);
+      }
+
+      btn.classList.add('active');
+      setTimeout(() => btn.classList.remove('active'), 120);
+    };
+
+    btn.addEventListener('pointerdown', handleDirAction);
+  });
+
+  document.getElementById('dpad-center-btn')?.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!gameRunning) startGame();
+  });
+
+  // ── Mode 3: Swipe Touchpad Gestures ───────────────────────────────────────
+  const swipeTouchpad = document.getElementById('swipe-touchpad');
+  const swipeArrows = {
+    up: document.getElementById('swipe-arrow-up'),
+    down: document.getElementById('swipe-arrow-down'),
+    left: document.getElementById('swipe-arrow-left'),
+    right: document.getElementById('swipe-arrow-right'),
+  };
+
+  function flashSwipeArrow(d: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT') {
+    if (d === 'UP') swipeArrows.up?.classList.add('active');
+    if (d === 'DOWN') swipeArrows.down?.classList.add('active');
+    if (d === 'LEFT') swipeArrows.left?.classList.add('active');
+    if (d === 'RIGHT') swipeArrows.right?.classList.add('active');
+    setTimeout(() => {
+      swipeArrows.up?.classList.remove('active');
+      swipeArrows.down?.classList.remove('active');
+      swipeArrows.left?.classList.remove('active');
+      swipeArrows.right?.classList.remove('active');
+    }, 150);
+  }
+
+  let padPointerId: number | null = null;
+  let padStartX = 0;
+  let padStartY = 0;
+
+  if (swipeTouchpad) {
+    swipeTouchpad.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      padPointerId = e.pointerId;
+      padStartX = e.clientX;
+      padStartY = e.clientY;
+      try {
+        swipeTouchpad.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      if (!gameRunning) {
+        startGame();
+      }
+    });
+
+    swipeTouchpad.addEventListener('pointermove', (e: PointerEvent) => {
+      if (padPointerId !== e.pointerId || !gameRunning) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const dx = e.clientX - padStartX;
+      const dy = e.clientY - padStartY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist >= 14) {
+        let changed = false;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0 && dir.x === 0 && nextDir.x !== 1) {
+            nextDir = { x: 1, y: 0 };
+            flashSwipeArrow('RIGHT');
+            changed = true;
+          } else if (dx < 0 && dir.x === 0 && nextDir.x !== -1) {
+            nextDir = { x: -1, y: 0 };
+            flashSwipeArrow('LEFT');
+            changed = true;
+          }
+        } else {
+          if (dy > 0 && dir.y === 0 && nextDir.y !== 1) {
+            nextDir = { x: 0, y: 1 };
+            flashSwipeArrow('DOWN');
+            changed = true;
+          } else if (dy < 0 && dir.y === 0 && nextDir.y !== -1) {
+            nextDir = { x: 0, y: -1 };
+            flashSwipeArrow('UP');
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          playTone(320, 'sine', 0.03, 0.03);
+          padStartX = e.clientX;
+          padStartY = e.clientY;
+        }
+      }
+    });
+
+    const endPad = (e: PointerEvent) => {
+      if (padPointerId === e.pointerId) {
+        padPointerId = null;
+        try {
+          swipeTouchpad.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+      }
+    };
+
+    swipeTouchpad.addEventListener('pointerup', endPad);
+    swipeTouchpad.addEventListener('pointercancel', endPad);
+  }
+
+  // ── Global Canvas Drag / Swipe (Works continuously in all modes) ──────────
+  let screenPointerId: number | null = null;
+  let screenStartX = 0;
+  let screenStartY = 0;
+  const screenFrame = document.querySelector('.crt-screen-frame') as HTMLElement | null;
+
+  screenFrame?.addEventListener('pointerdown', (e: PointerEvent) => {
+    screenPointerId = e.pointerId;
+    screenStartX = e.clientX;
+    screenStartY = e.clientY;
+    if (!gameRunning) {
+      startGame();
+    }
+  });
+
+  window.addEventListener('pointermove', (e: PointerEvent) => {
+    if (screenPointerId !== e.pointerId || !gameRunning) return;
+    const dx = e.clientX - screenStartX;
+    const dy = e.clientY - screenStartY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist >= 14) {
+      let changed = false;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && dir.x === 0 && nextDir.x !== 1) {
+          nextDir = { x: 1, y: 0 };
+          changed = true;
+        } else if (dx < 0 && dir.x === 0 && nextDir.x !== -1) {
+          nextDir = { x: -1, y: 0 };
+          changed = true;
+        }
+      } else {
+        if (dy > 0 && dir.y === 0 && nextDir.y !== 1) {
+          nextDir = { x: 0, y: 1 };
+          changed = true;
+        } else if (dy < 0 && dir.y === 0 && nextDir.y !== -1) {
+          nextDir = { x: 0, y: -1 };
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        playTone(320, 'sine', 0.03, 0.03);
+        screenStartX = e.clientX;
+        screenStartY = e.clientY;
+      }
+    }
+  });
+
+  window.addEventListener('pointerup', (e: PointerEvent) => {
+    if (screenPointerId === e.pointerId) {
+      screenPointerId = null;
+    }
+  });
+
+  window.addEventListener('pointercancel', (e: PointerEvent) => {
+    if (screenPointerId === e.pointerId) {
+      screenPointerId = null;
+    }
+  });
+
+  // Global window modal opener helper
+  (window as unknown as { openArcadeModal: () => void; closeArcadeModal: () => void }).openArcadeModal = () => {
+    const backdrop = document.getElementById('arcade-modal-backdrop');
+    if (!backdrop) return;
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    renderGame();
+  };
+
+  const closeBtn = document.getElementById('arcade-modal-close');
+  const backdrop = document.getElementById('arcade-modal-backdrop');
+
+  function closeArcadeModal() {
+    if (!backdrop) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    gameRunning = false;
+    if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  }
+
+  (window as unknown as { openArcadeModal: () => void; closeArcadeModal: () => void }).closeArcadeModal = closeArcadeModal;
+
+  closeBtn?.addEventListener('click', closeArcadeModal);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeArcadeModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeArcadeModal();
+    }
+  });
+</script>

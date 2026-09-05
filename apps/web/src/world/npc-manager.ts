@@ -28,10 +28,10 @@ export class NPCManager {
   readonly npcs: StreetNPC[] = [
     {
       id: 'kiro_barista',
-      name: 'Kiro the Cyber Barista',
-      title: 'Master of Glitch Brews & Turbo Elixirs',
+      name: 'Kiro',
+      title: 'Downtown Coffee Artisan',
       district: 'Downtown Cyber District',
-      dialogue: 'Welcome to Kiro\'s! Need a turbo boost to sprint across the city? Here, take this fresh Glitch Espresso!',
+      dialogue: 'A quiet roast for a busy night. Take a warm espresso with you before you continue across the metropolis.',
       icon: '☕',
       gx: 24,
       gy: 26,
@@ -39,14 +39,14 @@ export class NPCManager {
       wy: 26 * TILE_HEIGHT,
       color: '#00f0ff',
       interactRange: 90,
-      promptText: '[E] Order Turbo Espresso ⚡',
+      promptText: '[E] Order Espresso ⚡',
     },
     {
       id: 'prof_barnaby',
-      name: 'Professor Barnaby',
-      title: 'Chief Metropolis Cartographer',
+      name: 'Barnaby',
+      title: 'Metropolis Cartographer',
       district: 'Grand Central Plaza',
-      dialogue: 'Greetings, explorer! I\'ve charted all 10,000 plots of this metropolis. Need guidance on where to explore next?',
+      dialogue: 'Every stone in this city was placed with purpose. Let me know if you seek coordinates to an uncharted quarter.',
       icon: '🧭',
       gx: 48,
       gy: 50,
@@ -54,7 +54,7 @@ export class NPCManager {
       wy: 50 * TILE_HEIGHT,
       color: '#f59e0b',
       interactRange: 90,
-      promptText: '[E] Talk to Cartographer',
+      promptText: '[E] Consult Cartographer',
     },
   ];
 

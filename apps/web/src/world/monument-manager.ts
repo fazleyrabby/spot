@@ -477,6 +477,25 @@ export class MonumentManager {
     return Array.from(this.entities.values());
   }
 
+  hasEntityNear(wx: number, wy: number, radius: number): boolean {
+    const rSq = radius * radius;
+    for (const ent of this.entities.values()) {
+      const dx = ent.wx - wx;
+      const dy = ent.wy - wy;
+      if (dx * dx + dy * dy <= rSq) return true;
+    }
+    return false;
+  }
+
+  isEntityInTreeCanopy(treeWx: number, treeWy: number): boolean {
+    for (const ent of this.entities.values()) {
+      if (Math.abs(ent.wx - treeWx) <= 18 && ent.wy >= (treeWy - 36) && ent.wy <= (treeWy + 4)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // ---------------------------------------------------------------------------
   // Citizen Chibi Rendering
   // ---------------------------------------------------------------------------
