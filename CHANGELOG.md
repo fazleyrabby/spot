@@ -8,6 +8,37 @@ All notable changes to SPOT are documented here.
 
 ---
 
+## 2026-09-06
+
+### Added
+- **Interactive 3D Holographic Citizen Card (`ProfileModal.astro`):**
+  - Upgraded flat avatar frame into a collectible 3D Holographic Card with hardware-accelerated CSS 3D perspective (`perspective: 750px; transform-style: preserve-3d`).
+  - Interactive mouse tilt and mobile touch drag with smooth spring/lerp physics (`rotateX`, `rotateY`).
+  - Dynamic prismatic iridescent foil glare (`mix-blend-mode: color-dodge`) that tracks cursor/touch angle across the card surface.
+  - Multi-plane spatial depth layering: background cyber-grid (`translateZ(2px)`), scanline beam (`translateZ(8px)`), glowing voxel pedestal (`translateZ(12px)`), elevated pixel sprite (`translateZ(26px)`), and floating archetype badge (`translateZ(34px)`).
+  - Added 360° inspect spin on click or tapping the `✦ 3D HOLO` button.
+- **Daily Cyber Bug Bounty Scavenger Hunt (`secrets.ts`, `renderer.ts`):**
+  - Added 3 animated cyber glitch critters across the island:
+    - *Glitch Byte #01* at coordinates `(32, 38)` in the Tech Corridor (cyan wings & particles).
+    - *Memory Leak Mantis #02* at coordinates `(60, 44)` in Central Park (emerald RAM deallocation critter).
+    - *NullPointer Sprite #03* at coordinates `(48, 82)` near the Boardwalk Surf (amber dancing spark).
+  - Rendered with real-time hovering oscillation, translucent fluttering wings, glowing eyes, and particle sparkles.
+  - Added two new unlockable badges in the Explorer Journal: `Glitch Hunter 🪲` and `Master Debugger 🏆`.
+- **Touch-Scrollable Responsive HUD Navigation (`Header.astro`, `WorldHUD.astro`):**
+  - Implemented smooth horizontal touch dragging and mouse wheel scrolling on both Home and World HUDs, ensuring no navigation items or actions are clipped on mobile.
+- **Comprehensive Product Roadmap (`ROADMAP.md`):**
+  - Created a 5-phase strategic expansion plan covering GitHub README badges, founder districts, mini-plot decorators, and 2.5D isometric view toggle.
+
+### Fixed
+- **Local Dev Server & Docker DB Isolation (`.env.local`, `astro.config.mjs`, `package.json`):**
+  - Fixed Vite `504 (Outdated Optimize Dep)` cache error by adding `--force` to the `astro dev` script and standardizing the local web port to `4321`.
+  - Configured `.env.local` to point directly to the local Docker PostgreSQL database (10,000 plots, 501 citizens) without touching production.
+- **Modal Collision & Layout Alignment (`ProfileModal.astro`, `ShareModal.astro`):**
+  - Added `padding-right: 36px` to `.profile-meta-top` to prevent the Share chip from colliding with the modal close button (`✕`).
+  - Redesigned `ShareModal.astro` with cyber-glass styling, zero-latency inline SVG preview, and 1-click Markdown embed copying.
+
+---
+
 ## 2026-09-05
 
 ### Added
