@@ -44,6 +44,10 @@ All notable changes to SPOT are documented here.
   - Added `reply_to: 'welcome@claimyourspot.lol'` and `X-Entity-Ref-ID` headers to avoid automated spam filter penalties.
 
 ### Fixed
+- **Arcade Modal Keyboard Input Isolation (`player-manager.ts`, `ArcadeModal.astro`):**
+  - Resolved issue where playing the Snake arcade game with WASD or Arrow keys simultaneously moved the player character on the background world canvas.
+  - Implemented `{ capture: true }` event listeners with `e.stopImmediatePropagation()` in `ArcadeModal` to fully isolate game control inputs.
+  - Added `isInputBlocked()` and `clearMovement()` to `PlayerManager`, freezing character movement and clearing all active key states whenever any modal backdrop is active.
 - **Tree Foliage X-Ray Canopy & Citizen Occlusion (`renderer.ts`, `monument-manager.ts`):**
   - Implemented dynamic X-ray alpha transparency (`globalAlpha = 0.32`) when player avatars or citizens walk behind tree canopies.
   - Added entity clearance checks (`hasEntityNear`) to prevent trees, monuments, and foliage from generating on occupied citizen plots.

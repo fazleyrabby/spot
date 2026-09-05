@@ -1672,7 +1672,12 @@ import ArcadeModal from '../components/ArcadeModal.astro';
 
       // Emote numeric hotkeys (1-6) and Enter to focus chat
       window.addEventListener('keydown', (e) => {
-        if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+        if (['input', 'textarea', 'select'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+          return;
+        }
+
+        // Don't trigger emotes or chat focus if any modal is open
+        if (document.querySelector('.modal-backdrop.open, .modal-backdrop.is-open, .library-modal-backdrop.is-open, .search-backdrop.open')) {
           return;
         }
 

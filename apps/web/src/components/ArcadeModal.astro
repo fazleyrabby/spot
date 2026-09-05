@@ -1000,42 +1000,69 @@
     });
   }
 
-  // Keyboard Handlers
-  window.addEventListener('keydown', (e) => {
+  // Keyboard Handlers — Capture phase prevents world avatar from moving behind modal
+  const handleGameKeyDown = (e: KeyboardEvent) => {
     const backdrop = document.getElementById('arcade-modal-backdrop');
     if (!backdrop || !backdrop.classList.contains('open')) return;
 
-    if (e.key === ' ' || e.code === 'Space') {
+    const k = e.key.toLowerCase();
+    const isGameKey = [' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k);
+
+    if (isGameKey) {
+      // Isolate game key events completely from background world canvas
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    if (k === ' ' || k === 'space') {
       if (!gameRunning) startGame();
       return;
     }
 
-    if (!gameRunning) return;
+    // If game is not yet running, pressing any direction starts it immediately
+    if (!gameRunning) {
+      if (['arrowup', 'w', 'arrowdown', 's', 'arrowleft', 'a', 'arrowright', 'd'].includes(k)) {
+        startGame();
+      } else {
+        return;
+      }
+    }
 
-    switch (e.key.toLowerCase()) {
+    switch (k) {
       case 'arrowup':
       case 'w':
         if (dir.y === 0) { nextDir = { x: 0, y: -1 }; playTone(300, 'sine', 0.03, 0.03); }
-        e.preventDefault();
         break;
       case 'arrowdown':
       case 's':
         if (dir.y === 0) { nextDir = { x: 0, y: 1 }; playTone(300, 'sine', 0.03, 0.03); }
-        e.preventDefault();
         break;
       case 'arrowleft':
       case 'a':
         if (dir.x === 0) { nextDir = { x: -1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
-        e.preventDefault();
         break;
       case 'arrowright':
       case 'd':
         if (dir.x === 0) { nextDir = { x: 1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
-        e.preventDefault();
         break;
     }
-  });
+  };
+
+  const handleGameKeyUp = (e: KeyboardEvent) => {
+    const backdrop = document.getElementById('arcade-modal-backdrop');
+    if (!backdrop || !backdrop.classList.contains('open')) return;
+
+    const k = e.key.toLowerCase();
+    if ([' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  };
+
+  window.addEventListener('keydown', handleGameKeyDown, { capture: true });
+  window.addEventListener('keyup', handleGameKeyUp, { capture: true });
 
   // Overlay button trigger
   overlayBtn?.addEventListener('click', startGame);
@@ -1402,6 +1429,7 @@
     if (!backdrop) return;
     backdrop.classList.add('open');
     backdrop.setAttribute('aria-hidden', 'false');
+    window.dispatchEvent(new CustomEvent('spot:modal-opened', { detail: { modal: 'arcade' } }));
     renderGame();
   };
 
@@ -1414,6 +1442,7 @@
     backdrop.setAttribute('aria-hidden', 'true');
     gameRunning = false;
     if (gameLoopId) cancelAnimationFrame(gameLoopId);
+    window.dispatchEvent(new CustomEvent('spot:modal-closed', { detail: { modal: 'arcade' } }));
   }
 
   (window as unknown as { openArcadeModal: () => void; closeArcadeModal: () => void }).closeArcadeModal = closeArcadeModal;
