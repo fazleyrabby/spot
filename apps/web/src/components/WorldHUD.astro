@@ -477,10 +477,30 @@
     flex-shrink: 0;
   }
 
-  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn) {
+  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn):not(.hud-share-btn) {
     padding: 0;
     width: 28px;
     font-size: 0.80rem;
+  }
+
+  .hud-library-btn,
+  .hud-search-btn,
+  .hud-share-btn {
+    width: auto;
+    padding: 0 8px;
+    gap: 5px;
+  }
+
+  .hud-share-btn {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+
+  .hud-share-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #f8fafc;
   }
 
   .hud-tool-btn:hover {
