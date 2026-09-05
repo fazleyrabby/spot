@@ -30,6 +30,14 @@ All notable changes to SPOT are documented here.
   - Created a 5-phase strategic expansion plan covering GitHub README badges, founder districts, mini-plot decorators, and 2.5D isometric view toggle.
 
 ### Fixed
+- **Citizen Badges Context Isolation (`world.astro`):**
+  - Resolved an issue where clicking on any other citizen's spot mistakenly displayed the local viewer's own exploration badges (`Cartographer`, `Arcade Legend`, etc.).
+  - Replaced with strict contextual and verified citizen badges:
+    1. `👑 Genesis Founder`: For founders and origin plots.
+    2. `✦ GitHub Verified`: For authenticated GitHub developers.
+    3. `🏛️ Permanent Citizen`: For registered plot deed owners.
+    4. `⚡ Featured Showcase`: For official sponsors and showcased projects.
+  - Personal exploration/discovery badges are now strictly isolated and only displayed when viewing your own citizen profile.
 - **Local Dev Server & Docker DB Isolation (`.env.local`, `astro.config.mjs`, `package.json`):**
   - Fixed Vite `504 (Outdated Optimize Dep)` cache error by adding `--force` to the `astro dev` script and standardizing the local web port to `4321`.
   - Configured `.env.local` to point directly to the local Docker PostgreSQL database (10,000 plots, 501 citizens) without touching production.

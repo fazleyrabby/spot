@@ -363,17 +363,83 @@ import ShareModal from '../components/ShareModal.astro';
 
       if (spotWallSection) spotWallSection.style.display = '';
 
-    // Citizen Achievement Badges
+    // Citizen Achievement Badges (Meaningful, Verified, & Contextual)
     const profileBadgesRow = document.getElementById('profile-badges-row');
     const profileBadgesList = document.getElementById('profile-badges-list');
     if (profileBadgesRow && profileBadgesList) {
-      const discovered = getDiscoveredSecrets();
-      const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
-      const unlocked = getUnlockedBadges(Array.from(discovered), arcadeScore);
+      interface DisplayBadge {
+        icon: string;
+        name: string;
+        color: string;
+        description: string;
+      }
+      const badges: DisplayBadge[] = [];
 
-      if (unlocked.length > 0) {
+      // 1. Genesis Founder (Central origin sector or flagged founder)
+      if (spot.isFounder || (spot.x >= 48 && spot.x <= 52 && spot.y >= 48 && spot.y <= 52)) {
+        badges.push({
+          icon: '👑',
+          name: 'Genesis Founder',
+          color: '#f59e0b',
+          description: 'Founding citizen of the Spot Metropolis',
+        });
+      }
+
+      // 2. GitHub Verified Developer
+      if (spot.isVerified || spot.githubUrl) {
+        badges.push({
+          icon: '✦',
+          name: 'GitHub Verified',
+          color: '#38bdf8',
+          description: 'Authenticated GitHub developer',
+        });
+      }
+
+      // 3. Permanent Citizen (Registered plot deed)
+      if (!isGuest && spot.citizenId) {
+        badges.push({
+          icon: '🏛️',
+          name: 'Permanent Citizen',
+          color: '#10b981',
+          description: `Registered owner of plot (${spot.x}, ${spot.y})`,
+        });
+      }
+
+      // 4. Featured Showcase / Sponsor tier
+      if ((spot as any).tier === 'featured' || (spot as any).tier === 'premium') {
+        badges.push({
+          icon: '⚡',
+          name: 'Featured Showcase',
+          color: '#c084fc',
+          description: 'Official sponsor & featured showcase project',
+        });
+      }
+
+      // 5. Only include personal explorer badges if viewing your own citizen profile
+      let myCitizenId = '';
+      try {
+        const cached = localStorage.getItem('spot_my_citizen');
+        if (cached) myCitizenId = JSON.parse(cached).id;
+      } catch (_) {}
+      const isSelf = Boolean(myCitizenId && spot.citizenId && myCitizenId === spot.citizenId);
+
+      if (isSelf) {
+        const discovered = getDiscoveredSecrets();
+        const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
+        const unlocked = getUnlockedBadges(Array.from(discovered), arcadeScore);
+        for (const u of unlocked) {
+          badges.push({
+            icon: u.icon,
+            name: u.name,
+            color: u.color,
+            description: u.description,
+          });
+        }
+      }
+
+      if (badges.length > 0) {
         profileBadgesRow.style.display = 'flex';
-        profileBadgesList.innerHTML = unlocked
+        profileBadgesList.innerHTML = badges
           .map(
             (b) => `
           <div class="profile-badge-chip" title="${b.description}" style="border-color: ${b.color}40; background: ${b.color}15;">
