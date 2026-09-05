@@ -11,6 +11,14 @@ All notable changes to SPOT are documented here.
 ## 2026-09-05
 
 ### Added
+- **Viral Growth Engine & Dynamic GitHub Profile README Badges (`/api/badge/:identifier`, `ShareModal.astro`):**
+  - **Dynamic SVG Badge API:** Added `/api/badge/:identifier` endpoint serving SVG badges cached via HTTP edge headers (`max-age=120, s-maxage=600`). Resolves citizens by coordinates `(x, y)`, display name, citizen ID, or GitHub handle with graceful fallback badges.
+  - **Dual Badge Formats:**
+    1. *Compact Pill Badge (`style=badge`):* Lightweight 295x28 shields-style badge showing citizen display name, coordinates, and verified pip.
+    2. *Cyber Mini-Deed Card (`style=card`):* 450x120 card showcasing avatar glyph, sector number, tagline, verified checkmark, and plot coordinates.
+  - **1-Click Share & Flex Modal (`ShareModal.astro`):** Built interactive modal with live badge preview, 1-click Markdown and HTML embed snippet copying for GitHub READMEs, direct link copy, and web-intent social broadcast buttons for X (Twitter), LinkedIn, Reddit, and Bluesky.
+  - **Citizen & Plot Deep-Linking:** Added instant camera gliding and plot highlighting in `world.astro` when visiting via `?citizen=username` or `?spot=x,y`.
+  - **HUD & Profile Integration:** Added `✦ Share` button in `WorldHUD.astro` and `profile-share-chip` inside `ProfileModal.astro` allowing both spot owners and visiting explorers to share and embed any plot.
 - **Cyber World Expansion & Interactive Arcade System (`ArcadeModal.astro`):**
   - **Retro-Futuristic CRT Arcade Cabinet:** Built an interactive arcade zone running "Cyber Viper / Neon Snake" with custom CRT scanline shader, phosphor glow, high-score tracking, and synthesized 8-bit audio effects.
   - **Multi-Controller Input Engine:** Engineered five distinct input controller modes, selectable via instant UI tabs and persisted in `localStorage` (`spot_snake_ctrl_mode`):
