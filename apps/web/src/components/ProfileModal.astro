@@ -13,8 +13,30 @@
     <!-- VIEW MODE -->
     <div id="profile-view-section">
       <div class="profile-header">
-        <div class="avatar-frame">
-          <canvas id="profile-avatar-canvas" width="64" height="64" class="avatar-canvas"></canvas>
+        <!-- 3D Holographic Citizen Card -->
+        <div class="holo-card-stage" id="profile-holo-stage" title="Interactive 3D Hologram — drag or hover to tilt, click to spin">
+          <div class="holo-card" id="profile-holo-card">
+            <!-- Shimmer Prismatic Foil Sheen -->
+            <div class="holo-glare" id="profile-holo-glare"></div>
+            <!-- Holographic Grid & Scanlines -->
+            <div class="holo-cyber-grid"></div>
+            <div class="holo-scanline"></div>
+            <!-- Glowing Voxel Platform / Pedestal -->
+            <div class="holo-pedestal"></div>
+            <!-- Floating Citizen Avatar -->
+            <canvas id="profile-avatar-canvas" width="64" height="64" class="avatar-canvas holo-avatar"></canvas>
+            <!-- 3D Floating Archetype Pill -->
+            <div class="holo-archetype-tag" id="profile-holo-archetype">CITIZEN</div>
+            <!-- Corner Brackets -->
+            <span class="holo-corner tl"></span>
+            <span class="holo-corner tr"></span>
+            <span class="holo-corner bl"></span>
+            <span class="holo-corner br"></span>
+          </div>
+          <button type="button" class="holo-tilt-btn" id="profile-holo-spin-btn" title="Click to 3D Inspect Spin">
+            <span class="holo-pulse-dot"></span>
+            <span>3D HOLO</span>
+          </button>
         </div>
 
         <div class="profile-meta">
@@ -446,22 +468,190 @@
     margin-bottom: 20px;
   }
 
-  .avatar-frame {
-    width: 68px;
-    height: 68px;
-    background: #141722;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+  /* ── 3D Holographic Citizen Card ── */
+  .holo-card-stage {
+    perspective: 750px;
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    cursor: grab;
+    flex-shrink: 0;
+  }
+
+  .holo-card-stage:active {
+    cursor: grabbing;
+  }
+
+  .holo-card {
+    position: relative;
+    width: 80px;
+    height: 94px;
+    background: linear-gradient(140deg, rgba(16, 22, 34, 0.96), rgba(8, 11, 18, 0.98));
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-sm);
+    transform-style: preserve-3d;
+    box-shadow:
+      0 10px 24px -4px rgba(0, 0, 0, 0.7),
+      0 0 16px rgba(56, 189, 248, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    transition: transform 0.15s ease-out, box-shadow 0.25s ease;
+    overflow: visible;
+  }
+
+  .holo-card.is-spinning {
+    animation: holoCard360Spin 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes holoCard360Spin {
+    0% { transform: perspective(750px) rotateY(0deg) scale3d(1, 1, 1); }
+    50% { transform: perspective(750px) rotateY(180deg) scale3d(1.1, 1.1, 1.1); }
+    100% { transform: perspective(750px) rotateY(360deg) scale3d(1, 1, 1); }
+  }
+
+  .holo-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: 11px;
+    pointer-events: none;
+    mix-blend-mode: color-dodge;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 10;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(56, 189, 248, 0.45) 25%, rgba(245, 158, 11, 0.35) 50%, transparent 75%);
+  }
+
+  .holo-cyber-grid {
+    position: absolute;
+    inset: 2px;
+    border-radius: 10px;
+    background-image: 
+      linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+    background-size: 8px 8px;
+    pointer-events: none;
+    transform: translateZ(2px);
+  }
+
+  .holo-scanline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.75), transparent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    pointer-events: none;
+    opacity: 0.7;
+    animation: holoScanAnim 2.8s linear infinite;
+    transform: translateZ(8px);
+  }
+
+  @keyframes holoScanAnim {
+    0% { top: 0%; opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { top: 94%; opacity: 0; }
+  }
+
+  .holo-pedestal {
+    position: absolute;
+    bottom: 18px;
+    width: 46px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.5) 0%, rgba(56, 189, 248, 0.1) 60%, transparent 80%);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    transform: translateZ(12px) rotateX(60deg);
+    pointer-events: none;
+  }
+
+  .holo-avatar {
+    position: relative;
+    width: 54px;
+    height: 54px;
     image-rendering: pixelated;
+    transform: translateZ(26px);
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.65));
+    transition: transform 0.2s ease;
+    z-index: 5;
+  }
+
+  .holo-archetype-tag {
+    position: absolute;
+    bottom: 4px;
+    transform: translateZ(34px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #38bdf8;
+    background: rgba(6, 10, 18, 0.85);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    z-index: 6;
+  }
+
+  .holo-corner {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-color: #38bdf8;
+    pointer-events: none;
+    transform: translateZ(18px);
+  }
+  .holo-corner.tl { top: 3px; left: 3px; border-top: 1.5px solid #38bdf8; border-left: 1.5px solid #38bdf8; }
+  .holo-corner.tr { top: 3px; right: 3px; border-top: 1.5px solid #38bdf8; border-right: 1.5px solid #38bdf8; }
+  .holo-corner.bl { bottom: 3px; left: 3px; border-bottom: 1.5px solid #38bdf8; border-left: 1.5px solid #38bdf8; }
+  .holo-corner.br { bottom: 3px; right: 3px; border-bottom: 1.5px solid #38bdf8; border-right: 1.5px solid #38bdf8; }
+
+  .holo-tilt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .holo-tilt-btn:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    transform: scale(1.04);
+  }
+
+  .holo-pulse-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 6px #38bdf8;
+    animation: holoDotPulse 1.5s infinite;
+  }
+
+  @keyframes holoDotPulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.3); }
   }
 
   .avatar-canvas {
-    width: 56px;
-    height: 56px;
+    width: 54px;
+    height: 54px;
     image-rendering: pixelated;
   }
 
@@ -1066,3 +1256,128 @@
     }
   }
 </style>
+
+<script>
+  // ── 3D Holographic Citizen Card Interactive Tilt & Glare ──
+  function setupHoloCard() {
+    const stage = document.getElementById('profile-holo-stage');
+    const card = document.getElementById('profile-holo-card');
+    const glare = document.getElementById('profile-holo-glare');
+    const spinBtn = document.getElementById('profile-holo-spin-btn');
+    if (!stage || !card || !glare) return;
+
+    let isHovered = false;
+    let isTouching = false;
+    let currentRotX = 0;
+    let currentRotY = 0;
+    let targetRotX = 0;
+    let targetRotY = 0;
+    let animId: number | null = null;
+
+    function updateTilt(clientX: number, clientY: number) {
+      const rect = card.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const cardX = rect.left + rect.width / 2;
+      const cardY = rect.top + rect.height / 2;
+
+      const normX = Math.max(-1, Math.min(1, (clientX - cardX) / (rect.width / 2)));
+      const normY = Math.max(-1, Math.min(1, (clientY - cardY) / (rect.height / 2)));
+
+      // 3D Rotation angles (degrees)
+      targetRotY = normX * 24;
+      targetRotX = -normY * 24;
+
+      // Glare reflection position (percentage)
+      const glareX = (normX * 0.5 + 0.5) * 100;
+      const glareY = (normY * 0.5 + 0.5) * 100;
+      glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.8) 0%, rgba(56, 189, 248, 0.45) 25%, rgba(245, 158, 11, 0.35) 50%, transparent 75%)`;
+      glare.style.opacity = '0.75';
+    }
+
+    function renderTiltLoop() {
+      // Smooth lerp
+      currentRotX += (targetRotX - currentRotX) * 0.18;
+      currentRotY += (targetRotY - currentRotY) * 0.18;
+
+      if (!card.classList.contains('is-spinning')) {
+        card.style.transform = `perspective(750px) rotateX(${currentRotX.toFixed(2)}deg) rotateY(${currentRotY.toFixed(2)}deg) scale3d(1.05, 1.05, 1.05)`;
+      }
+
+      if (isHovered || isTouching || Math.abs(currentRotX) > 0.1 || Math.abs(currentRotY) > 0.1) {
+        animId = requestAnimationFrame(renderTiltLoop);
+      } else {
+        if (!card.classList.contains('is-spinning')) {
+          card.style.transform = '';
+        }
+        animId = null;
+      }
+    }
+
+    function startTiltLoop() {
+      if (!animId) {
+        animId = requestAnimationFrame(renderTiltLoop);
+      }
+    }
+
+    stage.addEventListener('mousemove', (e) => {
+      isHovered = true;
+      updateTilt(e.clientX, e.clientY);
+      startTiltLoop();
+    });
+
+    stage.addEventListener('mouseleave', () => {
+      isHovered = false;
+      targetRotX = 0;
+      targetRotY = 0;
+      glare.style.opacity = '0';
+      startTiltLoop();
+    });
+
+    stage.addEventListener('touchstart', (e) => {
+      isTouching = true;
+      if (e.touches[0]) {
+        updateTilt(e.touches[0].clientX, e.touches[0].clientY);
+        startTiltLoop();
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', (e) => {
+      if (e.touches[0]) {
+        updateTilt(e.touches[0].clientX, e.touches[0].clientY);
+        startTiltLoop();
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchend', () => {
+      isTouching = false;
+      targetRotX = 0;
+      targetRotY = 0;
+      glare.style.opacity = '0';
+      startTiltLoop();
+    });
+
+    // 360 Spin Showcase
+    function triggerSpin() {
+      if (card.classList.contains('is-spinning')) return;
+      card.classList.add('is-spinning');
+      glare.style.opacity = '0.9';
+      setTimeout(() => {
+        card.classList.remove('is-spinning');
+        glare.style.opacity = '0';
+      }, 950);
+    }
+
+    card.addEventListener('click', triggerSpin);
+    spinBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerSpin();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupHoloCard);
+  } else {
+    setupHoloCard();
+  }
+</script>
+
