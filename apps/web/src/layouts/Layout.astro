@@ -139,6 +139,82 @@ const author = 'Md. Fazley Rabbi';
           }
         }
       });
+
+      // 3. Global Uncaught Error & Promise Rejection Monitor -> Relays to /api/logs/client-error -> Grafana Loki
+      (function() {
+        var reportedCount = 0;
+        var MAX_REPORTS = 5;
+        var reportedSignatures = new Set();
+
+        function relayClientError(payload) {
+          if (reportedCount >= MAX_REPORTS) return;
+          var sig = (payload.message || '') + ':' + (payload.lineno || 0) + ':' + (payload.source || '');
+          if (reportedSignatures.has(sig)) return;
+          reportedSignatures.add(sig);
+          reportedCount++;
+
+          try {
+            var endpoint = '/api/logs/client-error';
+            var body = JSON.stringify({
+              message: String(payload.message || 'Unknown error'),
+              source: String(payload.source || window.location.pathname),
+              lineno: payload.lineno,
+              colno: payload.colno,
+              stack: payload.stack ? String(payload.stack) : undefined,
+              url: window.location.href,
+              userAgent: navigator.userAgent,
+            });
+
+            if (navigator.sendBeacon) {
+              var blob = new Blob([body], { type: 'application/json' });
+              navigator.sendBeacon(endpoint, blob);
+            } else {
+              fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: body,
+                keepalive: true,
+              }).catch(function() {});
+            }
+          } catch (_) {}
+        }
+
+        window.addEventListener('error', function(e) {
+          if (!e) return;
+          var msg = e.message || (e.error && e.error.message) || String(e);
+          if (typeof msg === 'string' && (
+            msg.indexOf('ResizeObserver') !== -1 ||
+            msg.indexOf('chrome-extension://') !== -1 ||
+            msg.indexOf('moz-extension://') !== -1
+          )) return;
+
+          relayClientError({
+            message: msg,
+            source: e.filename || window.location.pathname,
+            lineno: e.lineno,
+            colno: e.colno,
+            stack: e.error ? e.error.stack : undefined,
+          });
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (!e) return;
+          var reason = e.reason;
+          var msg = reason ? (reason.message || String(reason)) : 'Unhandled Promise Rejection';
+          var stack = reason && reason.stack ? reason.stack : undefined;
+          if (typeof msg === 'string' && (
+            msg.indexOf('ResizeObserver') !== -1 ||
+            msg.indexOf('chrome-extension://') !== -1 ||
+            msg.indexOf('moz-extension://') !== -1
+          )) return;
+
+          relayClientError({
+            message: 'Unhandled Promise: ' + msg,
+            source: window.location.pathname,
+            stack: stack,
+          });
+        });
+      })();
     </script>
   </head>
   <body>

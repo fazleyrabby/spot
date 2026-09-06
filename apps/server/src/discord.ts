@@ -243,3 +243,53 @@ export async function sendLibrarySuggestionNotification(input: DiscordLibrarySug
     console.error('Discord library suggestion webhook error:', err);
   }
 }
+
+let lastErrorAlertTime = 0;
+export interface DiscordErrorNotification {
+  title: string;
+  message: string;
+  source: string;
+  stack?: string;
+  url?: string;
+  userAgent?: string;
+  ip?: string;
+}
+
+export async function sendErrorAlert(input: DiscordErrorNotification): Promise<void> {
+  const webhookUrl = config.discordWebhookUrl;
+  if (!webhookUrl) return;
+
+  // Rate-limit Discord error notifications to max 1 per 30 seconds to prevent alert storms
+  const now = Date.now();
+  if (now - lastErrorAlertTime < 30000) return;
+  lastErrorAlertTime = now;
+
+  const payload = {
+    embeds: [
+      {
+        title: `🚨 ${input.title}`,
+        description: input.message.slice(0, 1500),
+        color: 0xef4444, // Red
+        fields: [
+          { name: 'Source', value: input.source || 'Server', inline: true },
+          ...(input.url ? [{ name: 'URL', value: input.url.slice(0, 512), inline: true }] : []),
+          ...(input.ip ? [{ name: 'IP', value: input.ip, inline: true }] : []),
+          ...(input.stack ? [{ name: 'Stack', value: `\`\`\`${input.stack.slice(0, 950)}\`\`\``, inline: false }] : []),
+        ],
+        footer: { text: 'SPOT Automated Error Monitor' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error('[Discord Error Alert Dispatch Failed]', err);
+  }
+}
+

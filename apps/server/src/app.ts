@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { apiRouter } from './routes.js';
 import { globalApiLimiter } from './rateLimiter.js';
 import { query } from './db.js';
+import { sendErrorAlert } from './discord.js';
 
 export const app: express.Express = express();
 
@@ -148,7 +149,30 @@ if (fs.existsSync(webDistPath)) {
 }
 
 // Global Error Handler
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled Server Error:', err);
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const rawIp =
+    (req.headers['cf-connecting-ip'] as string) ||
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
+    req.ip ||
+    'unknown';
+
+  console.error('[Server Error]', {
+    message: err?.message || String(err),
+    stack: err?.stack,
+    method: req.method,
+    url: req.originalUrl,
+    ip: rawIp,
+    timestamp: new Date().toISOString(),
+  });
+
+  sendErrorAlert({
+    title: 'Unhandled Server Error (500)',
+    message: err?.message || 'Unexpected internal server error',
+    source: `Backend (${req.method} ${req.originalUrl})`,
+    stack: err?.stack,
+    url: req.originalUrl,
+    ip: rawIp,
+  }).catch(() => {});
+
   res.status(500).json({ error: 'InternalServerError', message: 'An unexpected error occurred' });
 });
