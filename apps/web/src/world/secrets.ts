@@ -322,10 +322,17 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
   for (const s of WORLD_SECRETS) {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
-    const wideLandmarks = ['dev_library', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station', 'wishing_fountain'];
-    const xDist = wideLandmarks.includes(s.id) ? 2 : 1;
-    if (dx <= xDist && dy <= 1) {
-      return s;
+    // Multi-tile civic buildings with large facades (3x3 tile bounds)
+    const wideBuildings = ['dev_library', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    if (wideBuildings.includes(s.id)) {
+      if (dx <= 1 && dy <= 1) {
+        return s;
+      }
+    } else {
+      // Precise single-tile landmarks (fountain, critters, lanterns, automat, etc.)
+      if (dx === 0 && dy === 0) {
+        return s;
+      }
     }
   }
   return null;

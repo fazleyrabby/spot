@@ -188,9 +188,9 @@ export class Engine {
         this.camera.centerOn(center.wx, center.wy, 1.0, true);
       }
     } else {
-      // Guest: spawn at Grand Central Plaza (48, 50)
-      this.player.setPosition(48, 50);
-      const center = gridToWorldCenter(48, 50);
+      // Guest: spawn at Grand Central Plaza south promenade (50, 56)
+      this.player.setPosition(50, 56);
+      const center = gridToWorldCenter(50, 56);
       this.camera.centerOn(center.wx, center.wy, 1.1, true);
     }
 

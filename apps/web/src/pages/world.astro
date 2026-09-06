@@ -675,6 +675,36 @@ import ShareModal from '../components/ShareModal.astro';
     }
   }
 
+  function recordSecretDiscovery(secret: import('../world/secrets.js').WorldSecret): void {
+    const discovered = getDiscoveredSecrets();
+    const isNew = !discovered.has(secret.id);
+    if (!isNew) return;
+
+    // Play contextual discovery SFX
+    if (engine) {
+      if (secret.id === 'mystic_duck') engine.audio.playDuckQuack();
+      else if (secret.id === 'cafe_cat') engine.audio.playCatPurr();
+      else engine.audio.playFanfare();
+    }
+
+    discovered.add(secret.id);
+    localStorage.setItem('spot_world_secrets', JSON.stringify(Array.from(discovered)));
+    updateSecretsHUD();
+    showToast(`✨ Discovered: ${secret.name} (${discovered.size}/${TOTAL_SECRETS})`, 'success');
+
+    // Check for newly unlocked badges
+    const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
+    const newlyUnlocked = BADGE_DEFINITIONS.filter(b => 
+      b.checkUnlocked(Array.from(discovered), { arcadeHighScore: arcadeScore }) &&
+      !b.checkUnlocked(Array.from(discovered).filter(id => id !== secret.id), { arcadeHighScore: arcadeScore })
+    );
+    for (const badge of newlyUnlocked) {
+      setTimeout(() => {
+        showToast(`🏅 Badge Unlocked: ${badge.name}!`, 'success');
+      }, 900);
+    }
+  }
+
   function openSecretModal(secret: import('../world/secrets.js').WorldSecret): void {
     if (!secretBackdrop) return;
 
@@ -762,34 +792,7 @@ import ShareModal from '../components/ShareModal.astro';
       }
     }
 
-    // Play contextual discovery SFX
-    if (engine) {
-      if (secret.id === 'mystic_duck') engine.audio.playDuckQuack();
-      else if (secret.id === 'cafe_cat') engine.audio.playCatPurr();
-      else engine.audio.playFanfare();
-    }
-
-    // Save to discovered secrets
-    const discovered = getDiscoveredSecrets();
-    const isNew = !discovered.has(secret.id);
-    if (isNew) {
-      discovered.add(secret.id);
-      localStorage.setItem('spot_world_secrets', JSON.stringify(Array.from(discovered)));
-      updateSecretsHUD();
-      showToast(`✨ Discovered: ${secret.name} (${discovered.size}/${TOTAL_SECRETS})`, 'success');
-
-      // Check for newly unlocked badges
-      const arcadeScore = Number(localStorage.getItem('spot_arcade_highscore') || '0');
-      const newlyUnlocked = BADGE_DEFINITIONS.filter(b => 
-        b.checkUnlocked(Array.from(discovered), { arcadeHighScore: arcadeScore }) &&
-        !b.checkUnlocked(Array.from(discovered).filter(id => id !== secret.id), { arcadeHighScore: arcadeScore })
-      );
-      for (const badge of newlyUnlocked) {
-        setTimeout(() => {
-          showToast(`🏅 Badge Unlocked: ${badge.name}!`, 'success');
-        }, 900);
-      }
-    }
+    recordSecretDiscovery(secret);
 
     secretBackdrop.classList.add('open');
     secretBackdrop.setAttribute('aria-hidden', 'false');
@@ -1647,13 +1650,7 @@ import ShareModal from '../components/ShareModal.astro';
           }
         },
         onSecretDiscovered: (secret) => {
-          if (secret.id === 'dev_library') {
-            (window as any).openLibraryModal?.();
-          } else if (secret.id === 'retro_arcade') {
-            (window as any).openArcadeModal?.();
-          } else {
-            openSecretModal(secret);
-          }
+          recordSecretDiscovery(secret);
         },
         onBannerClick: (banner) => openBannerModal(banner),
         onNpcInteract: (npc) => openNpcModal(npc),
