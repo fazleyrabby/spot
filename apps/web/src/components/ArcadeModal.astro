@@ -7,23 +7,34 @@
 ---
 
 <div class="arcade-modal-backdrop modal-backdrop" id="arcade-modal-backdrop" aria-hidden="true">
+  <!-- Authentic 1984 Upright Arcade Cabinet Shell -->
   <div class="arcade-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="arcade-title">
     
-    <!-- Top Cabinet Header -->
-    <div class="arcade-header">
-      <div class="arcade-header-left">
-        <div class="arcade-icon-badge">👾</div>
-        <div class="arcade-title-group">
-          <div class="arcade-badge">THE BYTE CADE • VINTAGE 1984</div>
-          <h2 class="arcade-title" id="arcade-title">Byte Snake 2084</h2>
-        </div>
+    <!-- Top Cabinet Hood & Backlit Marquee -->
+    <div class="arcade-cabinet-marquee">
+      <!-- Left Speaker Grille -->
+      <div class="marquee-speaker left">
+        <span></span><span></span><span></span><span></span>
       </div>
 
+      <!-- Center Illuminated Marquee Sign -->
+      <div class="marquee-sign-box">
+        <div class="marquee-sub-badge">★ VINTAGE 1984 COIN-OP ★</div>
+        <h2 class="arcade-title marquee-glow-text" id="arcade-title">THE BYTE CADE</h2>
+        <div class="marquee-fluorescent-tube"></div>
+      </div>
+
+      <!-- Right Speaker Grille -->
+      <div class="marquee-speaker right">
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <!-- Service / Cabinet Tool Buttons -->
       <div class="arcade-header-actions">
-        <button type="button" class="arcade-tool-btn" id="arcade-sound-btn" title="Toggle Sound">
+        <button type="button" class="arcade-tool-btn" id="arcade-sound-btn" title="Toggle Cabinet Sound">
           <span id="arcade-sound-icon">🔊</span>
         </button>
-        <button type="button" class="arcade-close-btn" id="arcade-modal-close" aria-label="Close Arcade">
+        <button type="button" class="arcade-close-btn" id="arcade-modal-close" aria-label="Exit Cabinet">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -32,19 +43,21 @@
       </div>
     </div>
 
-    <!-- Game Switcher Tabs -->
+    <!-- Game Selector Cartridge Strip -->
     <div class="arcade-game-tabs" id="arcade-game-tabs" role="tablist">
       <button type="button" class="arcade-game-tab active" id="tab-game-brawler" data-game="brawler" role="tab" aria-selected="true">
+        <span class="game-tab-led"></span>
         <span class="game-tab-icon">🥊</span>
         <span class="game-tab-title">Spot Fighter II</span>
       </button>
       <button type="button" class="arcade-game-tab" id="tab-game-snake" data-game="snake" role="tab" aria-selected="false">
+        <span class="game-tab-led"></span>
         <span class="game-tab-icon">🐍</span>
         <span class="game-tab-title">Byte Snake '84</span>
       </button>
     </div>
 
-    <!-- Telemetry Bar -->
+    <!-- Vacuum-Fluorescent / LED Score Strip -->
     <div class="arcade-score-bar">
       <div class="score-pill">
         <span class="score-label" id="arcade-score-label">WINS</span>
@@ -54,14 +67,20 @@
         <span class="score-label" id="arcade-best-label">STREAK</span>
         <span class="score-val mono-num" id="arcade-best-score">000</span>
       </div>
-      <div class="score-pill badge-pill" id="arcade-badge-status" title="Defeat the Grand Master to unlock Arcade Legend badge">
+      <div class="score-pill badge-pill" id="arcade-badge-status" title="Defeat Grand Ronin to unlock Arcade Champion badge">
         <span class="score-label">BADGE</span>
         <span class="score-badge-text" id="arcade-badge-text">Locked 🔒</span>
       </div>
     </div>
 
-    <!-- CRT Bezel Screen Frame -->
+    <!-- Deep Molded CRT Screen Frame -->
     <div class="crt-screen-frame">
+      <!-- Bezel Corner Rivets / Hex Bolts -->
+      <div class="bezel-rivet top-left"></div>
+      <div class="bezel-rivet top-right"></div>
+      <div class="bezel-rivet bot-left"></div>
+      <div class="bezel-rivet bot-right"></div>
+
       <canvas id="arcade-game-canvas" width="400" height="400" class="arcade-canvas"></canvas>
       <div class="crt-scanlines"></div>
       <div class="crt-glare"></div>
@@ -72,15 +91,20 @@
           <div class="crt-title" id="overlay-title">SPOT FIGHTER II</div>
           <p class="crt-subtitle" id="overlay-subtitle">Cyber Brawl • 1v1 Retro Arena</p>
 
-          <!-- Fighter Selection Bar -->
+          <!-- Fighter Selection Matrix (Street Fighter Style) -->
           <div class="fighter-select-bar" id="overlay-fighter-select">
-            <span class="fighter-select-label">SELECT YOUR FIGHTER:</span>
-            <div class="fighter-pills" id="fighter-pills-list"></div>
+            <span class="fighter-select-label">SELECT YOUR FIGHTER</span>
+            <div class="fighter-portraits-grid" id="fighter-pills-list"></div>
+            <div class="fighter-inspect-bar" id="fighter-inspect-bar">
+              <span id="fighter-inspect-name" class="fighter-inspect-name">CYBER RONIN</span>
+              <span class="inspect-dot">•</span>
+              <span id="fighter-inspect-move" class="fighter-inspect-move">SPECIAL: KATANA SURGE</span>
+            </div>
           </div>
 
           <div class="crt-instructions" id="overlay-instructions">
-            <span>Movement: <strong>A / D</strong> (Move) • <strong>W</strong> (Jump) • <strong>S</strong> (Duck)</span>
-            <span>Attacks: <strong>J</strong> (Punch) • <strong>K</strong> (Kick) • <strong>L</strong> (Hadouken)</span>
+            <span>Movement: <strong>A / D</strong> Move • <strong>W</strong> Jump • <strong>S</strong> Duck</span>
+            <span>Attacks: <strong>J</strong> Punch • <strong>K</strong> Kick • <strong>L</strong> Hadouken</span>
           </div>
           <button type="button" class="crt-start-btn" id="overlay-action-btn">INSERT COIN (ROUND 1)</button>
         </div>
@@ -209,10 +233,7 @@
       </div>
     </div>
 
-    <!-- Cabinet Footer Note -->
-    <div class="arcade-footer-meta">
-      <span>Coin-op Relic preserved in Downtown Cyber District • Free Play</span>
-    </div>
+
 
   </div>
 </div>
@@ -244,104 +265,153 @@
     position: relative;
     width: 100%;
     max-width: 480px;
-    background: rgba(13, 18, 28, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 18px;
-    padding: 20px;
+    background: #0d121c;
+    border-radius: 20px;
+    padding: 16px;
+    /* Vintage heavy arcade cabinet chassis with T-molding trim */
+    border: 3px solid #1e293b;
     box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.7),
-      0 32px 64px -12px rgba(0, 0, 0, 0.9),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      0 0 0 1px #0f172a,
+      0 0 0 4px #090d16,
+      0 0 0 6px #334155,
+      0 24px 60px -10px rgba(0, 0, 0, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     color: #f8fafc;
     box-sizing: border-box;
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
   }
 
-  /* Header */
-  .arcade-header {
+  /* Cabinet Top Hood & Illuminated Marquee */
+  .arcade-cabinet-marquee {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0;
+    gap: 8px;
+    background: linear-gradient(180deg, #111827 0%, #080c14 100%);
+    border: 2px solid #1f293d;
+    border-radius: 12px;
+    padding: 8px 12px;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.8),
+      0 4px 12px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
   }
 
-  .arcade-header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .arcade-icon-badge {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-  }
-
-  .arcade-title-group {
+  /* Marquee Stereo Speaker Grilles */
+  .marquee-speaker {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+    width: 22px;
+    flex-shrink: 0;
   }
 
-  .arcade-badge {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #c084fc;
-    text-transform: uppercase;
+  .marquee-speaker span {
+    display: block;
+    height: 3px;
+    width: 100%;
+    background: #05080e;
+    border-radius: 2px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
   }
 
-  .arcade-title {
-    font-size: 1.25rem;
+  /* Center Backlit Marquee Plexiglass Sign */
+  .marquee-sign-box {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 50% 50%, #0d1e38 0%, #070b14 100%);
+    border: 1.5px solid rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    padding: 6px 12px;
+    box-shadow:
+      0 0 16px rgba(56, 189, 248, 0.25),
+      inset 0 0 14px rgba(56, 189, 248, 0.2);
+  }
+
+  .marquee-sub-badge {
+    font-size: 0.55rem;
     font-weight: 800;
-    color: #ffffff;
-    margin: 0;
-    line-height: 1.2;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.16em;
+    color: #facc15;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.7);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 3px;
   }
 
+  .marquee-glow-text {
+    font-family: var(--font-display, monospace);
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    margin: 0;
+    line-height: 1.1;
+    text-shadow:
+      0 0 4px #ffffff,
+      0 0 10px #38bdf8,
+      0 0 20px #0284c7,
+      0 0 35px #0369a1;
+  }
+
+  .marquee-fluorescent-tube {
+    position: absolute;
+    bottom: 2px;
+    left: 15%;
+    right: 15%;
+    height: 1.5px;
+    background: #e0f2fe;
+    box-shadow: 0 0 8px 1px #38bdf8;
+    border-radius: 2px;
+    opacity: 0.8;
+  }
+
+  /* Service / Cabinet Tool Buttons */
   .arcade-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .arcade-tool-btn,
   .arcade-close-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: #111827;
+    border: 1.5px solid #374151;
     color: #94a3b8;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.12s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   .arcade-tool-btn:hover,
   .arcade-close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #1e293b;
     color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
   }
 
   .arcade-tool-btn:active,
   .arcade-close-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 
   /* Game Switcher Tabs */
@@ -442,21 +512,48 @@
     color: #34d399;
   }
 
-  /* CRT Bezel Frame */
+  /* CRT Molded Bezel Frame */
   .crt-screen-frame {
     position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
     max-height: 380px;
     background: #060910;
-    border-radius: 12px;
-    border: 2px solid #1a2234;
+    border-radius: 14px;
+    border: 5px solid #161e2e;
     overflow: hidden;
-    box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.6);
+    box-shadow:
+      inset 0 0 45px rgba(0, 0, 0, 0.95),
+      0 0 0 2px #0a0e17,
+      0 8px 24px rgba(0, 0, 0, 0.7);
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
   }
+
+  /* Bezel Corner Hex Bolts / Rivets */
+  .bezel-rivet {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: radial-gradient(circle at 35% 35%, #94a3b8 0%, #475569 60%, #1e293b 100%);
+    border-radius: 50%;
+    border: 1px solid #64748b;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 1px 3px rgba(0, 0, 0, 0.8);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .bezel-rivet::after {
+    content: '';
+    position: absolute;
+    inset: 2.5px;
+    background: #0b0f19;
+    border-radius: 50%;
+  }
+  .bezel-rivet.top-left { top: 5px; left: 5px; }
+  .bezel-rivet.top-right { top: 5px; right: 5px; }
+  .bezel-rivet.bot-left { bottom: 5px; left: 5px; }
+  .bezel-rivet.bot-right { bottom: 5px; right: 5px; }
 
   .arcade-canvas {
     width: 100%;
@@ -481,7 +578,7 @@
   .crt-glare {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 65%);
+    background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 65%);
     pointer-events: none;
   }
 
@@ -494,7 +591,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 20px;
+    padding: 16px;
     transition: opacity 0.2s ease;
   }
 
@@ -506,7 +603,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    width: 100%;
   }
 
   .crt-title {
@@ -520,15 +618,15 @@
 
   .crt-subtitle {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #cbd5e1;
   }
 
   .crt-instructions {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 0.72rem;
+    gap: 3px;
+    font-size: 0.7rem;
     color: #64748b;
   }
 
@@ -537,8 +635,8 @@
   }
 
   .crt-start-btn {
-    margin-top: 6px;
-    padding: 10px 20px;
+    margin-top: 4px;
+    padding: 10px 22px;
     border-radius: 8px;
     background: #ffffff;
     color: #090d16;
@@ -547,26 +645,26 @@
     letter-spacing: 0.06em;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
     transition: all 0.15s ease;
   }
 
   .crt-start-btn:hover {
     background: #f1f5f9;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
   }
 
   .crt-start-btn:active {
     transform: scale(0.97);
   }
 
-  /* Fighter Select in Overlay */
+  /* Street Fighter II Style Character Selection Matrix */
   .fighter-select-bar {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin: 8px 0;
+    gap: 5px;
+    margin: 4px 0;
     width: 100%;
     align-items: center;
   }
@@ -574,64 +672,152 @@
   .fighter-select-label {
     font-size: 0.62rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     color: #94a3b8;
     text-transform: uppercase;
   }
 
-  .fighter-pills {
+  .fighter-portraits-grid {
     display: flex;
     gap: 6px;
-    flex-wrap: wrap;
     justify-content: center;
-    max-width: 360px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 380px;
+    padding: 2px;
   }
 
-  .fighter-pill {
+  .fighter-portrait-tile {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    background: #0d131f;
+    border: 2px solid #293548;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 8px;
-    border-radius: 7px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    justify-content: center;
     cursor: pointer;
     transition: all 0.15s ease;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #cbd5e1;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8), 0 2px 5px rgba(0, 0, 0, 0.5);
+    padding: 0;
   }
 
-  .fighter-pill:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
+  .fighter-portrait-tile:hover {
+    border-color: #38bdf8;
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
   }
 
-  .fighter-pill.active {
-    background: rgba(239, 68, 68, 0.22);
-    border-color: #ef4444;
-    color: #fecaca;
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  .fighter-portrait-tile.active {
+    border-color: #f59e0b;
+    background: #1e1b10;
+    transform: translateY(-2px) scale(1.1);
+    box-shadow:
+      0 0 14px rgba(245, 158, 11, 0.6),
+      inset 0 0 8px rgba(245, 158, 11, 0.3);
   }
 
-  .fighter-pill canvas {
-    width: 18px;
-    height: 18px;
+  .fighter-portrait-tile canvas {
+    width: 24px;
+    height: 24px;
     image-rendering: pixelated;
+    display: block;
   }
 
-  /* Brawler Controller Deck */
+  /* 1P Indicator Tag */
+  .fighter-portrait-tile .p1-tag {
+    position: absolute;
+    top: -5px;
+    left: -3px;
+    background: #f59e0b;
+    color: #000000;
+    font-size: 0.52rem;
+    font-weight: 900;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    display: none;
+    animation: p1Blink 0.9s infinite alternate;
+  }
+
+  .fighter-portrait-tile.active .p1-tag {
+    display: block;
+  }
+
+  @keyframes p1Blink {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.75; transform: scale(1.08); }
+  }
+
+  /* Dedicated Fighter Readout Bar */
+  .fighter-inspect-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 6px;
+    margin-top: 2px;
+    max-width: 360px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+
+  .fighter-inspect-name {
+    font-size: 0.74rem;
+    font-weight: 900;
+    color: #facc15;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+    text-transform: uppercase;
+  }
+
+  .inspect-dot {
+    color: #475569;
+    font-size: 0.7rem;
+  }
+
+  .fighter-inspect-move {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: 0.04em;
+  }
+
+  /* Brawler Controller Deck (Arcade CPO Metal Deck) */
   .brawler-ctrl-deck {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #161f2e 0%, #0b0f19 100%);
+    border: 2px solid #222e42;
     border-radius: 14px;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.12),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.8),
+      0 6px 16px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
     touch-action: manipulation;
+  }
+
+  /* CPO Retro Racing Stripes (Cyan / Magenta / Gold vinyl overlay) */
+  .brawler-ctrl-deck::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #06b6d4 0%, #06b6d4 33%, #ec4899 33%, #ec4899 66%, #f59e0b 66%, #f59e0b 100%);
+    box-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
   }
 
   .brawler-dpad-wrapper {
@@ -659,13 +845,14 @@
     height: 34px;
     background: #0b0f19;
     border-radius: 4px;
+    border: 1px solid #1e293b;
   }
 
   .brawler-dpad-btn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     background: #1e293b;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid #334155;
     border-radius: 6px;
     color: #cbd5e1;
     display: flex;
@@ -677,6 +864,7 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 3px 6px rgba(0, 0, 0, 0.7);
   }
 
   .brawler-dpad-btn:hover,
@@ -685,7 +873,8 @@
     background: #334155;
     border-color: #38bdf8;
     color: #38bdf8;
-    transform: scale(0.95);
+    transform: translateY(2px) scale(0.95);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
   .btn-dpad-icon {
@@ -706,9 +895,10 @@
     gap: 12px;
   }
 
+  /* Authentic Convex 3D Arcade Pushbuttons */
   .fight-action-btn {
-    width: 60px;
-    height: 60px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -717,11 +907,16 @@
     cursor: pointer;
     position: relative;
     border: 2px solid;
-    transition: all 0.12s ease;
+    transition: all 0.08s ease;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+    /* Deep 3D button collar & shadow */
+    box-shadow:
+      0 0 0 3px #0f172a,
+      0 6px 12px rgba(0, 0, 0, 0.8),
+      inset 0 4px 6px rgba(255, 255, 255, 0.4),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.6);
   }
 
   .fight-action-btn:hover {
@@ -730,48 +925,58 @@
 
   .fight-action-btn:active,
   .fight-action-btn.pressed {
-    transform: translateY(2px) scale(0.95);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    transform: translateY(4px);
+    box-shadow:
+      0 0 0 3px #0f172a,
+      0 1px 3px rgba(0, 0, 0, 0.9),
+      inset 0 2px 3px rgba(255, 255, 255, 0.2),
+      inset 0 -1px 3px rgba(0, 0, 0, 0.8);
   }
 
   .btn-fight-punch {
-    background: radial-gradient(circle at 35% 35%, #f87171 0%, #dc2626 65%, #991b1b 100%);
+    background: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
     border-color: #fca5a5;
     color: #ffffff;
   }
 
   .btn-fight-kick {
-    background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 65%, #92400e 100%);
-    border-color: #fde68a;
+    background: radial-gradient(circle at 35% 30%, #fde047 0%, #d97706 50%, #78350f 100%);
+    border-color: #fef08a;
     color: #ffffff;
   }
 
   .btn-fight-special {
-    background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 65%, #075985 100%);
-    border-color: #bae6fd;
+    background: radial-gradient(circle at 35% 30%, #67e8f9 0%, #0284c7 50%, #0c4a6e 100%);
+    border-color: #a5f3fc;
     color: #ffffff;
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    box-shadow:
+      0 0 0 3px #0f172a,
+      0 6px 14px rgba(6, 182, 212, 0.4),
+      inset 0 4px 6px rgba(255, 255, 255, 0.5),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.6);
   }
 
   .action-btn-key {
-    font-size: 0.65rem;
-    font-weight: 800;
-    opacity: 0.85;
+    font-size: 0.68rem;
+    font-weight: 900;
+    opacity: 0.9;
     line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   }
 
   .action-btn-label {
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     font-weight: 900;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     line-height: 1;
     margin-top: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
   .action-btn-spark {
     position: absolute;
-    top: 3px;
-    right: 5px;
+    top: 4px;
+    right: 6px;
     font-size: 0.65rem;
   }
 
@@ -1072,11 +1277,7 @@
     transform: scale(1.3);
   }
 
-  .arcade-footer-meta {
-    text-align: center;
-    font-size: 0.68rem;
-    color: #64748b;
-  }
+
 </style>
 
 <script>
@@ -1124,6 +1325,12 @@
     playTone(220, 'sawtooth', 0.15, 0.1);
     setTimeout(() => playTone(140, 'sawtooth', 0.2, 0.09), 100);
     setTimeout(() => playTone(70, 'sawtooth', 0.3, 0.08), 220);
+  }
+
+  // Authentic 8-Bit Arcade Coin Chime (B5 -> E6 square wave)
+  function playCoinSound() {
+    playTone(987.77, 'square', 0.08, 0.09);
+    setTimeout(() => playTone(1318.51, 'square', 0.28, 0.1), 70);
   }
 
   // Fighting Game Sounds
@@ -1183,6 +1390,8 @@
   const overlaySubtitle = document.getElementById('overlay-subtitle');
   const overlayFighterSelect = document.getElementById('overlay-fighter-select');
   const fighterPillsList = document.getElementById('fighter-pills-list');
+  const fighterInspectName = document.getElementById('fighter-inspect-name');
+  const fighterInspectMove = document.getElementById('fighter-inspect-move');
   const overlayInstructions = document.getElementById('overlay-instructions');
   const overlayBtn = document.getElementById('overlay-action-btn');
   const arcadeScoreLabel = document.getElementById('arcade-score-label');
@@ -1368,41 +1577,62 @@
     brawlerRoundTimer = 99;
   }
 
-  // Populate Fighter Selection Bar in CRT overlay
+  function updateFighterInspect(fighter: typeof FIGHTER_ROSTER[0]) {
+    if (fighterInspectName) fighterInspectName.textContent = fighter.name.toUpperCase();
+    if (fighterInspectMove) fighterInspectMove.textContent = `SPECIAL: ${fighter.special}`;
+  }
+
+  // Populate Street Fighter Style Character Selection Matrix in CRT overlay
   function renderFighterPills() {
     if (!fighterPillsList) return;
     fighterPillsList.innerHTML = '';
+
+    const currentFighter = FIGHTER_ROSTER.find(f => f.id === selectedFighterAvatarId) || FIGHTER_ROSTER[0];
+    updateFighterInspect(currentFighter);
+
     FIGHTER_ROSTER.forEach((fighter) => {
-      const pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = `fighter-pill ${fighter.id === selectedFighterAvatarId ? 'active' : ''}`;
-      pill.dataset.fighter = fighter.id;
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = `fighter-portrait-tile ${fighter.id === selectedFighterAvatarId ? 'active' : ''}`;
+      tile.dataset.fighter = fighter.id;
+      tile.title = `${fighter.name} (Special: ${fighter.special})`;
 
       const pCanvas = document.createElement('canvas');
-      pCanvas.width = 18;
-      pCanvas.height = 18;
+      pCanvas.width = 24;
+      pCanvas.height = 24;
       const pCtx = pCanvas.getContext('2d');
       if (pCtx) {
         const av = AVATAR_CATALOG[fighter.id] || AVATAR_CATALOG.cyber_samurai;
-        drawAvatarOnCanvas(pCtx, av, 0, 0, 18);
+        drawAvatarOnCanvas(pCtx, av, 0, 0, 24);
       }
 
-      const pLabel = document.createElement('span');
-      pLabel.textContent = fighter.name;
+      const p1Tag = document.createElement('span');
+      p1Tag.className = 'p1-tag';
+      p1Tag.textContent = '1P';
 
-      pill.appendChild(pCanvas);
-      pill.appendChild(pLabel);
+      tile.appendChild(pCanvas);
+      tile.appendChild(p1Tag);
 
-      pill.addEventListener('click', () => {
+      tile.addEventListener('click', () => {
         selectedFighterAvatarId = fighter.id;
-        document.querySelectorAll('.fighter-pill').forEach(el => el.classList.remove('active'));
-        pill.classList.add('active');
-        playTone(380, 'sine', 0.05, 0.05);
+        document.querySelectorAll('.fighter-portrait-tile').forEach(el => el.classList.remove('active'));
+        tile.classList.add('active');
+        updateFighterInspect(fighter);
+        playTone(440, 'square', 0.05, 0.06);
         initBrawlerFighters();
         renderBrawlerFrame();
       });
 
-      fighterPillsList.appendChild(pill);
+      tile.addEventListener('pointerenter', () => {
+        updateFighterInspect(fighter);
+      });
+
+      tile.addEventListener('pointerleave', () => {
+        const activeF = FIGHTER_ROSTER.find(f => f.id === selectedFighterAvatarId) || FIGHTER_ROSTER[0];
+        updateFighterInspect(activeF);
+      });
+
+      fighterPillsList.appendChild(tile);
     });
   }
 
@@ -2807,6 +3037,7 @@
 
   // Start button on overlay
   overlayBtn?.addEventListener('click', () => {
+    playCoinSound();
     if (activeGame === 'brawler') startBrawlerGame();
     else startSnakeGame();
   });
@@ -2823,6 +3054,7 @@
     // Start on space
     if (k === ' ' || k === 'space') {
       e.preventDefault();
+      playCoinSound();
       if (activeGame === 'brawler' && !brawlerRunning) { startBrawlerGame(); return; }
       if (activeGame === 'snake' && !snakeRunning) { startSnakeGame(); return; }
     }
@@ -2884,6 +3116,8 @@
   bindTouchButton('btn-fight-punch', () => { brawlerP1Attack('punch'); });
   bindTouchButton('btn-fight-kick', () => { brawlerP1Attack('kick'); });
   bindTouchButton('btn-fight-special', () => { brawlerP1Attack('special'); });
+
+
 
   // ── Snake Virtual Controller Setup ────────────────────────────────────────
   const ctrlTabBtns = document.querySelectorAll<HTMLButtonElement>('.ctrl-tab-btn');
