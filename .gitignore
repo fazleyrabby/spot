@@ -45,9 +45,16 @@ HANDOVER.md
 HOMELAB_MIGRATION_PLAN.md
 BACKUP_PLAN.md
 
-# Local utility scripts & database backups
+# Local utility scripts & database backups (CRITICAL - NEVER COMMIT DB DUMPS)
 scripts/
 backups/
+database/backups/
+**/backups/
+*.dump
+*.sql.gz
+*.sql.tar
+*.sql.bak
 
 # AI Agent memory and local workspace rules
 .agents/
+

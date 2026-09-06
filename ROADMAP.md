@@ -13,7 +13,7 @@
   - **Procedural 8-Bit Web Audio**: Synthesizer producing punch/kick impacts, special surges, game over sweeps, and authentic dual-tone coin drop chimes.
   - **Trophy Unlocks**: Persistent streak records and "Arcade Legend" badge unlocks.
 - [x] **⚡ Database Dual-Switching Engine (`scripts/switch-db.sh`)**
-  - Instant hot-swapping between Local Docker DB (port 55432) and VPS Production DB (port 65432 via secure SSH tunnel to `homelab`).
+  - Instant hot-swapping between Local Docker DB (port 55432) and VPS Production DB (port 65432 via secure SSH tunnel).
   - Shortcut commands `pnpm db:vps` and `pnpm db:local`.
 - [x] **👥 Multiplayer & World Stability**
   - Ghost avatar deduplication (`senderTabId` + local player exclusions) eliminating visitor duplicates in incognito mode.

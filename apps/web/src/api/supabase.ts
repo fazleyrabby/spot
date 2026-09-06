@@ -3,7 +3,7 @@ import type { WorldSnapshot, OccupiedSpotSummary, Citizen, CreateCitizenInput } 
 import { containsBlockedWord, sanitizeDisplayName } from '@spot/shared';
 import { getDeviceFingerprint } from './fingerprint.js';
 
-const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://koqodifauvvemouhnjqz.supabase.co';
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 
 // Columns anon is allowed to read after the RLS lockdown (server-only columns like
