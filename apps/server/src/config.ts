@@ -28,8 +28,8 @@ export const config = {
   databaseUrl,
   cookieSecret: process.env.COOKIE_SECRET || 'spot_default_cookie_secret_at_least_32_chars',
   corsOrigin: process.env.CORS_ORIGIN || 'https://claimyourspot.lol',
-  rpId: process.env.WEBAUTHN_RP_ID || (appEnv === 'local' ? 'localhost' : 'claimyourspot.lol'),
-  rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://claimyourspot.lol'),
+  rpId: process.env.WEBAUTHN_RP_ID || process.env.RP_ID || (appEnv === 'local' ? 'localhost' : 'claimyourspot.lol'),
+  rpOrigin: process.env.WEBAUTHN_ORIGIN || process.env.RP_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://claimyourspot.lol'),
   expectedOrigins: process.env.WEBAUTHN_ORIGINS
     ? process.env.WEBAUTHN_ORIGINS.split(',').map((s) => s.trim())
     : [
