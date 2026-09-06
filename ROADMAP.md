@@ -1,98 +1,105 @@
-# 🗺️ SPOT — Future Roadmap & Product Expansion Plan
+# 🗺️ SPOT — Product Roadmap & Evolution Plan
 
 > **Mission**: Build the internet's most iconic, permanent, and playful 10,000-plot cyber world where developers, founders, and creators claim their plot, showcase their work, and connect in a living 60fps canvas city.
 
 ---
 
-## ⚡ Phase 1: High-ROI Virality & Growth Engine (Immediate Priority)
-*Goal: Turn every existing and new citizen into an evergreen distribution channel to attract devs and founders.*
+## ✅ Recently Shipped & Live in Production
 
-### 1.1 Dynamic GitHub Profile README Badge (`/api/badge/:username.svg`)
-- **What**: Provide every citizen with an auto-generated SVG badge snippet to paste into their GitHub profile README (`github.com/username/username`).
-- **Visual**: Pixel-styled badge displaying `[Spot Citizen #4242 | (52, 60) | Live Avatar]`.
-- **Action**: Clicking the badge deep-links directly to their coordinates on `claimyourspot.lol/world?x=52&y=60&inspect=true`.
-- **Impact**: Every person visiting a developer's GitHub profile sees Spot and is invited to claim an adjacent plot.
-
-### 1.2 Automated Social Graph (Open Graph) Preview Cards (`/api/og/:x/:y.png`)
-- **What**: Dynamic Satori/Canvas edge generation of Twitter/Discord preview cards showing the user's avatar, coordinate badge, and project name.
-- **Impact**: When users tweet their link, it renders a bold cyber-card instead of a generic website thumbnail.
-
-### 1.3 Discord / Telegram / Twitter Bot for New Claims
-- **What**: Automated webhook bot that tweets/posts whenever a new citizen claims a spot:
-  > *"🚀 Welcome @developer to plot (34, 82) in the Downtown District! Claim your spot at claimyourspot.lol"*
-- **Impact**: Creates steady proof-of-life and social proof.
+- [x] **🕹️ The Byte Cade (Playable 1984 Vintage Arcade Cabinet)**
+  - **Authentic Cabinet Shell**: Molded CRT monitor bezel with corner hex bolts, curved scanlines, illuminated backlit neon marquee, and 3D convex pushbuttons (**PUNCH** 🔴, **KICK** 🟡, **SURGE** 🔵).
+  - **Spot Fighter II (Cyber Brawl 1v1)**: Street Fighter-style fighting engine with articulated sprite skeletons, 7-character roster, 3 CPU AI bosses (*Sysadmin*, *Invader X*, *Grand Ronin*), Hadouken surge projectiles, hit particles, screen shake, and 99s timer.
+  - **Byte Snake '84**: 60fps procedural snake with touch joystick, 4-way D-Pad, and gesture swipe pad.
+  - **Procedural 8-Bit Web Audio**: Synthesizer producing punch/kick impacts, special surges, game over sweeps, and authentic dual-tone coin drop chimes.
+  - **Trophy Unlocks**: Persistent streak records and "Arcade Legend" badge unlocks.
+- [x] **⚡ Database Dual-Switching Engine (`scripts/switch-db.sh`)**
+  - Instant hot-swapping between Local Docker DB (port 55432) and VPS Production DB (port 65432 via secure SSH tunnel to `homelab`).
+  - Shortcut commands `pnpm db:vps` and `pnpm db:local`.
+- [x] **👥 Multiplayer & World Stability**
+  - Ghost avatar deduplication (`senderTabId` + local player exclusions) eliminating visitor duplicates in incognito mode.
+  - Tightened plaza walking hitboxes to prevent inadvertent landmark modal triggers.
+  - Normalized social links (X, GitHub, LinkedIn, Reddit) with safe URL formatting.
 
 ---
 
-## 🎮 Phase 2: Gamification & Plot Personalization (Retention)
-*Goal: Give citizens a reason to revisit, customize their space, and interact with neighbors.*
+## 🚀 Upcoming Priorities
 
-### 2.1 Mini-Plot Decorator (Micro-Voxel Props)
-- **What**: Allow citizens to place 1 or 2 small pixel props on their occupied plot:
-  - *Tech Gear*: Server rack, Dual-monitor battle station, Cyber coffee machine.
-  - *Pets*: Sleeping pixel cat, cyber dog, hovering drone.
-  - *Landmarks*: Neon flag, solar panel, bonsai tree.
-- **Why it matters**: Turns plots from static icons into personalized digital homes.
+### 🎨 Phase 1: Character Art, 4-Way Walk Cycles & Gear (Immediate)
+*Goal: Bring unmatched visual personality to each developer and founder avatar roaming the map.*
 
-### 2.2 Guestbook & High-Fives ("Spot Wall")
-- **What**: Let visitors leave quick 1-click pixel reactions (⚡ +1, 🔥 fire, ☕ coffee) or short 80-character visitor notes on a citizen's plot.
-- **Notification**: Send an optional weekly digest: *"34 developers visited your spot this week and left 12 reactions!"*
-
-### 2.3 Genesis Citizen Perks & Tiered Hologram Borders
-- **What**: First 1,000 citizens receive an exclusive glowing cyan/gold border on their plot and a "Genesis Citizen" badge on their 3D profile card.
-
----
-
-## 🌆 Phase 3: World Immersion & 2.5D Elevation
-*Goal: Deepen the cyber-city atmosphere while keeping the ultra-fast 60fps HTML5 Canvas performance.*
-
-### 3.1 Toggleable 2.5D Isometric Camera Angle
-- **What**: An optional HUD toggle (`[2D / 2.5D]`) that switches the projection to an isometric tilt (SimCity / Final Fantasy Tactics style), giving buildings, trees, and citizens vertical height.
-- **Implementation**: Reuse `@spot/world` isometric transform utilities with zero extra asset weight.
-
-### 3.2 Dynamic Day/Night Lighting & Neon Glows
-- **What**:
-  - As time transitions to Twilight and Night, building windows light up with warm amber and cyan glows.
-  - Streetlamps and billboards cast real-time soft radial light halos onto the pavement.
-  - Occasional ambient neon flicker for high-density cyber districts.
-
-### 3.3 Mobile Virtual Joystick / D-Pad
-- **What**: An optional floating thumb joystick or retro NES-style D-pad in the bottom corner of mobile screens for users who prefer stick controls over click-to-walk.
+- **Directional Micro-Details across 4 Walk Directions**:
+  - **Facing Up**: Visible backpacks, utility rigs, capes, or katana scabbards.
+  - **Facing Left / Right**: Side headphones, holstered gadgets, glowing cyber-visors.
+  - **Facing Down**: Chest badges, animated laptop/pad glows, necklaces.
+- **New Creator Archetypes in World**:
+  - `indie_hacker`: Cozy hoodie, oversized headphones, backpack, glowing laptop screen.
+  - `cyber_sysadmin`: Cyberpunk trench coat, holographic eye monocle/visor, server keycard.
+  - `ai_architect`: Floating syntax halo, purple rune robe, terminal staff.
+- **Idle / Resting Animations**:
+  - Citizens idle for >5s perform subtle procedural actions (checking hologram device, sword sheath shine, coffee sip).
 
 ---
 
-## 💼 Phase 4: Founder & Commercial Ecosystem (Monetization)
+### 🌐 Phase 2: High-ROI Virality & Growth Engine
+*Goal: Turn every existing citizen into an evergreen distribution channel to attract developers and founders.*
+
+- **Dynamic GitHub Profile README Badge (`/api/badge/:username.svg`)**:
+  - Auto-generated SVG badge snippet for GitHub profile READMEs (`[Spot Citizen #42 | (52, 60) | Live Avatar]`).
+  - Deep-links directly to coordinates: `claimyourspot.lol/world?x=52&y=60&inspect=true`.
+- **Shareable Fight & Citizen Victory Cards**:
+  - 1-click generation of retro 16-bit victory cards (e.g. *"CYBER RONIN • 7 WIN STREAK • CITIZEN (52, 60)"*) optimized for instant sharing to **X** and **Facebook**.
+- **Automated Social Graph Preview Cards (`/api/og/:x/:y.png`)**:
+  - Dynamic Satori/Canvas edge generation of Twitter/Discord preview cards showing the user's avatar, coordinate badge, and project name.
+- **Community Discord / X Bot for New Claims**:
+  - Automated webhook broadcast when a new citizen claims a plot.
+
+---
+
+### 🥊 Phase 3: Arcade Hall of Fame & Multiplayer Brawls
+*Goal: Deepen the gaming loop and community competition inside The Byte Cade.*
+
+- **Global Arcade Hall of Fame (Daily Leaderboard)**:
+  - Top 5 daily streak champions persisted in PostgreSQL, rendered on the cabinet's CRT screen when idle.
+- **2-Player Local Dual Battle**:
+  - 2 players on one keyboard: `P1 (WASD + JKL)` vs `P2 (Arrow Keys + NumPad 1,2,3)`.
+- **Peer-to-Peer Arcade Challenge**:
+  - Challenge any player standing next to the arcade cabinet in `/world` to an instant live cyber brawl.
+
+---
+
+### 🌆 Phase 4: World Immersion & Navigation
+*Goal: Deepen the cyber-city atmosphere while keeping 60fps HTML5 Canvas performance.*
+
+- **Holographic Mini-Map Radar**:
+  - Floating radar in top-right HUD showing user position, claimed spots, and landmarks (Plaza Fountain, Byte Cade, Wall of Fame).
+- **Dynamic Day/Night Lighting & Ambient Glows**:
+  - Real-time twilight-to-night transitions where building windows and streetlamps cast soft radial neon halos.
+- **Cyberpunk Low-Fi Radio / Chiptune Toggle**:
+  - Procedural 8-bit ambient background music toggleable from the top HUD.
+- **2.5D Isometric Camera Toggle**:
+  - Optional HUD switch (`[2D / 2.5D]`) providing vertical depth to buildings and plots using existing isometric transforms.
+
+---
+
+### 💼 Phase 5: Founder Ecosystem & Commercial Monetization
 *Goal: Provide tangible marketing ROI for indie startups, SaaS tools, and sponsors.*
 
-### 4.1 "Districts" / Thematic Neighborhoods
-- Organize the 100x100 island into recognizable hubs:
-  - **AI Alley**: For AI tools, models, and LLM wrappers.
-  - **Open Source Grove**: For libraries, frameworks, and OSS maintainers.
-  - **Indie Boulevard**: For bootstrapped micro-SaaS and solo founders.
-  - **Boardwalk & Beach**: For podcasts, newsletters, and creative creators.
-
-### 4.2 Self-Serve Billboard & Event Sponsorship
-- **What**: Automated booking flow for the large billboard spaces along the train line:
-  - Select billboard → Upload banner art & target URL → Checkout via LemonSqueezy/Stripe → Live on island for 7 / 30 days.
-  - Live impression & click counter in the sponsor modal.
-
-### 4.3 Featured Spot of the Week
-- Weekly community spotlight featured on the homepage banner, in-game blimp marquee, and Twitter broadcast.
+- **Thematic Districts & Neighborhoods**:
+  - *AI Alley*, *Open Source Grove*, *Indie Boulevard*, *Creator Boardwalk*.
+- **Self-Serve Billboard & Event Sponsorship**:
+  - Automated booking flow for large billboards along the monorail/transit line (Stripe/LemonSqueezy checkout, 7/30 day slots, impression counter).
+- **Featured Spot of the Week**:
+  - Weekly community spotlight on the homepage header and in-game marquee blimp.
 
 ---
 
-## 📱 Phase 5: Mobile & Performance Polish
-- [ ] **PWA (Progressive Web App)**: Add `manifest.json` and service worker so users can install Spot directly to their iOS/Android home screen like a native retro game.
-- [ ] **Haptic Feedback**: Subtle vibration on mobile devices when claiming a spot, popping chat bubbles, or discovering a secret.
-- [ ] **Low-Power Mode**: Automatic framerate throttling (60fps → 30fps) when device battery saver is active.
+## 📅 Roadmap Schedule & Milestones
 
----
-
-## 📅 Suggested Implementation Schedule
-
-| Milestone | Target | Key Deliverable |
-| :--- | :--- | :--- |
-| **Sprint 1 (Growth)** | Next 1–2 Weeks | Dynamic GitHub README Badges + Twitter OG Generator + Reddit Launch |
-| **Sprint 2 (Social)** | Weeks 3–4 | High-Fives / Guestbook Wall + 3D Card sharing polish |
-| **Sprint 3 (Customization)** | Month 2 | Plot Decorator (micro-props & pets) + Founder Districts |
-| **Sprint 4 (Immersion)** | Month 3 | 2.5D Isometric View Toggle + Self-Serve Billboards |
+| Milestone | Focus | Key Deliverables | Status |
+| :--- | :--- | :--- | :--- |
+| **Milestone 1** | **Arcade Cabinet & Combat** | Spot Fighter II, Byte Snake '84, CRT Bezel, Web Audio Synth, DB Quick-Switch | ✅ **Completed** |
+| **Milestone 2** | **Character Sprites & Gear** | 4-way walk cycles, directional gear (backpacks, visors), 3 new archetypes | 🟡 **Next In Line** |
+| **Milestone 3** | **Viral Distribution** | GitHub README Badges, Twitter OG Cards, Fight Record Social Share | ⚪ Scheduled |
+| **Milestone 4** | **Arcade Leaderboard & 2P** | Global Hall of Fame, local 2-player keyboard duel | ⚪ Scheduled |
+| **Milestone 5** | **Immersion & Radar** | Mini-map HUD radar, Day/Night neon cycle, Chiptune soundtrack | ⚪ Scheduled |
+| **Milestone 6** | **Founder Economy** | Thematic Districts, Self-Serve Billboards | ⚪ Future |
