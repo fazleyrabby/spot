@@ -107,7 +107,7 @@ const MODE_LABELS: Record<CitizenActivityMode, string> = {
 
 export class MonumentManager {
   private entities = new Map<string, CitizenEntity>();
-  private excludeCitizenId = '';
+  private excludeCitizenIds = new Set<string>();
   private tick = 0;
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
 
@@ -117,11 +117,24 @@ export class MonumentManager {
     _displayName?: string,
   ) {
     this.onCitizenClick = onCitizenClick;
-    this.excludeCitizenId = excludeCitizenId;
+    if (excludeCitizenId) {
+      this.excludeCitizenIds.add(excludeCitizenId);
+    }
   }
 
   setExcludeCitizen(id: string, _name?: string): void {
-    this.excludeCitizenId = id;
+    if (!id) return;
+    this.excludeCitizenIds.add(id);
+    for (const [key, ent] of this.entities.entries()) {
+      if (ent.spot.citizenId && this.excludeCitizenIds.has(ent.spot.citizenId)) {
+        this.entities.delete(key);
+      }
+    }
+  }
+
+  isExcluded(id?: string | null): boolean {
+    if (!id) return false;
+    return this.excludeCitizenIds.has(id);
   }
 
   update(spots: OccupiedSpotSummary[]): void {
@@ -138,7 +151,7 @@ export class MonumentManager {
     state: string;
     speech?: string | null;
   }): void {
-    if (!data.citizenId || data.citizenId === this.excludeCitizenId) return;
+    if (!data.citizenId || this.isExcluded(data.citizenId)) return;
 
     let found = false;
     for (const ent of this.entities.values()) {
@@ -211,7 +224,7 @@ export class MonumentManager {
     const currentKeys = new Set<string>();
 
     for (const spot of spots) {
-      if (spot.citizenId && spot.citizenId === this.excludeCitizenId) {
+      if (spot.citizenId && this.isExcluded(spot.citizenId)) {
         continue;
       }
 

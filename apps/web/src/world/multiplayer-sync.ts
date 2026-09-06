@@ -92,7 +92,10 @@ export class MultiplayerSync {
         source.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === 'player-position' && data.senderTabId !== this.tabId) {
+            if (data.type === 'player-position') {
+              // Strictly ignore echoes of our own tab or our own player IDs
+              if (data.senderTabId && data.senderTabId === this.tabId) return;
+              if (data.citizenId && (data.citizenId === this.getCurrentId() || data.citizenId === this.guestId || (this.myCitizenId && data.citizenId === this.myCitizenId))) return;
               this.onRemotePlayerMove(data);
             } else if (data.type === 'presence' && typeof data.onlineCount === 'number') {
               this.onPresenceChange?.(data.onlineCount);
@@ -136,8 +139,12 @@ export class MultiplayerSync {
     }
   }
 
-  private getCurrentId(): string {
+  getCurrentId(): string {
     return this.myCitizenId || this.guestId;
+  }
+
+  getGuestId(): string {
+    return this.guestId;
   }
 
   /**
@@ -183,8 +190,9 @@ export class MultiplayerSync {
     this.lastSentSpeech = currentSpeech;
     this.lastSendTime = now;
 
-    const payload: LivePlayerPayload = {
+    const payload: LivePlayerPayload & { guestId?: string } = {
       citizenId: this.getCurrentId(),
+      guestId: this.guestId,
       senderTabId: this.tabId,
       displayName: this.myDisplayName || 'Visitor',
       avatarId: this.myAvatarId || 'astronaut',

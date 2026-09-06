@@ -83,13 +83,13 @@ if (enableSSE) {
  * Broadcast live player position, state, and speech bubble to all connected world viewers.
  */
 realtimeRouter.post('/position', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
-  const { wx, wy, direction, state, speech, displayName, avatarId, guestId } = req.body || {};
+  const { wx, wy, direction, state, speech, displayName, avatarId, guestId, citizenId: bodyCitizenId, senderTabId } = req.body || {};
   if (typeof wx !== 'number' || typeof wy !== 'number') {
     res.status(400).json({ error: 'InvalidCoordinates' });
     return;
   }
 
-  const citizenId = req.citizen?.id || (typeof guestId === 'string' ? guestId : `guest_${req.ip || 'anon'}`);
+  const citizenId = req.citizen?.id || (typeof guestId === 'string' ? guestId : (typeof bodyCitizenId === 'string' ? bodyCitizenId : `guest_${req.ip || 'anon'}`));
   const finalName = req.citizen?.displayName || (typeof displayName === 'string' ? displayName.slice(0, 24) : 'Visitor');
   const finalAvatar = req.citizen?.avatarId || (typeof avatarId === 'string' ? avatarId : 'astronaut');
   const finalDir = ['down', 'up', 'left', 'right'].includes(direction) ? direction : 'down';
@@ -98,6 +98,7 @@ realtimeRouter.post('/position', optionalAuthMiddleware, async (req: Authenticat
 
   broadcastRealtimeEvent({
     type: 'player-position',
+    senderTabId: typeof senderTabId === 'string' ? senderTabId : undefined,
     citizenId,
     displayName: finalName,
     avatarId: finalAvatar,

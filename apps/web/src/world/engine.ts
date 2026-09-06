@@ -120,6 +120,11 @@ export class Engine {
       },
     });
     this.renderer.multiplayer = this.multiplayer;
+
+    const myCurrentId = options.citizenId || this.multiplayer.getCurrentId();
+    if (myCurrentId) this.monuments.setExcludeCitizen(myCurrentId);
+    const guestId = this.multiplayer.getGuestId();
+    if (guestId) this.monuments.setExcludeCitizen(guestId);
   }
 
   lastSnapshot: WorldSnapshot | null = null;
