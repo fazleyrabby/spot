@@ -3,8 +3,17 @@ import type { WorldSnapshot, OccupiedSpotSummary, Citizen, CreateCitizenInput } 
 import { containsBlockedWord, sanitizeDisplayName } from '@spot/shared';
 import { getDeviceFingerprint } from './fingerprint.js';
 
-const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+const envUrl = import.meta.env.PUBLIC_SUPABASE_URL?.trim();
+const envKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+export const isSupabaseConfigured = Boolean(
+  envUrl &&
+  envKey &&
+  !envUrl.includes('placeholder')
+);
+
+const SUPABASE_URL = isSupabaseConfigured ? envUrl! : 'https://placeholder.supabase.co';
+const SUPABASE_ANON_KEY = isSupabaseConfigured ? envKey! : 'placeholder-anon-key';
 
 // Columns anon is allowed to read after the RLS lockdown (server-only columns like
 // session_token_hash, github_id, email, device_fingerprint are revoked from anon).
@@ -12,12 +21,15 @@ const CITIZEN_SAFE_COLUMNS = 'id, display_name, avatar_id, custom_avatar_data, t
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: isSupabaseConfigured,
+    autoRefreshToken: isSupabaseConfigured,
   },
 });
 
 export async function signInWithGitHub(redirectTo?: string) {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase OAuth is not configured on this instance.');
+  }
   const targetUrl = redirectTo || (typeof window !== 'undefined' ? window.location.href : 'http://localhost:4322');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
@@ -30,14 +42,22 @@ export async function signInWithGitHub(redirectTo?: string) {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (!isSupabaseConfigured) return;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch {}
 }
 
 export async function getSupabaseUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return null;
-  return user;
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export async function getClientIp(): Promise<string | null> {
@@ -58,6 +78,17 @@ export async function getClientIp(): Promise<string | null> {
  * DIRECT SUPABASE MODE: Fetch entire 10k world snapshot directly from PostgreSQL
  */
 export async function fetchWorldDirect(): Promise<WorldSnapshot> {
+  if (!isSupabaseConfigured) {
+    return {
+      width: 100,
+      height: 100,
+      totalSpots: 10000,
+      claimedCount: 0,
+      totalVisitors: 1,
+      onlineCount: 1,
+      occupied: [],
+    };
+  }
   let spots: any = null;
   let spotsErr: any = null;
 
@@ -150,6 +181,9 @@ export async function fetchSessionDirect(): Promise<{
   citizen: Citizen | null;
   ownedSpot: { id: string; x: number; y: number; claimedAt: string } | null;
 }> {
+  if (!isSupabaseConfigured) {
+    return { authenticated: false, citizen: null, ownedSpot: null };
+  }
   const user = await getSupabaseUser();
   const ghUsername = user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
 
@@ -249,6 +283,9 @@ export async function syncGithubAuthDirect(data: {
   avatarUrl?: string;
   displayName?: string;
 }): Promise<{ authenticated: boolean; success?: boolean; citizen: Citizen | null; ownedSpot: { id: string; x: number; y: number; claimedAt: string } | null }> {
+  if (!isSupabaseConfigured) {
+    return { authenticated: false, citizen: null, ownedSpot: null };
+  }
   const currentSession = await fetchSessionDirect();
   
   if (currentSession.citizen) {
@@ -394,6 +431,9 @@ export async function claimSpotDirect(input: {
   spot: { id: string; x: number; y: number; ownerId: string; claimedAt: string };
   citizen: Citizen;
 }> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase is not configured on this instance.');
+  }
   const policy = await applyProfanityPolicy(input.displayName, input.tagline);
   const finalDisplayName = policy.displayName;
 
@@ -563,6 +603,9 @@ export async function claimSpotDirect(input: {
  * DIRECT SUPABASE MODE: Update profile directly in Supabase
  */
 export async function updateProfileDirect(profile: Partial<CreateCitizenInput>): Promise<{ success: boolean; citizen: Citizen }> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase is not configured on this instance.');
+  }
   const session = await fetchSessionDirect();
   if (!session.citizen) throw new Error('Citizen not authenticated');
 
@@ -637,6 +680,9 @@ export async function updateProfileDirect(profile: Partial<CreateCitizenInput>):
  * DIRECT SUPABASE MODE: Delete account and release spot directly in Supabase
  */
 export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId?: string): Promise<{ success: boolean; message: string }> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase is not configured on this instance.');
+  }
   const session = await fetchSessionDirect();
   const user = await getSupabaseUser();
   const deviceFp = await getDeviceFingerprint();
@@ -707,7 +753,7 @@ export async function deleteAccountDirect(targetSpotId?: string, targetCitizenId
  * DIRECT SUPABASE MODE: Search citizens
  */
 export async function searchCitizensDirect(queryText: string) {
-  if (!queryText.trim()) return [];
+  if (!isSupabaseConfigured || !queryText.trim()) return [];
   const { data } = await supabase
     .from('citizens')
     .select(`
