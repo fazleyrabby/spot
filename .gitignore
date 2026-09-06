@@ -48,3 +48,6 @@ BACKUP_PLAN.md
 # Local utility scripts & database backups
 scripts/
 backups/
+
+# AI Agent memory and local workspace rules
+.agents/
