@@ -54,8 +54,8 @@ authRouter.post('/passkey/register/verify', requireAuthMiddleware, async (req: A
     const verification = await verifyRegistrationResponse({
       response: req.body,
       expectedChallenge: async (challenge) => consumeWebAuthnChallenge(req.citizen!.id, challenge, 'register'),
-      expectedOrigin: config.rpOrigin,
-      expectedRPID: config.rpId,
+      expectedOrigin: config.expectedOrigins,
+      expectedRPID: [config.rpId, 'claimyourspot.lol', 'www.claimyourspot.lol', 'localhost'],
       requireUserVerification: false,
     });
     if (!verification.verified || !verification.registrationInfo) {
@@ -116,8 +116,8 @@ authRouter.post('/passkey/authenticate/verify', authSyncLimiter, async (req, res
     const verification = await verifyAuthenticationResponse({
       response: req.body,
       expectedChallenge: async (value) => consumeWebAuthnChallenge(null, value, 'authenticate'),
-      expectedOrigin: config.rpOrigin,
-      expectedRPID: config.rpId,
+      expectedOrigin: config.expectedOrigins,
+      expectedRPID: [config.rpId, 'claimyourspot.lol', 'www.claimyourspot.lol', 'localhost'],
       credential: {
         id: row.credentialId,
         publicKey: new Uint8Array(row.publicKey),

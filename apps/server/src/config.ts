@@ -27,9 +27,18 @@ export const config = {
   appEnv,
   databaseUrl,
   cookieSecret: process.env.COOKIE_SECRET || 'spot_default_cookie_secret_at_least_32_chars',
-  corsOrigin: process.env.CORS_ORIGIN || 'https://www.claimyourspot.lol',
-  rpId: process.env.WEBAUTHN_RP_ID || (appEnv === 'local' ? 'localhost' : 'www.claimyourspot.lol'),
-  rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://www.claimyourspot.lol'),
+  corsOrigin: process.env.CORS_ORIGIN || 'https://claimyourspot.lol',
+  rpId: process.env.WEBAUTHN_RP_ID || (appEnv === 'local' ? 'localhost' : 'claimyourspot.lol'),
+  rpOrigin: process.env.WEBAUTHN_ORIGIN || (appEnv === 'local' ? 'http://localhost:4322' : 'https://claimyourspot.lol'),
+  expectedOrigins: process.env.WEBAUTHN_ORIGINS
+    ? process.env.WEBAUTHN_ORIGINS.split(',').map((s) => s.trim())
+    : [
+        'https://claimyourspot.lol',
+        'https://www.claimyourspot.lol',
+        'http://localhost:4321',
+        'http://localhost:4322',
+        'http://localhost:5050',
+      ],
   isProd: process.env.NODE_ENV === 'production',
   discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
   visitorDiscordWebhookUrl: process.env.VISITOR_DISCORD_WEBHOOK_URL || '',
