@@ -621,7 +621,6 @@ import ShareModal from '../components/ShareModal.astro';
   // ── Share & Flex Modal Triggers ──────────────────────────────────────────
   const profileShareChip = document.getElementById('profile-share-chip');
   const btnCopySpotLink = document.getElementById('btn-copy-spot-link');
-  const btnWorldShare = document.getElementById('world-share-btn');
 
   function triggerShareModalForCurrent() {
     (window as any).openShareModal?.({
@@ -640,18 +639,6 @@ import ShareModal from '../components/ShareModal.astro';
   btnCopySpotLink?.addEventListener('click', (e) => {
     e.stopPropagation();
     triggerShareModalForCurrent();
-  });
-
-  btnWorldShare?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeProfileModal();
-    closeSecretModal();
-    closeBannerModal();
-    (window as any).openShareModal?.({
-      citizenName: currentViewingSpotSummary?.displayName || 'Citizen',
-      x: currentViewingSpotSummary?.x ?? 50,
-      y: currentViewingSpotSummary?.y ?? 50,
-    });
   });
 
   // ── Secret Discovery Modal Wiring ─────────────────────────────────────────

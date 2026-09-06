@@ -107,11 +107,6 @@
       <span class="hud-btn-text">Library</span>
     </button>
 
-    <!-- Viral Share & Flex Button -->
-    <button class="hud-tool-btn hud-share-btn" id="world-share-btn" title="Share Spot & Embed GitHub Badge">
-      <span class="hud-tool-icon" style="color: #38bdf8;">✦</span>
-      <span class="hud-btn-text">Share</span>
-    </button>
 
     <!-- Search / Find Citizen Button -->
     <button class="hud-tool-btn hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
@@ -481,30 +476,17 @@
     flex-shrink: 0;
   }
 
-  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn):not(.hud-share-btn) {
+  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn) {
     padding: 0;
     width: 28px;
     font-size: 0.80rem;
   }
 
   .hud-library-btn,
-  .hud-search-btn,
-  .hud-share-btn {
+  .hud-search-btn {
     width: auto;
     padding: 0 8px;
     gap: 5px;
-  }
-
-  .hud-share-btn {
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.08);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-  }
-
-  .hud-share-btn:hover {
-    background: rgba(56, 189, 248, 0.2);
-    border-color: rgba(56, 189, 248, 0.5);
-    color: #f8fafc;
   }
 
   .hud-tool-btn:hover {
