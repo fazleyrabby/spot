@@ -437,4 +437,105 @@ export class AudioManager {
       noise.start(now);
     } catch (_) {}
   }
+
+  playCarHorn(proximity = 1.0, type: 'taxi' | 'synthwave' | 'van' | 'scooter' = 'taxi'): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const vol = Math.max(0.04, Math.min(0.24, 0.24 * proximity));
+
+      if (type === 'scooter') {
+        // High-pitched nimble scooter beep-beep
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(980, now + 0.08);
+
+        gain.gain.setValueAtTime(vol * 0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      } else if (type === 'synthwave') {
+        // Dual-tone futuristic cyber pulse horn (sawtooth filtered)
+        [440, 554.37].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1200, now);
+
+          gain.gain.setValueAtTime(vol * 0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.22);
+        });
+      } else {
+        // Classic city cab double-tap horn (F4 + A4)
+        [349.23, 440].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          // Double beep
+          gain.gain.setValueAtTime(vol * 0.75, now);
+          gain.gain.setValueAtTime(0.001, now + 0.08);
+          gain.gain.setValueAtTime(vol * 0.75, now + 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.28);
+        });
+      }
+    } catch (_) {}
+  }
+
+  playCarPass(proximity = 1.0): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const vol = Math.max(0.02, Math.min(0.12, 0.12 * proximity));
+
+      // Gentle electric motor Doppler whoosh
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(95, now);
+      osc.frequency.exponentialRampToValueAtTime(145, now + 0.25);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.65);
+    } catch (_) {}
+  }
 }

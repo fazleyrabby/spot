@@ -38,6 +38,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Install native libraries and fonts for @resvg/resvg-js rasterization
+RUN apk add --no-cache libc6-compat fontconfig ttf-dejavu
+
 ENV NODE_ENV=production
 ENV PORT=4323
 ENV WEB_DIST_PATH=/app/apps/web/dist

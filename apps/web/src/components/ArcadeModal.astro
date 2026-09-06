@@ -48,12 +48,22 @@
       <button type="button" class="arcade-game-tab active" id="tab-game-brawler" data-game="brawler" role="tab" aria-selected="true">
         <span class="game-tab-led"></span>
         <span class="game-tab-icon">🥊</span>
-        <span class="game-tab-title">Spot Fighter II</span>
+        <span class="game-tab-title">Fighter</span>
       </button>
       <button type="button" class="arcade-game-tab" id="tab-game-snake" data-game="snake" role="tab" aria-selected="false">
         <span class="game-tab-led"></span>
         <span class="game-tab-icon">🐍</span>
-        <span class="game-tab-title">Byte Snake '84</span>
+        <span class="game-tab-title">Snake</span>
+      </button>
+      <button type="button" class="arcade-game-tab" id="tab-game-hof" data-game="hof" role="tab" aria-selected="false">
+        <span class="game-tab-led"></span>
+        <span class="game-tab-icon">🏆</span>
+        <span class="game-tab-title">Legends</span>
+      </button>
+      <button type="button" class="arcade-game-tab" id="tab-game-quests" data-game="quests" role="tab" aria-selected="false">
+        <span class="game-tab-led"></span>
+        <span class="game-tab-icon">📜</span>
+        <span class="game-tab-title">Quests</span>
       </button>
     </div>
 
@@ -107,6 +117,32 @@
             <span>Attacks: <strong>J</strong> Punch • <strong>K</strong> Kick • <strong>L</strong> Hadouken</span>
           </div>
           <button type="button" class="crt-start-btn" id="overlay-action-btn">INSERT COIN (ROUND 1)</button>
+        </div>
+      </div>
+
+      <!-- Hall of Fame CRT Overlay -->
+      <div class="crt-overlay crt-hof-overlay" id="arcade-hof-overlay" style="display: none;">
+        <div class="crt-overlay-content hof-content">
+          <div class="crt-title hof-title">★ HALL OF FAME ★</div>
+          <p class="crt-subtitle">1984 Cyber All-Time Legends</p>
+          <div class="hof-tab-switch">
+            <button type="button" class="hof-tab-btn active" id="hof-subtab-brawler">🥊 Spot Fighter</button>
+            <button type="button" class="hof-tab-btn" id="hof-subtab-snake">🐍 Byte Snake</button>
+          </div>
+          <div class="hof-leaderboard-list" id="hof-leaderboard-list"></div>
+          <button type="button" class="crt-start-btn hof-action-btn" id="hof-action-btn">INSERT COIN TO PLAY</button>
+        </div>
+      </div>
+
+      <!-- Daily Quests CRT Overlay -->
+      <div class="crt-overlay crt-quests-overlay" id="arcade-quests-overlay" style="display: none;">
+        <div class="crt-overlay-content quests-content">
+          <div class="crt-title quests-title">DAILY QUESTS</div>
+          <p class="crt-subtitle" id="quests-reset-timer">Resetting at Midnight UTC</p>
+          <div class="quests-cards-list" id="quests-cards-list"></div>
+          <button type="button" class="crt-start-btn quests-claim-btn" id="quests-claim-btn" disabled>
+            CLAIM BOUNTY (500 XP)
+          </button>
         </div>
       </div>
     </div>
@@ -417,8 +453,8 @@
   /* Game Switcher Tabs */
   .arcade-game-tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
     background: rgba(0, 0, 0, 0.45);
     padding: 4px;
     border-radius: 12px;
@@ -429,16 +465,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 8px;
     border-radius: 9px;
     background: transparent;
     border: 1px solid transparent;
     color: #94a3b8;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.18s ease;
+    white-space: nowrap;
   }
 
   .arcade-game-tab:hover {
@@ -460,8 +497,22 @@
     box-shadow: 0 0 14px rgba(34, 197, 94, 0.25);
   }
 
+  .arcade-game-tab#tab-game-hof.active {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: #fde047;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+  }
+
+  .arcade-game-tab#tab-game-quests.active {
+    background: rgba(168, 85, 247, 0.18);
+    border-color: rgba(168, 85, 247, 0.45);
+    color: #d8b4fe;
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+  }
+
   .game-tab-icon {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   /* Score Bar */
@@ -596,7 +647,9 @@
   }
 
   .crt-overlay.hidden {
-    display: none;
+    display: none !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
   }
 
   .crt-overlay-content {
@@ -657,6 +710,186 @@
 
   .crt-start-btn:active {
     transform: scale(0.97);
+  }
+
+  /* Hall of Fame & Daily Quests CRT Overlays */
+  .hof-content, .quests-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-height: 360px;
+  }
+
+  .hof-title {
+    color: #f59e0b;
+    text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  .quests-title {
+    color: #c084fc;
+    text-shadow: 0 0 12px rgba(192, 132, 252, 0.6);
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  .hof-tab-switch {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .hof-tab-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hof-tab-btn:hover {
+    color: #f8fafc;
+  }
+
+  .hof-tab-btn.active {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fef08a;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+  }
+
+  .hof-leaderboard-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .hof-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 0.75rem;
+  }
+
+  .hof-row.is-current-user {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #6ee7b7;
+  }
+
+  .hof-rank {
+    font-weight: 800;
+    width: 24px;
+    text-align: left;
+  }
+
+  .hof-name {
+    font-weight: 700;
+    color: #f1f5f9;
+    flex: 1;
+    text-align: left;
+    padding: 0 8px;
+  }
+
+  .hof-score {
+    font-family: monospace;
+    font-weight: 800;
+    color: #38bdf8;
+  }
+
+  /* Quests Styles */
+  .quests-cards-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .quest-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: left;
+  }
+
+  .quest-card.completed {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .quest-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .quest-title-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .quest-desc-text {
+    font-size: 0.65rem;
+    color: #94a3b8;
+  }
+
+  .quest-status-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+  }
+
+  .quest-status-badge.done {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
+  }
+
+  .quests-claim-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #334155;
+    color: #94a3b8;
+    box-shadow: none;
+  }
+
+  .quests-claim-btn:not(:disabled) {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+    animation: pulseGlow 1.5s infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
   }
 
   /* Street Fighter II Style Character Selection Matrix */
@@ -1383,6 +1616,14 @@
     setTimeout(() => playTone(75, 'sawtooth', 0.6, 0.14), 220);
   }
 
+  // Authentic 8-Bit Fanfare Chime (C5 -> E5 -> G5 -> C6)
+  function playFanfareSound() {
+    playTone(523.25, 'square', 0.1, 0.08);
+    setTimeout(() => playTone(659.25, 'square', 0.1, 0.08), 90);
+    setTimeout(() => playTone(783.99, 'square', 0.1, 0.08), 180);
+    setTimeout(() => playTone(1046.50, 'square', 0.35, 0.1), 270);
+  }
+
   // ── DOM Elements ──────────────────────────────────────────────────────────
   const canvas = document.getElementById('arcade-game-canvas') as HTMLCanvasElement | null;
   const overlay = document.getElementById('arcade-overlay');
@@ -1407,10 +1648,254 @@
   // Switcher Tabs and Decks
   const tabGameBrawler = document.getElementById('tab-game-brawler');
   const tabGameSnake = document.getElementById('tab-game-snake');
+  const tabGameHof = document.getElementById('tab-game-hof');
+  const tabGameQuests = document.getElementById('tab-game-quests');
   const brawlerCtrlDeck = document.getElementById('brawler-ctrl-deck');
   const snakeCtrlDeck = document.getElementById('snake-ctrl-deck');
+  const hofOverlay = document.getElementById('arcade-hof-overlay');
+  const questsOverlay = document.getElementById('arcade-quests-overlay');
+  const hofLeaderboardList = document.getElementById('hof-leaderboard-list');
+  const hofSubtabBrawler = document.getElementById('hof-subtab-brawler');
+  const hofSubtabSnake = document.getElementById('hof-subtab-snake');
+  const hofActionBtn = document.getElementById('hof-action-btn');
+  const questsCardsList = document.getElementById('quests-cards-list');
+  const questsClaimBtn = document.getElementById('quests-claim-btn') as HTMLButtonElement | null;
 
-  let activeGame: 'brawler' | 'snake' = 'brawler';
+  let activeGame: 'brawler' | 'snake' | 'hof' | 'quests' = 'brawler';
+  let activeHofTab: 'brawler' | 'snake' = 'brawler';
+
+  // ── Overlay Visibility Controller ──────────────────────────────────────────
+  function setOverlayVisible(visible: boolean) {
+    if (!overlay) return;
+    if (visible) {
+      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
+      overlay.style.pointerEvents = 'auto';
+    } else {
+      overlay.classList.add('hidden');
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
+    }
+  }
+
+  // ── Player Identity Helper ────────────────────────────────────────────────
+  function getPlayerDisplayName(): string {
+    try {
+      const stored = localStorage.getItem('spot_citizen_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.displayName) return parsed.displayName;
+      }
+      const mySpot = localStorage.getItem('spot_claimed_name');
+      if (mySpot) return mySpot;
+    } catch {}
+    return 'Player';
+  }
+
+  // ── Hall of Fame System ───────────────────────────────────────────────────
+  interface HofRecord {
+    name: string;
+    val: number;
+    subtext: string;
+    isUser?: boolean;
+  }
+
+  const DEFAULT_BRAWLER_HOF: HofRecord[] = [
+    { name: 'CYBER_RONIN', val: 12, subtext: 'Cyber Ronin' },
+    { name: 'PIXEL_PALADIN', val: 9, subtext: 'Paladin' },
+    { name: 'SHADOW_RUNNER', val: 7, subtext: 'Shadow Runner' },
+    { name: 'BYTE_HACKER', val: 5, subtext: 'Indie Hacker' },
+    { name: 'SOLAR_CHAMP', val: 4, subtext: 'Solar Champ' },
+  ];
+
+  const DEFAULT_SNAKE_HOF: HofRecord[] = [
+    { name: 'BIT_MASTER', val: 88, subtext: 'Score 88' },
+    { name: 'TURBO_CODER', val: 72, subtext: 'Score 72' },
+    { name: 'ZERO_COOL', val: 58, subtext: 'Score 58' },
+    { name: 'NEO_MATRIX', val: 46, subtext: 'Score 46' },
+    { name: 'VOXEL_DEV', val: 34, subtext: 'Score 34' },
+  ];
+
+  function getHofRecords(type: 'brawler' | 'snake'): HofRecord[] {
+    const key = type === 'brawler' ? 'spot_hof_brawler_v1' : 'spot_hof_snake_v1';
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return type === 'brawler' ? [...DEFAULT_BRAWLER_HOF] : [...DEFAULT_SNAKE_HOF];
+  }
+
+  function updateBrawlerHof(streak: number, archetype = 'Brawler'): void {
+    if (streak <= 0) return;
+    const records = getHofRecords('brawler');
+    const playerName = getPlayerDisplayName().toUpperCase();
+    const existing = records.find(r => r.name === playerName);
+    if (existing) {
+      if (streak > existing.val) {
+        existing.val = streak;
+        existing.subtext = archetype;
+      }
+    } else {
+      records.push({ name: playerName, val: streak, subtext: archetype, isUser: true });
+    }
+    records.sort((a, b) => b.val - a.val);
+    const top5 = records.slice(0, 5);
+    try {
+      localStorage.setItem('spot_hof_brawler_v1', JSON.stringify(top5));
+    } catch {}
+  }
+
+  function updateSnakeHof(score: number): void {
+    if (score <= 0) return;
+    const records = getHofRecords('snake');
+    const playerName = getPlayerDisplayName().toUpperCase();
+    const existing = records.find(r => r.name === playerName);
+    if (existing) {
+      if (score > existing.val) {
+        existing.val = score;
+        existing.subtext = `Score ${score}`;
+      }
+    } else {
+      records.push({ name: playerName, val: score, subtext: `Score ${score}`, isUser: true });
+    }
+    records.sort((a, b) => b.val - a.val);
+    const top5 = records.slice(0, 5);
+    try {
+      localStorage.setItem('spot_hof_snake_v1', JSON.stringify(top5));
+    } catch {}
+  }
+
+  function renderHallOfFame(type: 'brawler' | 'snake'): void {
+    if (!hofLeaderboardList) return;
+    activeHofTab = type;
+    hofSubtabBrawler?.classList.toggle('active', type === 'brawler');
+    hofSubtabSnake?.classList.toggle('active', type === 'snake');
+
+    const records = getHofRecords(type);
+    const playerName = getPlayerDisplayName().toUpperCase();
+    const medalIcons = ['🥇', '🥈', '🥉', '4.', '5.'];
+
+    hofLeaderboardList.innerHTML = records.map((r, i) => {
+      const isYou = r.name === playerName || r.isUser;
+      const valLabel = type === 'brawler' ? `${r.val} WINS` : `${r.val} PTS`;
+      return `
+        <div class="hof-row ${isYou ? 'is-current-user' : ''}">
+          <span class="hof-rank">${medalIcons[i] || `${i + 1}.`}</span>
+          <span class="hof-name">${r.name} ${isYou ? '<small>(YOU)</small>' : ''}</span>
+          <span class="hof-score">${valLabel}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Daily Quests System ───────────────────────────────────────────────────
+  interface DailyQuestState {
+    date: string;
+    brawlerWon: boolean;
+    snakeScored: boolean;
+    landmarksVisited: boolean;
+    claimed: boolean;
+  }
+
+  function getDailyQuestState(): DailyQuestState {
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const stored = localStorage.getItem('spot_daily_quests_v2');
+      if (stored) {
+        const parsed: DailyQuestState = JSON.parse(stored);
+        if (parsed.date === today) return parsed;
+      }
+    } catch {}
+
+    // Check if player has visited at least 2 secrets today
+    let landmarksVisited = false;
+    try {
+      const secrets = JSON.parse(localStorage.getItem('spot_discovered_secrets') || '[]');
+      landmarksVisited = secrets.length >= 2;
+    } catch {}
+
+    const initial: DailyQuestState = {
+      date: today,
+      brawlerWon: false,
+      snakeScored: false,
+      landmarksVisited,
+      claimed: false,
+    };
+    try {
+      localStorage.setItem('spot_daily_quests_v2', JSON.stringify(initial));
+    } catch {}
+    return initial;
+  }
+
+  function completeQuest(key: 'brawlerWon' | 'snakeScored' | 'landmarksVisited'): void {
+    const state = getDailyQuestState();
+    if (state[key]) return;
+    state[key] = true;
+    try {
+      localStorage.setItem('spot_daily_quests_v2', JSON.stringify(state));
+    } catch {}
+    if (activeGame === 'quests') {
+      renderDailyQuests();
+    }
+  }
+
+  function renderDailyQuests(): void {
+    if (!questsCardsList || !questsClaimBtn) return;
+    const state = getDailyQuestState();
+
+    // Check landmark progress again
+    try {
+      const secrets = JSON.parse(localStorage.getItem('spot_discovered_secrets') || '[]');
+      if (secrets.length >= 2) state.landmarksVisited = true;
+    } catch {}
+
+    const quests = [
+      {
+        id: 'brawler',
+        icon: '🥊',
+        title: 'Spot Fighter Arena',
+        desc: 'Win at least 1 round in Spot Fighter II',
+        done: state.brawlerWon,
+      },
+      {
+        id: 'snake',
+        icon: '🐍',
+        title: 'Byte Snake Mastery',
+        desc: 'Achieve a score of 30+ in Byte Snake 2084',
+        done: state.snakeScored,
+      },
+      {
+        id: 'landmarks',
+        icon: '🗺️',
+        title: 'World Explorer',
+        desc: 'Discover or visit 2 city landmarks',
+        done: state.landmarksVisited,
+      }
+    ];
+
+    questsCardsList.innerHTML = quests.map(q => `
+      <div class="quest-card ${q.done ? 'completed' : ''}">
+        <div class="quest-info">
+          <span class="quest-title-text">${q.icon} ${q.title}</span>
+          <span class="quest-desc-text">${q.desc}</span>
+        </div>
+        <span class="quest-status-badge ${q.done ? 'done' : ''}">${q.done ? 'DONE ✓' : 'INCOMPLETE'}</span>
+      </div>
+    `).join('');
+
+    const allDone = quests.every(q => q.done);
+    if (state.claimed) {
+      questsClaimBtn.disabled = true;
+      questsClaimBtn.textContent = '★ BOUNTY CLAIMED (500 XP) ★';
+    } else if (allDone) {
+      questsClaimBtn.disabled = false;
+      questsClaimBtn.textContent = 'CLAIM BOUNTY (500 XP & BADGE)';
+    } else {
+      questsClaimBtn.disabled = true;
+      const count = quests.filter(q => q.done).length;
+      questsClaimBtn.textContent = `COMPLETE ALL 3 TO CLAIM (${count}/3)`;
+    }
+  }
 
   // Sound toggle
   soundBtn?.addEventListener('click', (e) => {
@@ -1651,7 +2136,7 @@
     initBrawlerFighters();
 
     brawlerRunning = true;
-    if (overlay) overlay.classList.add('hidden');
+    setOverlayVisible(false);
 
     brawlerBannerText = `ROUND ${brawlerRound} • FIGHT!`;
     brawlerBannerColor = '#facc15';
@@ -1790,6 +2275,8 @@
             localStorage.setItem('spot_brawler_best_streak', brawlerBestStreak.toString());
           } catch (_) {}
         }
+        completeQuest('brawlerWon');
+        updateBrawlerHof(brawlerWins, p1.name);
         if (scoreDisplay) scoreDisplay.textContent = brawlerWins.toString().padStart(3, '0');
         if (bestScoreDisplay) bestScoreDisplay.textContent = brawlerBestStreak.toString().padStart(3, '0');
 
@@ -1843,7 +2330,7 @@
       ? `Defeated all ${MAX_BRAWLER_ROUNDS} Rivals! • Streak: <strong>${brawlerWins}</strong>`
       : `Defeated in Round ${brawlerRound} • Streak: <strong>${brawlerWins}</strong>`;
     if (overlayBtn) overlayBtn.textContent = 'PLAY AGAIN (SPACE)';
-    if (overlay) overlay.classList.remove('hidden');
+    setOverlayVisible(true);
   }
 
   // CPU AI Decision Engine
@@ -2852,7 +3339,7 @@
     spawnSnakeFood();
     snakeRunning = true;
     if (scoreDisplay) scoreDisplay.textContent = '000';
-    if (overlay) overlay.classList.add('hidden');
+    setOverlayVisible(false);
     lastSnakeTick = performance.now();
     if (snakeLoopId) cancelAnimationFrame(snakeLoopId);
     snakeLoopId = requestAnimationFrame(snakeGameLoop);
@@ -2875,10 +3362,15 @@
       unlockArcadeBadge();
     }
 
+    if (snakeScore >= 30) {
+      completeQuest('snakeScored');
+    }
+    updateSnakeHof(snakeScore);
+
     if (overlayTitle) overlayTitle.textContent = 'GAME OVER';
     if (overlaySubtitle) overlaySubtitle.innerHTML = `Score: <strong>${snakeScore}</strong> • Best: <strong>${snakeBestScore}</strong>`;
     if (overlayBtn) overlayBtn.textContent = 'PLAY AGAIN (SPACE)';
-    if (overlay) overlay.classList.remove('hidden');
+    setOverlayVisible(true);
   }
 
   function snakeGameLoop(timestamp: number): void {
@@ -2970,7 +3462,7 @@
   // ══════════════════════════════════════════════════════════════════════════
   // ── GAME SWITCHER CONTROLLER ──────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
-  function switchGame(targetGame: 'brawler' | 'snake') {
+  function switchGame(targetGame: 'brawler' | 'snake' | 'hof' | 'quests') {
     activeGame = targetGame;
     initAudio();
 
@@ -2983,10 +3475,16 @@
 
     tabGameBrawler?.classList.toggle('active', targetGame === 'brawler');
     tabGameSnake?.classList.toggle('active', targetGame === 'snake');
+    tabGameHof?.classList.toggle('active', targetGame === 'hof');
+    tabGameQuests?.classList.toggle('active', targetGame === 'quests');
 
     if (targetGame === 'brawler') {
       if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'flex';
       if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'none';
+      if (hofOverlay) hofOverlay.style.display = 'none';
+      if (questsOverlay) questsOverlay.style.display = 'none';
+      setOverlayVisible(true);
+
       if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'WINS';
       if (arcadeBestLabel) arcadeBestLabel.textContent = 'STREAK';
       if (scoreDisplay) scoreDisplay.textContent = brawlerWins.toString().padStart(3, '0');
@@ -3006,9 +3504,13 @@
 
       initBrawlerFighters();
       renderBrawlerFrame();
-    } else {
+    } else if (targetGame === 'snake') {
       if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'none';
       if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'block';
+      if (hofOverlay) hofOverlay.style.display = 'none';
+      if (questsOverlay) questsOverlay.style.display = 'none';
+      setOverlayVisible(true);
+
       if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'SCORE';
       if (arcadeBestLabel) arcadeBestLabel.textContent = 'HIGH SCORE';
       if (scoreDisplay) scoreDisplay.textContent = snakeScore.toString().padStart(3, '0');
@@ -3027,19 +3529,73 @@
       if (overlayBtn) overlayBtn.textContent = 'INSERT COIN (START)';
 
       renderSnakeFrame();
-    }
+    } else if (targetGame === 'hof') {
+      if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'none';
+      if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'none';
+      setOverlayVisible(false);
+      if (questsOverlay) questsOverlay.style.display = 'none';
+      if (hofOverlay) hofOverlay.style.display = 'flex';
 
-    if (overlay) overlay.classList.remove('hidden');
+      if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'HOF';
+      if (arcadeBestLabel) arcadeBestLabel.textContent = 'ALL-TIME';
+      if (arcadeTitle) arcadeTitle.textContent = 'Hall of Fame';
+
+      renderHallOfFame(activeHofTab);
+    } else if (targetGame === 'quests') {
+      if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'none';
+      if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'none';
+      setOverlayVisible(false);
+      if (hofOverlay) hofOverlay.style.display = 'none';
+      if (questsOverlay) questsOverlay.style.display = 'flex';
+
+      if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'QUESTS';
+      if (arcadeBestLabel) arcadeBestLabel.textContent = 'DAILY';
+      if (arcadeTitle) arcadeTitle.textContent = 'Daily Quests';
+
+      renderDailyQuests();
+    }
   }
 
   tabGameBrawler?.addEventListener('click', () => switchGame('brawler'));
   tabGameSnake?.addEventListener('click', () => switchGame('snake'));
+  tabGameHof?.addEventListener('click', () => switchGame('hof'));
+  tabGameQuests?.addEventListener('click', () => switchGame('quests'));
+
+  hofSubtabBrawler?.addEventListener('click', () => renderHallOfFame('brawler'));
+  hofSubtabSnake?.addEventListener('click', () => renderHallOfFame('snake'));
+  hofActionBtn?.addEventListener('click', () => {
+    playCoinSound();
+    switchGame(activeHofTab);
+  });
+
+  questsClaimBtn?.addEventListener('click', () => {
+    const state = getDailyQuestState();
+    if (!state.claimed && (state.brawlerWon || state.snakeScored || state.landmarksVisited)) {
+      playFanfareSound();
+      state.claimed = true;
+      saveDailyQuestState(state);
+      unlockArcadeBadge();
+      renderDailyQuests();
+    }
+  });
 
   // Start button on overlay
-  overlayBtn?.addEventListener('click', () => {
+  function triggerOverlayStart() {
     playCoinSound();
     if (activeGame === 'brawler') startBrawlerGame();
-    else startSnakeGame();
+    else if (activeGame === 'snake') startSnakeGame();
+  }
+
+  overlayBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    triggerOverlayStart();
+  });
+
+  overlay?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('#overlay-fighter-select')) return;
+    triggerOverlayStart();
   });
 
   // ══════════════════════════════════════════════════════════════════════════

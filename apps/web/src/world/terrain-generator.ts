@@ -82,6 +82,13 @@ export type UrbanPropType =
   | 'cafe_storefront'
   | 'grand_station'
   | 'wishing_fountain'
+  | 'cyber_glitch_byte'
+  | 'cyber_glitch_mantis'
+  | 'cyber_glitch_null'
+  | 'parked_delorean'
+  | 'ramen_foodtruck'
+  | 'subway_entrance'
+  | 'cyber_konbini'
   | null;
 
 export interface CityProp {
@@ -115,6 +122,8 @@ const SECONDARY_ROADS_Y = [8, 35, 65, 92];
 
 function isRoad(gx: number, gy: number): boolean {
   if (gy < 0 || gy > 99 || gx < 0 || gx > 99) return false;
+  // Grand Plaza (36..64, 36..64) is an exclusive pedestrian zone with no vehicle roads
+  if (gx >= 36 && gx <= 64 && gy >= 36 && gy <= 64) return false;
   return (
     MAJOR_ROADS_X.includes(gx) ||
     MAJOR_ROADS_Y.includes(gy) ||
@@ -125,6 +134,7 @@ function isRoad(gx: number, gy: number): boolean {
 
 function isSidewalk(gx: number, gy: number): boolean {
   if (gy < 0 || gy > 99 || gx < 0 || gx > 99) return false;
+  if (gx >= 36 && gx <= 64 && gy >= 36 && gy <= 64) return false;
   if (isRoad(gx, gy)) return false;
   for (const rx of [...MAJOR_ROADS_X, ...SECONDARY_ROADS_X]) {
     if (Math.abs(gx - rx) === 1) return true;
@@ -209,6 +219,13 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
   }
 
   // ── 4. Pure Spot World City (0..99, 0..99) ───────────────────────────────
+  const district = getDistrict(gx, gy);
+
+  // Grand Plaza is an exclusive pedestrian zone — polished granite throughout, no road stripes
+  if (district === 'grand_plaza') {
+    return 'plaza_grand';
+  }
+
   const isMajorX = MAJOR_ROADS_X.includes(gx);
   const isMajorY = MAJOR_ROADS_Y.includes(gy);
   const isSecX = SECONDARY_ROADS_X.includes(gx);
@@ -236,8 +253,6 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
   }
 
   // District-specific urban terrain
-  const district = getDistrict(gx, gy);
-
   switch (district) {
     case 'grand_plaza': {
       return 'plaza_grand';
@@ -415,6 +430,39 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'wishing_fountain', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 110,
+    };
+  }
+
+  // ── 3b. Street Architectural Landmarks & Parked Vehicles ─────────────────
+  // Parked DeLorean outside Retro Arcade
+  if (gx === 84 && gy === 22) {
+    return {
+      gx, gy, type: 'parked_delorean', wx, wy,
+      hasLight: true, lightColor: 'rgba(6, 182, 212, 0.45)', lightRadius: 75,
+    };
+  }
+
+  // Cyber Ramen Food Truck / Coffee Rover in Grand Central Plaza
+  if (gx === 48 && gy === 48) {
+    return {
+      gx, gy, type: 'ramen_foodtruck', wx, wy,
+      hasLight: true, lightColor: 'rgba(245, 158, 11, 0.65)', lightRadius: 105,
+    };
+  }
+
+  // Metro Subway Entrances at key transit hubs
+  if ((gx === 20 && gy === 19) || (gx === 80 && gy === 79)) {
+    return {
+      gx, gy, type: 'subway_entrance', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 95,
+    };
+  }
+
+  // Cyber Bodega / 24-7 Konbini storefront on Downtown sidewalk
+  if (gx === 34 && gy === 22) {
+    return {
+      gx, gy, type: 'cyber_konbini', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.60)', lightRadius: 115,
     };
   }
 

@@ -267,6 +267,12 @@ export class Engine {
     this.renderer.train.onTrainApproach = (proximity) => {
       this.audio.playTrainSound(proximity);
     };
+    this.renderer.traffic.onHonk = (proximity, type) => {
+      this.audio.playCarHorn(proximity, type);
+    };
+    this.renderer.traffic.onPassBy = (proximity) => {
+      this.audio.playCarPass(proximity);
+    };
     this.player.bindInput();
 
     // 6. Bind mouse/touch input handler

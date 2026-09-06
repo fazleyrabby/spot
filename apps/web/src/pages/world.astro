@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import WorldHUD from '../components/WorldHUD.astro';
+import WorldRadar from '../components/WorldRadar.astro';
 import ProfileModal from '../components/ProfileModal.astro';
 import SecretModal from '../components/SecretModal.astro';
 import NpcModal from '../components/NpcModal.astro';
@@ -21,6 +22,7 @@ import ShareModal from '../components/ShareModal.astro';
   <main class="world-app" id="world-app">
     <h1 class="sr-only">SPOT World — Interactive 2.5D Cyberpunk Multiplayer Pixel World</h1>
     <WorldHUD />
+    <WorldRadar />
 
     <!-- Full-screen top-down canvas -->
     <canvas id="world-canvas" class="world-canvas"></canvas>
@@ -1681,6 +1683,8 @@ import ShareModal from '../components/ShareModal.astro';
         },
       });
 
+      (window as any).__SPOT_ENGINE__ = engine;
+
       // If session citizen was resolved, ensure engine has full identity & plot camera
       if (citizenId && displayName !== 'Visitor') {
         engine.updateCitizenIdentity({
@@ -1866,6 +1870,12 @@ import ShareModal from '../components/ShareModal.astro';
         openSearchModal();
       });
 
+      const btnWorldRadar = document.getElementById('world-radar-btn');
+      btnWorldRadar?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        (window as any).toggleRadarHUD?.();
+      });
+
       // ── Grand Codex Library HUD Wiring & Deep-linking ─────────────────────
       const btnWorldLibrary = document.getElementById('world-library-btn');
       btnWorldLibrary?.addEventListener('click', (e) => {
@@ -1878,17 +1888,25 @@ import ShareModal from '../components/ShareModal.astro';
       });
 
       // Auto-open modal or glide camera if deep-linked via URL parameters
-      function flyCameraToSpot(x: number, y: number): void {
-        if (!engine) return;
-        const targetWx = x * 16 + 8;
-        const targetWy = y * 16 + 8;
+      function flyCameraToSpot(x: number, y: number, attempt = 0): void {
+        if (!engine) {
+          if (attempt < 10) setTimeout(() => flyCameraToSpot(x, y, attempt + 1), 200);
+          return;
+        }
+        const targetWx = x * 48 + 24;
+        const targetWy = y * 32 + 16;
         engine.camera.centerOn(targetWx, targetWy, 1.4);
-        const plot = engine.plots.getPlotAt(x, y);
-        if (plot) {
-          engine.renderer.selectedCitizen = plot;
+        engine.player?.teleport(x, y);
+
+        const spot = engine.plots.getSpotAt(x, y) ?? engine.plots.getPlotAt(x, y)?.owner;
+        if (spot) {
+          engine.renderer.selectedCitizen = spot;
           setTimeout(() => {
-            openProfileModal(plot);
+            openProfileModal(spot);
           }, 350);
+        } else if (attempt < 8) {
+          // If plots are still being fetched from server, retry gracefully
+          setTimeout(() => flyCameraToSpot(x, y, attempt + 1), 350);
         }
       }
 
@@ -1923,9 +1941,15 @@ import ShareModal from '../components/ShareModal.astro';
           (window as any).openShareModal?.();
         }, 350);
       } else if (worldUrlParams.has('spot')) {
-        const parts = (worldUrlParams.get('spot') || '').split(',').map(Number);
+        const parts = (worldUrlParams.get('spot') || '').replace('-', ',').split(',').map(Number);
         if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
           setTimeout(() => flyCameraToSpot(parts[0], parts[1]), 400);
+        }
+      } else if (worldUrlParams.has('x') && worldUrlParams.has('y')) {
+        const qx = Number(worldUrlParams.get('x'));
+        const qy = Number(worldUrlParams.get('y'));
+        if (!isNaN(qx) && !isNaN(qy)) {
+          setTimeout(() => flyCameraToSpot(qx, qy), 400);
         }
       } else if (worldUrlParams.has('citizen')) {
         const targetCitizen = (worldUrlParams.get('citizen') || '').trim();

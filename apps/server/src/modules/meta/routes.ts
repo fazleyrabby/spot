@@ -1,119 +1,271 @@
 import express from 'express';
 import { query } from '../../db.js';
 import { validSpotId } from '../spots/routes.js';
+import { generateOgSvg, rasterizeSvgToPng, getCachedOgImage, setCachedOgImage, type OgCardOptions } from './og.js';
 
 export const metaRouter: express.Router = express.Router();
 
 function escapeXml(value: unknown): string {
-  return String(value ?? '').replace(/[<>&'"]/g, (char) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[char] || char));
+  return String(value ?? '').replace(
+    /[<>&'"]/g,
+    (char) =>
+      ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;',
+      }[char] || char)
+  );
 }
 
 /**
- * GET /api/og?x=50&y=50
- * Dynamic SVG social card generator for individual spot plots
+ * Helper to resolve spot & citizen details by coords or citizen identifier
  */
-metaRouter.get('/og', async (req, res) => {
-  const x = Number(req.query.x);
-  const y = Number(req.query.y);
-  const spotId = `${x},${y}`;
-  if (!Number.isInteger(x) || !Number.isInteger(y) || !validSpotId(spotId)) {
-    res.status(400).type('text').send('Use /api/og?x=50&y=50');
-    return;
-  }
+async function resolveSpotOrCitizen(rawParam: string): Promise<{
+  spot?: any;
+  citizen?: any;
+  x?: number;
+  y?: number;
+  spotId?: string;
+  isAvailable?: boolean;
+} | null> {
+  const clean = rawParam.trim();
+  if (!clean) return null;
 
-  try {
-    const result = await query<any>(
-      `SELECT s.x, s.y, c.display_name as "displayName", c.tagline, c.avatar_id as "avatarId",
-              c.github_url as "githubUrl"
-       FROM spots s LEFT JOIN citizens c ON c.id = s.owner_id
-       WHERE s.id = $1 LIMIT 1`,
-      [spotId]
-    );
-    const spot = result.rows[0];
-    if (!spot?.displayName) {
-      res.status(404).type('text').send('Spot is available');
-      return;
+  // 1. Check if identifier is coordinates format: x,y
+  if (/^\d+,\d+$/.test(clean)) {
+    const [x, y] = clean.split(',').map(Number);
+    if (Number.isInteger(x) && Number.isInteger(y) && validSpotId(clean)) {
+      try {
+        const r = await query<any>(
+          `SELECT s.id, s.x, s.y, c.id as "citizenId", c.display_name as "displayName",
+                  c.tagline, c.avatar_id as "avatarId", c.custom_avatar_data as "customAvatarData",
+                  c.github_url as "githubUrl", c.twitter_url as "twitterUrl"
+           FROM spots s
+           LEFT JOIN citizens c ON c.id = s.owner_id
+           WHERE s.id = $1 LIMIT 1`,
+          [clean]
+        );
+        const row = r.rows[0];
+        if (row) {
+          return {
+            spot: row,
+            citizen: row.citizenId ? row : null,
+            x,
+            y,
+            spotId: clean,
+            isAvailable: !row.citizenId,
+          };
+        }
+      } catch (err) {
+        console.warn('[OG/Badge] DB query failed for coords, using fallback:', clean);
+      }
+      return { x, y, spotId: clean, isAvailable: true };
     }
-
-    const district = Math.floor(y / 10) * 10 + Math.floor(x / 10) + 1;
-    const glyphs: Record<string, string> = {
-      astronaut: '✦', hacker: '⌁', pixel_wizard: '✧', bot_9000: '◈', retro_cat: '◆',
-      ghosty: '◌', pixel_knight: '⬟', neon_ninja: '✺', pixel_alien: '◎', golden_knight: '⬢',
-      cyber_samurai: '⚔', pixel_dino: '◉',
-    };
-    const displayName = escapeXml(spot.displayName);
-    const tagline = escapeXml(spot.tagline || 'A permanent place on the Internet.');
-    const glyph = escapeXml(glyphs[spot.avatarId] || '✦');
-    const verified = Boolean(spot.githubUrl);
-
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-      <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0c0e14"/><stop offset="1" stop-color="#182238"/></linearGradient><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#ffffff" stroke-opacity=".06"/></pattern></defs>
-      <rect width="1200" height="630" fill="url(#bg)"/><rect width="1200" height="630" fill="url(#grid)"/>
-      <rect x="72" y="72" width="1056" height="486" rx="28" fill="#111722" fill-opacity=".92" stroke="#334155"/>
-      <rect x="116" y="118" width="210" height="210" rx="24" fill="#1d293b" stroke="#f59e0b" stroke-width="3"/>
-      <text x="221" y="253" text-anchor="middle" font-size="120" fill="#38bdf8">${glyph}</text>
-      <text x="382" y="150" font-family="Arial,sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="#f59e0b">SPOT · INTERNET CITY</text>
-      <text x="382" y="238" font-family="Arial,sans-serif" font-size="62" font-weight="800" fill="#f8fafc">@${displayName}</text>
-      <text x="382" y="286" font-family="monospace" font-size="24" fill="#94a3b8">Spot (${x}, ${y}) · Sector ${district}</text>
-      <text x="116" y="430" font-family="Arial,sans-serif" font-size="30" fill="#cbd5e1">${tagline}</text>
-      <text x="116" y="500" font-family="monospace" font-size="20" fill="#64748b">${verified ? '✓ VERIFIED CITIZEN' : '● CITIZEN'}  ·  A permanent place on the Internet</text>
-    </svg>`;
-    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
-    res.type('image/svg+xml').send(svg);
-  } catch (err) {
-    console.error('OG card error:', err);
-    res.status(500).type('text').send('Failed to generate card');
   }
-});
+
+  // 2. Query by citizen display_name, id, or github_id
+  try {
+    const r = await query<any>(
+      `SELECT s.id, s.x, s.y, c.id as "citizenId", c.display_name as "displayName",
+              c.tagline, c.avatar_id as "avatarId", c.custom_avatar_data as "customAvatarData",
+              c.github_url as "githubUrl", c.twitter_url as "twitterUrl"
+       FROM citizens c
+       LEFT JOIN spots s ON s.owner_id = c.id
+       WHERE LOWER(c.display_name) = LOWER($1) OR c.id = $1 OR c.github_id = $1
+       ORDER BY s.claimed_at DESC NULLS LAST
+       LIMIT 1`,
+      [clean]
+    );
+    const row = r.rows[0];
+    if (row) {
+      return {
+        spot: row.x !== null ? row : null,
+        citizen: row,
+        x: row.x ?? undefined,
+        y: row.y ?? undefined,
+        spotId: row.id || undefined,
+        isAvailable: false,
+      };
+    }
+  } catch (err) {
+    console.warn('[OG/Badge] DB query failed for citizen, using fallback:', clean);
+  }
+
+  return null;
+}
 
 /**
- * GET /api/share?x=50&y=50
- * Dynamic share landing page. Crawlers get spot metadata; browsers are redirected.
+ * GET /api/og/:identifier?
+ * GET /api/og?x=50&y=50 or ?spot=50,50 or ?citizen=name
+ * Generates dynamic 1200x630 PNG (or SVG if format=svg) preview cards.
  */
-metaRouter.get('/share', async (req, res) => {
-  const x = Number(req.query.x);
-  const y = Number(req.query.y);
-  const spotId = `${x},${y}`;
-  if (!Number.isInteger(x) || !Number.isInteger(y) || !validSpotId(spotId)) {
-    res.status(400).type('text').send('Use /api/share?x=50&y=50');
-    return;
+const handleOgRequest = async (req: express.Request, res: express.Response): Promise<void> => {
+  let rawParam =
+    req.params.identifier ||
+    (req.query.spot as string) ||
+    (req.query.citizen as string) ||
+    (req.query.x && req.query.y ? `${req.query.x},${req.query.y}` : '') ||
+    '';
+
+  let raw = (Array.isArray(rawParam) ? String(rawParam[0] || '') : String(rawParam)).trim();
+
+  // Determine requested format
+  const isExplicitSvg = raw.toLowerCase().endsWith('.svg') || (req.query.format as string)?.toLowerCase() === 'svg';
+  raw = raw.replace(/\.(png|svg|jpg|jpeg)$/i, '').trim();
+
+  const cacheKey = `og:${raw || 'default'}:${isExplicitSvg ? 'svg' : 'png'}`;
+
+  // Check cache for PNG
+  if (!isExplicitSvg) {
+    const cachedBuffer = getCachedOgImage(cacheKey);
+    if (cachedBuffer) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800');
+      res.setHeader('X-Cache', 'HIT');
+      res.send(cachedBuffer);
+      return;
+    }
   }
 
   try {
-    const result = await query<any>(
-      `SELECT c.display_name as "displayName", c.tagline
-       FROM spots s LEFT JOIN citizens c ON c.id = s.owner_id
-       WHERE s.id = $1 LIMIT 1`,
-      [spotId]
-    );
-    const spot = result.rows[0];
-    if (!spot?.displayName) {
-      res.status(404).type('text').send('Spot is available');
+    let cardOpts: OgCardOptions = {
+      displayName: 'SPOT METROPOLIS',
+      tagline: '10,000-Plot Cyber Canvas City on the Internet. Claim your permanent land.',
+      avatarId: 'astronaut',
+      x: 50,
+      y: 50,
+    };
+
+    if (raw) {
+      const resolved = await resolveSpotOrCitizen(raw);
+      if (resolved) {
+        if (resolved.citizen) {
+          cardOpts = {
+            displayName: resolved.citizen.displayName,
+            tagline: resolved.citizen.tagline,
+            x: resolved.x,
+            y: resolved.y,
+            avatarId: resolved.citizen.avatarId,
+            customAvatarData: resolved.citizen.customAvatarData,
+            githubUrl: resolved.citizen.githubUrl,
+            isAvailable: false,
+          };
+        } else if (resolved.isAvailable) {
+          cardOpts = {
+            displayName: `Available Plot (${resolved.x}, ${resolved.y})`,
+            tagline: 'This cyber territory is currently unclaimed. Choose your avatar and claim it forever.',
+            x: resolved.x,
+            y: resolved.y,
+            isAvailable: true,
+          };
+        }
+      }
+    }
+
+    const svg = generateOgSvg(cardOpts);
+
+    if (isExplicitSvg) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600');
+      res.send(svg);
       return;
     }
 
-    const title = `${spot.displayName} · SPOT Internet City`;
-    const description = spot.tagline || `Visit ${spot.displayName}'s permanent spot at (${x}, ${y}) in SPOT.`;
-    const pageUrl = `https://www.claimyourspot.lol/?spot=${x},${y}`;
-    const imageUrl = `https://www.claimyourspot.lol/api/og?x=${x}&y=${y}`;
+    const pngBuffer = rasterizeSvgToPng(svg);
+    setCachedOgImage(cacheKey, pngBuffer);
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800');
+    res.setHeader('X-Cache', 'MISS');
+    res.send(pngBuffer);
+  } catch (err) {
+    console.error('OG image generation error:', err);
+    res.status(500).type('text').send('Failed to generate OpenGraph image');
+  }
+};
+
+/**
+ * GET /api/share
+ * GET /spot/:identifier
+ * Dynamic share & deep-link landing page.
+ * Returns rich OG meta tags (pointing to PNG) for crawlers, and auto-redirects browsers to /world.
+ */
+export const handleShareLanding = async (req: express.Request, res: express.Response): Promise<void> => {
+  let rawParam =
+    req.params.identifier ||
+    (req.query.spot as string) ||
+    (req.query.citizen as string) ||
+    (req.query.x && req.query.y ? `${req.query.x},${req.query.y}` : '') ||
+    '';
+
+  let raw = (Array.isArray(rawParam) ? String(rawParam[0] || '') : String(rawParam)).trim();
+  raw = raw.replace(/^@/, '').replace(/\.(png|html|svg)$/i, '').trim();
+
+  try {
+    const resolved = raw ? await resolveSpotOrCitizen(raw) : null;
+    const hasPlot = typeof resolved?.x === 'number' && typeof resolved?.y === 'number';
+    const spotCoords = hasPlot ? `${resolved!.x},${resolved!.y}` : '50,50';
+    const displayName = resolved?.citizen?.displayName || (resolved?.isAvailable ? `Plot (${spotCoords})` : 'Spot Citizen');
+    const tagline =
+      resolved?.citizen?.tagline ||
+      (resolved?.isAvailable
+        ? `Plot (${spotCoords}) is unclaimed! Claim your permanent place in the 10,000-plot cyber world.`
+        : `Explore the permanent 10,000-plot cyber world.`);
+
+    const title = `${displayName} · SPOT Cyber City`;
+    const description = `${tagline} · Plot (${spotCoords}) in the permanent 10,000-tile living canvas.`;
+    const pageUrl = `https://claimyourspot.lol/?spot=${encodeURIComponent(spotCoords)}`;
+    const imageUrl = `https://claimyourspot.lol/api/og/${encodeURIComponent(spotCoords)}.png`;
+
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
-    res.type('html').send(`<!doctype html><html><head>
-      <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-      <title>${escapeXml(title)}</title><meta name="description" content="${escapeXml(description)}">
-      <meta property="og:type" content="website"><meta property="og:url" content="${pageUrl}">
-      <meta property="og:title" content="${escapeXml(title)}"><meta property="og:description" content="${escapeXml(description)}">
-      <meta property="og:image" content="${imageUrl}"><meta property="og:image:alt" content="${escapeXml(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-      <meta property="og:locale" content="en_US">
-      <meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@fazleyrabby"><meta name="twitter:title" content="${escapeXml(title)}">
-      <meta name="twitter:description" content="${escapeXml(description)}"><meta name="twitter:image" content="${imageUrl}">
-      <link rel="canonical" href="${pageUrl}">
-      <meta http-equiv="refresh" content="0;url=${pageUrl}">
-    </head><body><p>Opening ${escapeXml(title)}…</p><script>location.replace(${JSON.stringify(pageUrl)})</script></body></html>`);
+    res.type('html').send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeXml(title)}</title>
+  <meta name="description" content="${escapeXml(description)}" />
+
+  <!-- Open Graph / Facebook / LinkedIn / Discord -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${pageUrl}" />
+  <meta property="og:site_name" content="SPOT" />
+  <meta property="og:title" content="${escapeXml(title)}" />
+  <meta property="og:description" content="${escapeXml(description)}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:secure_url" content="${imageUrl}" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="${escapeXml(title)}" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@claimyourspot" />
+  <meta name="twitter:creator" content="@claimyourspot" />
+  <meta name="twitter:url" content="${pageUrl}" />
+  <meta name="twitter:title" content="${escapeXml(title)}" />
+  <meta name="twitter:description" content="${escapeXml(description)}" />
+  <meta name="twitter:image" content="${imageUrl}" />
+  <meta property="twitter:image" content="${imageUrl}" />
+
+  <link rel="canonical" href="${pageUrl}" />
+  <meta http-equiv="refresh" content="0;url=${pageUrl}" />
+</head>
+<body style="background:#090b10;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <p style="font-size:1.1rem;letter-spacing:0.05em;">Connecting to Spot City (${escapeXml(spotCoords)})…</p>
+  <script>location.replace(${JSON.stringify(pageUrl)});</script>
+</body>
+</html>`);
   } catch (err) {
     console.error('Share page error:', err);
     res.status(500).type('text').send('Failed to generate share page');
   }
-});
+};
 
 /**
  * GET /api/stats
@@ -142,7 +294,7 @@ metaRouter.get('/stats', async (_req, res) => {
  * GET /api/badge/:identifier
  * GET /api/badge?citizen=name or ?spot=x,y
  * Dynamic SVG badge generator optimized for GitHub Profile READMEs and website embeds.
- * Supports style=badge (compact 290x28) and style=card (mini-deed 450x120).
+ * Supports style=badge (compact 295x28) and style=card (mini-deed 450x120).
  */
 const handleBadgeRequest = async (req: express.Request, res: express.Response): Promise<void> => {
   const rawParam = req.params.identifier || (req.query.citizen as string) || (req.query.spot as string) || '';
@@ -152,9 +304,25 @@ const handleBadgeRequest = async (req: express.Request, res: express.Response): 
   const style = (req.query.style as string)?.toLowerCase() === 'card' ? 'card' : 'badge';
 
   const glyphs: Record<string, string> = {
-    astronaut: '✦', hacker: '⌁', pixel_wizard: '✧', bot_9000: '◈', retro_cat: '◆',
-    ghosty: '◌', pixel_knight: '⬟', neon_ninja: '✺', pixel_alien: '◎', golden_knight: '⬢',
-    cyber_samurai: '⚔', pixel_dino: '◉',
+    astronaut: '✦',
+    hacker: '⌁',
+    pixel_wizard: '✧',
+    bot_9000: '◈',
+    retro_cat: '◆',
+    ghosty: '◌',
+    pixel_knight: '⬟',
+    neon_ninja: '✺',
+    pixel_alien: '◎',
+    golden_knight: '⬢',
+    cyber_samurai: '⚔',
+    pixel_dino: '◉',
+    indie_hacker: '💻',
+    cyber_sysadmin: '🛡',
+    ai_architect: '🔮',
+    cadet_blue: '💠',
+    hazard_orange: '⚡',
+    arctic_medic: '✚',
+    stealth_navy: '⚓',
   };
 
   res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600');
@@ -166,51 +334,26 @@ const handleBadgeRequest = async (req: express.Request, res: express.Response): 
   }
 
   try {
-    let spotData: any = null;
+    const resolved = await resolveSpotOrCitizen(raw);
 
-    // 1. Check if identifier is coordinates format: x,y
-    if (/^\d+,\d+$/.test(raw)) {
-      const [x, y] = raw.split(',').map(Number);
-      if (Number.isInteger(x) && Number.isInteger(y) && validSpotId(raw)) {
-        const r = await query<any>(
-          `SELECT s.x, s.y, c.id as "citizenId", c.display_name as "displayName", c.tagline,
-                  c.avatar_id as "avatarId", c.github_url as "githubUrl"
-           FROM spots s
-           LEFT JOIN citizens c ON c.id = s.owner_id
-           WHERE s.id = $1 LIMIT 1`,
-          [raw]
-        );
-        spotData = r.rows[0];
-      }
-    }
-
-    // 2. If not found by coords, query by citizen display_name, id, or github_id
-    if (!spotData) {
-      const r = await query<any>(
-        `SELECT s.x, s.y, c.id as "citizenId", c.display_name as "displayName", c.tagline,
-                c.avatar_id as "avatarId", c.github_url as "githubUrl"
-         FROM citizens c
-         LEFT JOIN spots s ON s.owner_id = c.id
-         WHERE LOWER(c.display_name) = LOWER($1) OR c.id = $1 OR c.github_id = $1
-         ORDER BY s.claimed_at DESC NULLS LAST
-         LIMIT 1`,
-        [raw]
-      );
-      spotData = r.rows[0];
-    }
-
-    if (!spotData || !spotData.displayName) {
+    if (!resolved || (!resolved.citizen && !resolved.isAvailable)) {
       res.send(generateNotFoundBadge(raw, style));
       return;
     }
 
+    if (resolved.isAvailable) {
+      res.send(generateNotFoundBadge(raw, style));
+      return;
+    }
+
+    const spotData = resolved.citizen;
     const displayName = escapeXml(spotData.displayName);
     const tagline = escapeXml(spotData.tagline || 'A permanent place on the Internet.');
     const glyph = escapeXml(glyphs[spotData.avatarId] || '✦');
-    const x = spotData.x !== null ? spotData.x : '?';
-    const y = spotData.y !== null ? spotData.y : '?';
-    const hasPlot = spotData.x !== null && spotData.y !== null;
-    const district = hasPlot ? Math.floor(spotData.y / 10) * 10 + Math.floor(spotData.x / 10) + 1 : '—';
+    const x = resolved.x !== undefined ? resolved.x : '?';
+    const y = resolved.y !== undefined ? resolved.y : '?';
+    const hasPlot = resolved.x !== undefined && resolved.y !== undefined;
+    const district = hasPlot ? Math.floor(resolved.y! / 10) * 10 + Math.floor(resolved.x! / 10) + 1 : '—';
     const verified = Boolean(spotData.githubUrl);
 
     if (style === 'card') {
@@ -326,5 +469,13 @@ function generateNotFoundBadge(queryVal: string, style: string): string {
 </svg>`;
 }
 
+// Mount OpenGraph image generator routes
+metaRouter.get('/og/:identifier', handleOgRequest);
+metaRouter.get('/og', handleOgRequest);
+
+// Mount Badge generator routes
 metaRouter.get('/badge/:identifier', handleBadgeRequest);
 metaRouter.get('/badge', handleBadgeRequest);
+
+// Mount share route
+metaRouter.get('/share', handleShareLanding);

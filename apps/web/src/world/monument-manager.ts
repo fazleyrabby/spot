@@ -611,6 +611,13 @@ export class MonumentManager {
 
     // --- Body / Outfit ---
     const bodyY = sy - 11 * z;
+    const headY = bodyY - 8 * z + headBob;
+
+    // --- Back Gear (Facing Up) ---
+    if (dir === 'up') {
+      this.renderCitizenBackGear(ctx, sx, bodyY, headY, z, c, avatarId);
+    }
+
     ctx.fillStyle = c.primary;
     ctx.beginPath();
     ctx.roundRect(sx - 5.5 * z, bodyY, 11 * z, 9.5 * z, 2.5 * z);
@@ -620,8 +627,23 @@ export class MonumentManager {
     ctx.fillStyle = c.accent;
     ctx.fillRect(sx - 5.5 * z, bodyY + 7 * z, 11 * z, 2 * z);
 
+    // Dynamic Arm Swing
+    const armSwing = (ent.isMoving && (dir === 'left' || dir === 'right'))
+      ? Math.sin(this.tick * 0.3) * 2.5 * z
+      : 0;
+
+    // Hands
+    ctx.fillStyle = c.skin;
+    if (dir === 'down' || dir === 'up') {
+      ctx.fillRect(sx - 7 * z, bodyY + 3 * z, 2 * z, 3.5 * z);
+      ctx.fillRect(sx + 5 * z, bodyY + 3 * z, 2 * z, 3.5 * z);
+    } else if (dir === 'left') {
+      ctx.fillRect(sx - 6 * z - armSwing, bodyY + 3 * z, 2.5 * z, 3.5 * z);
+    } else if (dir === 'right') {
+      ctx.fillRect(sx + 3.5 * z + armSwing, bodyY + 3 * z, 2.5 * z, 3.5 * z);
+    }
+
     // --- Head ---
-    const headY = bodyY - 8 * z + headBob;
     ctx.fillStyle = c.skin;
     ctx.beginPath();
     ctx.arc(sx, headY + 3.5 * z, 6.5 * z, 0, Math.PI * 2);
@@ -646,11 +668,117 @@ export class MonumentManager {
       ctx.fill();
     }
 
+    // Profile Accessories (Headphones, Visor Monocles)
+    if (dir === 'left' || dir === 'right') {
+      this.renderCitizenProfileGear(ctx, sx, headY + 3.5 * z, z, dir, avatarId);
+    }
+
     // --- Eyes / Visor ---
     this.renderEyes(ctx, sx, headY + 3.5 * z, dir, z, avatarId);
 
     // ── ACTIVITY PROPS (Working Laptop, Steaming Coffee, Idea Bulb, etc.) ────
     this.renderActivityProp(ctx, ent, sx, bodyY, headY, z, c);
+  }
+
+  private renderCitizenBackGear(
+    ctx: CanvasRenderingContext2D,
+    sx: number,
+    bodyY: number,
+    headY: number,
+    z: number,
+    c: { primary: string; secondary: string; accent: string; skin: string },
+    avatarId: string,
+  ): void {
+    if (avatarId === 'astronaut') {
+      // Oxygen Tanks
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.roundRect(sx - 5 * z, bodyY + 1 * z, 3.5 * z, 7 * z, 1.5 * z);
+      ctx.roundRect(sx + 1.5 * z, bodyY + 1 * z, 3.5 * z, 7 * z, 1.5 * z);
+      ctx.fill();
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(sx - 4 * z, bodyY + 0.3 * z, 1.8 * z, 1 * z);
+      ctx.fillRect(sx + 2.2 * z, bodyY + 0.3 * z, 1.8 * z, 1 * z);
+    } else if (avatarId === 'cyber_samurai' || avatarId === 'neon_ninja') {
+      // Diagonal Katana Scabbard
+      ctx.save();
+      ctx.translate(sx, bodyY + 4 * z);
+      ctx.rotate(-Math.PI / 4.5);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-1.2 * z, -7 * z, 2.5 * z, 14 * z);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-1.8 * z, -8 * z, 3.6 * z, 1.8 * z);
+      ctx.restore();
+    } else if (avatarId === 'indie_hacker' || avatarId === 'hacker') {
+      // Padded Backpack with Cyber Badge
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(sx - 4.5 * z, bodyY + 1.5 * z, 9 * z, 7 * z, 2 * z);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(sx - 1.2 * z, bodyY + 3.5 * z, 2.5 * z, 2.5 * z);
+    } else if (avatarId === 'cyber_sysadmin') {
+      // Server Utility Rig
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(sx - 4.5 * z, bodyY + 1.8 * z, 9 * z, 6 * z);
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(sx - 3 * z, bodyY + 3 * z, 6 * z, 1 * z);
+    } else if (avatarId === 'ai_architect') {
+      // Orbiting Runes
+      const haloTime = this.tick * 0.06;
+      ctx.fillStyle = '#c084fc';
+      for (let i = 0; i < 3; i++) {
+        const angle = haloTime + (i * Math.PI * 2) / 3;
+        const rx = sx + Math.cos(angle) * 10 * z;
+        const ry = headY - 2 * z + Math.sin(angle) * 3.5 * z;
+        ctx.fillRect(rx - 1 * z, ry - 1 * z, 2 * z, 2 * z);
+      }
+    } else if (avatarId === 'pixel_knight' || avatarId === 'golden_knight') {
+      // Knight Cape
+      ctx.fillStyle = c.secondary;
+      ctx.beginPath();
+      ctx.moveTo(sx - 4.5 * z, bodyY + 1 * z);
+      ctx.lineTo(sx + 4.5 * z, bodyY + 1 * z);
+      ctx.lineTo(sx + 6 * z, bodyY + 10 * z);
+      ctx.lineTo(sx - 6 * z, bodyY + 10 * z);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  private renderCitizenProfileGear(
+    ctx: CanvasRenderingContext2D,
+    hx: number,
+    hy: number,
+    z: number,
+    dir: 'left' | 'right',
+    avatarId: string,
+  ): void {
+    const isLeft = dir === 'left';
+    const earX = isLeft ? hx - 0.5 * z : hx + 0.5 * z;
+
+    if (avatarId === 'indie_hacker' || avatarId === 'hacker') {
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(earX - 2 * z, hy - 2 * z, 4 * z, 5 * z, 1.5 * z);
+      ctx.fill();
+      ctx.fillStyle = avatarId === 'hacker' ? '#10b981' : '#38bdf8';
+      ctx.fillRect(earX - 0.8 * z, hy - 0.5 * z, 1.6 * z, 1.6 * z);
+    } else if (avatarId === 'cyber_sysadmin') {
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(isLeft ? hx - 4.5 * z : hx + 4.5 * z, hy - 0.5 * z, 2.2 * z, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (avatarId === 'astronaut') {
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1 * z;
+      ctx.beginPath();
+      ctx.moveTo(earX, hy);
+      ctx.lineTo(isLeft ? earX + 2.5 * z : earX - 2.5 * z, hy - 7 * z);
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(isLeft ? earX + 2 * z : earX - 3 * z, hy - 8 * z, 1.5 * z, 1.5 * z);
+    }
   }
 
   private renderActivityProp(

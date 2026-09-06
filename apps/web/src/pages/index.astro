@@ -696,6 +696,10 @@ import ShareModal from '../components/ShareModal.astro';
           const worldPos = renderer.grid.gridToWorld(gx, gy);
           renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
           renderer.selectSpot(gx, gy);
+          const occupied = worldSnapshot.occupied.find((s) => s.x === gx && s.y === gy);
+          if (occupied) {
+            setTimeout(() => openProfileModal(occupied), 300);
+          }
         }, 200);
       }
     }
@@ -1892,6 +1896,17 @@ import ShareModal from '../components/ShareModal.astro';
       const worldPos = renderer.grid.gridToWorld(currentTargetSpot.x, currentTargetSpot.y);
       renderer.camera.centerOn(worldPos.x + 18, worldPos.y + 18, 2.2);
       renderer.selectSpot(currentTargetSpot.x, currentTargetSpot.y);
+
+      // ── Post-Claim Viral Share Flywheel ──
+      // Immediately open ShareModal so citizen can 1-click share on X and grab GitHub README badge
+      setTimeout(() => {
+        (window as any).openShareModal?.({
+          citizenName: res.citizen.displayName,
+          x: currentTargetSpot.x,
+          y: currentTargetSpot.y,
+          spotId,
+        });
+      }, 650);
     } catch (err: any) {
       if (isServerOfflineError(err)) {
         showModalOfflineState();

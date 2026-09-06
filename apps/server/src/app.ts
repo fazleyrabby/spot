@@ -8,6 +8,7 @@ import { apiRouter } from './routes.js';
 import { globalApiLimiter } from './rateLimiter.js';
 import { query } from './db.js';
 import { sendErrorAlert } from './discord.js';
+import { handleShareLanding } from './modules/meta/routes.js';
 
 export const app: express.Express = express();
 
@@ -86,6 +87,9 @@ app.get('/health', async (_req, res) => {
 
 // Mount API router with global sliding-window rate limiter
 app.use('/api', globalApiLimiter, apiRouter);
+
+// Mount viral share & crawler landing routes (rich OpenGraph PNG preview + deep-link redirect)
+app.get(['/share', '/spot/:identifier', '/@:identifier'], handleShareLanding);
 
 // Serve static frontend in production if dist exists
 const webDistPath = process.env.WEB_DIST_PATH || path.resolve(process.cwd(), '../web/dist');

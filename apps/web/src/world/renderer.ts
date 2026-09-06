@@ -26,6 +26,8 @@ import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
+import { TrafficManager } from './traffic-manager.js';
+import { SkylineManager } from './skyline-manager.js';
 import { SkyManager } from './sky-manager.js';
 import { NPCManager } from './npc-manager.js';
 import { WeatherManager, type WeatherMode } from './weather-manager.js';
@@ -121,6 +123,8 @@ export class Renderer {
   readonly monuments: MonumentManager;
   readonly plots: PlotManager;
   readonly train: TrainManager;
+  readonly traffic: TrafficManager;
+  readonly skyline: SkylineManager;
   readonly sky: SkyManager;
   readonly npcs: NPCManager;
   readonly weather: WeatherManager;
@@ -157,6 +161,8 @@ export class Renderer {
     this.monuments = monuments;
     this.plots = plots;
     this.train = new TrainManager();
+    this.traffic = new TrafficManager();
+    this.skyline = new SkylineManager();
     this.sky = new SkyManager();
     this.npcs = new NPCManager();
     this.weather = new WeatherManager();
@@ -210,6 +216,8 @@ export class Renderer {
     this.player.update();
     this.monuments.updateTick();
     this.train.tick(this.player.wy);
+    this.traffic.tick(this.player.wx, this.player.wy);
+    this.skyline.tick();
     this.sky.tick(this.player.wx, this.player.wy);
     this.npcs.tick();
     this.player.speedMultiplier = this.npcs.getSpeedMultiplier();
@@ -240,6 +248,9 @@ export class Renderer {
     }
     ctx.fillRect(0, 0, W, H);
 
+    // 1b. Distant Parallax Cyber Metropolis Skyline
+    this.skyline.render(ctx, camera, this.timeOfDay);
+
     // 2. Visible grid bounds
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
@@ -269,6 +280,29 @@ export class Renderer {
           this.train.render(c, 0, this.camera, currentZoom);
         },
       });
+    }
+
+    // 4b-2. Autonomous Street Traffic (Cabs, Cruisers, Vans, Scooters)
+    const vehicles = this.traffic.getVehicles();
+    for (const v of vehicles) {
+      const screen = camera.worldToScreen(v.wx, v.wy);
+      if (screen.x < -120 || screen.x > W + 120 || screen.y < -120 || screen.y > H + 120) continue;
+      entities.push({
+        depth: v.wy,
+        render: (c, currentZoom) => {
+          this.traffic.renderVehicle(c, v, screen, currentZoom, this.timeOfDay);
+        },
+      });
+      if (this.timeOfDay !== 'day') {
+        const hOffset = v.direction === 'east' ? 24 : v.direction === 'west' ? -24 : 0;
+        const vOffset = v.direction === 'south' ? 24 : v.direction === 'north' ? -24 : 0;
+        lights.push({
+          wx: v.wx + hOffset,
+          wy: v.wy + vOffset,
+          radius: 75,
+          color: 'rgba(254, 240, 138, 0.40)',
+        });
+      }
     }
 
     // 4c. Citizen Chibi Characters
@@ -1381,8 +1415,8 @@ export class Renderer {
       case 'cyber_glitch_byte':
       case 'cyber_glitch_mantis':
       case 'cyber_glitch_null': {
-        const isByte = secret.id === 'cyber_glitch_byte';
-        const isMantis = secret.id === 'cyber_glitch_mantis';
+        const isByte = prop.type === 'cyber_glitch_byte';
+        const isMantis = prop.type === 'cyber_glitch_mantis';
         const primaryColor = isByte ? '#00f0ff' : isMantis ? '#10b981' : '#f59e0b';
         const glowColor = isByte ? 'rgba(0, 240, 255, 0.35)' : isMantis ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)';
 
@@ -2277,6 +2311,267 @@ export class Renderer {
         ctx.arc(sx - 36 * z, sy - 40 * z, 2.5 * z, 0, Math.PI * 2);
         ctx.arc(sx + 36 * z, sy - 40 * z, 2.5 * z, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'parked_delorean': {
+        // 1. Cyber DeLorean DMC-12 Parked outside Retro Arcade
+        // Contact Shadow & Cyan Flux Underglow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
+        ctx.beginPath();
+        ctx.roundRect(sx - 24 * z, sy - 8 * z, 48 * z, 16 * z, 4 * z);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 26 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4 Wheels
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(sx - 20 * z, sy - 10 * z, 8 * z, 3 * z);
+        ctx.fillRect(sx + 12 * z, sy - 10 * z, 8 * z, 3 * z);
+        ctx.fillRect(sx - 20 * z, sy + 7 * z, 8 * z, 3 * z);
+        ctx.fillRect(sx + 12 * z, sy + 7 * z, 8 * z, 3 * z);
+
+        // Stainless Steel Wedge Body
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.roundRect(sx - 23 * z, sy - 8 * z, 46 * z, 16 * z, 3 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Black Hood Accent & Louvers
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 10 * z, sy - 6 * z, 16 * z, 12 * z);
+        // Rear window louvers
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 21 * z, sy - 5 * z, 9 * z, 10 * z);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 0.8 * z;
+        for (let lx = -20; lx <= -14; lx += 2) {
+          ctx.beginPath();
+          ctx.moveTo(sx + lx * z, sy - 5 * z);
+          ctx.lineTo(sx + lx * z, sy + 5 * z);
+          ctx.stroke();
+        }
+
+        // Amber Front Indicators & Dual Red Taillights
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(sx + 21 * z, sy - 6 * z, 2 * z, 2.5 * z);
+        ctx.fillRect(sx + 21 * z, sy + 3.5 * z, 2 * z, 2.5 * z);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(sx - 23 * z, sy - 6 * z, 2 * z, 2.5 * z);
+        ctx.fillRect(sx - 23 * z, sy + 3.5 * z, 2 * z, 2.5 * z);
+
+        // Hover Text
+        const isHovered = Math.hypot(this.player.wx - prop.wx, this.player.wy - prop.wy) < 45;
+        if (isHovered) {
+          ctx.fillStyle = '#06b6d4';
+          ctx.font = `bold ${Math.round(6.5 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('⚡ DMC-12 CYBER EDIT', sx, sy - 14 * z);
+        }
+        break;
+      }
+
+      case 'ramen_foodtruck': {
+        // 2. Cyber Ramen Food Truck / Coffee Rover in Grand Plaza
+        // Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2 * z, 30 * z, 12 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wheels
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(sx - 22 * z, sy + 2 * z, 8 * z, 4 * z);
+        ctx.fillRect(sx + 14 * z, sy + 2 * z, 8 * z, 4 * z);
+
+        // Truck Body (Matte Cyber Charcoal)
+        ctx.fillStyle = '#18181b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 25 * z, sy - 22 * z, 50 * z, 24 * z, 3 * z);
+        ctx.fill();
+
+        // Driver Cab Windshield (Right side)
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(sx + 15 * z, sy - 18 * z, 8 * z, 10 * z);
+
+        // Open Service Window & Wooden Bar Counter
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(sx - 21 * z, sy - 18 * z, 32 * z, 12 * z);
+        // Warm Kitchen Interior Glow
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
+        ctx.fillRect(sx - 21 * z, sy - 18 * z, 32 * z, 12 * z);
+
+        // Wooden Bar Counter Shelf
+        ctx.fillStyle = '#92400e';
+        ctx.fillRect(sx - 23 * z, sy - 6 * z, 36 * z, 3 * z);
+
+        // Red Japanese Noren Curtains ("ラーメン")
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(sx - 21 * z, sy - 18 * z, 32 * z, 4 * z);
+        for (let i = 0; i < 4; i++) {
+          ctx.fillStyle = i % 2 === 0 ? '#b91c1c' : '#dc2626';
+          ctx.fillRect(sx - 21 * z + i * 8 * z, sy - 18 * z, 7 * z, 6 * z);
+        }
+
+        // Hanging Paper Lanterns (Warm Amber)
+        const lanternGlow = Math.sin(this.tick * 0.08) * 1.5;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx - 16 * z, sy - 18 * z, 3 * z, 0, Math.PI * 2);
+        ctx.arc(sx + 6 * z, sy - 18 * z, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rooftop Exhaust with Rising Noodle Steam
+        ctx.fillStyle = '#52525b';
+        ctx.fillRect(sx - 8 * z, sy - 28 * z, 5 * z, 6 * z);
+        ctx.fillStyle = 'rgba(254, 243, 199, 0.45)';
+        for (let i = 0; i < 3; i++) {
+          const sOff = ((this.tick * 0.3 + i * 14) % 30) * z;
+          const sX = sx - 5.5 * z + Math.sin(this.tick * 0.1 + i) * 2.5 * z;
+          ctx.beginPath();
+          ctx.arc(sX, sy - 29 * z - sOff, (1.8 + sOff * 0.1) * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 2 Bar Stools on Pavement
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(sx - 15 * z, sy + 3 * z, 5 * z, 2 * z);
+        ctx.fillRect(sx + 3 * z, sy + 3 * z, 5 * z, 2 * z);
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(sx - 13.5 * z, sy + 5 * z, 2 * z, 5 * z);
+        ctx.fillRect(sx + 4.5 * z, sy + 5 * z, 2 * z, 5 * z);
+
+        // Signboard
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `bold ${Math.round(5.5 * z)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🍜 RAMEN ROVER', sx - 5 * z, sy - 23 * z);
+        break;
+      }
+
+      case 'subway_entrance': {
+        // 3. Metro Subway Entrance with Illuminated Canopy
+        // Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 22 * z, 8 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Recessed Underground Stairwell (Dark Gradient)
+        ctx.fillStyle = '#060a12';
+        ctx.fillRect(sx - 16 * z, sy - 14 * z, 32 * z, 14 * z);
+
+        // Descending Stair Steps
+        for (let i = 0; i < 4; i++) {
+          ctx.fillStyle = i % 2 === 0 ? '#1e293b' : '#334155';
+          ctx.fillRect(sx - 14 * z, sy - 12 * z + i * 3 * z, 28 * z, 2 * z);
+        }
+
+        // Stainless Steel Handrails
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 16 * z, sy - 18 * z);
+        ctx.lineTo(sx - 16 * z, sy);
+        ctx.moveTo(sx + 16 * z, sy - 18 * z);
+        ctx.lineTo(sx + 16 * z, sy);
+        ctx.stroke();
+
+        // Modern Glass & Steel Canopy
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 18 * z, sy - 22 * z);
+        ctx.lineTo(sx + 18 * z, sy - 22 * z);
+        ctx.lineTo(sx + 16 * z, sy - 14 * z);
+        ctx.lineTo(sx - 16 * z, sy - 14 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Illuminated "Ⓜ SPOT METRO" Transit Sign
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(sx - 14 * z, sy - 28 * z, 28 * z, 7 * z);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 14 * z, sy - 28 * z, 28 * z, 7 * z);
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = `bold ${Math.round(5 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Ⓜ METRO LINE 1', sx, sy - 23 * z);
+        break;
+      }
+
+      case 'cyber_konbini': {
+        // 4. 24/7 Cyber Konbini / Convenience Store Facade
+        // Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 26 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Storefront Wall
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(sx - 24 * z, sy - 34 * z, 48 * z, 34 * z, 2 * z);
+        ctx.fill();
+
+        // Warm Interior Glow & Glass Display Windows
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.55)';
+        ctx.fillRect(sx - 20 * z, sy - 22 * z, 24 * z, 18 * z);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 20 * z, sy - 22 * z, 24 * z, 18 * z);
+
+        // Snack Shelves inside window
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(sx - 18 * z, sy - 16 * z, 20 * z, 1.5 * z);
+        ctx.fillRect(sx - 18 * z, sy - 10 * z, 20 * z, 1.5 * z);
+
+        // Glass Automatic Sliding Door
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.fillRect(sx + 6 * z, sy - 22 * z, 14 * z, 22 * z);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx + 6 * z, sy - 22 * z, 14 * z, 22 * z);
+
+        // 3-Color Striped Illuminated Marquee Awning (Green, Orange, White)
+        const awnW = 50 * z;
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(sx - awnW / 2, sy - 36 * z, awnW, 3 * z);
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(sx - awnW / 2, sy - 33 * z, awnW, 3 * z);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(sx - awnW / 2, sy - 30 * z, awnW, 3 * z);
+
+        // Store Sign
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(sx - 18 * z, sy - 46 * z, 36 * z, 9 * z);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 18 * z, sy - 46 * z, 36 * z, 9 * z);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = `bold ${Math.round(5.5 * z)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🏪 24/7 SPOT MART', sx, sy - 39.5 * z);
+
+        // Side-by-side drink vending machines on curb
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(sx - 32 * z, sy - 18 * z, 7 * z, 16 * z);
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(sx - 39 * z, sy - 18 * z, 7 * z, 16 * z);
+        // Vending display lights
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillRect(sx - 31 * z, sy - 16 * z, 5 * z, 6 * z);
+        ctx.fillRect(sx - 38 * z, sy - 16 * z, 5 * z, 6 * z);
         break;
       }
 

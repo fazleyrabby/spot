@@ -1,0 +1,678 @@
+---
+/**
+ * WorldRadar — Holographic Interactive Mini-Map & Radar HUD for Spot World.
+ *
+ * Features:
+ * 1. 100×100 City Grid projection with terrain & districts (Plaza, Beach, Mountains).
+ * 2. Real-time player dot with direction cone & live camera viewport frustum.
+ * 3. Dynamic citizen plot pips and live multiplayer entities.
+ * 4. Key landmark beacons (Grand Plaza, Dev Library, Arcade, Monolith, Beach).
+ * 5. Interactive 1-click warp navigation (click/drag anywhere to glide camera).
+ * 6. Quick-warp teleport bar + Keyboard shortcut (M) toggle.
+ */
+---
+
+<div class="world-radar-container" id="world-radar-container">
+  <!-- Expanded Radar Panel -->
+  <div class="world-radar-panel" id="world-radar-panel">
+    <!-- Header -->
+    <div class="radar-header">
+      <div class="radar-title-group">
+        <span class="radar-beacon-dot"></span>
+        <span class="radar-title">RADAR</span>
+        <span class="radar-coords mono-num" id="radar-player-coords">50, 50</span>
+      </div>
+      <div class="radar-header-actions">
+        <span class="radar-kbd-hint">M</span>
+        <button type="button" class="radar-icon-btn" id="radar-collapse-btn" title="Minimize Radar (M)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Canvas Map Viewport -->
+    <div class="radar-canvas-wrapper" id="radar-canvas-wrapper">
+      <canvas id="radar-canvas" width="380" height="380"></canvas>
+      <div class="radar-crosshair-hud" id="radar-crosshair-hud">
+        <span id="radar-hover-coords" class="mono-num">—</span>
+      </div>
+    </div>
+
+    <!-- Quick Warp Landmarks Bar -->
+    <div class="radar-quick-warp">
+      <button type="button" class="warp-pill" data-warp="50,50" title="Central Grand Plaza">
+        <span class="warp-icon">🏛️</span> Plaza
+      </button>
+      <button type="button" class="warp-pill" data-warp="86,22" title="Retro Cyber Arcade">
+        <span class="warp-icon">🕹️</span> Arcade
+      </button>
+      <button type="button" class="warp-pill" data-warp="44,52" title="The Grand Codex Library">
+        <span class="warp-icon">📚</span> Library
+      </button>
+      <button type="button" class="warp-pill" data-warp="50,104" title="Moonlit Beach & Bonfire">
+        <span class="warp-icon">🏖️</span> Beach
+      </button>
+      <button type="button" class="warp-pill warp-my-spot" id="radar-warp-my-spot" style="display: none;" title="Teleport to Your Spot">
+        <span class="warp-icon">📍</span> My Spot
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsed Beacon Pill (Shown when minimized) -->
+  <button type="button" class="radar-collapsed-pill" id="radar-collapsed-pill" style="display: none;" title="Open Radar Mini-Map (M)">
+    <div class="radar-mini-sweep"></div>
+    <span class="radar-mini-icon">🗺️</span>
+    <span class="radar-mini-label">RADAR</span>
+    <kbd class="radar-mini-kbd">M</kbd>
+  </button>
+</div>
+
+<style>
+  .world-radar-container {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    z-index: 38;
+    pointer-events: auto;
+    user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Outfit', 'Inter', sans-serif;
+  }
+
+  /* ── Expanded Radar Panel ───────────────────────────────────────────────── */
+  .world-radar-panel {
+    width: 204px;
+    background: rgba(11, 15, 23, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 12px 32px -4px rgba(0, 0, 0, 0.75),
+      0 0 18px rgba(56, 189, 248, 0.12);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  }
+
+  .radar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .radar-title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .radar-beacon-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: radarPulse 1.8s infinite;
+  }
+
+  @keyframes radarPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.85); }
+  }
+
+  .radar-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #e2e8f0;
+  }
+
+  .radar-coords {
+    font-size: 10px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+
+  .radar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .radar-kbd-hint {
+    font-size: 9px;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .radar-icon-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .radar-icon-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* ── Canvas Frame ───────────────────────────────────────────────────────── */
+  .radar-canvas-wrapper {
+    position: relative;
+    width: 188px;
+    height: 188px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #090d16;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: crosshair;
+  }
+
+  #radar-canvas {
+    width: 188px;
+    height: 188px;
+    display: block;
+  }
+
+  .radar-crosshair-hud {
+    position: absolute;
+    bottom: 5px;
+    left: 6px;
+    pointer-events: none;
+    font-size: 9.5px;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .radar-canvas-wrapper:hover .radar-crosshair-hud {
+    opacity: 1;
+  }
+
+  /* ── Quick Warp Toolbar ─────────────────────────────────────────────────── */
+  .radar-quick-warp {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
+  .warp-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .warp-pill:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    transform: translateY(-1px);
+  }
+
+  .warp-pill:active {
+    transform: translateY(0);
+  }
+
+  .warp-my-spot {
+    grid-column: span 2;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    justify-content: center;
+  }
+
+  .warp-my-spot:hover {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: rgba(16, 185, 129, 0.6);
+    color: #6ee7b7;
+  }
+
+  /* ── Collapsed Beacon ───────────────────────────────────────────────────── */
+  .radar-collapsed-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(11, 15, 23, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 20px;
+    color: #f1f5f9;
+    cursor: pointer;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.5),
+      0 8px 24px -4px rgba(0, 0, 0, 0.7),
+      0 0 12px rgba(56, 189, 248, 0.2);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .radar-collapsed-pill:hover {
+    background: rgba(15, 23, 42, 0.98);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  }
+
+  .radar-mini-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .radar-mini-kbd {
+    font-size: 9px;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 4px;
+    border-radius: 3px;
+  }
+
+  @media (max-width: 640px) {
+    .world-radar-container {
+      top: 56px;
+      right: 10px;
+    }
+  }
+</style>
+
+<script>
+  (() => {
+    const container = document.getElementById('world-radar-container');
+    const panel = document.getElementById('world-radar-panel');
+    const collapsedPill = document.getElementById('radar-collapsed-pill');
+    const collapseBtn = document.getElementById('radar-collapse-btn');
+    const canvas = document.getElementById('radar-canvas') as HTMLCanvasElement | null;
+    const playerCoordsEl = document.getElementById('radar-player-coords');
+    const hoverCoordsEl = document.getElementById('radar-hover-coords');
+    const wrapper = document.getElementById('radar-canvas-wrapper');
+    const mySpotWarp = document.getElementById('radar-warp-my-spot');
+
+    if (!container || !panel || !collapsedPill || !canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fixed HiDPI canvas configuration (380x380 internal -> 188x188 CSS)
+    const MAP_SIZE = 100; // 0..99 grid
+    const PADDING = 6;    // Border tiles
+    const TOTAL_GRID = MAP_SIZE + PADDING * 2; // -6 .. 106
+
+    let isExpanded = localStorage.getItem('spot_radar_collapsed') !== 'true';
+    let sweepAngle = 0;
+    let hoveredGridX: number | null = null;
+    let hoveredGridY: number | null = null;
+
+    // Major Landmark Locations
+    const LANDMARKS = [
+      { name: 'Central Plaza', icon: '🏛️', gx: 50, gy: 50, color: '#f59e0b' },
+      { name: 'Cyber Arcade', icon: '🕹️', gx: 86, gy: 22, color: '#ec4899' },
+      { name: 'Dev Library', icon: '📚', gx: 44, gy: 52, color: '#3b82f6' },
+      { name: 'Genesis Monolith', icon: '💎', gx: 64, gy: 16, color: '#06b6d4' },
+      { name: 'Beach Bonfire', icon: '🏖️', gx: 50, gy: 104, color: '#f97316' },
+      { name: 'Grand Station', icon: '🏔️', gx: 50, gy: -2, color: '#a855f7' }
+    ];
+
+    function setRadarExpanded(expanded: boolean) {
+      isExpanded = expanded;
+      localStorage.setItem('spot_radar_collapsed', expanded ? 'false' : 'true');
+      if (panel && collapsedPill) {
+        panel.style.display = expanded ? 'flex' : 'none';
+        collapsedPill.style.display = expanded ? 'none' : 'inline-flex';
+      }
+    }
+
+    // Toggle Handlers
+    collapseBtn?.addEventListener('click', () => setRadarExpanded(false));
+    collapsedPill?.addEventListener('click', () => setRadarExpanded(true));
+
+    // Global shortcut 'M'
+    window.addEventListener('keydown', (e) => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setRadarExpanded(!isExpanded);
+      }
+    });
+
+    // Expose global toggle for WorldHUD button
+    (window as any).toggleRadarHUD = () => {
+      setRadarExpanded(!isExpanded);
+    };
+
+    // Initialize state
+    setRadarExpanded(isExpanded);
+
+    // Warp helper
+    function triggerWarp(gx: number, gy: number) {
+      const engine = (window as any).__SPOT_ENGINE__;
+      if (engine && engine.flyTo) {
+        engine.flyTo(gx, gy, 1.4);
+      }
+    }
+
+    // Quick-warp buttons
+    document.querySelectorAll('.warp-pill[data-warp]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const coord = btn.getAttribute('data-warp');
+        if (!coord) return;
+        const [x, y] = coord.split(',').map(Number);
+        if (!isNaN(x) && !isNaN(y)) {
+          triggerWarp(x, y);
+        }
+      });
+    });
+
+    // Sync "My Spot" warp button if user owns a spot
+    function checkMySpot() {
+      if (!mySpotWarp) return;
+      const cached = localStorage.getItem('spot_claimed_coords');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+            mySpotWarp.style.display = 'flex';
+            mySpotWarp.setAttribute('data-warp', `${parsed.x},${parsed.y}`);
+          }
+        } catch {}
+      }
+    }
+    checkMySpot();
+    window.addEventListener('storage', checkMySpot);
+
+    // Interactive canvas click / drag to warp
+    function gridFromEvent(e: MouseEvent) {
+      if (!canvas) return { gx: 50, gy: 50 };
+      const rect = canvas.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width;
+      const ny = (e.clientY - rect.top) / rect.height;
+      const gx = Math.round((nx * TOTAL_GRID) - PADDING);
+      const gy = Math.round((ny * TOTAL_GRID) - PADDING);
+      return { gx, gy };
+    }
+
+    wrapper?.addEventListener('mousemove', (e) => {
+      const { gx, gy } = gridFromEvent(e);
+      hoveredGridX = gx;
+      hoveredGridY = gy;
+      if (hoverCoordsEl) {
+        // Check if near any landmark
+        const nearLandmark = LANDMARKS.find(l => Math.abs(l.gx - gx) <= 3 && Math.abs(l.gy - gy) <= 3);
+        if (nearLandmark) {
+          hoverCoordsEl.textContent = `${nearLandmark.icon} ${nearLandmark.name} [${gx}, ${gy}]`;
+        } else {
+          hoverCoordsEl.textContent = `[${gx}, ${gy}]`;
+        }
+      }
+    });
+
+    wrapper?.addEventListener('mouseleave', () => {
+      hoveredGridX = null;
+      hoveredGridY = null;
+    });
+
+    let isMouseDown = false;
+    wrapper?.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      const { gx, gy } = gridFromEvent(e);
+      triggerWarp(gx, gy);
+    });
+
+    window.addEventListener('mouseup', () => { isMouseDown = false; });
+    wrapper?.addEventListener('mousemove', (e) => {
+      if (isMouseDown) {
+        const { gx, gy } = gridFromEvent(e);
+        triggerWarp(gx, gy);
+      }
+    });
+
+    // ── Main 60fps Radar Render Loop ──────────────────────────────────────────
+    function renderRadar() {
+      requestAnimationFrame(renderRadar);
+      if (!isExpanded || !ctx || !canvas) return;
+
+      const engine = (window as any).__SPOT_ENGINE__;
+      const cw = canvas.width;
+      const ch = canvas.height;
+
+      // Clear Canvas
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Coordinate converter from grid -> radar canvas pixels
+      const toRx = (gx: number) => ((gx + PADDING) / TOTAL_GRID) * cw;
+      const toRy = (gy: number) => ((gy + PADDING) / TOTAL_GRID) * ch;
+
+      // 1. Cyber Grid Background & Ocean Border
+      ctx.fillStyle = '#060a12';
+      ctx.fillRect(0, 0, cw, ch);
+
+      // City Island Boundaries (0..99)
+      const islandX = toRx(0);
+      const islandY = toRy(0);
+      const islandW = toRx(100) - islandX;
+      const islandH = toRy(100) - islandY;
+
+      // City Island Ground
+      ctx.fillStyle = '#0c121e';
+      ctx.fillRect(islandX, islandY, islandW, islandH);
+
+      // Grid Lines (every 20 tiles)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx.lineWidth = 1;
+      for (let g = 0; g <= 100; g += 20) {
+        const rx = toRx(g);
+        const ry = toRy(g);
+        ctx.beginPath();
+        ctx.moveTo(rx, islandY);
+        ctx.lineTo(rx, islandY + islandH);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(islandX, ry);
+        ctx.lineTo(islandX + islandW, ry);
+        ctx.stroke();
+      }
+
+      // 2. Terrain Highlights
+      // Northern Mountains (gy < 0)
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.35)';
+      ctx.fillRect(islandX, toRy(-4), islandW, toRy(0) - toRy(-4));
+
+      // Southern Coast / Beach (gy >= 100)
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      ctx.fillRect(islandX, toRy(100), islandW, toRy(106) - toRy(100));
+
+      // Central Grand Plaza (gx: 36..64, gy: 36..64)
+      const plazaX = toRx(36);
+      const plazaY = toRy(36);
+      const plazaW = toRx(64) - plazaX;
+      const plazaH = toRy(64) - plazaY;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 1.2;
+      ctx.fillRect(plazaX, plazaY, plazaW, plazaH);
+      ctx.strokeRect(plazaX, plazaY, plazaW, plazaH);
+
+      // 3. Claimed Citizen Plots (Pips)
+      if (engine && engine.plots) {
+        const spots = engine.plots.getAllSpots?.() || [];
+        ctx.fillStyle = '#38bdf8';
+        for (let i = 0; i < spots.length; i++) {
+          const s = spots[i];
+          const px = toRx(s.x);
+          const py = toRy(s.y);
+          ctx.fillRect(px - 1, py - 1, 2.5, 2.5);
+        }
+      }
+
+      // 4. Landmarks
+      for (const lm of LANDMARKS) {
+        const lx = toRx(lm.gx);
+        const ly = toRy(lm.gy);
+        ctx.fillStyle = lm.color;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
+
+      // 5. Live Camera Viewport Frustum Box
+      if (engine && engine.camera) {
+        const cam = engine.camera;
+        // World coordinates visible in current camera viewport (TILE_WIDTH: 48, TILE_HEIGHT: 32)
+        const minGx = Math.floor((cam.x - cam.width / (2 * cam.zoom)) / 48);
+        const maxGx = Math.ceil((cam.x + cam.width / (2 * cam.zoom)) / 48);
+        const minGy = Math.floor((cam.y - cam.height / (2 * cam.zoom)) / 32);
+        const maxGy = Math.ceil((cam.y + cam.height / (2 * cam.zoom)) / 32);
+
+        const vx = toRx(minGx);
+        const vy = toRy(minGy);
+        const vw = toRx(maxGx) - vx;
+        const vh = toRy(maxGy) - vy;
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(vx, vy, vw, vh);
+        ctx.fillRect(vx, vy, vw, vh);
+      }
+
+      // 6. Online Multiplayer / Citizens
+      if (engine && engine.monuments) {
+        const citizens = engine.monuments.getAllCitizens?.() || [];
+        ctx.fillStyle = '#10b981';
+        for (let i = 0; i < citizens.length; i++) {
+          const c = citizens[i];
+          const cx = toRx(c.spot.x);
+          const cy = toRy(c.spot.y);
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 7. Player Dot & Orientation Cone
+      if (engine && engine.player) {
+        const p = engine.player;
+        const pgx = p.wx / 48;
+        const pgy = p.wy / 32;
+        const rx = toRx(pgx);
+        const ry = toRy(pgy);
+
+        if (playerCoordsEl) {
+          playerCoordsEl.textContent = `${Math.round(pgx)}, ${Math.round(pgy)}`;
+        }
+
+        // Direction angle
+        let angle = 0;
+        if (p.direction === 'up') angle = -Math.PI / 2;
+        else if (p.direction === 'down') angle = Math.PI / 2;
+        else if (p.direction === 'left') angle = Math.PI;
+        else if (p.direction === 'right') angle = 0;
+
+        // Vision Cone
+        ctx.save();
+        ctx.translate(rx, ry);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 18, angle - 0.45, angle + 0.45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pulsing Player Dot
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 8. Rotating Sonar Sweep
+      sweepAngle += 0.035;
+      ctx.save();
+      ctx.translate(cw / 2, ch / 2);
+      ctx.rotate(sweepAngle);
+      const sweepGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, cw / 2);
+      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+      sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, cw / 2 * 1.4, -0.4, 0);
+      ctx.closePath();
+      ctx.fillStyle = sweepGrad;
+      ctx.fill();
+
+      // Leading sweep edge
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(cw / 2 * 1.4, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // 9. Hover Crosshair
+      if (hoveredGridX !== null && hoveredGridY !== null) {
+        const hx = toRx(hoveredGridX);
+        const hy = toRy(hoveredGridY);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(hx, 0);
+        ctx.lineTo(hx, ch);
+        ctx.moveTo(0, hy);
+        ctx.lineTo(cw, hy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    renderRadar();
+  })();
+</script>

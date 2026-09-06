@@ -3,6 +3,27 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="404: Lost in Cyberspace — SPOT" description="You have drifted beyond the 100x100 grid. Coordinates not found.">
+  <script is:inline>
+    // Seamlessly resolve /spot/:coords, /spot/@citizen, or /@citizen on dev server or static hosting
+    (function () {
+      try {
+        const path = window.location.pathname;
+        const spotMatch = path.match(/^\/spot\/([0-9]+)[,-]([0-9]+)/);
+        if (spotMatch) {
+          document.documentElement.style.visibility = 'hidden';
+          window.location.replace('/?spot=' + spotMatch[1] + ',' + spotMatch[2]);
+          return;
+        }
+        const citizenMatch = path.match(/^\/spot\/@?([a-zA-Z0-9_-]+)/) || path.match(/^\/@([a-zA-Z0-9_-]+)/);
+        if (citizenMatch && citizenMatch[1] !== 'undefined') {
+          document.documentElement.style.visibility = 'hidden';
+          window.location.replace('/world?citizen=' + encodeURIComponent(citizenMatch[1]));
+          return;
+        }
+      } catch (_) {}
+    })();
+  </script>
+
   <main class="error-page">
     <!-- Starry cyber background particles -->
     <div class="stars-backdrop" aria-hidden="true">

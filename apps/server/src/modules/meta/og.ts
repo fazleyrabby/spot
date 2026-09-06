@@ -1,0 +1,257 @@
+import { Resvg } from '@resvg/resvg-js';
+
+export interface OgCardOptions {
+  displayName?: string;
+  tagline?: string;
+  x?: number | null;
+  y?: number | null;
+  avatarId?: string;
+  customAvatarData?: string | null;
+  githubUrl?: string | null;
+  isAvailable?: boolean;
+}
+
+const AVATAR_GLYPHS: Record<string, string> = {
+  astronaut: '✦',
+  hacker: '⌁',
+  pixel_wizard: '✧',
+  bot_9000: '◈',
+  retro_cat: '◆',
+  ghosty: '◌',
+  pixel_knight: '⬟',
+  neon_ninja: '✺',
+  pixel_alien: '◎',
+  golden_knight: '⬢',
+  cyber_samurai: '⚔',
+  pixel_dino: '◉',
+  indie_hacker: '💻',
+  cyber_sysadmin: '🛡',
+  ai_architect: '🔮',
+  cadet_blue: '💠',
+  hazard_orange: '⚡',
+  arctic_medic: '✚',
+  stealth_navy: '⚓',
+};
+
+function escapeXml(value: unknown): string {
+  return String(value ?? '').replace(
+    /[<>&'"]/g,
+    (char) =>
+      ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;',
+      }[char] || char)
+  );
+}
+
+// In-memory LRU cache for rendered PNG buffers (1200x630)
+interface CacheEntry {
+  buffer: Buffer;
+  timestamp: number;
+}
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_CACHE_SIZE = 400;
+const ogCache = new Map<string, CacheEntry>();
+
+export function getCachedOgImage(cacheKey: string): Buffer | null {
+  const entry = ogCache.get(cacheKey);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    ogCache.delete(cacheKey);
+    return null;
+  }
+  return entry.buffer;
+}
+
+export function setCachedOgImage(cacheKey: string, buffer: Buffer): void {
+  if (ogCache.size >= MAX_CACHE_SIZE) {
+    // Delete oldest keys
+    const firstKey = ogCache.keys().next().value;
+    if (firstKey) ogCache.delete(firstKey);
+  }
+  ogCache.set(cacheKey, { buffer, timestamp: Date.now() });
+}
+
+export function clearOgCacheForSpot(spotId: string): void {
+  for (const key of ogCache.keys()) {
+    if (key.includes(spotId)) {
+      ogCache.delete(key);
+    }
+  }
+}
+
+/**
+ * Generates an ultra-crisp 1200x630 Cyberpunk Social Card SVG
+ */
+export function generateOgSvg(opts: OgCardOptions): string {
+  const isAvailable = Boolean(opts.isAvailable);
+  const hasCoords = typeof opts.x === 'number' && typeof opts.y === 'number';
+  const x = hasCoords ? opts.x! : 50;
+  const y = hasCoords ? opts.y! : 50;
+  const district = hasCoords ? Math.floor(y / 10) * 10 + Math.floor(x / 10) + 1 : 1;
+  const displayName = escapeXml(opts.displayName || 'Spot Citizen');
+  const tagline = escapeXml(
+    opts.tagline || (isAvailable ? 'This plot is unclaimed! Claim your permanent place on the Internet.' : 'A permanent plot in the 10,000-tile cyber city.')
+  );
+  const glyph = escapeXml(AVATAR_GLYPHS[opts.avatarId || 'astronaut'] || '✦');
+  const verified = Boolean(opts.githubUrl);
+  const hasCustomAvatar = Boolean(opts.customAvatarData && opts.customAvatarData.startsWith('data:image/'));
+
+  // Truncate tagline safely
+  const formattedTagline = tagline.length > 70 ? tagline.slice(0, 68) + '…' : tagline;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+    <defs>
+      <!-- Background Gradients -->
+      <linearGradient id="cyber-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#070a13" />
+        <stop offset="60%" stop-color="#0b1120" />
+        <stop offset="100%" stop-color="#030712" />
+      </linearGradient>
+
+      <linearGradient id="neon-border" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9" />
+        <stop offset="50%" stop-color="#6366f1" stop-opacity="0.4" />
+        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.9" />
+      </linearGradient>
+
+      <linearGradient id="avatar-frame-border" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f59e0b" />
+        <stop offset="100%" stop-color="#38bdf8" />
+      </linearGradient>
+
+      <!-- Ambient Radial Glows -->
+      <radialGradient id="glow-cyan" cx="15%" cy="20%" r="45%">
+        <stop offset="0%" stop-color="#0284c7" stop-opacity="0.22" />
+        <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+      </radialGradient>
+
+      <radialGradient id="glow-amber" cx="85%" cy="80%" r="45%">
+        <stop offset="0%" stop-color="#d97706" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+      </radialGradient>
+
+      <!-- Grid Pattern -->
+      <pattern id="cyber-grid" width="36" height="36" patternUnits="userSpaceOnUse">
+        <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.05" />
+      </pattern>
+    </defs>
+
+    <!-- Base Canvas -->
+    <rect width="1200" height="630" fill="url(#cyber-bg)" />
+    <rect width="1200" height="630" fill="url(#glow-cyan)" />
+    <rect width="1200" height="630" fill="url(#glow-amber)" />
+    <rect width="1200" height="630" fill="url(#cyber-grid)" />
+
+    <!-- Outer Decorative Cyber Shield -->
+    <rect x="36" y="36" width="1128" height="558" rx="24" stroke="url(#neon-border)" stroke-width="2" />
+    <rect x="42" y="42" width="1116" height="546" rx="20" fill="#0b0f19" fill-opacity="0.82" />
+
+    <!-- Corner Neon Accents -->
+    <path d="M 36 68 L 36 36 L 68 36" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" />
+    <path d="M 1164 68 L 1164 36 L 1132 36" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" />
+    <path d="M 36 562 L 36 594 L 68 594" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" />
+    <path d="M 1164 562 L 1164 594 L 1132 594" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" />
+
+    <!-- TOP HEADER BAR -->
+    <g transform="translate(80, 82)">
+      <!-- Brand Pill -->
+      <rect x="0" y="0" width="124" height="34" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.2" />
+      <circle cx="16" cy="17" r="4" fill="#38bdf8" />
+      <text x="28" y="22" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" font-weight="900" letter-spacing="2.5" fill="#f8fafc">SPOT</text>
+
+      <!-- Sector & Status Pill -->
+      <rect x="136" y="0" width="280" height="34" rx="8" fill="#111827" stroke="#334155" stroke-width="1" />
+      <text x="152" y="21" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#94a3b8">
+        SECTOR ${district} · ${isAvailable ? 'AVAILABLE PLOT' : 'CITIZEN DEED'}
+      </text>
+
+      <!-- Coordinates Pill (Top Right) -->
+      <g transform="translate(830, 0)">
+        <rect x="0" y="0" width="170" height="34" rx="8" fill="#172554" stroke="#38bdf8" stroke-width="1.2" />
+        <circle cx="16" cy="17" r="4" fill="#38bdf8" />
+        <text x="28" y="22" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="13" font-weight="700" fill="#38bdf8">PLOT (${x}, ${y})</text>
+      </g>
+    </g>
+
+    <!-- CENTER HERO CARD (Avatar + Details) -->
+    <g transform="translate(80, 150)">
+      <!-- Avatar Showcase Box -->
+      <g transform="translate(0, 0)">
+        <rect width="210" height="210" rx="20" fill="#0d1322" stroke="url(#avatar-frame-border)" stroke-width="3" />
+        <rect x="8" y="8" width="194" height="194" rx="14" fill="#060911" stroke="#1e293b" stroke-width="1" />
+        ${
+          hasCustomAvatar
+            ? `<image href="${opts.customAvatarData}" x="20" y="20" width="170" height="170" preserveAspectRatio="xMidYMid meet" image-rendering="pixelated" />`
+            : `<text x="105" y="142" text-anchor="middle" font-size="96" fill="#38bdf8">${glyph}</text>`
+        }
+      </g>
+
+      <!-- Citizen Identity & Bio Column -->
+      <g transform="translate(250, 20)">
+        <!-- Citizen Handle & Verified Badge -->
+        <text x="0" y="44" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" fill="#f8fafc">
+          ${isAvailable ? `Plot (${x}, ${y})` : `@${displayName}`}
+        </text>
+        ${
+          verified
+            ? `<g transform="translate(${Math.min(displayName.length * 28 + 24, 600)}, 12)">
+                <rect width="112" height="28" rx="6" fill="#0369a1" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1" />
+                <text x="56" y="18" text-anchor="middle" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" font-weight="700" fill="#38bdf8">✓ VERIFIED</text>
+              </g>`
+            : ''
+        }
+
+        <!-- Coordinate Tag & Sector -->
+        <text x="0" y="94" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="18" font-weight="600" fill="#f59e0b">
+          ${hasCoords ? `Permanent Internet Territory · Coordinates (${x}, ${y})` : 'Metropolis Explorer'}
+        </text>
+
+        <!-- Tagline / Mission -->
+        <text x="0" y="152" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="24" font-weight="400" fill="#cbd5e1">
+          “${formattedTagline}”
+        </text>
+      </g>
+    </g>
+
+    <!-- BOTTOM TELEMETRY / ACTION BAR -->
+    <g transform="translate(80, 480)">
+      <!-- Divider Line -->
+      <line x1="0" y1="0" x2="1040" y2="0" stroke="#334155" stroke-opacity="0.6" stroke-width="1.5" />
+
+      <!-- Left: City Census Statement -->
+      <text x="0" y="42" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="14" font-weight="600" fill="#64748b">
+        10,000-PLOT 60FPS LIVING CANVAS CITY · PERMANENT HERITAGE
+      </text>
+
+      <!-- Right: Domain Call to Action -->
+      <g transform="translate(780, 16)">
+        <rect x="0" y="0" width="260" height="38" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" />
+        <text x="130" y="24" text-anchor="middle" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="13" font-weight="800" letter-spacing="1" fill="#38bdf8">
+          claimyourspot.lol ↗
+        </text>
+      </g>
+    </g>
+  </svg>`;
+}
+
+/**
+ * Rasterizes an SVG string into a high-DPI 1200x630 PNG Buffer
+ */
+export function rasterizeSvgToPng(svg: string): Buffer {
+  const resvg = new Resvg(svg, {
+    fitTo: {
+      mode: 'width',
+      value: 1200,
+    },
+    shapeRendering: 2, // geometricPrecision
+    textRendering: 1, // optimizeLegibility
+    imageRendering: 1, // optimizeQuality
+  });
+
+  const pngData = resvg.render();
+  return pngData.asPng();
+}
