@@ -32,17 +32,29 @@
       </div>
     </div>
 
+    <!-- Game Switcher Tabs -->
+    <div class="arcade-game-tabs" id="arcade-game-tabs" role="tablist">
+      <button type="button" class="arcade-game-tab active" id="tab-game-brawler" data-game="brawler" role="tab" aria-selected="true">
+        <span class="game-tab-icon">🥊</span>
+        <span class="game-tab-title">Spot Fighter II</span>
+      </button>
+      <button type="button" class="arcade-game-tab" id="tab-game-snake" data-game="snake" role="tab" aria-selected="false">
+        <span class="game-tab-icon">🐍</span>
+        <span class="game-tab-title">Byte Snake '84</span>
+      </button>
+    </div>
+
     <!-- Telemetry Bar -->
     <div class="arcade-score-bar">
       <div class="score-pill">
-        <span class="score-label">SCORE</span>
+        <span class="score-label" id="arcade-score-label">WINS</span>
         <span class="score-val mono-num" id="arcade-current-score">000</span>
       </div>
       <div class="score-pill high-score">
-        <span class="score-label">HIGH SCORE</span>
+        <span class="score-label" id="arcade-best-label">STREAK</span>
         <span class="score-val mono-num" id="arcade-best-score">000</span>
       </div>
-      <div class="score-pill badge-pill" id="arcade-badge-status" title="Score 50+ to unlock Arcade Legend badge">
+      <div class="score-pill badge-pill" id="arcade-badge-status" title="Defeat the Grand Master to unlock Arcade Legend badge">
         <span class="score-label">BADGE</span>
         <span class="score-badge-text" id="arcade-badge-text">Locked 🔒</span>
       </div>
@@ -57,88 +69,144 @@
       <!-- Start / Game Over Overlay -->
       <div class="crt-overlay" id="arcade-overlay">
         <div class="crt-overlay-content">
-          <div class="crt-title" id="overlay-title">BYTE SNAKE</div>
-          <p class="crt-subtitle" id="overlay-subtitle">Press SPACE or Tap to Start</p>
-          <div class="crt-instructions">
-            <span>Controls: <strong>Touch Joystick</strong>, <strong>Screen Drag</strong>, or <strong>Arrow Keys</strong></span>
-            <span>Target: <strong>50+ pts</strong> to unlock Arcade Badge</span>
+          <div class="crt-title" id="overlay-title">SPOT FIGHTER II</div>
+          <p class="crt-subtitle" id="overlay-subtitle">Cyber Brawl • 1v1 Retro Arena</p>
+
+          <!-- Fighter Selection Bar -->
+          <div class="fighter-select-bar" id="overlay-fighter-select">
+            <span class="fighter-select-label">SELECT YOUR FIGHTER:</span>
+            <div class="fighter-pills" id="fighter-pills-list"></div>
           </div>
-          <button type="button" class="crt-start-btn" id="overlay-action-btn">INSERT COIN (START)</button>
+
+          <div class="crt-instructions" id="overlay-instructions">
+            <span>Movement: <strong>A / D</strong> (Move) • <strong>W</strong> (Jump) • <strong>S</strong> (Duck)</span>
+            <span>Attacks: <strong>J</strong> (Punch) • <strong>K</strong> (Kick) • <strong>L</strong> (Hadouken)</span>
+          </div>
+          <button type="button" class="crt-start-btn" id="overlay-action-btn">INSERT COIN (ROUND 1)</button>
         </div>
       </div>
     </div>
 
-    <!-- Controller Mode Selector Tabs -->
-    <div class="arcade-ctrl-tabs" id="arcade-ctrl-tabs" role="tablist" aria-label="Controller Selection">
-      <button type="button" class="ctrl-tab-btn active" data-mode="joystick" role="tab" aria-selected="true">
-        <span class="tab-icon">🕹️</span>
-        <span class="tab-label">Joystick</span>
-      </button>
-      <button type="button" class="ctrl-tab-btn" data-mode="dpad" role="tab" aria-selected="false">
-        <span class="tab-icon">🎮</span>
-        <span class="tab-label">D-Pad</span>
-      </button>
-      <button type="button" class="ctrl-tab-btn" data-mode="swipe" role="tab" aria-selected="false">
-        <span class="tab-icon">👆</span>
-        <span class="tab-label">Swipe Pad</span>
-      </button>
-    </div>
-
-    <!-- Mode 1: Virtual Touch Joystick -->
-    <div class="arcade-ctrl-panel panel-joystick" id="ctrl-panel-joystick">
-      <div class="joystick-base" id="joystick-base" role="region" aria-label="Virtual Joystick">
-        <div class="joystick-ring-outer"></div>
-        <div class="joystick-ring-inner"></div>
-        <span class="joy-indicator joy-up" id="joy-dir-up">▲</span>
-        <span class="joy-indicator joy-left" id="joy-dir-left">◀</span>
-        <span class="joy-indicator joy-right" id="joy-dir-right">▶</span>
-        <span class="joy-indicator joy-down" id="joy-dir-down">▼</span>
-        <div class="joystick-thumb" id="joystick-thumb">
-          <div class="thumb-inner"></div>
+    <!-- Brawler Controller Deck (Active in Spot Fighter II mode) -->
+    <div class="brawler-ctrl-deck" id="brawler-ctrl-deck">
+      <!-- Left: Movement D-Pad -->
+      <div class="brawler-dpad-wrapper">
+        <div class="brawler-dpad-grid">
+          <button type="button" class="brawler-dpad-btn btn-brawler-up" id="btn-fight-jump" aria-label="Jump">
+            <span class="btn-dpad-icon">▲</span>
+            <span class="btn-key-hint">W</span>
+          </button>
+          <div class="brawler-dpad-mid">
+            <button type="button" class="brawler-dpad-btn btn-brawler-left" id="btn-fight-left" aria-label="Move Left">
+              <span class="btn-dpad-icon">◀</span>
+              <span class="btn-key-hint">A</span>
+            </button>
+            <div class="brawler-dpad-center"></div>
+            <button type="button" class="brawler-dpad-btn btn-brawler-right" id="btn-fight-right" aria-label="Move Right">
+              <span class="btn-dpad-icon">▶</span>
+              <span class="btn-key-hint">D</span>
+            </button>
+          </div>
+          <button type="button" class="brawler-dpad-btn btn-brawler-down" id="btn-fight-crouch" aria-label="Crouch / Duck">
+            <span class="btn-dpad-icon">▼</span>
+            <span class="btn-key-hint">S</span>
+          </button>
         </div>
+        <div class="ctrl-helper-label">WASD or D-Pad</div>
       </div>
-      <div class="ctrl-helper-label">Touch & slide joystick in 360° to steer</div>
-    </div>
 
-    <!-- Mode 2: Tactile 4-Way D-Pad -->
-    <div class="arcade-ctrl-panel panel-dpad" id="ctrl-panel-dpad" style="display: none;">
-      <div class="arcade-dpad-grid">
-        <button type="button" class="dpad-btn dpad-up" data-dir="UP" aria-label="Steer Up">
-          <span class="dpad-arrow">▲</span>
+      <!-- Right: Action Buttons (Punch, Kick, Hadouken Special) -->
+      <div class="brawler-actions-wrapper">
+        <button type="button" class="fight-action-btn btn-fight-punch" id="btn-fight-punch" aria-label="Punch">
+          <span class="action-btn-key">J</span>
+          <span class="action-btn-label">PUNCH</span>
         </button>
-        <div class="dpad-middle-row">
-          <button type="button" class="dpad-btn dpad-left" data-dir="LEFT" aria-label="Steer Left">
-            <span class="dpad-arrow">◀</span>
-          </button>
-          <button type="button" class="dpad-btn dpad-center" id="dpad-center-btn" aria-label="Start Game">
-            <span class="dpad-dot">●</span>
-          </button>
-          <button type="button" class="dpad-btn dpad-right" data-dir="RIGHT" aria-label="Steer Right">
-            <span class="dpad-arrow">▶</span>
-          </button>
-        </div>
-        <button type="button" class="dpad-btn dpad-down" data-dir="DOWN" aria-label="Steer Down">
-          <span class="dpad-arrow">▼</span>
+        <button type="button" class="fight-action-btn btn-fight-kick" id="btn-fight-kick" aria-label="Kick">
+          <span class="action-btn-key">K</span>
+          <span class="action-btn-label">KICK</span>
+        </button>
+        <button type="button" class="fight-action-btn btn-fight-special" id="btn-fight-special" aria-label="Hadouken Special">
+          <span class="action-btn-key">L</span>
+          <span class="action-btn-label">SURGE</span>
+          <span class="action-btn-spark">⚡</span>
         </button>
       </div>
-      <div class="ctrl-helper-label">Tap arrow keys to turn instantly</div>
     </div>
 
-    <!-- Mode 3: Screen Swipe & Gesture Pad -->
-    <div class="arcade-ctrl-panel panel-swipe" id="ctrl-panel-swipe" style="display: none;">
-      <div class="swipe-touchpad" id="swipe-touchpad" role="region" aria-label="Swipe Touchpad">
-        <div class="swipe-guide-arrow guide-up" id="swipe-arrow-up">▲</div>
-        <div class="swipe-guide-mid">
-          <span class="swipe-guide-arrow guide-left" id="swipe-arrow-left">◀</span>
-          <div class="swipe-guide-core">
-            <span class="swipe-icon">👆</span>
-            <span class="swipe-hint">Swipe anywhere</span>
-          </div>
-          <span class="swipe-guide-arrow guide-right" id="swipe-arrow-right">▶</span>
-        </div>
-        <div class="swipe-guide-arrow guide-down" id="swipe-arrow-down">▼</div>
+    <!-- Snake Controller Deck (Active in Byte Snake mode) -->
+    <div class="snake-ctrl-deck" id="snake-ctrl-deck" style="display: none;">
+      <!-- Controller Mode Selector Tabs -->
+      <div class="arcade-ctrl-tabs" id="arcade-ctrl-tabs" role="tablist" aria-label="Controller Selection">
+        <button type="button" class="ctrl-tab-btn active" data-mode="joystick" role="tab" aria-selected="true">
+          <span class="tab-icon">🕹️</span>
+          <span class="tab-label">Joystick</span>
+        </button>
+        <button type="button" class="ctrl-tab-btn" data-mode="dpad" role="tab" aria-selected="false">
+          <span class="tab-icon">🎮</span>
+          <span class="tab-label">D-Pad</span>
+        </button>
+        <button type="button" class="ctrl-tab-btn" data-mode="swipe" role="tab" aria-selected="false">
+          <span class="tab-icon">👆</span>
+          <span class="tab-label">Swipe Pad</span>
+        </button>
       </div>
-      <div class="ctrl-helper-label">Flick or swipe anywhere on the pad or game screen</div>
+
+      <!-- Mode 1: Virtual Touch Joystick -->
+      <div class="arcade-ctrl-panel panel-joystick" id="ctrl-panel-joystick">
+        <div class="joystick-base" id="joystick-base" role="region" aria-label="Virtual Joystick">
+          <div class="joystick-ring-outer"></div>
+          <div class="joystick-ring-inner"></div>
+          <span class="joy-indicator joy-up" id="joy-dir-up">▲</span>
+          <span class="joy-indicator joy-left" id="joy-dir-left">◀</span>
+          <span class="joy-indicator joy-right" id="joy-dir-right">▶</span>
+          <span class="joy-indicator joy-down" id="joy-dir-down">▼</span>
+          <div class="joystick-thumb" id="joystick-thumb">
+            <div class="thumb-inner"></div>
+          </div>
+        </div>
+        <div class="ctrl-helper-label">Touch & slide joystick in 360° to steer</div>
+      </div>
+
+      <!-- Mode 2: Tactile 4-Way D-Pad -->
+      <div class="arcade-ctrl-panel panel-dpad" id="ctrl-panel-dpad" style="display: none;">
+        <div class="arcade-dpad-grid">
+          <button type="button" class="dpad-btn dpad-up" data-dir="UP" aria-label="Steer Up">
+            <span class="dpad-arrow">▲</span>
+          </button>
+          <div class="dpad-middle-row">
+            <button type="button" class="dpad-btn dpad-left" data-dir="LEFT" aria-label="Steer Left">
+              <span class="dpad-arrow">◀</span>
+            </button>
+            <button type="button" class="dpad-btn dpad-center" id="dpad-center-btn" aria-label="Start Game">
+              <span class="dpad-dot">●</span>
+            </button>
+            <button type="button" class="dpad-btn dpad-right" data-dir="RIGHT" aria-label="Steer Right">
+              <span class="dpad-arrow">▶</span>
+            </button>
+          </div>
+          <button type="button" class="dpad-btn dpad-down" data-dir="DOWN" aria-label="Steer Down">
+            <span class="dpad-arrow">▼</span>
+          </button>
+        </div>
+        <div class="ctrl-helper-label">Tap arrow keys to turn instantly</div>
+      </div>
+
+      <!-- Mode 3: Screen Swipe & Gesture Pad -->
+      <div class="arcade-ctrl-panel panel-swipe" id="ctrl-panel-swipe" style="display: none;">
+        <div class="swipe-touchpad" id="swipe-touchpad" role="region" aria-label="Swipe Touchpad">
+          <div class="swipe-guide-arrow guide-up" id="swipe-arrow-up">▲</div>
+          <div class="swipe-guide-mid">
+            <span class="swipe-guide-arrow guide-left" id="swipe-arrow-left">◀</span>
+            <div class="swipe-guide-core">
+              <span class="swipe-icon">👆</span>
+              <span class="swipe-hint">Swipe anywhere</span>
+            </div>
+            <span class="swipe-guide-arrow guide-right" id="swipe-arrow-right">▶</span>
+          </div>
+          <div class="swipe-guide-arrow guide-down" id="swipe-arrow-down">▼</div>
+        </div>
+        <div class="ctrl-helper-label">Flick or swipe anywhere on the pad or game screen</div>
+      </div>
     </div>
 
     <!-- Cabinet Footer Note -->
@@ -274,6 +342,56 @@
   .arcade-tool-btn:active,
   .arcade-close-btn:active {
     transform: scale(0.95);
+  }
+
+  /* Game Switcher Tabs */
+  .arcade-game-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .arcade-game-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 9px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .arcade-game-tab:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .arcade-game-tab.active {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
+  }
+
+  .arcade-game-tab#tab-game-snake.active {
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #86efac;
+    box-shadow: 0 0 14px rgba(34, 197, 94, 0.25);
+  }
+
+  .game-tab-icon {
+    font-size: 1rem;
   }
 
   /* Score Bar */
@@ -441,6 +559,220 @@
 
   .crt-start-btn:active {
     transform: scale(0.97);
+  }
+
+  /* Fighter Select in Overlay */
+  .fighter-select-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0;
+    width: 100%;
+    align-items: center;
+  }
+
+  .fighter-select-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    text-transform: uppercase;
+  }
+
+  .fighter-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 360px;
+  }
+
+  .fighter-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+
+  .fighter-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .fighter-pill.active {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+    color: #fecaca;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  }
+
+  .fighter-pill canvas {
+    width: 18px;
+    height: 18px;
+    image-rendering: pixelated;
+  }
+
+  /* Brawler Controller Deck */
+  .brawler-ctrl-deck {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    touch-action: manipulation;
+  }
+
+  .brawler-dpad-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .brawler-dpad-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .brawler-dpad-mid {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .brawler-dpad-center {
+    width: 34px;
+    height: 34px;
+    background: #0b0f19;
+    border-radius: 4px;
+  }
+
+  .brawler-dpad-btn {
+    width: 36px;
+    height: 36px;
+    background: #1e293b;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  .brawler-dpad-btn:hover,
+  .brawler-dpad-btn:active,
+  .brawler-dpad-btn.pressed {
+    background: #334155;
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: scale(0.95);
+  }
+
+  .btn-dpad-icon {
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  .btn-key-hint {
+    font-size: 0.55rem;
+    font-weight: 700;
+    opacity: 0.6;
+    line-height: 1;
+  }
+
+  .brawler-actions-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .fight-action-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    border: 2px solid;
+    transition: all 0.12s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+  }
+
+  .fight-action-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .fight-action-btn:active,
+  .fight-action-btn.pressed {
+    transform: translateY(2px) scale(0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  }
+
+  .btn-fight-punch {
+    background: radial-gradient(circle at 35% 35%, #f87171 0%, #dc2626 65%, #991b1b 100%);
+    border-color: #fca5a5;
+    color: #ffffff;
+  }
+
+  .btn-fight-kick {
+    background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 65%, #92400e 100%);
+    border-color: #fde68a;
+    color: #ffffff;
+  }
+
+  .btn-fight-special {
+    background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 65%, #075985 100%);
+    border-color: #bae6fd;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  }
+
+  .action-btn-key {
+    font-size: 0.65rem;
+    font-weight: 800;
+    opacity: 0.85;
+    line-height: 1;
+  }
+
+  .action-btn-label {
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .action-btn-spark {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    font-size: 0.65rem;
   }
 
   /* Controller Selection Tabs */
@@ -748,6 +1080,8 @@
 </style>
 
 <script>
+  import { AVATAR_CATALOG, drawAvatarOnCanvas } from '../canvas/avatars.js';
+
   // ── Procedural Web Audio 8-Bit Synthesizer ─────────────────────────────────
   let audioCtx: AudioContext | null = null;
   let soundEnabled = true;
@@ -780,6 +1114,7 @@
     } catch (_) {}
   }
 
+  // Snake Sounds
   function playEatSound() {
     playTone(520, 'sine', 0.06, 0.08);
     setTimeout(() => playTone(880, 'square', 0.08, 0.07), 40);
@@ -791,46 +1126,82 @@
     setTimeout(() => playTone(70, 'sawtooth', 0.3, 0.08), 220);
   }
 
-  // ── Byte Snake Game Engine ────────────────────────────────────────────────
+  // Fighting Game Sounds
+  function playFightPunchSound() {
+    playTone(220, 'square', 0.06, 0.08);
+    setTimeout(() => playTone(110, 'sawtooth', 0.05, 0.06), 25);
+  }
+
+  function playFightKickSound() {
+    playTone(150, 'sawtooth', 0.1, 0.1);
+    setTimeout(() => playTone(75, 'square', 0.08, 0.08), 35);
+  }
+
+  function playFightSpecialSound() {
+    if (!soundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(780, audioCtx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.09, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.22);
+    } catch (_) {}
+  }
+
+  function playFightHitSound() {
+    playTone(130, 'square', 0.07, 0.09);
+    setTimeout(() => playTone(80, 'sawtooth', 0.06, 0.07), 30);
+  }
+
+  function playFightBlockSound() {
+    playTone(720, 'sine', 0.06, 0.07);
+    setTimeout(() => playTone(880, 'sine', 0.05, 0.05), 30);
+  }
+
+  function playFightRoundSound() {
+    playTone(440, 'triangle', 0.18, 0.1);
+    setTimeout(() => playTone(880, 'triangle', 0.3, 0.12), 120);
+  }
+
+  function playFightKOSound() {
+    playTone(110, 'sawtooth', 0.4, 0.15);
+    setTimeout(() => playTone(75, 'sawtooth', 0.6, 0.14), 220);
+  }
+
+  // ── DOM Elements ──────────────────────────────────────────────────────────
   const canvas = document.getElementById('arcade-game-canvas') as HTMLCanvasElement | null;
   const overlay = document.getElementById('arcade-overlay');
   const overlayTitle = document.getElementById('overlay-title');
   const overlaySubtitle = document.getElementById('overlay-subtitle');
+  const overlayFighterSelect = document.getElementById('overlay-fighter-select');
+  const fighterPillsList = document.getElementById('fighter-pills-list');
+  const overlayInstructions = document.getElementById('overlay-instructions');
   const overlayBtn = document.getElementById('overlay-action-btn');
+  const arcadeScoreLabel = document.getElementById('arcade-score-label');
+  const arcadeBestLabel = document.getElementById('arcade-best-label');
   const scoreDisplay = document.getElementById('arcade-current-score');
   const bestScoreDisplay = document.getElementById('arcade-best-score');
   const badgeStatus = document.getElementById('arcade-badge-status');
   const badgeText = document.getElementById('arcade-badge-text');
   const soundBtn = document.getElementById('arcade-sound-btn');
   const soundIcon = document.getElementById('arcade-sound-icon');
+  const arcadeTitle = document.getElementById('arcade-title');
 
-  const GRID_SIZE = 20; // 20x20 grid
-  const CELL_SIZE = 20; // 20px per cell = 400x400
+  // Switcher Tabs and Decks
+  const tabGameBrawler = document.getElementById('tab-game-brawler');
+  const tabGameSnake = document.getElementById('tab-game-snake');
+  const brawlerCtrlDeck = document.getElementById('brawler-ctrl-deck');
+  const snakeCtrlDeck = document.getElementById('snake-ctrl-deck');
 
-  interface Point { x: number; y: number }
-  let snake: Point[] = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
-  let dir: Point = { x: 0, y: -1 };
-  let nextDir: Point = { x: 0, y: -1 };
-  let food: Point = { x: 5, y: 5 };
-  let score = 0;
-  let bestScore = 0;
-  let gameRunning = false;
-  let gameLoopId: number | null = null;
-  let lastTickTime = 0;
-  let speedMs = 120;
-
-  // Restore Best Score from LocalStorage
-  try {
-    const savedBest = localStorage.getItem('spot_arcade_best_score');
-    if (savedBest) {
-      bestScore = parseInt(savedBest, 10) || 0;
-      if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore.toString().padStart(3, '0');
-      if (bestScore >= 50 && badgeText && badgeStatus) {
-        badgeText.textContent = 'Unlocked 🏆';
-        badgeStatus.classList.add('badge-unlocked');
-      }
-    }
-  } catch (_) {}
+  let activeGame: 'brawler' | 'snake' = 'brawler';
 
   // Sound toggle
   soundBtn?.addEventListener('click', (e) => {
@@ -839,7 +1210,1398 @@
     if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
   });
 
-  function spawnFood(): void {
+  // ── Global Badge Helper ───────────────────────────────────────────────────
+  function unlockArcadeBadge() {
+    if (badgeText && badgeStatus) {
+      badgeText.textContent = 'Unlocked 🏆';
+      badgeStatus.classList.add('badge-unlocked');
+    }
+    try {
+      const unlockedBadges = JSON.parse(localStorage.getItem('spot_unlocked_badges') || '[]');
+      if (!unlockedBadges.includes('badge_arcade_legend')) {
+        unlockedBadges.push('badge_arcade_legend');
+        localStorage.setItem('spot_unlocked_badges', JSON.stringify(unlockedBadges));
+        window.dispatchEvent(new CustomEvent('spot:badge-unlocked', { detail: { id: 'badge_arcade_legend' } }));
+      }
+    } catch (_) {}
+  }
+
+  // Restore badge status if already unlocked
+  try {
+    const unlockedBadges = JSON.parse(localStorage.getItem('spot_unlocked_badges') || '[]');
+    if (unlockedBadges.includes('badge_arcade_legend') && badgeText && badgeStatus) {
+      badgeText.textContent = 'Unlocked 🏆';
+      badgeStatus.classList.add('badge-unlocked');
+    }
+  } catch (_) {}
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── SPOT FIGHTER II: CYBER BRAWL (RETRO 1V1 ARCADE FIGHTING GAME) ─────────
+  // ══════════════════════════════════════════════════════════════════════════
+  const FIGHTER_ROSTER = [
+    { id: 'cyber_samurai', name: 'Cyber Ronin', special: 'KATANA SURGE' },
+    { id: 'pixel_knight', name: 'Paladin', special: 'HOLY BURST' },
+    { id: 'astronaut', name: 'Astronaut', special: 'PLASMA BOLT' },
+    { id: 'neon_ninja', name: 'Shadow Runner', special: 'SHURIKEN WAVE' },
+    { id: 'indie_hacker', name: 'Indie Hacker', special: 'EMP DISRUPT' },
+    { id: 'cadet_blue', name: 'Cadet Blue', special: 'CYBER BLAST' },
+    { id: 'hazard_orange', name: 'Hazard Orange', special: 'FLAME SLAM' },
+  ];
+
+  let selectedFighterAvatarId = 'cyber_samurai';
+  let brawlerWins = 0;
+  let brawlerBestStreak = 0;
+  let brawlerRound = 1;
+  const MAX_BRAWLER_ROUNDS = 3;
+  let brawlerRoundTimer = 99;
+  let brawlerTimerInterval: any = null;
+  let brawlerRunning = false;
+  let brawlerLoopId: number | null = null;
+  let brawlerScreenShake = 0;
+
+  // Restore Brawler Streak
+  try {
+    const savedStreak = localStorage.getItem('spot_brawler_best_streak');
+    if (savedStreak) brawlerBestStreak = parseInt(savedStreak, 10) || 0;
+  } catch (_) {}
+
+  interface Fighter {
+    name: string;
+    avatarId: string;
+    x: number;
+    y: number; // 0 = standing on ground
+    vx: number;
+    vy: number;
+    facing: 1 | -1;
+    hp: number;
+    maxHp: number;
+    state: 'idle' | 'walk' | 'jump' | 'crouch' | 'punch' | 'kick' | 'special' | 'hit' | 'block' | 'ko';
+    stateTimer: number;
+    isGrounded: boolean;
+    isBlocking: boolean;
+    cooldown: number;
+    hasHit?: boolean;
+  }
+
+  interface Projectile {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    radius: number;
+    color: string;
+    damage: number;
+    owner: 'p1' | 'p2';
+    life: number;
+  }
+
+  interface Spark {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    color: string;
+    life: number;
+    maxLife: number;
+  }
+
+  const BRAWLER_GROUND_Y = 320;
+  const BRAWLER_GRAVITY = 0.72;
+
+  let p1: Fighter;
+  let p2: Fighter;
+  let brawlerProjectiles: Projectile[] = [];
+  let brawlerSparks: Spark[] = [];
+  let brawlerBannerText = '';
+  let brawlerBannerTimer = 0;
+  let brawlerBannerColor = '#facc15';
+
+  const OPPONENT_ROSTER = [
+    { name: 'SYSADMIN', avatarId: 'cyber_sysadmin', hp: 90, aiAggr: 0.65, title: 'Matrix Defender' },
+    { name: 'INVADER X', avatarId: 'pixel_alien', hp: 105, aiAggr: 0.80, title: 'Alien Berserker' },
+    { name: 'GRAND RONIN', avatarId: 'cyber_samurai', hp: 130, aiAggr: 0.95, title: 'Byte Master' },
+  ];
+
+  function initBrawlerFighters() {
+    const p1FighterDef = FIGHTER_ROSTER.find(f => f.id === selectedFighterAvatarId) || FIGHTER_ROSTER[0];
+    const opp = OPPONENT_ROSTER[Math.min(brawlerRound - 1, OPPONENT_ROSTER.length - 1)];
+
+    p1 = {
+      name: p1FighterDef.name,
+      avatarId: p1FighterDef.id,
+      x: 90,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      facing: 1,
+      hp: 100,
+      maxHp: 100,
+      state: 'idle',
+      stateTimer: 0,
+      isGrounded: true,
+      isBlocking: false,
+      cooldown: 0,
+      hasHit: false,
+    };
+
+    p2 = {
+      name: opp.name,
+      avatarId: opp.avatarId,
+      x: 310,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      facing: -1,
+      hp: opp.hp,
+      maxHp: opp.hp,
+      state: 'idle',
+      stateTimer: 0,
+      isGrounded: true,
+      isBlocking: false,
+      cooldown: 0,
+      hasHit: false,
+    };
+
+    brawlerProjectiles = [];
+    brawlerSparks = [];
+    brawlerRoundTimer = 99;
+  }
+
+  // Populate Fighter Selection Bar in CRT overlay
+  function renderFighterPills() {
+    if (!fighterPillsList) return;
+    fighterPillsList.innerHTML = '';
+    FIGHTER_ROSTER.forEach((fighter) => {
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = `fighter-pill ${fighter.id === selectedFighterAvatarId ? 'active' : ''}`;
+      pill.dataset.fighter = fighter.id;
+
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 18;
+      pCanvas.height = 18;
+      const pCtx = pCanvas.getContext('2d');
+      if (pCtx) {
+        const av = AVATAR_CATALOG[fighter.id] || AVATAR_CATALOG.cyber_samurai;
+        drawAvatarOnCanvas(pCtx, av, 0, 0, 18);
+      }
+
+      const pLabel = document.createElement('span');
+      pLabel.textContent = fighter.name;
+
+      pill.appendChild(pCanvas);
+      pill.appendChild(pLabel);
+
+      pill.addEventListener('click', () => {
+        selectedFighterAvatarId = fighter.id;
+        document.querySelectorAll('.fighter-pill').forEach(el => el.classList.remove('active'));
+        pill.classList.add('active');
+        playTone(380, 'sine', 0.05, 0.05);
+        initBrawlerFighters();
+        renderBrawlerFrame();
+      });
+
+      fighterPillsList.appendChild(pill);
+    });
+  }
+
+  // Input states for Brawler
+  const brawlerKeys = {
+    left: false,
+    right: false,
+    up: false,
+    down: false,
+  };
+
+  function startBrawlerGame() {
+    initAudio();
+    brawlerRound = 1;
+    brawlerWins = 0;
+    initBrawlerFighters();
+
+    brawlerRunning = true;
+    if (overlay) overlay.classList.add('hidden');
+
+    brawlerBannerText = `ROUND ${brawlerRound} • FIGHT!`;
+    brawlerBannerColor = '#facc15';
+    brawlerBannerTimer = 90;
+    playFightRoundSound();
+
+    if (scoreDisplay) scoreDisplay.textContent = brawlerWins.toString().padStart(3, '0');
+    if (bestScoreDisplay) bestScoreDisplay.textContent = brawlerBestStreak.toString().padStart(3, '0');
+
+    if (brawlerTimerInterval) clearInterval(brawlerTimerInterval);
+    brawlerTimerInterval = setInterval(() => {
+      if (brawlerRunning && brawlerRoundTimer > 0) {
+        brawlerRoundTimer--;
+        if (brawlerRoundTimer === 0) {
+          handleTimeOut();
+        }
+      }
+    }, 1000);
+
+    if (brawlerLoopId) cancelAnimationFrame(brawlerLoopId);
+    brawlerLoopId = requestAnimationFrame(brawlerGameLoop);
+  }
+
+  function brawlerP1Attack(type: 'punch' | 'kick' | 'special') {
+    if (!brawlerRunning || p1.hp <= 0 || p1.state === 'hit' || p1.state === 'ko') return;
+    if (p1.cooldown > 0) return;
+
+    if (type === 'punch') {
+      p1.state = 'punch';
+      p1.stateTimer = 14;
+      p1.cooldown = 18;
+      p1.hasHit = false;
+      p1.vx = p1.facing * 2.2;
+      playFightPunchSound();
+      checkFighterMeleeHit(p1, p2, 56, 12, 'punch');
+    } else if (type === 'kick') {
+      p1.state = 'kick';
+      p1.stateTimer = 18;
+      p1.cooldown = 24;
+      p1.hasHit = false;
+      p1.vx = p1.facing * 2.8;
+      playFightKickSound();
+      checkFighterMeleeHit(p1, p2, 64, 18, 'kick');
+    } else if (type === 'special') {
+      p1.state = 'special';
+      p1.stateTimer = 22;
+      p1.cooldown = 35;
+      p1.hasHit = false;
+      playFightSpecialSound();
+      // Spawn projectile after small windup
+      setTimeout(() => {
+        if (!brawlerRunning || p1.hp <= 0) return;
+        brawlerProjectiles.push({
+          x: p1.x + p1.facing * 30,
+          y: p1.y - 20,
+          vx: p1.facing * 6.5,
+          vy: 0,
+          radius: 12,
+          color: '#38bdf8',
+          damage: 24,
+          owner: 'p1',
+          life: 80,
+        });
+      }, 100);
+    }
+  }
+
+  function spawnSparks(x: number, y: number, color = '#f97316', count = 10) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = 2 + Math.random() * 5;
+      brawlerSparks.push({
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd - 1,
+        size: 2 + Math.random() * 3,
+        color,
+        life: 0,
+        maxLife: 16 + Math.floor(Math.random() * 12),
+      });
+    }
+  }
+
+  function checkFighterMeleeHit(attacker: Fighter, defender: Fighter, range: number, damage: number, attackType: 'punch' | 'kick') {
+    if (attacker.hasHit || defender.hp <= 0 || defender.state === 'ko') return;
+    const dist = Math.abs(defender.x - attacker.x);
+    const heightDiff = Math.abs(defender.y - attacker.y);
+    const inFront = (attacker.facing === 1 && defender.x >= attacker.x - 8) || (attacker.facing === -1 && defender.x <= attacker.x + 8);
+
+    if (inFront && dist <= range && heightDiff < 42) {
+      attacker.hasHit = true;
+      const hitX = (attacker.x + defender.x) / 2;
+      const hitY = BRAWLER_GROUND_Y + attacker.y - 24;
+
+      if (defender.isBlocking) {
+        defender.hp = Math.max(0, defender.hp - Math.floor(damage * 0.25));
+        defender.state = 'block';
+        defender.stateTimer = 8;
+        spawnSparks(hitX, hitY, '#38bdf8', 10);
+        playFightBlockSound();
+      } else {
+        defender.hp = Math.max(0, defender.hp - damage);
+        defender.state = 'hit';
+        defender.stateTimer = 13;
+        defender.vx = attacker.facing * (attackType === 'kick' ? 5.5 : 3.8);
+        brawlerScreenShake = attackType === 'kick' ? 8 : 5;
+        spawnSparks(hitX, hitY, '#ef4444', 16);
+        playFightHitSound();
+      }
+
+      if (defender.hp <= 0) {
+        handleKnockout(defender, attacker);
+      }
+    }
+  }
+
+  function handleKnockout(loser: Fighter, winner: Fighter) {
+    loser.hp = 0;
+    loser.state = 'ko';
+    loser.stateTimer = 100;
+    playFightKOSound();
+
+    brawlerBannerText = 'K.O. !';
+    brawlerBannerColor = '#ef4444';
+    brawlerBannerTimer = 120;
+    brawlerScreenShake = 12;
+
+    setTimeout(() => {
+      if (loser === p2) {
+        // Player Wins Round
+        brawlerWins++;
+        if (brawlerWins > brawlerBestStreak) {
+          brawlerBestStreak = brawlerWins;
+          try {
+            localStorage.setItem('spot_brawler_best_streak', brawlerBestStreak.toString());
+          } catch (_) {}
+        }
+        if (scoreDisplay) scoreDisplay.textContent = brawlerWins.toString().padStart(3, '0');
+        if (bestScoreDisplay) bestScoreDisplay.textContent = brawlerBestStreak.toString().padStart(3, '0');
+
+        if (brawlerRound >= MAX_BRAWLER_ROUNDS) {
+          // CHAMPION VICTORY!
+          unlockArcadeBadge();
+          brawlerBannerText = 'GRAND CHAMPION! 🏆';
+          brawlerBannerColor = '#facc15';
+          brawlerBannerTimer = 160;
+          setTimeout(() => endBrawlerGame(true), 2400);
+        } else {
+          // Advance to next round
+          brawlerRound++;
+          brawlerBannerText = `ROUND ${brawlerRound} ADVANCE!`;
+          brawlerBannerColor = '#38bdf8';
+          brawlerBannerTimer = 90;
+          setTimeout(() => {
+            initBrawlerFighters();
+            brawlerBannerText = `ROUND ${brawlerRound} • FIGHT!`;
+            brawlerBannerColor = '#facc15';
+            brawlerBannerTimer = 80;
+            playFightRoundSound();
+          }, 1800);
+        }
+      } else {
+        // Player Loses
+        brawlerBannerText = 'YOU LOSE';
+        brawlerBannerColor = '#ef4444';
+        brawlerBannerTimer = 140;
+        setTimeout(() => endBrawlerGame(false), 2000);
+      }
+    }, 1200);
+  }
+
+  function handleTimeOut() {
+    brawlerRunning = false;
+    playFightKOSound();
+    if (p1.hp > p2.hp) {
+      handleKnockout(p2, p1);
+    } else {
+      handleKnockout(p1, p2);
+    }
+  }
+
+  function endBrawlerGame(won: boolean) {
+    brawlerRunning = false;
+    if (brawlerTimerInterval) clearInterval(brawlerTimerInterval);
+
+    if (overlayTitle) overlayTitle.textContent = won ? 'VICTORY!' : 'GAME OVER';
+    if (overlaySubtitle) overlaySubtitle.innerHTML = won
+      ? `Defeated all ${MAX_BRAWLER_ROUNDS} Rivals! • Streak: <strong>${brawlerWins}</strong>`
+      : `Defeated in Round ${brawlerRound} • Streak: <strong>${brawlerWins}</strong>`;
+    if (overlayBtn) overlayBtn.textContent = 'PLAY AGAIN (SPACE)';
+    if (overlay) overlay.classList.remove('hidden');
+  }
+
+  // CPU AI Decision Engine
+  function updateBrawlerCPU() {
+    if (!brawlerRunning || p2.hp <= 0 || p2.state === 'ko' || p2.state === 'hit') return;
+    const oppDef = OPPONENT_ROSTER[Math.min(brawlerRound - 1, OPPONENT_ROSTER.length - 1)];
+    const dist = Math.abs(p2.x - p1.x);
+
+    p2.isBlocking = false;
+    if (p2.cooldown > 0) p2.cooldown--;
+
+    // Auto facing
+    p2.facing = p2.x < p1.x ? 1 : -1;
+
+    // React to player projectiles
+    const incomingProj = brawlerProjectiles.find(p => p.owner === 'p1' && Math.abs(p.x - p2.x) < 100);
+    if (incomingProj && p2.isGrounded && Math.random() < oppDef.aiAggr) {
+      if (Math.random() < 0.65) {
+        // Jump over projectile
+        p2.vy = -12.5;
+        p2.isGrounded = false;
+        p2.state = 'jump';
+        return;
+      } else {
+        // Crouch duck under projectile
+        p2.state = 'crouch';
+        p2.stateTimer = 18;
+        return;
+      }
+    }
+
+    if (p2.state === 'punch' || p2.state === 'kick' || p2.state === 'special') {
+      return;
+    }
+
+    // Long distance: close in rapidly or fire special projectile
+    if (dist > 110) {
+      p2.vx = p2.facing * 3.2;
+      p2.state = 'walk';
+      if (p2.cooldown === 0 && Math.random() < 0.045 * oppDef.aiAggr) {
+        p2.state = 'special';
+        p2.stateTimer = 22;
+        p2.cooldown = 42;
+        p2.hasHit = false;
+        playFightSpecialSound();
+        setTimeout(() => {
+          if (!brawlerRunning || p2.hp <= 0) return;
+          brawlerProjectiles.push({
+            x: p2.x + p2.facing * 30,
+            y: p2.y - 20,
+            vx: p2.facing * 6.4,
+            vy: 0,
+            radius: 12,
+            color: '#ef4444',
+            damage: 22,
+            owner: 'p2',
+            life: 80,
+          });
+        }, 100);
+      }
+    } else if (dist > 44) {
+      // Approach into melee striking range
+      if (Math.random() < 0.03 * oppDef.aiAggr && p2.isGrounded) {
+        // Jump-in attack
+        p2.vy = -12.5;
+        p2.vx = p2.facing * 3.6;
+        p2.isGrounded = false;
+        p2.state = 'jump';
+      } else {
+        p2.vx = p2.facing * 2.8;
+        p2.state = 'walk';
+      }
+    } else {
+      // Close range combat (dist <= 44)
+      p2.vx = 0;
+
+      // Defensive reaction: block incoming player strike
+      if ((p1.state === 'punch' || p1.state === 'kick') && Math.random() < oppDef.aiAggr * 0.6) {
+        p2.isBlocking = true;
+        p2.state = 'block';
+        p2.stateTimer = 8;
+        return;
+      }
+
+      // Attack if cooldown ready
+      if (p2.cooldown === 0) {
+        if (Math.random() < 0.55) {
+          // Punch with forward lunge
+          p2.state = 'punch';
+          p2.stateTimer = 14;
+          p2.cooldown = 18;
+          p2.hasHit = false;
+          p2.vx = p2.facing * 2.2;
+          playFightPunchSound();
+          checkFighterMeleeHit(p2, p1, 56, 12, 'punch');
+        } else {
+          // Kick with forward lunge
+          p2.state = 'kick';
+          p2.stateTimer = 18;
+          p2.cooldown = 24;
+          p2.hasHit = false;
+          p2.vx = p2.facing * 2.8;
+          playFightKickSound();
+          checkFighterMeleeHit(p2, p1, 64, 18, 'kick');
+        }
+      }
+    }
+  }
+
+  // Update Brawler physics & loop
+  function updateBrawlerPhysics() {
+    if (brawlerScreenShake > 0) brawlerScreenShake--;
+    if (brawlerBannerTimer > 0) brawlerBannerTimer--;
+
+    // Update Player 1
+    if (p1.hp > 0 && p1.state !== 'ko') {
+      p1.isBlocking = false;
+      if (p1.cooldown > 0) p1.cooldown--;
+
+      // Facing
+      if (p1.state !== 'punch' && p1.state !== 'kick' && p1.state !== 'special') {
+        p1.facing = p1.x < p2.x ? 1 : -1;
+      }
+
+      if (p1.state === 'punch' || p1.state === 'kick' || p1.state === 'special' || p1.state === 'hit' || p1.state === 'block') {
+        if (p1.stateTimer > 0) p1.stateTimer--;
+        else if (p1.isGrounded) p1.state = 'idle';
+      } else {
+        if (brawlerKeys.up && p1.isGrounded) {
+          p1.vy = -13.5;
+          p1.isGrounded = false;
+          p1.state = 'jump';
+        } else if (brawlerKeys.down && p1.isGrounded) {
+          p1.state = 'crouch';
+          p1.vx = 0;
+        } else if (brawlerKeys.left) {
+          p1.vx = -3.4;
+          p1.state = 'walk';
+          if (p1.facing === 1) p1.isBlocking = true;
+        } else if (brawlerKeys.right) {
+          p1.vx = 3.4;
+          p1.state = 'walk';
+          if (p1.facing === -1) p1.isBlocking = true;
+        } else {
+          p1.vx = 0;
+          if (p1.isGrounded) p1.state = 'idle';
+        }
+      }
+    }
+
+    // Gravity & Grounding P1
+    if (!p1.isGrounded) {
+      p1.vy += BRAWLER_GRAVITY;
+      p1.y += p1.vy;
+      if (p1.y >= 0) {
+        p1.y = 0;
+        p1.vy = 0;
+        p1.isGrounded = true;
+        p1.state = 'idle';
+      }
+    }
+    p1.x += p1.vx;
+    p1.x = Math.max(30, Math.min(370, p1.x));
+    p1.vx *= 0.85;
+
+    // Update CPU P2
+    updateBrawlerCPU();
+    if (!p2.isGrounded) {
+      p2.vy += BRAWLER_GRAVITY;
+      p2.y += p2.vy;
+      if (p2.y >= 0) {
+        p2.y = 0;
+        p2.vy = 0;
+        p2.isGrounded = true;
+        p2.state = 'idle';
+      }
+    }
+    if (p2.state === 'hit' || p2.state === 'block') {
+      if (p2.stateTimer > 0) p2.stateTimer--;
+      else if (p2.isGrounded) p2.state = 'idle';
+    }
+    p2.x += p2.vx;
+    p2.x = Math.max(30, Math.min(370, p2.x));
+    p2.vx *= 0.85;
+
+    // Active Hitbox sweeps during attack frames so strikes connect cleanly as fighters lunge
+    if (p1.state === 'punch' && p1.stateTimer >= 5) {
+      checkFighterMeleeHit(p1, p2, 56, 12, 'punch');
+    } else if (p1.state === 'kick' && p1.stateTimer >= 6) {
+      checkFighterMeleeHit(p1, p2, 64, 18, 'kick');
+    }
+
+    if (p2.state === 'punch' && p2.stateTimer >= 5) {
+      checkFighterMeleeHit(p2, p1, 56, 12, 'punch');
+    } else if (p2.state === 'kick' && p2.stateTimer >= 6) {
+      checkFighterMeleeHit(p2, p1, 64, 18, 'kick');
+    }
+
+    // Update Projectiles
+    for (let i = brawlerProjectiles.length - 1; i >= 0; i--) {
+      const proj = brawlerProjectiles[i];
+      proj.x += proj.vx;
+      proj.life--;
+
+      // Spawn trail particle
+      if (Math.random() < 0.6) {
+        brawlerSparks.push({
+          x: proj.x,
+          y: BRAWLER_GROUND_Y + proj.y,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
+          size: 2,
+          color: proj.color,
+          life: 0,
+          maxLife: 10,
+        });
+      }
+
+      // Check collision with target
+      const target = proj.owner === 'p1' ? p2 : p1;
+      const dist = Math.abs(target.x - proj.x);
+      const hitY = BRAWLER_GROUND_Y + target.y - 24;
+
+      // Ducking under high projectiles
+      if (target.state === 'crouch' && dist < 32) {
+        // Successfully ducked under Hadouken wave!
+        continue;
+      }
+
+      if (dist < 26 && Math.abs(hitY - (BRAWLER_GROUND_Y + proj.y)) < 30) {
+        if (target.isBlocking) {
+          target.hp = Math.max(0, target.hp - Math.floor(proj.damage * 0.25));
+          target.state = 'block';
+          target.stateTimer = 10;
+          spawnSparks(proj.x, hitY, '#38bdf8', 12);
+          playFightBlockSound();
+        } else {
+          target.hp = Math.max(0, target.hp - proj.damage);
+          target.state = 'hit';
+          target.stateTimer = 14;
+          target.vx = (proj.vx > 0 ? 1 : -1) * 6;
+          brawlerScreenShake = 8;
+          spawnSparks(proj.x, hitY, '#ef4444', 18);
+          playFightHitSound();
+        }
+
+        brawlerProjectiles.splice(i, 1);
+        if (target.hp <= 0) {
+          handleKnockout(target, proj.owner === 'p1' ? p1 : p2);
+        }
+        continue;
+      }
+
+      // Out of bounds or life expired
+      if (proj.x < -20 || proj.x > 420 || proj.life <= 0) {
+        brawlerProjectiles.splice(i, 1);
+      }
+    }
+
+    // Update Sparks
+    for (let i = brawlerSparks.length - 1; i >= 0; i--) {
+      const sp = brawlerSparks[i];
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.life++;
+      if (sp.life >= sp.maxLife) {
+        brawlerSparks.splice(i, 1);
+      }
+    }
+  }
+
+  // Render Brawler Scene
+  function renderBrawlerFrame() {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.save();
+
+    // Screen Shake
+    if (brawlerScreenShake > 0) {
+      const sx = (Math.random() - 0.5) * brawlerScreenShake * 1.5;
+      const sy = (Math.random() - 0.5) * brawlerScreenShake * 1.5;
+      ctx.translate(sx, sy);
+    }
+
+    // ── 1. Cyberpunk Skyline Background ─────────────────────────────────────
+    const grad = ctx.createLinearGradient(0, 0, 0, 400);
+    grad.addColorStop(0, '#090d16');
+    grad.addColorStop(0.55, '#1e112a');
+    grad.addColorStop(0.85, '#3b154c');
+    grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 400, 400);
+
+    // Distant Neon Buildings
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(20, 160, 45, 170);
+    ctx.fillRect(80, 130, 60, 200);
+    ctx.fillRect(160, 180, 50, 150);
+    ctx.fillRect(230, 120, 70, 210);
+    ctx.fillRect(320, 150, 60, 180);
+
+    // Glowing Neon Windows
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    for (let y = 140; y < 310; y += 16) {
+      ctx.fillRect(92, y, 6, 8);
+      ctx.fillRect(115, y, 6, 8);
+      ctx.fillRect(245, y, 6, 8);
+      ctx.fillRect(275, y, 6, 8);
+    }
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.35)';
+    for (let y = 170; y < 310; y += 18) {
+      ctx.fillRect(35, y, 5, 7);
+      ctx.fillRect(175, y, 5, 7);
+      ctx.fillRect(340, y, 5, 7);
+    }
+
+    // Neon Rooftop Billboard: "SPOT BRAWL '84"
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.15)';
+    ctx.fillRect(110, 110, 180, 28);
+    ctx.strokeStyle = '#f43f5e';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(110, 110, 180, 28);
+    ctx.font = "bold 13px 'Courier New', monospace";
+    ctx.fillStyle = '#fecdd3';
+    ctx.textAlign = 'center';
+    ctx.fillText("⚡ SPOT BRAWL '84 ⚡", 200, 129);
+
+    // ── 2. Metallic Floor Stage & Grid Lines ────────────────────────────────
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, BRAWLER_GROUND_Y, 400, 400 - BRAWLER_GROUND_Y);
+
+    // Neon Horizon Line
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, BRAWLER_GROUND_Y);
+    ctx.lineTo(400, BRAWLER_GROUND_Y);
+    ctx.stroke();
+
+    // Floor Grid Perspective
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+    ctx.lineWidth = 1;
+    for (let x = 20; x < 400; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, BRAWLER_GROUND_Y);
+      ctx.lineTo(x + (x - 200) * 0.8, 400);
+      ctx.stroke();
+    }
+    for (let y = BRAWLER_GROUND_Y + 18; y < 400; y += 22) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(400, y);
+      ctx.stroke();
+    }
+
+    // ── 3. Draw Articulated Retro Arcade Fighters ──────────────────────────
+    function drawFighter(f: Fighter) {
+      ctx.save();
+      const fx = Math.floor(f.x);
+      const fy = Math.floor(BRAWLER_GROUND_Y + f.y);
+
+      // ── Ground Shadow ──
+      const shadowScale = Math.max(0.3, 1 + f.y / 160);
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.45 * shadowScale})`;
+      ctx.beginPath();
+      ctx.ellipse(fx, BRAWLER_GROUND_Y, 22 * shadowScale, 6 * shadowScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Transform to fighter position & facing
+      ctx.translate(fx, fy);
+      if (f.facing === -1) ctx.scale(-1, 1);
+
+      // Hit stun flash / white silhouette filter
+      if (f.state === 'hit') {
+        ctx.filter = 'brightness(2.4) contrast(1.4)';
+      }
+
+      // Fetch avatar colors
+      const av = AVATAR_CATALOG[f.avatarId] || AVATAR_CATALOG.cyber_samurai;
+      const cPrimary = av.colors.primary || '#0284c7';
+      const cSecondary = av.colors.secondary || '#38bdf8';
+      const cAccent = av.colors.accent || '#f59e0b';
+      const cSkin = av.colors.skin || '#fed7aa';
+
+      const tick = performance.now() / 100;
+      const breathe = (f.state === 'idle') ? Math.sin(tick * 0.8) * 1.5 : 0;
+      const walkCycle = Math.sin(tick * 2.4);
+      const walkBob = (f.state === 'walk') ? Math.abs(Math.sin(tick * 2.4)) * 2 : 0;
+
+      // ── KO STATE: Collapsed on Ground ──
+      if (f.state === 'ko') {
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-18, -6, 22, 6); // Torso flat
+        ctx.fillRect(4, -5, 18, 5); // Legs flat
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(18, -7, 8, 7); // Boots
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-4, -7, 4, 7); // Belt
+
+        // Head flat on ground
+        ctx.fillStyle = cSecondary;
+        ctx.beginPath();
+        ctx.arc(-22, -8, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // KO X eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8px monospace';
+        ctx.fillText('x', -24, -6);
+        ctx.fillText('x', -18, -6);
+
+        // Dizzy Stars orbiting head
+        const starAngle = tick * 1.5;
+        for (let i = 0; i < 3; i++) {
+          const a = starAngle + (i * Math.PI * 2) / 3;
+          const sx = -22 + Math.cos(a) * 14;
+          const sy = -18 + Math.sin(a) * 5;
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(sx - 2, sy - 2, 4, 4);
+        }
+        ctx.restore();
+        return;
+      }
+
+      // ── CROUCH COMPRESSION OFFSET ──
+      const crouchY = f.state === 'crouch' ? 14 : 0;
+      const bodyY = -34 + breathe - walkBob + crouchY;
+
+      // ── 1. LEGS & COMBAT BOOTS ──
+      if (f.state === 'kick') {
+        // Plant leg (bent back)
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-10, -18, 7, 14);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-12, -4, 10, 5); // boot
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-12, -1, 10, 2); // sole
+
+        // Extended Kicking Leg (Horizontal high thrust)
+        ctx.fillStyle = cPrimary;
+        ctx.beginPath();
+        ctx.moveTo(2, -22);
+        ctx.lineTo(26, -26);
+        ctx.lineTo(26, -18);
+        ctx.lineTo(2, -15);
+        ctx.closePath();
+        ctx.fill();
+
+        // Chunky extended boot
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(26, -29, 14, 10);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(26, -21, 14, 3); // boot trim
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(36, -28, 4, 4); // toe steel cap
+
+        // Dynamic Motion Strike Arc (Cyan/Yellow speed sweep)
+        ctx.strokeStyle = cSecondary;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(8, -12, 34, -0.6, 0.2);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+      } else if (f.state === 'jump') {
+        // Tucked jump legs
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-8, -16, 6, 10);
+        ctx.fillRect(2, -16, 6, 10);
+        // Boots angled up
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-10, -7, 8, 6);
+        ctx.fillRect(0, -7, 8, 6);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-10, -3, 8, 2);
+        ctx.fillRect(0, -3, 8, 2);
+
+      } else if (f.state === 'crouch') {
+        // Deep athletic crouch
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-12, -14 + crouchY, 10, 8);
+        ctx.fillRect(2, -14 + crouchY, 10, 8);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-14, -6 + crouchY, 12, 6);
+        ctx.fillRect(2, -6 + crouchY, 12, 6);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-14, -2 + crouchY, 12, 2);
+        ctx.fillRect(2, -2 + crouchY, 12, 2);
+
+      } else {
+        // Idle or Walking stance
+        const legBackOffset = f.state === 'walk' ? walkCycle * 6 : -4;
+        const legFrontOffset = f.state === 'walk' ? -walkCycle * 6 : 4;
+
+        // Back Leg
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-8 + legBackOffset, -18, 6, 13);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-10 + legBackOffset, -5, 9, 6); // boot
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-10 + legBackOffset, -1, 9, 2); // sole
+
+        // Front Leg
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(1 + legFrontOffset, -18, 6, 13);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-1 + legFrontOffset, -5, 9, 6); // boot
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-1 + legFrontOffset, -1, 9, 2); // sole
+      }
+
+      // ── 2. TORSO, MARTIAL GI & BELT ──
+      // Main Torso Block
+      ctx.fillStyle = cPrimary;
+      ctx.fillRect(-9, bodyY + 6, 18, 16);
+
+      // Torso side contour / shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(-9, bodyY + 6, 4, 16);
+
+      // V-Neck / Gi lapel trim
+      ctx.fillStyle = cSecondary;
+      ctx.beginPath();
+      ctx.moveTo(-6, bodyY + 6);
+      ctx.lineTo(0, bodyY + 14);
+      ctx.lineTo(6, bodyY + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Chest skin / undershirt
+      ctx.fillStyle = cSkin;
+      ctx.beginPath();
+      ctx.moveTo(-3, bodyY + 6);
+      ctx.lineTo(0, bodyY + 11);
+      ctx.lineTo(3, bodyY + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Martial Arts Belt
+      ctx.fillStyle = cAccent;
+      ctx.fillRect(-10, bodyY + 17, 20, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-2, bodyY + 17, 4, 4); // Belt buckle
+
+      // Flowing Belt Sash Ribbons (fluttering behind)
+      const sashWave1 = Math.sin(tick * 1.8) * 3;
+      const sashWave2 = Math.cos(tick * 1.8) * 3;
+      ctx.fillStyle = cAccent;
+      ctx.beginPath();
+      ctx.moveTo(-4, bodyY + 20);
+      ctx.lineTo(-12 + sashWave1, bodyY + 28);
+      ctx.lineTo(-8 + sashWave1, bodyY + 28);
+      ctx.lineTo(-2, bodyY + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-1, bodyY + 20);
+      ctx.lineTo(-6 + sashWave2, bodyY + 27);
+      ctx.lineTo(-3 + sashWave2, bodyY + 27);
+      ctx.lineTo(1, bodyY + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      // ── 3. ARMS, FISTS & ATTACKS ──
+      if (f.state === 'punch') {
+        // Rear arm chambered back
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-12, bodyY + 10, 6, 8);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-14, bodyY + 13, 6, 6); // Clenched fist
+
+        // Lead Arm: Powerful Straight Thrust Punch!
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(6, bodyY + 7, 20, 6); // Extended bicep/forearm
+        // Large Padded Glove / Knuckle
+        ctx.fillStyle = cSecondary;
+        ctx.fillRect(25, bodyY + 5, 12, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(34, bodyY + 7, 3, 6); // knuckle shine
+
+        // Speed Lines / Punch Blast Whoosh
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(14, bodyY + 6);
+        ctx.lineTo(26, bodyY + 6);
+        ctx.moveTo(10, bodyY + 12);
+        ctx.lineTo(24, bodyY + 12);
+        ctx.stroke();
+
+      } else if (f.state === 'special') {
+        // Both Arms Thrust Forward Together (Hadouken Pose)
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(2, bodyY + 8, 18, 5);
+        ctx.fillRect(2, bodyY + 14, 18, 5);
+        // Open Palms
+        ctx.fillStyle = cSkin;
+        ctx.fillRect(18, bodyY + 6, 6, 8);
+        ctx.fillRect(18, bodyY + 13, 6, 8);
+
+        // Glowing Plasma Surge Charge around Hands
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.55)';
+        ctx.beginPath();
+        ctx.arc(24, bodyY + 13, 13 + Math.sin(tick * 3) * 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(24, bodyY + 13, 8, 0, Math.PI * 2);
+        ctx.stroke();
+
+      } else if (f.state === 'block') {
+        // Crossed Arms "X" Guard
+        ctx.fillStyle = cPrimary;
+        ctx.beginPath();
+        ctx.moveTo(0, bodyY + 18);
+        ctx.lineTo(10, bodyY + 6);
+        ctx.lineTo(14, bodyY + 8);
+        ctx.lineTo(4, bodyY + 20);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(10, bodyY + 20);
+        ctx.lineTo(0, bodyY + 6);
+        ctx.lineTo(4, bodyY + 4);
+        ctx.lineTo(14, bodyY + 18);
+        ctx.closePath();
+        ctx.fill();
+
+        // Padded Gloves
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(0, bodyY + 5, 5, 5);
+        ctx.fillRect(10, bodyY + 5, 5, 5);
+
+        // Glowing Energy Forcefield Barrier
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.28)';
+        ctx.beginPath();
+        ctx.arc(16, bodyY + 10, 22, -Math.PI / 2.5, Math.PI / 2.5);
+        ctx.stroke();
+        ctx.fill();
+
+      } else if (f.state === 'kick') {
+        // Dynamic balance arms during kick
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-14, bodyY + 8, 6, 9);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-16, bodyY + 14, 5, 5);
+
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(4, bodyY + 6, 6, 8);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(5, bodyY + 12, 5, 5);
+
+      } else {
+        // Classic Fighter Guard (Idle / Walk / Jump)
+        // Rear Guard Arm
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(-11, bodyY + 8, 5, 8);
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(-8, bodyY + 5, 6, 6); // rear fist near chin
+
+        // Front Guard Arm
+        ctx.fillStyle = cPrimary;
+        ctx.fillRect(4, bodyY + 9, 6, 7);
+        ctx.fillRect(7, bodyY + 5, 5, 6);
+        ctx.fillStyle = cSecondary;
+        ctx.fillRect(10, bodyY + 3, 7, 7); // front fist
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(13, bodyY + 4, 3, 3); // glove knuckle highlight
+      }
+
+      // ── 4. HEAD, COMBAT VISOR & ARCHETYPE ACCESSORIES ──
+      const headX = 0;
+      const headY = bodyY - 1;
+
+      // Base Head
+      ctx.fillStyle = cSkin;
+      ctx.beginPath();
+      ctx.arc(headX, headY - 6, 8.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Archetype-Specific Styling
+      if (f.avatarId === 'cyber_samurai') {
+        // Kabuto Samurai Helmet with Golden Horns
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(headX, headY - 7, 9.5, Math.PI * 0.8, Math.PI * 2.2);
+        ctx.fill();
+
+        // Horned Golden Crest
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(headX, headY - 14);
+        ctx.lineTo(headX - 9, headY - 18);
+        ctx.lineTo(headX - 6, headY - 12);
+        ctx.lineTo(headX, headY - 11);
+        ctx.lineTo(headX + 6, headY - 12);
+        ctx.lineTo(headX + 9, headY - 18);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing Cyan Visor Slit
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(headX - 1, headY - 7, 8, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(headX + 2, headY - 7, 4, 1.5);
+
+      } else if (f.avatarId === 'astronaut' || f.avatarId === 'cadet_blue') {
+        // Space Combat Bubble Helmet
+        ctx.fillStyle = cPrimary;
+        ctx.beginPath();
+        ctx.arc(headX, headY - 6, 9.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Reflective Cyan Glass Visor
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(headX + 2, headY - 6, 6.5, -Math.PI / 2, Math.PI / 2);
+        ctx.fill();
+
+        // Specular Glint
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(headX + 4, headY - 8, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Helmet Antenna
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(headX - 8, headY - 13, 2, 7);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(headX - 9, headY - 14, 4, 3); // blinking comm tip
+
+      } else if (f.avatarId === 'pixel_knight') {
+        // Steel Knight Visor with Red Plume
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.arc(headX, headY - 6, 9.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cross slit
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(headX, headY - 7, 8, 3);
+
+        // Red Knight Plume Feather
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(headX - 3, headY - 15);
+        ctx.quadraticCurveTo(headX - 10, headY - 20, headX - 12, headY - 12);
+        ctx.lineTo(headX, headY - 12);
+        ctx.closePath();
+        ctx.fill();
+
+      } else if (f.avatarId === 'neon_ninja') {
+        // Ninja Hood & Face Cowl
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(headX, headY - 6, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ninja Eye Slit
+        ctx.fillStyle = cSkin;
+        ctx.fillRect(headX + 1, headY - 8, 7, 4);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(headX + 3, headY - 7, 4, 2); // Glowing eyes
+
+        // Headband Plate
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(headX - 2, headY - 11, 8, 3);
+
+      } else if (f.avatarId === 'pixel_alien') {
+        // Alien Dome Head with Dual Antennae
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(headX, headY - 7, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Antennae
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(headX - 5, headY - 15, 2, 6);
+        ctx.fillRect(headX + 3, headY - 15, 2, 6);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(headX - 6, headY - 17, 4, 3);
+        ctx.fillRect(headX + 2, headY - 17, 4, 3);
+
+        // 3 Glowing Red Eyes
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(headX - 1, headY - 7, 3, 3);
+        ctx.fillRect(headX + 3, headY - 9, 3, 3);
+        ctx.fillRect(headX + 3, headY - 5, 3, 3);
+
+      } else if (f.avatarId === 'cyber_sysadmin') {
+        // SysAdmin Cyber Comm Headset
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(headX, headY - 6, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Comm Headset band & earpiece
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(headX - 7, headY - 12, 14, 2.5);
+        ctx.fillStyle = '#0ea5e9';
+        ctx.fillRect(headX - 9, headY - 8, 3, 5);
+
+        // Glowing Green Scouter Monocle
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(headX + 1, headY - 7, 6, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(headX + 3, headY - 7, 3, 1.5);
+
+      } else {
+        // Indie Hacker / Hazard Orange / Street Brawler
+        // Spiky Brawler Hair
+        ctx.fillStyle = cSecondary;
+        ctx.beginPath();
+        ctx.moveTo(headX - 9, headY - 5);
+        ctx.lineTo(headX - 11, headY - 14);
+        ctx.lineTo(headX - 5, headY - 11);
+        ctx.lineTo(headX - 2, headY - 16);
+        ctx.lineTo(headX + 3, headY - 12);
+        ctx.lineTo(headX + 8, headY - 15);
+        ctx.lineTo(headX + 7, headY - 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Fighting Headband
+        ctx.fillStyle = cAccent;
+        ctx.fillRect(headX - 8, headY - 9, 16, 3.5);
+
+        // Trailing Headband Ribbons (fluttering behind)
+        const ribbonWave = Math.sin(tick * 2.0) * 3;
+        ctx.fillStyle = cAccent;
+        ctx.beginPath();
+        ctx.moveTo(headX - 7, headY - 8);
+        ctx.lineTo(headX - 16 + ribbonWave, headY - 12);
+        ctx.lineTo(headX - 14 + ribbonWave, headY - 6);
+        ctx.lineTo(headX - 7, headY - 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Determined Fighting Eyes
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(headX + 1, headY - 5, 5, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(headX + 3, headY - 5, 2, 1.5);
+      }
+
+      ctx.restore();
+    }
+
+    if (p1) drawFighter(p1);
+    if (p2) drawFighter(p2);
+
+    // ── 4. Projectiles (Hadouken) ───────────────────────────────────────────
+    brawlerProjectiles.forEach((proj) => {
+      ctx.save();
+      const py = BRAWLER_GROUND_Y + proj.y;
+
+      // Glow circle
+      ctx.fillStyle = proj.color;
+      ctx.shadowColor = proj.color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(proj.x, py, proj.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner Core
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(proj.x, py, proj.radius * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    });
+
+    // ── 5. Sparks & Hit Particles ───────────────────────────────────────────
+    brawlerSparks.forEach((sp) => {
+      const alpha = 1 - (sp.life / sp.maxLife);
+      ctx.fillStyle = sp.color;
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.fillRect(sp.x, sp.y, sp.size, sp.size);
+      ctx.globalAlpha = 1;
+    });
+
+    // ── 6. Arcade HUD: Health Bars & 99s Round Timer ─────────────────────────
+    // P1 Health Bar
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(20, 18, 140, 16);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(20, 18, 140, 16);
+
+    const p1HpRatio = Math.max(0, p1.hp / p1.maxHp);
+    ctx.fillStyle = p1HpRatio > 0.5 ? '#22c55e' : p1HpRatio > 0.2 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(22, 20, Math.floor(136 * p1HpRatio), 12);
+
+    ctx.font = "bold 10px 'Courier New', monospace";
+    ctx.fillStyle = '#38bdf8';
+    ctx.textAlign = 'left';
+    ctx.fillText(`P1: ${p1.name.toUpperCase()}`, 20, 14);
+
+    // P2 Health Bar
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(240, 18, 140, 16);
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(240, 18, 140, 16);
+
+    const p2HpRatio = Math.max(0, p2.hp / p2.maxHp);
+    const p2BarWidth = Math.floor(136 * p2HpRatio);
+    ctx.fillStyle = p2HpRatio > 0.5 ? '#22c55e' : p2HpRatio > 0.2 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(376 - p2BarWidth, 20, p2BarWidth, 12);
+
+    ctx.font = "bold 10px 'Courier New', monospace";
+    ctx.fillStyle = '#ef4444';
+    ctx.textAlign = 'right';
+    ctx.fillText(`CPU: ${p2.name.toUpperCase()}`, 380, 14);
+
+    // Round Timer Box
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(180, 12, 40, 28);
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(180, 12, 40, 28);
+
+    ctx.font = "bold 16px 'Courier New', monospace";
+    ctx.fillStyle = '#facc15';
+    ctx.textAlign = 'center';
+    ctx.fillText(brawlerRoundTimer.toString().padStart(2, '0'), 200, 32);
+
+    // ── 7. Banner Text (ROUND 1, K.O.!, YOU WIN!) ───────────────────────────
+    if (brawlerBannerTimer > 0 && brawlerBannerText) {
+      ctx.save();
+      ctx.font = "900 24px 'Impact', sans-serif";
+      ctx.textAlign = 'center';
+      ctx.shadowColor = brawlerBannerColor;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(brawlerBannerText, 200, 190);
+      ctx.strokeStyle = brawlerBannerColor;
+      ctx.lineWidth = 2;
+      ctx.strokeText(brawlerBannerText, 200, 190);
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function brawlerGameLoop() {
+    if (!brawlerRunning) return;
+    updateBrawlerPhysics();
+    renderBrawlerFrame();
+    brawlerLoopId = requestAnimationFrame(brawlerGameLoop);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── BYTE SNAKE GAME ENGINE (ORIGINAL 1984 VINTAGE) ────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  const GRID_SIZE = 20;
+  const CELL_SIZE = 20;
+
+  interface Point { x: number; y: number }
+  let snake: Point[] = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
+  let dir: Point = { x: 0, y: -1 };
+  let nextDir: Point = { x: 0, y: -1 };
+  let food: Point = { x: 5, y: 5 };
+  let snakeScore = 0;
+  let snakeBestScore = 0;
+  let snakeRunning = false;
+  let snakeLoopId: number | null = null;
+  let lastSnakeTick = 0;
+  let snakeSpeedMs = 120;
+
+  // Restore Best Score from LocalStorage
+  try {
+    const savedBest = localStorage.getItem('spot_arcade_best_score');
+    if (savedBest) snakeBestScore = parseInt(savedBest, 10) || 0;
+  } catch (_) {}
+
+  function spawnSnakeFood(): void {
     let valid = false;
     while (!valid) {
       food = {
@@ -850,224 +2612,280 @@
     }
   }
 
-  function startGame(): void {
+  function startSnakeGame(): void {
     initAudio();
     snake = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
     dir = { x: 0, y: -1 };
     nextDir = { x: 0, y: -1 };
-    score = 0;
-    speedMs = 120;
-    spawnFood();
-    gameRunning = true;
+    snakeScore = 0;
+    snakeSpeedMs = 120;
+    spawnSnakeFood();
+    snakeRunning = true;
     if (scoreDisplay) scoreDisplay.textContent = '000';
     if (overlay) overlay.classList.add('hidden');
-    lastTickTime = performance.now();
-    if (gameLoopId) cancelAnimationFrame(gameLoopId);
-    gameLoopId = requestAnimationFrame(gameLoop);
+    lastSnakeTick = performance.now();
+    if (snakeLoopId) cancelAnimationFrame(snakeLoopId);
+    snakeLoopId = requestAnimationFrame(snakeGameLoop);
     playTone(440, 'sine', 0.08, 0.05);
   }
 
-  function gameOver(): void {
-    gameRunning = false;
+  function endSnakeGame(): void {
+    snakeRunning = false;
     playGameOverSound();
 
-    if (score > bestScore) {
-      bestScore = score;
+    if (snakeScore > snakeBestScore) {
+      snakeBestScore = snakeScore;
       try {
-        localStorage.setItem('spot_arcade_best_score', bestScore.toString());
+        localStorage.setItem('spot_arcade_best_score', snakeBestScore.toString());
       } catch (_) {}
-      if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore.toString().padStart(3, '0');
+      if (bestScoreDisplay) bestScoreDisplay.textContent = snakeBestScore.toString().padStart(3, '0');
     }
 
-    if (bestScore >= 50) {
-      if (badgeText && badgeStatus) {
-        badgeText.textContent = 'Unlocked 🏆';
-        badgeStatus.classList.add('badge-unlocked');
-      }
-      try {
-        const unlockedBadges = JSON.parse(localStorage.getItem('spot_unlocked_badges') || '[]');
-        if (!unlockedBadges.includes('badge_arcade_legend')) {
-          unlockedBadges.push('badge_arcade_legend');
-          localStorage.setItem('spot_unlocked_badges', JSON.stringify(unlockedBadges));
-          window.dispatchEvent(new CustomEvent('spot:badge-unlocked', { detail: { id: 'badge_arcade_legend' } }));
-        }
-      } catch (_) {}
+    if (snakeBestScore >= 50) {
+      unlockArcadeBadge();
     }
 
     if (overlayTitle) overlayTitle.textContent = 'GAME OVER';
-    if (overlaySubtitle) overlaySubtitle.innerHTML = `Score: <strong>${score}</strong> • Best: <strong>${bestScore}</strong>`;
+    if (overlaySubtitle) overlaySubtitle.innerHTML = `Score: <strong>${snakeScore}</strong> • Best: <strong>${snakeBestScore}</strong>`;
     if (overlayBtn) overlayBtn.textContent = 'PLAY AGAIN (SPACE)';
     if (overlay) overlay.classList.remove('hidden');
   }
 
-  function gameLoop(timestamp: number): void {
-    if (!gameRunning) return;
+  function snakeGameLoop(timestamp: number): void {
+    if (!snakeRunning) return;
 
-    if (timestamp - lastTickTime >= speedMs) {
-      lastTickTime = timestamp;
-      tickGame();
+    if (timestamp - lastSnakeTick >= snakeSpeedMs) {
+      lastSnakeTick = timestamp;
+      tickSnake();
     }
 
-    renderGame();
-    gameLoopId = requestAnimationFrame(gameLoop);
+    renderSnakeFrame();
+    snakeLoopId = requestAnimationFrame(snakeGameLoop);
   }
 
-  function tickGame(): void {
+  function tickSnake(): void {
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    // Wall Collision
     if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-      gameOver();
+      endSnakeGame();
       return;
     }
 
-    // Self Collision
     if (snake.some((s) => s.x === head.x && s.y === head.y)) {
-      gameOver();
+      endSnakeGame();
       return;
     }
 
     snake.unshift(head);
 
-    // Eat Food
     if (head.x === food.x && head.y === food.y) {
-      score += 10;
+      snakeScore += 10;
       playEatSound();
-      if (scoreDisplay) scoreDisplay.textContent = score.toString().padStart(3, '0');
-      spawnFood();
-      // Slight speedup
-      speedMs = Math.max(65, 120 - Math.floor(score / 30) * 8);
+      if (scoreDisplay) scoreDisplay.textContent = snakeScore.toString().padStart(3, '0');
+      spawnSnakeFood();
+      snakeSpeedMs = Math.max(65, 120 - Math.floor(snakeScore / 30) * 8);
     } else {
       snake.pop();
     }
   }
 
-  function renderGame(): void {
+  function renderSnakeFrame(): void {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear Screen (Dark CRT background)
-    ctx.fillStyle = '#060910';
+    // Deep vintage phosphor green background
+    ctx.fillStyle = '#06100a';
     ctx.fillRect(0, 0, 400, 400);
 
-    // Subtle Grid Lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+    // Subtle phosphor grid
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.05)';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= GRID_SIZE; i++) {
+    for (let i = 0; i <= 400; i += CELL_SIZE) {
       ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE, 0);
-      ctx.lineTo(i * CELL_SIZE, 400);
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, 400);
       ctx.stroke();
-
       ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE);
-      ctx.lineTo(400, i * CELL_SIZE);
+      ctx.moveTo(0, i);
+      ctx.lineTo(400, i);
       ctx.stroke();
     }
 
-    // Draw Food (Golden Glowing Data Bit)
-    const fx = food.x * CELL_SIZE;
-    const fy = food.y * CELL_SIZE;
-    ctx.fillStyle = '#fbbf24';
-    ctx.shadowColor = '#fbbf24';
+    // Food (Amber Pixel)
+    ctx.fillStyle = '#f59e0b';
+    ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 10;
-    ctx.fillRect(fx + 3, fy + 3, CELL_SIZE - 6, CELL_SIZE - 6);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(fx + 6, fy + 6, CELL_SIZE - 12, CELL_SIZE - 12);
+    ctx.fillRect(food.x * CELL_SIZE + 2, food.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
     ctx.shadowBlur = 0;
 
-    // Draw Snake (Neon Cyan Body)
-    snake.forEach((seg, idx) => {
-      const sx = seg.x * CELL_SIZE;
-      const sy = seg.y * CELL_SIZE;
+    // Snake Body (Phosphor Green)
+    snake.forEach((segment, idx) => {
       const isHead = idx === 0;
+      ctx.fillStyle = isHead ? '#4ade80' : '#22c55e';
+      ctx.shadowColor = isHead ? '#4ade80' : 'transparent';
+      ctx.shadowBlur = isHead ? 8 : 0;
+      ctx.fillRect(segment.x * CELL_SIZE + 1, segment.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
 
       if (isHead) {
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 8;
-        ctx.fillRect(sx + 2, sy + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-        ctx.fillStyle = '#0284c7';
-        ctx.fillRect(sx + 4, sy + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-        ctx.shadowBlur = 0;
-      } else {
-        const opacity = Math.max(0.35, 1 - idx / (snake.length + 4));
-        ctx.fillStyle = `rgba(56, 189, 248, ${opacity})`;
-        ctx.fillRect(sx + 2, sy + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        ctx.fillStyle = '#06100a';
+        ctx.fillRect(segment.x * CELL_SIZE + 5, segment.y * CELL_SIZE + 5, 3, 3);
+        ctx.fillRect(segment.x * CELL_SIZE + 12, segment.y * CELL_SIZE + 5, 3, 3);
       }
     });
+    ctx.shadowBlur = 0;
   }
 
-  // Keyboard Handlers — Capture phase prevents world avatar from moving behind modal
-  const handleGameKeyDown = (e: KeyboardEvent) => {
-    const backdrop = document.getElementById('arcade-modal-backdrop');
-    if (!backdrop || !backdrop.classList.contains('open')) return;
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── GAME SWITCHER CONTROLLER ──────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  function switchGame(targetGame: 'brawler' | 'snake') {
+    activeGame = targetGame;
+    initAudio();
 
-    const k = e.key.toLowerCase();
-    const isGameKey = [' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k);
+    // Stop loops
+    brawlerRunning = false;
+    snakeRunning = false;
+    if (brawlerLoopId) cancelAnimationFrame(brawlerLoopId);
+    if (snakeLoopId) cancelAnimationFrame(snakeLoopId);
+    if (brawlerTimerInterval) clearInterval(brawlerTimerInterval);
 
-    if (isGameKey) {
-      // Isolate game key events completely from background world canvas
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
+    tabGameBrawler?.classList.toggle('active', targetGame === 'brawler');
+    tabGameSnake?.classList.toggle('active', targetGame === 'snake');
 
-    if (k === ' ' || k === 'space') {
-      if (!gameRunning) startGame();
-      return;
-    }
+    if (targetGame === 'brawler') {
+      if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'flex';
+      if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'none';
+      if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'WINS';
+      if (arcadeBestLabel) arcadeBestLabel.textContent = 'STREAK';
+      if (scoreDisplay) scoreDisplay.textContent = brawlerWins.toString().padStart(3, '0');
+      if (bestScoreDisplay) bestScoreDisplay.textContent = brawlerBestStreak.toString().padStart(3, '0');
+      if (arcadeTitle) arcadeTitle.textContent = 'Spot Fighter II';
 
-    // If game is not yet running, pressing any direction starts it immediately
-    if (!gameRunning) {
-      if (['arrowup', 'w', 'arrowdown', 's', 'arrowleft', 'a', 'arrowright', 'd'].includes(k)) {
-        startGame();
-      } else {
-        return;
+      if (overlayTitle) overlayTitle.textContent = 'SPOT FIGHTER II';
+      if (overlaySubtitle) overlaySubtitle.textContent = 'Cyber Brawl • 1v1 Retro Arena';
+      if (overlayFighterSelect) overlayFighterSelect.style.display = 'flex';
+      if (overlayInstructions) {
+        overlayInstructions.innerHTML = `
+          <span>Movement: <strong>A / D</strong> Move • <strong>W</strong> Jump • <strong>S</strong> Duck</span>
+          <span>Attacks: <strong>J</strong> Punch • <strong>K</strong> Kick • <strong>L</strong> Hadouken</span>
+        `;
       }
+      if (overlayBtn) overlayBtn.textContent = 'INSERT COIN (ROUND 1)';
+
+      initBrawlerFighters();
+      renderBrawlerFrame();
+    } else {
+      if (brawlerCtrlDeck) brawlerCtrlDeck.style.display = 'none';
+      if (snakeCtrlDeck) snakeCtrlDeck.style.display = 'block';
+      if (arcadeScoreLabel) arcadeScoreLabel.textContent = 'SCORE';
+      if (arcadeBestLabel) arcadeBestLabel.textContent = 'HIGH SCORE';
+      if (scoreDisplay) scoreDisplay.textContent = snakeScore.toString().padStart(3, '0');
+      if (bestScoreDisplay) bestScoreDisplay.textContent = snakeBestScore.toString().padStart(3, '0');
+      if (arcadeTitle) arcadeTitle.textContent = 'Byte Snake 2084';
+
+      if (overlayTitle) overlayTitle.textContent = 'BYTE SNAKE';
+      if (overlaySubtitle) overlaySubtitle.textContent = 'Press SPACE or Tap to Start';
+      if (overlayFighterSelect) overlayFighterSelect.style.display = 'none';
+      if (overlayInstructions) {
+        overlayInstructions.innerHTML = `
+          <span>Controls: <strong>Touch Joystick</strong>, <strong>Screen Drag</strong>, or <strong>Arrow Keys</strong></span>
+          <span>Target: <strong>50+ pts</strong> to unlock Arcade Badge</span>
+        `;
+      }
+      if (overlayBtn) overlayBtn.textContent = 'INSERT COIN (START)';
+
+      renderSnakeFrame();
     }
 
-    switch (k) {
-      case 'arrowup':
-      case 'w':
-        if (dir.y === 0) { nextDir = { x: 0, y: -1 }; playTone(300, 'sine', 0.03, 0.03); }
-        break;
-      case 'arrowdown':
-      case 's':
-        if (dir.y === 0) { nextDir = { x: 0, y: 1 }; playTone(300, 'sine', 0.03, 0.03); }
-        break;
-      case 'arrowleft':
-      case 'a':
-        if (dir.x === 0) { nextDir = { x: -1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
-        break;
-      case 'arrowright':
-      case 'd':
-        if (dir.x === 0) { nextDir = { x: 1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); }
-        break;
-    }
-  };
+    if (overlay) overlay.classList.remove('hidden');
+  }
 
-  const handleGameKeyUp = (e: KeyboardEvent) => {
+  tabGameBrawler?.addEventListener('click', () => switchGame('brawler'));
+  tabGameSnake?.addEventListener('click', () => switchGame('snake'));
+
+  // Start button on overlay
+  overlayBtn?.addEventListener('click', () => {
+    if (activeGame === 'brawler') startBrawlerGame();
+    else startSnakeGame();
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── INPUT CONTROLLERS & KEYBOARD BINDINGS ─────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  window.addEventListener('keydown', (e) => {
     const backdrop = document.getElementById('arcade-modal-backdrop');
     if (!backdrop || !backdrop.classList.contains('open')) return;
 
     const k = e.key.toLowerCase();
-    if ([' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
+
+    // Start on space
+    if (k === ' ' || k === 'space') {
       e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+      if (activeGame === 'brawler' && !brawlerRunning) { startBrawlerGame(); return; }
+      if (activeGame === 'snake' && !snakeRunning) { startSnakeGame(); return; }
     }
-  };
 
-  window.addEventListener('keydown', handleGameKeyDown, { capture: true });
-  window.addEventListener('keyup', handleGameKeyUp, { capture: true });
+    if (activeGame === 'brawler') {
+      if (k === 'a' || k === 'arrowleft') { brawlerKeys.left = true; e.preventDefault(); }
+      if (k === 'd' || k === 'arrowright') { brawlerKeys.right = true; e.preventDefault(); }
+      if (k === 'w' || k === 'arrowup') { brawlerKeys.up = true; e.preventDefault(); }
+      if (k === 's' || k === 'arrowdown') { brawlerKeys.down = true; e.preventDefault(); }
 
-  // Overlay button trigger
-  overlayBtn?.addEventListener('click', startGame);
+      if (k === 'j') { brawlerP1Attack('punch'); e.preventDefault(); }
+      if (k === 'k') { brawlerP1Attack('kick'); e.preventDefault(); }
+      if (k === 'l') { brawlerP1Attack('special'); e.preventDefault(); }
+    } else {
+      // Snake Keys
+      if (!snakeRunning && ['arrowup', 'w', 'arrowdown', 's', 'arrowleft', 'a', 'arrowright', 'd'].includes(k)) {
+        startSnakeGame();
+      }
+      if ((k === 'arrowup' || k === 'w') && dir.y === 0) { nextDir = { x: 0, y: -1 }; playTone(300, 'sine', 0.03, 0.03); e.preventDefault(); }
+      if ((k === 'arrowdown' || k === 's') && dir.y === 0) { nextDir = { x: 0, y: 1 }; playTone(300, 'sine', 0.03, 0.03); e.preventDefault(); }
+      if ((k === 'arrowleft' || k === 'a') && dir.x === 0) { nextDir = { x: -1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); e.preventDefault(); }
+      if ((k === 'arrowright' || k === 'd') && dir.x === 0) { nextDir = { x: 1, y: 0 }; playTone(300, 'sine', 0.03, 0.03); e.preventDefault(); }
+    }
+  }, { capture: true });
 
-  // ── Controller Mode Selector Tabs ─────────────────────────────────────────
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if (activeGame === 'brawler') {
+      if (k === 'a' || k === 'arrowleft') brawlerKeys.left = false;
+      if (k === 'd' || k === 'arrowright') brawlerKeys.right = false;
+      if (k === 'w' || k === 'arrowup') brawlerKeys.up = false;
+      if (k === 's' || k === 'arrowdown') brawlerKeys.down = false;
+    }
+  }, { capture: true });
+
+  // Virtual Brawler Deck Buttons (Touch / Click)
+  function bindTouchButton(elId: string, onDown: () => void, onUp?: () => void) {
+    const btn = document.getElementById(elId);
+    if (!btn) return;
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      btn.classList.add('pressed');
+      onDown();
+    });
+    const handleRelease = () => {
+      btn.classList.remove('pressed');
+      onUp?.();
+    };
+    btn.addEventListener('pointerup', handleRelease);
+    btn.addEventListener('pointercancel', handleRelease);
+    btn.addEventListener('pointerleave', handleRelease);
+  }
+
+  bindTouchButton('btn-fight-left', () => { brawlerKeys.left = true; }, () => { brawlerKeys.left = false; });
+  bindTouchButton('btn-fight-right', () => { brawlerKeys.right = true; }, () => { brawlerKeys.right = false; });
+  bindTouchButton('btn-fight-jump', () => { brawlerKeys.up = true; }, () => { brawlerKeys.up = false; });
+  bindTouchButton('btn-fight-crouch', () => { brawlerKeys.down = true; }, () => { brawlerKeys.down = false; });
+
+  bindTouchButton('btn-fight-punch', () => { brawlerP1Attack('punch'); });
+  bindTouchButton('btn-fight-kick', () => { brawlerP1Attack('kick'); });
+  bindTouchButton('btn-fight-special', () => { brawlerP1Attack('special'); });
+
+  // ── Snake Virtual Controller Setup ────────────────────────────────────────
   const ctrlTabBtns = document.querySelectorAll<HTMLButtonElement>('.ctrl-tab-btn');
   const ctrlPanels: Record<string, HTMLElement | null> = {
     joystick: document.getElementById('ctrl-panel-joystick'),
@@ -1081,356 +2899,43 @@
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
-
     if (ctrlPanels.joystick) ctrlPanels.joystick.style.display = mode === 'joystick' ? 'flex' : 'none';
     if (ctrlPanels.dpad) ctrlPanels.dpad.style.display = mode === 'dpad' ? 'flex' : 'none';
     if (ctrlPanels.swipe) ctrlPanels.swipe.style.display = mode === 'swipe' ? 'flex' : 'none';
-
-    try {
-      localStorage.setItem('spot_snake_ctrl_mode', mode);
-    } catch (_) {}
   }
-
   ctrlTabBtns.forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const mode = (btn.dataset.mode || 'joystick') as 'joystick' | 'dpad' | 'swipe';
-      setControllerMode(mode);
+    btn.addEventListener('click', () => {
+      const m = btn.dataset.mode as 'joystick' | 'dpad' | 'swipe';
+      if (m) setControllerMode(m);
     });
   });
 
-  // Restore saved controller mode
-  try {
-    const savedMode = (localStorage.getItem('spot_snake_ctrl_mode') || 'joystick') as 'joystick' | 'dpad' | 'swipe';
-    if (savedMode in ctrlPanels) {
-      setControllerMode(savedMode);
-    }
-  } catch (_) {}
-
-  // ── Mode 1: Virtual Touch & Drag Joystick ─────────────────────────────────
-  const joyBase = document.getElementById('joystick-base');
-  const joyThumb = document.getElementById('joystick-thumb');
-  const joyUp = document.getElementById('joy-dir-up');
-  const joyDown = document.getElementById('joy-dir-down');
-  const joyLeft = document.getElementById('joy-dir-left');
-  const joyRight = document.getElementById('joy-dir-right');
-
-  let joyActivePointerId: number | null = null;
-  let joyCenterX = 0;
-  let joyCenterY = 0;
-  const JOY_MAX_DIST = 36; // maximum stick displacement in px
-  const JOY_DEADZONE = 9;  // minimum deadzone to detect direction
-
-  function setJoyDirActive(direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | null) {
-    joyUp?.classList.toggle('active', direction === 'UP');
-    joyDown?.classList.toggle('active', direction === 'DOWN');
-    joyLeft?.classList.toggle('active', direction === 'LEFT');
-    joyRight?.classList.toggle('active', direction === 'RIGHT');
-  }
-
-  function handleJoyMove(clientX: number, clientY: number) {
-    const dx = clientX - joyCenterX;
-    const dy = clientY - joyCenterY;
-    const dist = Math.hypot(dx, dy);
-
-    // Clamp stick to max distance
-    const clampDist = Math.min(dist, JOY_MAX_DIST);
-    const angle = Math.atan2(dy, dx);
-    const px = Math.cos(angle) * clampDist;
-    const py = Math.sin(angle) * clampDist;
-
-    if (joyThumb) {
-      joyThumb.style.transform = `translate3d(${px}px, ${py}px, 0)`;
-    }
-
-    // Direction calculation when outside deadzone
-    if (dist >= JOY_DEADZONE) {
-      let chosenDir: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-      if (Math.abs(dx) > Math.abs(dy)) {
-        chosenDir = dx > 0 ? 'RIGHT' : 'LEFT';
-      } else {
-        chosenDir = dy > 0 ? 'DOWN' : 'UP';
-      }
-
-      setJoyDirActive(chosenDir);
-
-      let changed = false;
-      if (chosenDir === 'UP' && dir.y === 0 && nextDir.y !== -1) {
-        nextDir = { x: 0, y: -1 };
-        changed = true;
-      } else if (chosenDir === 'DOWN' && dir.y === 0 && nextDir.y !== 1) {
-        nextDir = { x: 0, y: 1 };
-        changed = true;
-      } else if (chosenDir === 'LEFT' && dir.x === 0 && nextDir.x !== -1) {
-        nextDir = { x: -1, y: 0 };
-        changed = true;
-      } else if (chosenDir === 'RIGHT' && dir.x === 0 && nextDir.x !== 1) {
-        nextDir = { x: 1, y: 0 };
-        changed = true;
-      }
-
-      if (changed) {
-        playTone(320, 'sine', 0.03, 0.03);
-      }
-    } else {
-      setJoyDirActive(null);
-    }
-  }
-
-  if (joyBase) {
-    joyBase.addEventListener('pointerdown', (e: PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      joyActivePointerId = e.pointerId;
-      try {
-        joyBase.setPointerCapture(e.pointerId);
-      } catch (_) {}
-
-      const rect = joyBase.getBoundingClientRect();
-      joyCenterX = rect.left + rect.width / 2;
-      joyCenterY = rect.top + rect.height / 2;
-
-      joyThumb?.classList.add('dragging');
-
-      if (!gameRunning) {
-        startGame();
-      }
-
-      handleJoyMove(e.clientX, e.clientY);
-    });
-
-    joyBase.addEventListener('pointermove', (e: PointerEvent) => {
-      if (joyActivePointerId !== e.pointerId) return;
-      e.preventDefault();
-      e.stopPropagation();
-      handleJoyMove(e.clientX, e.clientY);
-    });
-
-    const endJoy = (e: PointerEvent) => {
-      if (joyActivePointerId !== e.pointerId) return;
-      joyActivePointerId = null;
-      try {
-        joyBase.releasePointerCapture(e.pointerId);
-      } catch (_) {}
-
-      joyThumb?.classList.remove('dragging');
-      if (joyThumb) {
-        joyThumb.style.transform = 'translate3d(0, 0, 0)';
-      }
-      setJoyDirActive(null);
-    };
-
-    joyBase.addEventListener('pointerup', endJoy);
-    joyBase.addEventListener('pointercancel', endJoy);
-  }
-
-  // ── Mode 2: Tactile D-Pad Listeners ───────────────────────────────────────
-  document.querySelectorAll<HTMLButtonElement>('.dpad-btn[data-dir]').forEach((btn) => {
-    const handleDirAction = (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!gameRunning) {
-        startGame();
-      }
-
+  // Tactile D-Pad for Snake
+  document.querySelectorAll<HTMLButtonElement>('.dpad-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!snakeRunning) startSnakeGame();
       const d = btn.dataset.dir;
-      let changed = false;
-      if (d === 'UP' && dir.y === 0 && nextDir.y !== -1) {
-        nextDir = { x: 0, y: -1 };
-        changed = true;
-      } else if (d === 'DOWN' && dir.y === 0 && nextDir.y !== 1) {
-        nextDir = { x: 0, y: 1 };
-        changed = true;
-      } else if (d === 'LEFT' && dir.x === 0 && nextDir.x !== -1) {
-        nextDir = { x: -1, y: 0 };
-        changed = true;
-      } else if (d === 'RIGHT' && dir.x === 0 && nextDir.x !== 1) {
-        nextDir = { x: 1, y: 0 };
-        changed = true;
-      }
-
-      if (changed) {
-        playTone(320, 'sine', 0.03, 0.03);
-      }
-
-      btn.classList.add('active');
-      setTimeout(() => btn.classList.remove('active'), 120);
-    };
-
-    btn.addEventListener('pointerdown', handleDirAction);
-  });
-
-  document.getElementById('dpad-center-btn')?.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!gameRunning) startGame();
-  });
-
-  // ── Mode 3: Swipe Touchpad Gestures ───────────────────────────────────────
-  const swipeTouchpad = document.getElementById('swipe-touchpad');
-  const swipeArrows = {
-    up: document.getElementById('swipe-arrow-up'),
-    down: document.getElementById('swipe-arrow-down'),
-    left: document.getElementById('swipe-arrow-left'),
-    right: document.getElementById('swipe-arrow-right'),
-  };
-
-  function flashSwipeArrow(d: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT') {
-    if (d === 'UP') swipeArrows.up?.classList.add('active');
-    if (d === 'DOWN') swipeArrows.down?.classList.add('active');
-    if (d === 'LEFT') swipeArrows.left?.classList.add('active');
-    if (d === 'RIGHT') swipeArrows.right?.classList.add('active');
-    setTimeout(() => {
-      swipeArrows.up?.classList.remove('active');
-      swipeArrows.down?.classList.remove('active');
-      swipeArrows.left?.classList.remove('active');
-      swipeArrows.right?.classList.remove('active');
-    }, 150);
-  }
-
-  let padPointerId: number | null = null;
-  let padStartX = 0;
-  let padStartY = 0;
-
-  if (swipeTouchpad) {
-    swipeTouchpad.addEventListener('pointerdown', (e: PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      padPointerId = e.pointerId;
-      padStartX = e.clientX;
-      padStartY = e.clientY;
-      try {
-        swipeTouchpad.setPointerCapture(e.pointerId);
-      } catch (_) {}
-
-      if (!gameRunning) {
-        startGame();
-      }
+      if (d === 'UP' && dir.y === 0) { nextDir = { x: 0, y: -1 }; playTone(320, 'sine', 0.03, 0.03); }
+      if (d === 'DOWN' && dir.y === 0) { nextDir = { x: 0, y: 1 }; playTone(320, 'sine', 0.03, 0.03); }
+      if (d === 'LEFT' && dir.x === 0) { nextDir = { x: -1, y: 0 }; playTone(320, 'sine', 0.03, 0.03); }
+      if (d === 'RIGHT' && dir.x === 0) { nextDir = { x: 1, y: 0 }; playTone(320, 'sine', 0.03, 0.03); }
     });
-
-    swipeTouchpad.addEventListener('pointermove', (e: PointerEvent) => {
-      if (padPointerId !== e.pointerId || !gameRunning) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const dx = e.clientX - padStartX;
-      const dy = e.clientY - padStartY;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist >= 14) {
-        let changed = false;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 0 && dir.x === 0 && nextDir.x !== 1) {
-            nextDir = { x: 1, y: 0 };
-            flashSwipeArrow('RIGHT');
-            changed = true;
-          } else if (dx < 0 && dir.x === 0 && nextDir.x !== -1) {
-            nextDir = { x: -1, y: 0 };
-            flashSwipeArrow('LEFT');
-            changed = true;
-          }
-        } else {
-          if (dy > 0 && dir.y === 0 && nextDir.y !== 1) {
-            nextDir = { x: 0, y: 1 };
-            flashSwipeArrow('DOWN');
-            changed = true;
-          } else if (dy < 0 && dir.y === 0 && nextDir.y !== -1) {
-            nextDir = { x: 0, y: -1 };
-            flashSwipeArrow('UP');
-            changed = true;
-          }
-        }
-
-        if (changed) {
-          playTone(320, 'sine', 0.03, 0.03);
-          padStartX = e.clientX;
-          padStartY = e.clientY;
-        }
-      }
-    });
-
-    const endPad = (e: PointerEvent) => {
-      if (padPointerId === e.pointerId) {
-        padPointerId = null;
-        try {
-          swipeTouchpad.releasePointerCapture(e.pointerId);
-        } catch (_) {}
-      }
-    };
-
-    swipeTouchpad.addEventListener('pointerup', endPad);
-    swipeTouchpad.addEventListener('pointercancel', endPad);
-  }
-
-  // ── Global Canvas Drag / Swipe (Works continuously in all modes) ──────────
-  let screenPointerId: number | null = null;
-  let screenStartX = 0;
-  let screenStartY = 0;
-  const screenFrame = document.querySelector('.crt-screen-frame') as HTMLElement | null;
-
-  screenFrame?.addEventListener('pointerdown', (e: PointerEvent) => {
-    screenPointerId = e.pointerId;
-    screenStartX = e.clientX;
-    screenStartY = e.clientY;
-    if (!gameRunning) {
-      startGame();
-    }
   });
 
-  window.addEventListener('pointermove', (e: PointerEvent) => {
-    if (screenPointerId !== e.pointerId || !gameRunning) return;
-    const dx = e.clientX - screenStartX;
-    const dy = e.clientY - screenStartY;
-    const dist = Math.hypot(dx, dy);
+  // Initial setup on mount
+  renderFighterPills();
+  initBrawlerFighters();
+  renderBrawlerFrame();
 
-    if (dist >= 14) {
-      let changed = false;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 0 && dir.x === 0 && nextDir.x !== 1) {
-          nextDir = { x: 1, y: 0 };
-          changed = true;
-        } else if (dx < 0 && dir.x === 0 && nextDir.x !== -1) {
-          nextDir = { x: -1, y: 0 };
-          changed = true;
-        }
-      } else {
-        if (dy > 0 && dir.y === 0 && nextDir.y !== 1) {
-          nextDir = { x: 0, y: 1 };
-          changed = true;
-        } else if (dy < 0 && dir.y === 0 && nextDir.y !== -1) {
-          nextDir = { x: 0, y: -1 };
-          changed = true;
-        }
-      }
-
-      if (changed) {
-        playTone(320, 'sine', 0.03, 0.03);
-        screenStartX = e.clientX;
-        screenStartY = e.clientY;
-      }
-    }
-  });
-
-  window.addEventListener('pointerup', (e: PointerEvent) => {
-    if (screenPointerId === e.pointerId) {
-      screenPointerId = null;
-    }
-  });
-
-  window.addEventListener('pointercancel', (e: PointerEvent) => {
-    if (screenPointerId === e.pointerId) {
-      screenPointerId = null;
-    }
-  });
-
-  // Global window modal opener helper
+  // ── Global Window Modal Open/Close Helpers ────────────────────────────────
   (window as unknown as { openArcadeModal: () => void; closeArcadeModal: () => void }).openArcadeModal = () => {
     const backdrop = document.getElementById('arcade-modal-backdrop');
     if (!backdrop) return;
     backdrop.classList.add('open');
     backdrop.setAttribute('aria-hidden', 'false');
     window.dispatchEvent(new CustomEvent('spot:modal-opened', { detail: { modal: 'arcade' } }));
-    renderGame();
+    renderFighterPills();
+    switchGame(activeGame);
   };
 
   const closeBtn = document.getElementById('arcade-modal-close');
@@ -1440,13 +2945,15 @@
     if (!backdrop) return;
     backdrop.classList.remove('open');
     backdrop.setAttribute('aria-hidden', 'true');
-    gameRunning = false;
-    if (gameLoopId) cancelAnimationFrame(gameLoopId);
+    brawlerRunning = false;
+    snakeRunning = false;
+    if (brawlerLoopId) cancelAnimationFrame(brawlerLoopId);
+    if (snakeLoopId) cancelAnimationFrame(snakeLoopId);
+    if (brawlerTimerInterval) clearInterval(brawlerTimerInterval);
     window.dispatchEvent(new CustomEvent('spot:modal-closed', { detail: { modal: 'arcade' } }));
   }
 
   (window as unknown as { openArcadeModal: () => void; closeArcadeModal: () => void }).closeArcadeModal = closeArcadeModal;
-
   closeBtn?.addEventListener('click', closeArcadeModal);
   backdrop?.addEventListener('click', (e) => {
     if (e.target === backdrop) closeArcadeModal();

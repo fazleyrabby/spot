@@ -150,11 +150,50 @@ export async function requireAuthMiddleware(
   }
 
   if (!token || typeof token !== 'string') {
+    if (config.appEnv === 'local') {
+      const founderRes = await query<any>(
+        `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
+                custom_avatar_data as "customAvatarData", tagline, bio,
+                website_url as "websiteUrl", github_url as "githubUrl",
+                twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+                instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+                linkedin_url as "linkedinUrl",
+                (github_url IS NOT NULL AND github_url <> '') as "isVerified",
+                created_at as "createdAt", updated_at as "updatedAt"
+         FROM citizens
+         WHERE display_name ILIKE '%Fazley%'
+         LIMIT 1`
+      );
+      if (founderRes.rows[0]) {
+        req.citizen = founderRes.rows[0];
+        next();
+        return;
+      }
+    }
     res.status(401).json({ error: 'Unauthorized: Missing citizen session token' });
     return;
   }
 
-  const citizen = await resolveCitizen(token);
+  let citizen = await resolveCitizen(token);
+  if (!citizen && config.appEnv === 'local') {
+    const founderRes = await query<any>(
+      `SELECT id, display_name as "displayName", avatar_id as "avatarId", 
+              custom_avatar_data as "customAvatarData", tagline, bio,
+              website_url as "websiteUrl", github_url as "githubUrl",
+              twitter_url as "twitterUrl", facebook_url as "facebookUrl",
+              instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
+              linkedin_url as "linkedinUrl",
+              (github_url IS NOT NULL AND github_url <> '') as "isVerified",
+              created_at as "createdAt", updated_at as "updatedAt"
+       FROM citizens
+       WHERE display_name ILIKE '%Fazley%'
+       LIMIT 1`
+    );
+    if (founderRes.rows[0]) {
+      citizen = founderRes.rows[0];
+    }
+  }
+
   if (!citizen) {
     res.status(401).json({ error: 'Unauthorized: Invalid or expired session token' });
     return;

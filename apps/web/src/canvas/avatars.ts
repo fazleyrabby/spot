@@ -254,6 +254,153 @@ export const AVATAR_CATALOG: Record<string, AvatarDefinition> = {
       [0, 1, 1, 1, 1, 0, 0, 0],
       [0, 0, 1, 0, 1, 0, 0, 0]
     ]
+  },
+  indie_hacker: {
+    id: 'indie_hacker',
+    name: 'Indie Hacker',
+    category: 'geek',
+    colors: {
+      primary: '#3b82f6',   // Tech blue hoodie
+      secondary: '#0f172a', // Midnight headphones
+      accent: '#38bdf8',    // Glowing laptop cyan
+      skin: '#fcd34d'
+    },
+    pattern: [
+      [0, 2, 2, 2, 2, 2, 2, 0],
+      [2, 1, 1, 1, 1, 1, 1, 2],
+      [2, 4, 1, 4, 4, 1, 4, 2],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [0, 1, 1, 1, 1, 1, 1, 0],
+      [0, 3, 3, 3, 3, 3, 3, 0],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
+  },
+  cyber_sysadmin: {
+    id: 'cyber_sysadmin',
+    name: 'SysAdmin',
+    category: 'retro',
+    colors: {
+      primary: '#059669',   // Matrix emerald jacket
+      secondary: '#0f172a', // Stealth collar
+      accent: '#10b981',    // Neon HUD monocle & keycard
+      skin: '#fed7aa'
+    },
+    pattern: [
+      [0, 2, 2, 2, 2, 2, 2, 0],
+      [2, 2, 2, 2, 2, 2, 2, 2],
+      [2, 4, 1, 4, 3, 3, 4, 2],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [0, 1, 2, 1, 1, 2, 1, 0],
+      [0, 1, 3, 1, 1, 3, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
+  },
+  ai_architect: {
+    id: 'ai_architect',
+    name: 'AI Architect',
+    category: 'geek',
+    colors: {
+      primary: '#8b5cf6',   // Neural purple robe
+      secondary: '#ec4899', // Hot pink data link
+      accent: '#c084fc',    // Lilac halo aura
+      skin: '#fef08a'
+    },
+    pattern: [
+      [0, 3, 0, 3, 3, 0, 3, 0],
+      [0, 0, 3, 1, 1, 3, 0, 0],
+      [0, 1, 4, 2, 2, 4, 1, 0],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [0, 1, 1, 2, 2, 1, 1, 0],
+      [1, 1, 3, 1, 1, 3, 1, 1],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
+  },
+  cadet_blue: {
+    id: 'cadet_blue',
+    name: 'Cadet Blue',
+    category: 'geek',
+    colors: {
+      primary: '#334155',   // Slate navy suit
+      secondary: '#38bdf8', // Ice blue chest & pauldrons
+      accent: '#0f172a',    // Dark utility belt & boots
+      skin: '#fed7aa'
+    },
+    pattern: [
+      [0, 2, 2, 2, 2, 2, 2, 0],
+      [2, 2, 2, 2, 2, 2, 2, 2],
+      [2, 4, 1, 4, 4, 1, 4, 2],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [2, 1, 3, 3, 3, 3, 1, 2],
+      [0, 1, 1, 2, 2, 1, 1, 0],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 3, 3, 0, 0, 3, 3, 0]
+    ]
+  },
+  hazard_orange: {
+    id: 'hazard_orange',
+    name: 'Hazard Orange',
+    category: 'geek',
+    colors: {
+      primary: '#374151',   // Charcoal tech suit
+      secondary: '#f97316', // Safety orange chest band
+      accent: '#e2e8f0',    // Light utility belt
+      skin: '#fcd34d'
+    },
+    pattern: [
+      [0, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 4, 1, 4, 4, 1, 4, 1],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [0, 2, 2, 2, 2, 2, 2, 0],
+      [0, 1, 3, 3, 3, 3, 1, 0],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
+  },
+  arctic_medic: {
+    id: 'arctic_medic',
+    name: 'Arctic Medic',
+    category: 'geek',
+    colors: {
+      primary: '#f8fafc',   // Crisp white suit
+      secondary: '#94a3b8', // Sky slate boots & pants
+      accent: '#ef4444',    // Red cross / accent
+      skin: '#fed7aa'
+    },
+    pattern: [
+      [0, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 4, 1, 4, 4, 1, 4, 1],
+      [0, 4, 4, 4, 4, 4, 4, 0],
+      [0, 1, 3, 1, 1, 3, 1, 0],
+      [0, 3, 3, 3, 3, 3, 3, 0],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
+  },
+  stealth_navy: {
+    id: 'stealth_navy',
+    name: 'Stealth Navy',
+    category: 'retro',
+    colors: {
+      primary: '#0f172a',   // Stealth midnight navy
+      secondary: '#1e293b', // Reinforced shoulder plates
+      accent: '#06b6d4',    // Glowing cyan visor/chevron
+      skin: '#0284c7'
+    },
+    pattern: [
+      [0, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 3, 3, 1, 1, 3, 3, 1],
+      [0, 1, 1, 1, 1, 1, 1, 0],
+      [0, 2, 3, 3, 3, 3, 2, 0],
+      [0, 2, 1, 1, 1, 1, 2, 0],
+      [0, 1, 1, 0, 0, 1, 1, 0],
+      [0, 2, 2, 0, 0, 2, 2, 0]
+    ]
   }
 };
 
