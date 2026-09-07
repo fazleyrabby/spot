@@ -33,6 +33,7 @@ import { NPCManager } from './npc-manager.js';
 import { WeatherManager, type WeatherMode } from './weather-manager.js';
 import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
 import { VignetteManager } from './vignette-manager.js';
+import { MarineManager } from './marine-manager.js';
 import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
@@ -144,6 +145,7 @@ export class Renderer {
   readonly npcs: NPCManager;
   readonly weather: WeatherManager;
   readonly vignettes: VignetteManager;
+  readonly marine: MarineManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
@@ -183,6 +185,7 @@ export class Renderer {
     this.npcs = new NPCManager();
     this.weather = new WeatherManager();
     this.vignettes = new VignetteManager();
+    this.marine = new MarineManager();
 
     this.initCityParticles();
   }
@@ -381,6 +384,25 @@ export class Renderer {
         this.player.render(c, playerScreen.x, playerScreen.y, currentZoom);
       },
     });
+
+    // 4e. Marine Life — sharks, speedboats, surfers (clipped to beach)
+    this.marine.update();
+    for (const m of this.marine.getEntities()) {
+      const screen = camera.worldToScreen(m.wx, m.wy);
+      if (screen.x < -80 || screen.x > W + 80 || screen.y < -80 || screen.y > H + 80) continue;
+      entities.push({
+        depth: m.wy,
+        render: (c, currentZoom) => {
+          this.marine.render(c, m, screen.x, screen.y, currentZoom, this.tick);
+        },
+      });
+      if (m.kind === 'speedboat' && this.timeOfDay !== 'day') {
+        lights.push({ wx: m.wx, wy: m.wy, radius: 90, color: 'rgba(56, 189, 248, 0.28)' });
+      }
+      if (m.kind === 'surfer' && this.timeOfDay !== 'day') {
+        lights.push({ wx: m.wx, wy: m.wy, radius: 45, color: 'rgba(251, 191, 36, 0.18)' });
+      }
+    }
 
     // 5. Draw Ambient Radial Light Glows on the ground
     if (this.timeOfDay !== 'day') {
