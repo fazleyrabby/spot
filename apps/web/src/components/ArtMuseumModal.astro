@@ -6,69 +6,223 @@
 ---
 
 <div class="museum-modal-backdrop modal-backdrop" id="museum-modal-backdrop" aria-hidden="true">
-  <div class="museum-modal" role="dialog" aria-modal="true" aria-labelledby="museum-title">
-    <div class="museum-header">
-      <div>
-        <h2 id="museum-title" class="museum-title">ƒ(x) — MATH ART MUSEUM</h2>
-        <p class="museum-sub">12 curated 2D canvas studies • live from art.fazleyrabbi.xyz • click to expand</p>
+    <div class="museum-modal" role="dialog" aria-modal="true" aria-labelledby="museum-title">
+      <div class="museum-arch">
+        <span class="arch-tile t1"></span><span class="arch-tile t2"></span><span class="arch-tile t3"></span>
+        <div class="arch-roof"><span class="arch-dentil"></span></div>
       </div>
-      <button type="button" class="museum-close" id="museum-modal-close" aria-label="Close">✕</button>
+      <div class="museum-header">
+        <div class="museum-brandlock">
+          <span class="museum-seal">ƒ(x)</span>
+          <div class="museum-wordmark">
+            <span class="museum-eyebrow">GALLERY 01 · WING B · 2D CANVAS COLLECTION</span>
+            <h2 id="museum-title" class="museum-title">MATH ART MUSEUM</h2>
+          </div>
+        </div>
+        <div class="museum-header-right">
+          <span class="museum-hours">OPEN DAILY · LIVE 60FPS</span>
+          <button type="button" class="museum-close" id="museum-modal-close" aria-label="Exit gallery">✕</button>
+        </div>
+      </div>
+      <div class="museum-marquee">
+        <span class="marquee-label">NOW EXHIBITING</span>
+        <span class="marquee-text">12 curated generative studies — pure Canvas 2D, no GPU · from <b>art.fazleyrabbi.xyz</b> · click any work to open in the artist's studio</span>
+      </div>
+      <div class="museum-room">
+        <div class="room-caption">
+          <span class="room-label">SOUTH WALL</span>
+          <span class="room-lamp"></span>
+        </div>
+        <div class="museum-grid" id="museum-grid"></div>
+        <div class="room-caption room-caption-bottom">
+          <span class="room-lamp"></span>
+          <span class="room-label">NORTH WALL</span>
+        </div>
+      </div>
     </div>
-    <div class="museum-grid" id="museum-grid"></div>
   </div>
-</div>
+
 
 <style>
-  .museum-modal-backdrop { position: fixed; inset:0; background: radial-gradient(1200px 600px at 50% -10%, rgba(251,191,36,0.10), transparent 60%), rgba(4,10,18,0.88); backdrop-filter: blur(14px); display:none; align-items:center; justify-content:center; z-index:360; padding: 16px; }
+  .museum-modal-backdrop { position: fixed; inset:0; background:
+      radial-gradient(1400px 700px at 50% -10%, rgba(251,191,36,0.10), transparent 60%),
+      linear-gradient(180deg, rgba(12,10,8,0.92), rgba(4,7,14,0.96));
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display:none; align-items:center; justify-content:center; z-index:360; padding: 14px; }
   .museum-modal-backdrop.open { display:flex; }
-  .museum-modal { width:100%; max-width: 1020px; max-height: 88vh; background:
-      linear-gradient(180deg, #0f172a 0%, #0b1222 100%);
-    border:2px solid #eab308; border-radius: 18px; padding: 14px; display:flex; flex-direction:column; gap:14px; overflow:hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(251,191,36,0.18), 0 0 32px rgba(251,191,36,0.12); }
-  .museum-header { display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(251,191,36,0.18); padding-bottom:10px; }
-  .museum-title { font:900 14px monospace; color:#facc15; letter-spacing:0.10em; margin:0; text-shadow: 0 0 12px rgba(251,191,36,0.35); }
-  .museum-sub { font:500 11px monospace; color:#94a3b8; margin:2px 0 0; }
-  .museum-close { width:32px; height:32px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:#f8fafc; cursor:pointer; }
-  .museum-close:hover { background:#eab308; color:#0f172a; }
-  /* walnut wall with subtle vertical panels + parquet floor hint */
-  .museum-grid {
-    display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; overflow:auto; padding:18px 14px 14px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.03) 0 1px, transparent 1px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 88px),
-      linear-gradient(180deg, #0a1020 0%, #0f1b2e 48%, #0d1320 100%);
-    border-radius:12px; border:1px solid rgba(255,255,255,0.06);
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.45);
-  }
-  @media (max-width: 640px) { .museum-grid { grid-template-columns: repeat(2, 1fr); gap:14px; } }
-  /* ornate brass frame with mat + spotlight cone */
-  .museum-card {
-    position:relative; background:#020617; border-radius:6px; overflow:hidden; display:flex; flex-direction:column;
-    border: 6px solid #a16207;
-    outline: 1.5px solid #facc15;
-    outline-offset: -7px;
+
+  /* ── Architectural museum frame ─────────────────────────────── */
+  .museum-modal {
+    width:100%; max-width: 1060px; max-height: 90vh;
+    background: linear-gradient(180deg, #0d1626 0%, #0a101d 100%);
+    border-radius: 6px 6px 14px 14px;
+    padding: 0; display:flex; flex-direction:column;
+    overflow:hidden;
+    border: 1px solid rgba(251,191,36,0.55);
     box-shadow:
-      0 10px 28px rgba(0,0,0,0.65),
-      0 0 0 6px #451a03,
-      0 0 18px rgba(251,191,36,0.22),
-      inset 0 0 0 8px #fffbeb, /* mat */
-      inset 0 0 18px rgba(0,0,0,0.35);
+      0 40px 90px rgba(0,0,0,0.8),
+      0 0 0 1px #3a2a12,
+      0 0 0 5px rgba(20,14,6,0.9),
+      0 0 0 6px rgba(251,191,36,0.28),
+      inset 0 0 60px rgba(0,0,0,0.5);
   }
+
+  /* ── Roofline pediment with dentil cornice ───────────────────── */
+  .museum-arch { position:relative; background: #f5efdf; height: 26px; display:flex; }
+  .arch-roof {
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    width: 58%; height: 18px;
+    background: linear-gradient(180deg, #d8c9a3, #b9a477);
+    clip-path: polygon(0 100%, 12% 0, 88% 0, 100% 100%);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+  }
+  .arch-dentil {
+    position:absolute; top:-1px; left:8%; right:8%; height:5px;
+    background: repeating-linear-gradient(90deg, #8a7443 0 7px, #efe3c2 7px 11px);
+  }
+  .arch-tile { flex:1; background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 2px, transparent 2px 26px),
+    linear-gradient(180deg, #e7dcc0, #cfbe94); }
+  .arch-tile + .arch-tile { border-left:1px solid rgba(90,72,40,0.25); }
+
+  .museum-header {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding: 8px 16px;
+    background: linear-gradient(180deg, #f8f2e3 0%, #ece0c4 100%);
+    border-bottom: 2px solid #6b5626;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.6);
+    color:#1c1508;
+  }
+  .museum-brandlock { display:flex; align-items:center; gap:12px; min-width:0; }
+  .museum-seal {
+    width:44px; height:44px; flex-shrink:0;
+    background: radial-gradient(circle at 35% 30%, #fff8e6, #d4b45c 60%, #a07c28);
+    border:2px solid #6b5626; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font: 900 15px 'Times New Roman', serif; color:#2b1f08;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .museum-wordmark { min-width:0; }
+  .museum-eyebrow {
+    display:block; font: 700 8px 'Outfit', sans-serif; letter-spacing:0.22em;
+    color:#8a6a2a; margin-bottom:2px; white-space:nowrap;
+  }
+  .museum-title {
+    font: 900 clamp(15px, 2.4vw, 22px) 'Times New Roman', Georgia, serif;
+    color:#241a06; letter-spacing:0.06em; margin:0; line-height:1;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .museum-header-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .museum-hours { font: 700 8px 'Outfit', sans-serif; letter-spacing:0.18em; color:#7a6226; white-space:nowrap; }
+  .museum-close {
+    width:30px; height:30px; border-radius:6px;
+    background: linear-gradient(180deg, #6b5626, #4a3a18);
+    border:1px solid #2f240c; color:#f3e6c4; cursor:pointer;
+    font: 700 13px sans-serif; line-height:1;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .museum-close:hover { background:#8a6a2a; color:#fff; }
+
+  /* ── Marquee / curatorial plaque ─────────────────────────────── */
+  .museum-marquee {
+    display:flex; align-items:center; gap:10px;
+    padding: 6px 16px;
+    background: #0b0f1a;
+    border-bottom: 1px solid rgba(251,191,36,0.2);
+  }
+  .marquee-label {
+    flex-shrink:0; padding: 2px 8px; border-radius:3px;
+    background: rgba(251,191,36,0.14); border:1px solid rgba(251,191,36,0.4);
+    font: 800 9px 'Outfit', sans-serif; letter-spacing:0.16em; color:#fde68a;
+  }
+  .marquee-text { font: 500 11px 'Outfit', sans-serif; color:#9aa7bd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .marquee-text b { color:#e5c96a; font-weight:600; }
+
+  /* ── Gallery room — marble wainscot + gallery wall ───────────── */
+  .museum-room { display:flex; flex-direction:column; flex:1; min-height:0; padding: 0 14px 12px; }
+  .room-caption { display:flex; align-items:center; gap:10px; padding: 7px 2px 4px; }
+  .room-caption-bottom { justify-content:flex-end; padding-top:4px; padding-bottom:0; }
+  .room-label {
+    font: 700 8px 'Outfit', sans-serif; letter-spacing:0.24em; color:#6a7c97; text-transform:uppercase;
+  }
+  .room-lamp {
+    width:1px; height:10px; flex:1;
+    background: linear-gradient(90deg, transparent, rgba(251,191,36,0.35), transparent);
+  }
+
+  .museum-grid {
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:20px 16px;
+    overflow-y:auto; padding: 14px 12px 16px;
+    background:
+      /* wainscot panels */
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 120px),
+      /* lower wall sheen */
+      linear-gradient(180deg, #131a28 0%, #1c2330 34%, #232733 34.5%, #10161f 100%);
+    border:1px solid rgba(255,255,255,0.07);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  /* gallery rail along the floor of the wall */
+  .museum-grid { border-bottom: 3px solid #31281a; }
+  .museum-grid::-webkit-scrollbar { width:8px; }
+  .museum-grid::-webkit-scrollbar-track { background:rgba(0,0,0,0.4); }
+  .museum-grid::-webkit-scrollbar-thumb { background:#6b5626; border-radius:4px; }
+
+  @media (max-width: 640px) {
+    .museum-modal-backdrop { padding: 0; }
+    .museum-modal { max-width: 100%; max-height: 100dvh; width: 100vw; height: 100dvh; border-radius: 0; border-left:0; border-right:0; }
+    .museum-grid { grid-template-columns: 1fr; gap:18px; padding:12px 10px 14px; flex:1; }
+    .museum-modal .museum-room { flex:1; min-height:0; }
+    .museum-header { padding: 7px 10px; }
+    .museum-marquee { padding: 5px 10px; }
+    .museum-room { padding: 0 8px 8px; }
+    .museum-seal { width:38px; height:38px; }
+    .museum-hours { display:none; }
+    .arch-roof { width:70%; }
+  }
+  @media (min-width: 641px) and (max-width: 900px) {
+    .museum-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── Gilded hanging frame ────────────────────────────────────── */
+  .museum-card {
+    position:relative; background:#14100b; border-radius:3px; overflow:hidden;
+    display:flex; flex-direction:column; cursor:pointer;
+    padding: 9px;
+    border: 1px solid #7a6a3a;
+    box-shadow:
+      0 6px 18px rgba(0,0,0,0.55),
+      inset 0 0 0 1px #d4b45c,
+      inset 0 0 0 5px #2a2110;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .museum-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.6), inset 0 0 0 1px #e5c96a, inset 0 0 0 5px #2a2110, 0 0 22px rgba(251,191,36,0.25); }
+  /* hanging picture wire */
+  .museum-card::after {
+    content:""; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+    width:1px; height:11px; background: rgba(200,180,120,0.35);
+  }
+  /* soft spotlight glint at top */
   .museum-card::before {
-    content:""; position:absolute; top:-14px; left:50%; transform:translateX(-50%);
-    width: 72%; height: 28px;
-    background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.22) 0%, transparent 70%);
-    filter: blur(6px); pointer-events:none;
+    content:""; position:absolute; top:0; left:0; right:0; height: 16px; pointer-events:none;
+    background: linear-gradient(180deg, rgba(255,235,180,0.12), transparent);
+    z-index:2;
   }
-  .museum-card iframe { width:100%; aspect-ratio: 1.45; border:0; background:#050608; display:block; margin:8px; width: calc(100% - 16px); border-radius:2px; }
+  .museum-card iframe {
+    width:100%; aspect-ratio: 1.5; border:0; display:block;
+    background: #050608; border-radius:1px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  @media (max-width:640px){ .museum-card iframe { aspect-ratio: 1.6; } }
   .museum-card-foot {
-    margin: 0 8px 8px; padding:7px 8px;
-    background: linear-gradient(180deg, #1c1917 0%, #0f0a08 100%);
-    border:1px solid rgba(251,191,36,0.28); border-radius:4px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    margin-top: 8px; padding: 6px 8px;
+    background: linear-gradient(180deg, #efe6d0, #d6c5a0);
+    border:1px solid #8a7443;
+    border-radius:2px;
     text-align:center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 0 rgba(0,0,0,0.2);
   }
-  .museum-card-title { font:800 10px monospace; color:#fde68a; letter-spacing:0.06em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .museum-card-formula { font:500 8.5px monospace; color:#a8a29e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; font-style:italic; }
+  .museum-card-title { font: 700 10px 'Georgia', serif; color:#2b2110; letter-spacing:0.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .museum-card-formula { font: 400 8px 'Courier New', monospace; color:#6b5626; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; font-style:italic; }
 </style>
 
 <script>
