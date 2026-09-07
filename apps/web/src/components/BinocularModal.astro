@@ -1,0 +1,2192 @@
+---
+/**
+ * BinocularModal — Seaside Coin-Operated Tower Binoculars Viewfinder.
+ *
+ * Features:
+ * - Dual-barrel optical binocular bezel (infinity / figure-8 viewfinder)
+ * - 60 FPS living ocean simulation:
+ *   • The Great Blue Whale (breaching, blowhole mist fountain, tail fluke slap)
+ *   • Great Shark (dorsal fin cruising with V-wake)
+ *   • Pod of leaping dolphins
+ *   • SS BitStream cargo freighter & Old Salt's fishing trawler
+ *   • Deep submersible & drifting message in a bottle
+ * - Pan across 180° ocean horizon + optical zoom slider
+ * - Click-to-inspect nautical observation log cards
+ * - Procedural Web Audio: ocean wave wash, haunting whale song, and distant ship foghorn
+ */
+---
+
+<div class="binocular-modal-backdrop modal-backdrop" id="binocular-modal-backdrop" aria-hidden="true">
+  <div class="binocular-chassis" role="dialog" aria-modal="true" aria-labelledby="binocular-title">
+    
+    <!-- Top Nautical Weathered Bar -->
+    <div class="binocular-top-bar">
+      <div class="binocular-branding">
+        <span class="binocular-icon">🌊</span>
+        <div>
+          <h2 class="binocular-title" id="binocular-title">SEASIDE TOWER LOOKOUT</h2>
+          <div class="binocular-coords" id="binocular-coords">BEARING 182.5° S • SOUTHERN SURF • 1.2× OPTICAL</div>
+        </div>
+      </div>
+
+      <div class="binocular-header-actions">
+        <button type="button" class="binocular-tool-btn" id="binocular-sound-btn" title="Toggle Ocean Soundscape">
+          <span id="binocular-sound-icon">🐋</span>
+        </button>
+        <button type="button" class="binocular-tool-btn" id="binocular-reset-btn" title="Center Horizon">
+          <span>🎯</span>
+        </button>
+        <button type="button" class="binocular-close-btn" id="binocular-modal-close" aria-label="Step Away from Binoculars">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dual-Eyepiece Binoculars Mask Frame -->
+    <div class="binocular-viewport-container" id="binocular-viewport-container">
+      
+      <!-- Heavy Cast Iron Dual-Barrel Housing Mask -->
+      <div class="binocular-mask-overlay" aria-hidden="true">
+        <div class="barrel-hole left-barrel"></div>
+        <div class="barrel-bridge">
+          <span class="coin-slot-label">25¢ TOWER OPTICS</span>
+        </div>
+        <div class="barrel-hole right-barrel"></div>
+      </div>
+
+      <!-- Ocean & Marine Life Canvas (High-DPI 1200x750) -->
+      <canvas id="binocular-ocean-canvas" width="1200" height="750" class="binocular-canvas"></canvas>
+
+      <!-- Optical Reticle & Rangefinder Overlay -->
+      <div class="binocular-rangefinder" aria-hidden="true">
+        <div class="range-grid-center">
+          <div class="range-tick tick-center"></div>
+          <div class="range-tick tick-l1"></div>
+          <div class="range-tick tick-l2"></div>
+          <div class="range-tick tick-r1"></div>
+          <div class="range-tick tick-r2"></div>
+          <div class="range-dist-label">500m</div>
+          <div class="range-dist-label dist-far">2.5km</div>
+        </div>
+      </div>
+
+      <!-- Glass Vignette & Water Droplet Gleam -->
+      <div class="binocular-glass-gleam" aria-hidden="true"></div>
+
+      <!-- Clicked Marine Life / Vessel Observation Card -->
+      <div class="nautical-log-card" id="nautical-log-card" style="display: none;">
+        <button type="button" class="log-close-btn" id="log-close-btn">✕</button>
+        <div class="log-header">
+          <span class="log-icon" id="log-icon">🐋</span>
+          <div>
+            <h3 class="log-title" id="log-title">The Great Blue Whale</h3>
+            <span class="log-class" id="log-class">Balaenoptera Musculus</span>
+          </div>
+        </div>
+        <p class="log-desc" id="log-desc">
+          A majestic oceanic giant surfacing to breach. Its blowhole spouts a vertical plume of mist before diving into the abyss.
+        </p>
+        <div class="log-stats">
+          <div class="log-stat">
+            <span class="stat-label">LENGTH</span>
+            <span class="stat-val" id="log-stat-1">30.5 m</span>
+          </div>
+          <div class="log-stat">
+            <span class="stat-label">SPEED</span>
+            <span class="stat-val" id="log-stat-2">12 Knots</span>
+          </div>
+          <div class="log-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-val" id="log-stat-3">Surfacing</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Quick Sea Marks -->
+    <div class="binocular-bottom-controls">
+      <div class="zoom-control-group">
+        <span class="zoom-label">🌊 FOCUS & ZOOM</span>
+        <div class="slider-wrapper">
+          <span class="zoom-btn-icon" id="binoc-zoom-out">−</span>
+          <input
+            type="range"
+            id="binocular-zoom-slider"
+            min="0.6"
+            max="2.4"
+            step="0.05"
+            value="1.0"
+            class="ocean-slider"
+            aria-label="Binocular Magnification"
+          />
+          <span class="zoom-btn-icon" id="binoc-zoom-in">+</span>
+        </div>
+        <span class="zoom-readout mono-num" id="binoc-zoom-readout">1.0×</span>
+      </div>
+
+      <div class="sea-quick-tags" id="sea-quick-tags">
+        <button type="button" class="sea-tag-btn" data-target="whale">🐋 Leviathan Whale</button>
+        <button type="button" class="sea-tag-btn" data-target="shark">🦈 Apex Shark</button>
+        <button type="button" class="sea-tag-btn" data-target="dolphins">🐬 Dolphin Pod</button>
+        <button type="button" class="sea-tag-btn" data-target="manta">🪸 Oceanic Manta</button>
+        <button type="button" class="sea-tag-btn" data-target="freighter">🚢 SS BitStream</button>
+        <button type="button" class="sea-tag-btn" data-target="trawler">⛵ Fishing Trawler</button>
+        <button type="button" class="sea-tag-btn" data-target="sub">🟡 Nautilus-X Sub</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .binocular-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 10, 18, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 350;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+  }
+
+  .binocular-modal-backdrop.open {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Authentic Weathered Maritime Binoculars Chassis */
+  .binocular-chassis {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    background: linear-gradient(180deg, #101c2c 0%, #08101a 100%);
+    border-radius: 24px;
+    padding: 16px;
+    border: 3px solid #0284c7;
+    box-shadow:
+      0 0 0 1px #0369a1,
+      0 0 0 4px #08101a,
+      0 0 0 6px #0c4a6e,
+      0 28px 70px -10px rgba(0, 0, 0, 0.95),
+      0 0 35px rgba(2, 132, 199, 0.22),
+      inset 0 1px 0 rgba(186, 230, 253, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: #f8fafc;
+    box-sizing: border-box;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  /* Top Bar */
+  .binocular-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: linear-gradient(180deg, #0f2742 0%, #091728 100%);
+    border: 1.5px solid #0284c7;
+    border-radius: 12px;
+    padding: 8px 12px;
+    box-shadow:
+      inset 0 1px 1px rgba(186, 230, 253, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.6);
+  }
+
+  .binocular-branding {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .binocular-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+  }
+
+  .binocular-title {
+    font-family: var(--font-display, monospace);
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #38bdf8;
+    letter-spacing: 0.1em;
+    margin: 0;
+    line-height: 1.1;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .binocular-coords {
+    font-family: monospace;
+    font-size: 0.64rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .binocular-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .binocular-tool-btn,
+  .binocular-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #0d2138;
+    border: 1.5px solid #0369a1;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.15), 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .binocular-tool-btn:hover,
+  .binocular-close-btn:hover {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  }
+
+  .binocular-tool-btn:active,
+  .binocular-close-btn:active {
+    transform: scale(0.92);
+  }
+
+  /* Dual Eyepiece Viewport Container */
+  .binocular-viewport-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    max-height: 390px;
+    background: #020617;
+    border-radius: 18px;
+    border: 4px solid #0f2742;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow:
+      inset 0 0 45px rgba(0, 0, 0, 0.95),
+      0 12px 32px rgba(0, 0, 0, 0.8),
+      0 0 20px rgba(2, 132, 199, 0.2);
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+  }
+
+  .binocular-viewport-container:active {
+    cursor: grabbing;
+  }
+
+  /* Dual-Barrel Interlocking Mask */
+  .binocular-mask-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .barrel-hole {
+    flex: 1;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 0 9999px rgba(3, 7, 18, 0.82);
+    border: 3px solid rgba(56, 189, 248, 0.35);
+  }
+
+  .left-barrel {
+    transform: translateX(18px);
+  }
+
+  .right-barrel {
+    transform: translateX(-18px);
+  }
+
+  .barrel-bridge {
+    position: absolute;
+    top: 6px;
+    background: #0c4a6e;
+    border: 1px solid #38bdf8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  }
+
+  .coin-slot-label {
+    font-family: monospace;
+    font-size: 0.54rem;
+    font-weight: 900;
+    color: #fde047;
+    letter-spacing: 0.1em;
+  }
+
+  .binocular-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: auto;
+  }
+
+  /* Rangefinder Grid */
+  .binocular-rangefinder {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .range-grid-center {
+    position: relative;
+    width: 180px;
+    height: 2px;
+    background: rgba(56, 189, 248, 0.35);
+  }
+
+  .range-tick {
+    position: absolute;
+    width: 1px;
+    height: 12px;
+    top: -5px;
+    background: rgba(56, 189, 248, 0.45);
+  }
+
+  .tick-center { left: 50%; height: 18px; top: -8px; background: rgba(245, 158, 11, 0.7); }
+  .tick-l1 { left: 25%; }
+  .tick-l2 { left: 5%; }
+  .tick-r1 { right: 25%; }
+  .tick-r2 { right: 5%; }
+
+  .range-dist-label {
+    position: absolute;
+    bottom: 8px;
+    left: 25%;
+    font-family: monospace;
+    font-size: 0.54rem;
+    color: rgba(56, 189, 248, 0.6);
+  }
+
+  .range-dist-label.dist-far {
+    left: auto;
+    right: 25%;
+  }
+
+  .binocular-glass-gleam {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 12;
+  }
+
+  /* Nautical Observation Log Card */
+  .nautical-log-card {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 80px);
+    max-width: 360px;
+    background: rgba(10, 24, 40, 0.94);
+    border: 1.5px solid #0284c7;
+    border-radius: 12px;
+    padding: 12px 14px;
+    z-index: 30;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 16px rgba(2, 132, 199, 0.35);
+    backdrop-filter: blur(8px);
+    animation: logFadeIn 0.2s ease-out;
+  }
+
+  @keyframes logFadeIn {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .log-close-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .log-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .log-title {
+    font-family: var(--font-display, monospace);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #38bdf8;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .log-class {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #facc15;
+  }
+
+  .log-desc {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    line-height: 1.35;
+    margin: 0 0 8px 0;
+  }
+
+  .log-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+  }
+
+  .log-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .stat-label {
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  .stat-val {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #38bdf8;
+    font-family: monospace;
+  }
+
+  /* Bottom Controls & Slider */
+  .binocular-bottom-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  .zoom-control-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .zoom-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #38bdf8;
+    white-space: nowrap;
+  }
+
+  .slider-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zoom-btn-icon {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #94a3b8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ocean-slider {
+    flex: 1;
+    accent-color: #0284c7;
+    height: 5px;
+    border-radius: 3px;
+    background: #0f172a;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .zoom-readout {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #38bdf8;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* Quick Destination Jump Tags */
+  .sea-quick-tags {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .sea-tag-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(2, 132, 199, 0.12);
+    border: 1px solid rgba(2, 132, 199, 0.28);
+    color: #7dd3fc;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+  }
+
+  .sea-tag-btn:hover {
+    background: rgba(2, 132, 199, 0.3);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+  }
+
+  .sea-tag-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 480px) {
+    .binocular-modal-backdrop {
+      padding: 6px;
+    }
+    .binocular-chassis {
+      padding: 10px 8px;
+      gap: 8px;
+      border-radius: 16px;
+    }
+    .binocular-title {
+      font-size: 0.84rem;
+    }
+    .binocular-coords {
+      font-size: 0.56rem;
+    }
+    .binocular-viewport-container {
+      max-height: 280px;
+    }
+    .nautical-log-card {
+      width: calc(100% - 32px);
+      padding: 8px 10px;
+      bottom: 12px;
+    }
+    .log-title {
+      font-size: 0.82rem;
+    }
+    .log-desc {
+      font-size: 0.65rem;
+    }
+  }
+</style>
+
+<script>
+  // ── Marine Life & Vessels Database ────────────────────────────────────────
+  interface SeaEntity {
+    id: string;
+    name: string;
+    species: string;
+    desc: string;
+    icon: string;
+    stat1: string;
+    stat2: string;
+    stat3: string;
+    x: number; // world x on the ocean horizon
+    y: number; // depth layer (0 = horizon, 100 = near surf)
+    vx: number;
+    radius: number;
+    color: string;
+  }
+
+  const SEA_ENTITIES: SeaEntity[] = [
+    {
+      id: 'whale',
+      name: 'The Great Blue Whale',
+      species: 'Balaenoptera Musculus',
+      desc: 'The largest creature to have ever existed on Earth. Reaching over 31 meters, its colossal mottled slate-blue silhouette surfaces gracefully to breach, erupting a high-pressure dual blowhole mist plume and waving its massive flukes before diving.',
+      icon: '🐋',
+      stat1: '31.2 m',
+      stat2: '14 Knots',
+      stat3: 'Breaching & Fluking',
+      x: 80,
+      y: 42,
+      vx: 0.22,
+      radius: 46,
+      color: '#0284c7',
+    },
+    {
+      id: 'shark',
+      name: 'Apex Pelagic Shark',
+      species: 'Carcharodon Carcarias',
+      desc: 'An oceanic apex predator with countershaded slate-gray dorsum and razor-sharp dorsal fin slicing the surface tension. Its streamlined muscular body glides stealthily, leaving a crisp divergent V-wake trail.',
+      icon: '🦈',
+      stat1: '6.4 m',
+      stat2: '24 Knots',
+      stat3: 'Surface Stalking',
+      x: -210,
+      y: 68,
+      vx: 0.55,
+      radius: 26,
+      color: '#334155',
+    },
+    {
+      id: 'dolphins',
+      name: 'Coastal Dolphin Pod',
+      species: 'Delphinus Delphis',
+      desc: 'A mother dolphin and her juvenile calf porpoising in breathtaking synchronized leaps, curving gracefully above the cresting swells and splashing into the surf with glittering spray.',
+      icon: '🐬',
+      stat1: '2.5 m',
+      stat2: '19 Knots',
+      stat3: 'Tandem Porpoising',
+      x: 320,
+      y: 52,
+      vx: 0.48,
+      radius: 24,
+      color: '#38bdf8',
+    },
+    {
+      id: 'manta',
+      name: 'Giant Oceanic Manta Ray',
+      species: 'Mobula Birostris',
+      desc: 'A gentle pelagic giant with a 7-meter wingspan gliding effortlessly beneath the sunlit ocean swells. Distinctive white shoulder markings glow through the translucent turquoise water as its cephalic fins steer its flight.',
+      icon: '🪸',
+      stat1: '7.0 m',
+      stat2: '9 Knots',
+      stat3: 'Subsurface Flight',
+      x: -60,
+      y: 82,
+      vx: 0.32,
+      radius: 32,
+      color: '#1e293b',
+    },
+    {
+      id: 'freighter',
+      name: 'SS BitStream (Ultra-Large Container Ship)',
+      species: 'Triple-E Class Container Vessel',
+      desc: 'A 24,000 TEU container behemoth displacing over 200,000 gross tons. Towering stacks of multi-colored cargo containers rest above its bulbous bow, parting the ocean waves with continuous diesel exhaust and a churning wake wash.',
+      icon: '🚢',
+      stat1: '399 m',
+      stat2: '18 Knots',
+      stat3: 'Ocean Transit',
+      x: -380,
+      y: 16,
+      vx: 0.1,
+      radius: 54,
+      color: '#0f172a',
+    },
+    {
+      id: 'trawler',
+      name: 'The Salty Gull (North Sea Trawler)',
+      species: 'Traditional Side Trawler',
+      desc: 'A rugged timber-and-steel stern trawler weathered by decades of salt spray. Trawl winches, green nylon nets, and orange buoys crown the deck as a wheeling flock of seagulls circles its wake.',
+      icon: '⛵',
+      stat1: '24 m',
+      stat2: '8.5 Knots',
+      stat3: 'Hauling Trawl',
+      x: 180,
+      y: 28,
+      vx: 0.16,
+      radius: 30,
+      color: '#854d0e',
+    },
+    {
+      id: 'sub',
+      name: 'Nautilus-X Deep Research Sub',
+      species: 'Human-Occupied Deep Submersible',
+      desc: 'A high-visibility titanium pressure sphere rated to 11,000 meters. Dual high-intensity forward LED floodlights pierce the deep blue abyss, illuminating drifting marine snow and deep reef trenches.',
+      icon: '🟡',
+      stat1: '9.3 m',
+      stat2: '4.5 Knots',
+      stat3: 'Survey Dive',
+      x: -120,
+      y: 76,
+      vx: 0.18,
+      radius: 25,
+      color: '#eab308',
+    },
+  ];
+
+  // Mist Particle Pool (Whale blowhole geyser)
+  interface MistParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    alpha: number;
+    size: number;
+  }
+  const MIST_PARTICLES: MistParticle[] = [];
+
+  // Water Splash Particle Pool
+  interface SplashParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    alpha: number;
+    size: number;
+  }
+  const SPLASH_PARTICLES: SplashParticle[] = [];
+
+  // Marine Snow / Light Beam Specks (Submarine)
+  interface MarineSnow {
+    x: number;
+    y: number;
+    speed: number;
+    size: number;
+    alpha: number;
+  }
+  const MARINE_SNOW: MarineSnow[] = [];
+  for (let i = 0; i < 28; i++) {
+    MARINE_SNOW.push({
+      x: Math.random() * 80,
+      y: (Math.random() - 0.5) * 60,
+      speed: 0.2 + Math.random() * 0.3,
+      size: 0.8 + Math.random() * 1.6,
+      alpha: 0.3 + Math.random() * 0.5,
+    });
+  }
+
+  // Realistic Seabirds (Seagulls)
+  interface Seabird {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    scale: number;
+    wingPhase: number;
+    bankAngle: number;
+  }
+  const SEABIRDS: Seabird[] = [];
+  for (let i = 0; i < 8; i++) {
+    SEABIRDS.push({
+      x: (Math.random() - 0.5) * 800,
+      y: -140 - Math.random() * 110,
+      vx: 0.4 + Math.random() * 0.5,
+      vy: (Math.random() - 0.5) * 0.2,
+      scale: 0.7 + Math.random() * 0.5,
+      wingPhase: Math.random() * Math.PI * 2,
+      bankAngle: (Math.random() - 0.5) * 0.2,
+    });
+  }
+
+  // ── Procedural Oceanic Web Audio ──────────────────────────────────────────
+  let audioCtx: AudioContext | null = null;
+  let oceanSoundEnabled = true;
+  let waveGain: GainNode | null = null;
+
+  function initOceanAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function startOceanAmbience() {
+    if (!oceanSoundEnabled) return;
+    try {
+      initOceanAudio();
+      if (!audioCtx || waveGain) return;
+
+      const bufferSize = audioCtx.sampleRate * 3;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        output[i] = (b0 + b1 + b2) * 0.12;
+      }
+
+      const noiseSource = audioCtx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(340, audioCtx.currentTime);
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 1.2);
+
+      noiseSource.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      noiseSource.start();
+      waveGain = gain;
+    } catch (_) {}
+  }
+
+  function stopOceanAmbience() {
+    if (waveGain && audioCtx) {
+      try {
+        waveGain.gain.setValueAtTime(waveGain.gain.value, audioCtx.currentTime);
+        waveGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+        setTimeout(() => { waveGain = null; }, 450);
+      } catch (_) {
+        waveGain = null;
+      }
+    }
+  }
+
+  function playWhaleSong() {
+    if (!oceanSoundEnabled) return;
+    try {
+      initOceanAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(123.47, now);
+      osc.frequency.exponentialRampToValueAtTime(174.61, now + 0.7);
+      osc.frequency.exponentialRampToValueAtTime(103.83, now + 1.8);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(320, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.22, now + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.9);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 1.9);
+    } catch (_) {}
+  }
+
+  function playShipFoghorn() {
+    if (!oceanSoundEnabled) return;
+    try {
+      initOceanAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      [73.42, 87.31, 110.0].forEach((freq) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.14, now + 0.25);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 2.2);
+      });
+    } catch (_) {}
+  }
+
+  function playSplashingWater() {
+    if (!oceanSoundEnabled) return;
+    try {
+      initOceanAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.16);
+
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } catch (_) {}
+  }
+
+  // ── Canvas Setup & Simulation Engine ──────────────────────────────────────
+  const canvas = document.getElementById('binocular-ocean-canvas') as HTMLCanvasElement | null;
+  const ctx = canvas?.getContext('2d');
+  const backdrop = document.getElementById('binocular-modal-backdrop');
+  const closeBtn = document.getElementById('binocular-modal-close');
+  const soundBtn = document.getElementById('binocular-sound-btn');
+  const soundIcon = document.getElementById('binocular-sound-icon');
+  const resetBtn = document.getElementById('binocular-reset-btn');
+  const zoomSlider = document.getElementById('binocular-zoom-slider') as HTMLInputElement | null;
+  const zoomReadout = document.getElementById('binoc-zoom-readout');
+  const btnZoomIn = document.getElementById('binoc-zoom-in');
+  const btnZoomOut = document.getElementById('binoc-zoom-out');
+  const coordsReadout = document.getElementById('binocular-coords');
+  const logCard = document.getElementById('nautical-log-card');
+  const logTitle = document.getElementById('log-title');
+  const logClass = document.getElementById('log-class');
+  const logDesc = document.getElementById('log-desc');
+  const logIcon = document.getElementById('log-icon');
+  const logStat1 = document.getElementById('log-stat-1');
+  const logStat2 = document.getElementById('log-stat-2');
+  const logStat3 = document.getElementById('log-stat-3');
+  const logCloseBtn = document.getElementById('log-close-btn');
+  const seaTags = document.querySelectorAll<HTMLButtonElement>('.sea-tag-btn');
+
+  let panX = 0;
+  let zoom = 1.0;
+  let animTick = 0;
+  let isDragging = false;
+  let dragStartX = 0;
+  let animFrameId: number | null = null;
+  let selectedEntity: SeaEntity | null = null;
+
+  function renderFrame() {
+    if (!ctx || !canvas) return;
+    animTick++;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const horizonY = H * 0.44;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // ── 1. Realistic Twilight Atmosphere & Rayleigh Scattering Sky ──────────
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+    skyGrad.addColorStop(0, '#070f1e'); // Deep indigo zenith
+    skyGrad.addColorStop(0.45, '#132845');
+    skyGrad.addColorStop(0.72, '#282f5b'); // Soft violet horizon haze
+    skyGrad.addColorStop(0.9, '#c2410c'); // Rich sunset orange band
+    skyGrad.addColorStop(1, '#fbbf24'); // Golden sunset edge
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, horizonY);
+
+    // Setting Sun position
+    const sunWorldX = 80;
+    const sunScreenX = W / 2 + (sunWorldX + panX) * zoom;
+    const sunScreenY = horizonY - 12;
+
+    // Glowing Atmospheric Solar Disk & Halo
+    if (sunScreenX > -150 && sunScreenX < W + 150) {
+      const sunHalo = ctx.createRadialGradient(sunScreenX, sunScreenY, 6, sunScreenX, sunScreenY, 140 * zoom);
+      sunHalo.addColorStop(0, 'rgba(254, 243, 199, 0.95)');
+      sunHalo.addColorStop(0.2, 'rgba(251, 191, 36, 0.5)');
+      sunHalo.addColorStop(0.6, 'rgba(234, 88, 12, 0.2)');
+      sunHalo.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunHalo;
+      ctx.beginPath();
+      ctx.arc(sunScreenX, sunScreenY, 140 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sharp Solar Disc
+      ctx.fillStyle = '#fffbeb';
+      ctx.beginPath();
+      ctx.arc(sunScreenX, sunScreenY, 16 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.translate(W / 2 + panX * zoom, 0);
+
+    // ── 2. Stratified Sunset Clouds with Realistic Shading ──────────────────
+    for (let c = -4; c < 5; c++) {
+      const cx = c * 340 + Math.sin(animTick * 0.003 + c) * 25;
+      const cy = horizonY - 60 - Math.abs(c % 3) * 24;
+      const cw = (110 + (c % 2) * 30) * zoom;
+      const ch = (24 + (c % 2) * 8) * zoom;
+
+      // Cloud Body
+      const cloudGrad = ctx.createLinearGradient(cx, cy - ch, cx, cy + ch);
+      cloudGrad.addColorStop(0, 'rgba(254, 215, 170, 0.45)');
+      cloudGrad.addColorStop(0.5, 'rgba(194, 65, 12, 0.35)');
+      cloudGrad.addColorStop(1, 'rgba(30, 41, 59, 0.55)');
+      ctx.fillStyle = cloudGrad;
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, cw, ch, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx - cw * 0.35, cy - ch * 0.2, cw * 0.6, ch * 0.8, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + cw * 0.35, cy - ch * 0.15, cw * 0.55, ch * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Golden Edge Highlight
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.25)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + ch * 0.6, cw * 0.8, ch * 0.3, 0, 0, Math.PI);
+      ctx.fill();
+    }
+
+    // ── 3. Realistic Flying & Gliding Seabirds ───────────────────────────────
+    for (const b of SEABIRDS) {
+      b.x += b.vx;
+      b.y += b.vy + Math.sin(animTick * 0.04 + b.x * 0.02) * 0.15;
+      if (b.x > 750) b.x = -750;
+      if (b.x < -750) b.x = 750;
+
+      const wing = Math.sin(animTick * 0.14 + b.wingPhase) * 7;
+      const bs = b.scale * zoom;
+
+      ctx.save();
+      ctx.translate(b.x, horizonY + b.y);
+      ctx.rotate(b.bankAngle);
+
+      // Body & Head
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 8 * bs, 3 * bs, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Gray Back & Wings
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(-4 * bs, 0);
+      ctx.quadraticCurveTo(0, wing * bs, 14 * bs, wing * bs * 0.8);
+      ctx.lineTo(8 * bs, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-4 * bs, 0);
+      ctx.quadraticCurveTo(0, -wing * bs, 14 * bs, -wing * bs * 0.8);
+      ctx.lineTo(8 * bs, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Yellow Beak
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(8 * bs, -1);
+      ctx.lineTo(13 * bs, 0);
+      ctx.lineTo(8 * bs, 1);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // ── 4. Deep Sea Body with Subsurface Scattering Gradients ───────────────
+    const seaGrad = ctx.createLinearGradient(0, horizonY, 0, H);
+    seaGrad.addColorStop(0, '#09223d'); // Deep oceanic Prussian blue
+    seaGrad.addColorStop(0.3, '#061a30');
+    seaGrad.addColorStop(0.7, '#031020');
+    seaGrad.addColorStop(1, '#020914'); // Abyssal near-depth
+    ctx.fillStyle = seaGrad;
+    ctx.fillRect(0, horizonY, W, H - horizonY);
+
+    // ── 5. Golden Specular Sun Glitter Path (Caustic Wave Reflections) ───────
+    if (sunScreenX > -100 && sunScreenX < W + 100) {
+      const glintGrad = ctx.createLinearGradient(sunScreenX - 80 * zoom, 0, sunScreenX + 80 * zoom, 0);
+      glintGrad.addColorStop(0, 'transparent');
+      glintGrad.addColorStop(0.5, 'rgba(253, 224, 71, 0.45)');
+      glintGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glintGrad;
+
+      for (let y = horizonY + 2; y < H; y += 8) {
+        const glintWidth = (20 + (y - horizonY) * 0.4) * zoom;
+        const waveGlitter = Math.sin(y * 0.08 + animTick * 0.05) * 6;
+        ctx.fillRect(sunScreenX - glintWidth / 2 + waveGlitter, y, glintWidth, 3);
+      }
+    }
+
+    ctx.save();
+    ctx.translate(W / 2 + panX * zoom, 0);
+
+    // ── 6. 5-Layer Gerstner Wave Geometry & Dynamic Translucent Crests ───────
+    const waveConfigs = [
+      { yOffset: 12, speed: 0.015, length: 0.018, amp: 4.5, color: '#0f2f50', crestAlpha: 0.25 },
+      { yOffset: 42, speed: 0.022, length: 0.015, amp: 7.0, color: '#0c2744', crestAlpha: 0.35 },
+      { yOffset: 85, speed: 0.028, length: 0.012, amp: 10.0, color: '#091e36', crestAlpha: 0.5 },
+      { yOffset: 145, speed: 0.035, length: 0.009, amp: 14.0, color: '#051629', crestAlpha: 0.65 },
+      { yOffset: 225, speed: 0.042, length: 0.007, amp: 18.0, color: '#020d18', crestAlpha: 0.8 },
+    ];
+
+    waveConfigs.forEach((wc, layerIdx) => {
+      const baseWaveY = horizonY + wc.yOffset;
+
+      ctx.fillStyle = wc.color;
+      ctx.beginPath();
+      ctx.moveTo(-900, H);
+
+      // Trochoidal/Gerstner wave profile with sharp crests and wide troughs
+      for (let x = -900; x <= 900; x += 15) {
+        const theta = x * wc.length + animTick * wc.speed;
+        const waveY = baseWaveY + Math.sin(theta) * wc.amp - Math.cos(theta * 2) * (wc.amp * 0.25);
+        ctx.lineTo(x, waveY);
+      }
+      ctx.lineTo(900, H);
+      ctx.closePath();
+      ctx.fill();
+
+      // Subsurface Light Scattering on Crest Tips (Radiant Aquamarine)
+      ctx.strokeStyle = `rgba(56, 189, 248, ${wc.crestAlpha * 0.55})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let x = -900; x <= 900; x += 25) {
+        const theta = x * wc.length + animTick * wc.speed;
+        const sinVal = Math.sin(theta);
+        if (sinVal > 0.4) {
+          const waveY = baseWaveY + sinVal * wc.amp;
+          ctx.moveTo(x - 16, waveY + 2);
+          ctx.lineTo(x + 16, waveY + 2);
+        }
+      }
+      ctx.stroke();
+
+      // White Bioluminescent Foam Ribbons & Breaking Froth
+      ctx.strokeStyle = `rgba(255, 255, 255, ${wc.crestAlpha})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let x = -900; x <= 900; x += 35) {
+        const theta = x * wc.length + animTick * wc.speed;
+        if (Math.sin(theta) > 0.7) {
+          const waveY = baseWaveY + Math.sin(theta) * wc.amp - Math.cos(theta * 2) * (wc.amp * 0.25);
+          ctx.moveTo(x - 12, waveY);
+          ctx.lineTo(x + 12, waveY);
+        }
+      }
+      ctx.stroke();
+    });
+
+    // ── 7. Detailed Marine Life & Real-Life Maritime Vessels ─────────────────
+    // Sort entities by depth layer (y) so distant ships render behind near creatures
+    const sortedEntities = [...SEA_ENTITIES].sort((a, b) => a.y - b.y);
+
+    for (const ent of sortedEntities) {
+      ent.x += ent.vx;
+      if (ent.x > 850) ent.x = -850;
+      if (ent.x < -850) ent.x = 850;
+
+      const ey = horizonY + ent.y * 2.5;
+      const waveNormalY = Math.sin(animTick * 0.05 + ent.x * 0.02) * 4;
+
+      ctx.save();
+      ctx.translate(ent.x, ey + waveNormalY);
+      ctx.scale(zoom, zoom);
+
+      // Render each photorealistic subject
+      if (ent.id === 'whale') {
+        renderLifelikeWhale(ctx, animTick, ent);
+      } else if (ent.id === 'shark') {
+        renderLifelikeShark(ctx, animTick, ent);
+      } else if (ent.id === 'dolphins') {
+        renderLifelikeDolphins(ctx, animTick, ent);
+      } else if (ent.id === 'manta') {
+        renderLifelikeManta(ctx, animTick, ent);
+      } else if (ent.id === 'freighter') {
+        renderLifelikeFreighter(ctx, animTick, ent);
+      } else if (ent.id === 'trawler') {
+        renderLifelikeTrawler(ctx, animTick, ent);
+      } else if (ent.id === 'sub') {
+        renderLifelikeSub(ctx, animTick, ent);
+      }
+
+      // Selection Marker Reticle
+      if (selectedEntity?.id === ent.id) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, ent.radius + 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(ent.name.toUpperCase(), 0, ent.radius + 24);
+      }
+
+      ctx.restore();
+    }
+
+    // ── 8. Water Splash Particles ───────────────────────────────────────────
+    for (let i = SPLASH_PARTICLES.length - 1; i >= 0; i--) {
+      const sp = SPLASH_PARTICLES[i]!;
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.vy += 0.12; // Gravity
+      sp.alpha -= 0.025;
+      if (sp.alpha <= 0) {
+        SPLASH_PARTICLES.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = `rgba(255, 255, 255, ${sp.alpha})`;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.size * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── 9. Whale Blowhole Mist Spray Particles ──────────────────────────────
+    for (let i = MIST_PARTICLES.length - 1; i >= 0; i--) {
+      const p = MIST_PARTICLES[i]!;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.02; // Soft drift
+      p.size += 0.15; // Expansion
+      p.alpha -= 0.014;
+      if (p.alpha <= 0) {
+        MIST_PARTICLES.splice(i, 1);
+        continue;
+      }
+      // Warm golden mist lit by the sunset
+      ctx.fillStyle = `rgba(254, 240, 138, ${p.alpha * 0.7})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // ── 10. Update Compass Bearing Readout ──────────────────────────────────
+    if (coordsReadout) {
+      const bearing = ((182.5 - panX * 0.08) % 360 + 360) % 360;
+      coordsReadout.textContent = `BEARING ${bearing.toFixed(1)}° S • SOUTHERN HORIZON • ${zoom.toFixed(1)}× OPTICAL`;
+    }
+
+    animFrameId = requestAnimationFrame(renderFrame);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PHOTOREALISTIC RENDERING FUNCTIONS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * The Great Blue Whale (Balaenoptera Musculus)
+   * Anatomically authentic surfacing:
+   * - Submerged cyan shadow with caustic light lines
+   * - Long flat U-shaped rostrum breach with ventral throat pleats
+   * - Pressurized dual-geyser blowhole eruption with expanding misty vapor
+   * - Mottled slate-blue countershading and diminutive falcate dorsal fin
+   * - Elevated caudal peduncle and massive notched flukes with streaming water cascades
+   */
+  function renderLifelikeWhale(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    const cycle = (tick * 0.016) % (Math.PI * 2);
+    const breachHeight = Math.sin(cycle);
+    const archAngle = Math.cos(cycle) * 0.25;
+
+    // 1. Subsurface Shadow
+    c.save();
+    c.fillStyle = 'rgba(6, 44, 77, 0.45)';
+    c.beginPath();
+    c.ellipse(0, 12, 60, 22, 0, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+
+    c.save();
+    c.translate(0, -breachHeight * 14);
+    c.rotate(archAngle);
+
+    // 2. Colossal Torpedo Body with Mottled Pigmentation
+    const bodyGrad = c.createLinearGradient(0, -22, 0, 16);
+    bodyGrad.addColorStop(0, '#1c3d5a'); // Dark slate-blue dorsal ridge
+    bodyGrad.addColorStop(0.5, '#2b5377');
+    bodyGrad.addColorStop(0.85, '#60a5fa'); // Translucent flank highlight
+    bodyGrad.addColorStop(1, '#bae6fd'); // Ventral pleat belly
+    c.fillStyle = bodyGrad;
+
+    c.beginPath();
+    c.moveTo(55, 2); // Rostrum tip
+    c.bezierCurveTo(40, -18, 0, -24, -45, -8); // Dorsal curve
+    c.bezierCurveTo(-65, 0, -68, 6, -55, 12); // Caudal peduncle taper
+    c.bezierCurveTo(-15, 18, 20, 16, 55, 2); // Ventral jaw curve
+    c.closePath();
+    c.fill();
+
+    // Mottled Skin Pigment Spots
+    c.fillStyle = 'rgba(186, 230, 253, 0.18)';
+    for (let s = -35; s < 35; s += 14) {
+      c.beginPath();
+      c.ellipse(s, -6 + (s % 3) * 2, 7, 3, 0.2, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // Ventral Grooves (Throat Pleats)
+    c.strokeStyle = 'rgba(15, 23, 42, 0.35)';
+    c.lineWidth = 1.1;
+    for (let pl = 0; pl < 4; pl++) {
+      c.beginPath();
+      c.moveTo(48 - pl * 2, 3 + pl * 2.5);
+      c.quadraticCurveTo(20, 12 + pl * 2.5, -5, 13 + pl * 1.5);
+      c.stroke();
+    }
+
+    // Tiny Falcate Dorsal Fin (set far back, near 3/4 length)
+    c.fillStyle = '#1e3a5f';
+    c.beginPath();
+    c.moveTo(-32, -18);
+    c.quadraticCurveTo(-26, -26, -22, -26);
+    c.quadraticCurveTo(-24, -20, -20, -17);
+    c.closePath();
+    c.fill();
+
+    // Large Pectoral Flipper
+    c.fillStyle = '#1e3a5f';
+    c.beginPath();
+    c.moveTo(18, 6);
+    c.quadraticCurveTo(8, 22, -2, 28);
+    c.quadraticCurveTo(6, 18, 24, 8);
+    c.closePath();
+    c.fill();
+
+    // 3. Majestic Caudal Flukes (Rises high when diving)
+    const flukeLift = Math.max(0, -breachHeight * 1.2);
+    if (flukeLift > 0.2) {
+      c.save();
+      c.translate(-58, -flukeLift * 18);
+      c.rotate(-flukeLift * 0.4);
+
+      // Fluke Wings
+      c.fillStyle = '#1c3d5a';
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.bezierCurveTo(-14, -22, -28, -26, -34, -22);
+      c.bezierCurveTo(-28, -14, -18, -4, -6, 0); // Left lobe
+      c.bezierCurveTo(-18, 4, -28, 14, -34, 22);
+      c.bezierCurveTo(-28, 26, -14, 22, 0, 0); // Right lobe
+      c.closePath();
+      c.fill();
+
+      // White Fluke Underside Markings
+      c.fillStyle = 'rgba(241, 245, 249, 0.7)';
+      c.beginPath();
+      c.ellipse(-18, -10, 10, 5, -0.4, 0, Math.PI * 2);
+      c.ellipse(-18, 10, 10, 5, 0.4, 0, Math.PI * 2);
+      c.fill();
+
+      // Translucent Water Cascades Pouring off Fluke Edges
+      c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      c.lineWidth = 1.2;
+      for (let w = -26; w <= 26; w += 8) {
+        c.beginPath();
+        c.moveTo(-30, w);
+        c.lineTo(-30, w + 16);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    c.restore();
+
+    // 4. Pressurized Dual-Blowhole Geyser Blast
+    if (tick % 140 < 30) {
+      if (tick % 140 === 1) {
+        playWhaleSong();
+      }
+      // Spawn mist particles
+      for (let m = 0; m < 3; m++) {
+        MIST_PARTICLES.push({
+          x: ent.x + 38 + (Math.random() - 0.5) * 6,
+          y: ent.y * 2.5 + 280 - breachHeight * 14,
+          vx: (Math.random() - 0.3) * 1.2, // Slight downwind drift
+          vy: -3.6 - Math.random() * 2.2,
+          alpha: 0.85,
+          size: 2.2 + Math.random() * 2.8,
+        });
+      }
+    }
+  }
+
+  /**
+   * Apex Pelagic Shark (Carcharodon Carcarias)
+   * - Razor-sharp dorsal fin slicing the water
+   * - Torpedo body with dark slate-gray and stark white countershading
+   * - 5 distinct curved gill slits & menacing eye
+   * - Swept pectoral fins with dark tips
+   * - Undulating heterocercal tail driving the V-wake
+   */
+  function renderLifelikeShark(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    const swish = Math.sin(tick * 0.12) * 5;
+
+    // Subsurface Torpedo Body
+    c.save();
+    c.translate(0, 4);
+
+    // Torpedo Body with Countershading Gradient
+    const sharkGrad = c.createLinearGradient(0, -10, 0, 8);
+    sharkGrad.addColorStop(0, '#334155'); // Slate gray dorsum
+    sharkGrad.addColorStop(0.55, '#475569');
+    sharkGrad.addColorStop(0.65, '#f8fafc'); // Crisp countershading demarcation line
+    sharkGrad.addColorStop(1, '#ffffff'); // Pure white belly
+    c.fillStyle = sharkGrad;
+
+    c.beginPath();
+    c.moveTo(28, 0); // Pointed conical snout
+    c.quadraticCurveTo(10, -12, -18 + swish * 0.3, -8);
+    c.quadraticCurveTo(-30 + swish, -4, -38 + swish, -1);
+    c.quadraticCurveTo(-26 + swish * 0.6, 6, 0, 7);
+    c.quadraticCurveTo(18, 5, 28, 0);
+    c.closePath();
+    c.fill();
+
+    // 5 Curved Gill Slits
+    c.strokeStyle = 'rgba(15, 23, 42, 0.65)';
+    c.lineWidth = 1.1;
+    for (let g = 0; g < 5; g++) {
+      c.beginPath();
+      c.moveTo(6 - g * 2.8, -4);
+      c.lineTo(5 - g * 2.8, 3);
+      c.stroke();
+    }
+
+    // Predatory Black Eye with Specular Highlight
+    c.fillStyle = '#020617';
+    c.beginPath();
+    c.arc(20, -2.5, 1.8, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.arc(20.6, -3, 0.6, 0, Math.PI * 2);
+    c.fill();
+
+    // Pectoral Fin Slicing Underwater
+    c.fillStyle = '#334155';
+    c.beginPath();
+    c.moveTo(8, 2);
+    c.quadraticCurveTo(0, 16, -8, 20);
+    c.quadraticCurveTo(2, 12, 14, 4);
+    c.closePath();
+    c.fill();
+
+    // Heterocercal Tail Fin (Upper lobe longer than lower lobe)
+    c.fillStyle = '#334155';
+    c.beginPath();
+    c.moveTo(-36 + swish, 0);
+    c.lineTo(-50 + swish * 1.3, -16); // Tall upper lobe
+    c.lineTo(-44 + swish * 1.2, -3);
+    c.lineTo(-47 + swish * 1.3, 10); // Lower lobe
+    c.closePath();
+    c.fill();
+
+    c.restore();
+
+    // Prominent Razor Dorsal Fin Breaching Surface
+    c.fillStyle = '#1e293b';
+    c.beginPath();
+    c.moveTo(2, 2);
+    c.quadraticCurveTo(8, -14, 10, -18); // Leading edge
+    c.quadraticCurveTo(12, -14, 16, 2); // Trailing edge notch
+    c.closePath();
+    c.fill();
+
+    // Wet Specular Gleam on Dorsal Fin
+    c.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+    c.lineWidth = 1.1;
+    c.beginPath();
+    c.moveTo(4, 0);
+    c.lineTo(9, -16);
+    c.stroke();
+
+    // Hydrodynamic V-Wake & Frothing Bow Foam
+    c.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.moveTo(10, 2);
+    c.lineTo(-24, -6);
+    c.moveTo(10, 2);
+    c.lineTo(-24, 10);
+    c.stroke();
+
+    // Bow Froth Splash at Fin Base
+    c.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    c.beginPath();
+    c.arc(6, 2, 2.5, 0, Math.PI * 2);
+    c.arc(10, 2, 2, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  /**
+   * Coastal Dolphin Pod (Delphinus Delphis)
+   * - Adult and calf porpoising in tandem
+   * - Slender beak, rounded melon, falcate dorsal fin
+   * - Iconic 3-color pattern: charcoal saddle, golden-tan hourglass patch, white belly
+   * - Parabolic leap with splashing water crowns
+   */
+  function renderLifelikeDolphins(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    const dolphins = [
+      { offsetPhase: 0, scale: 1.0, offsetX: 0, offsetY: 0 },
+      { offsetPhase: 0.6, scale: 0.65, offsetX: -28, offsetY: 8 }, // Baby calf
+    ];
+
+    dolphins.forEach((d) => {
+      const phase = (tick * 0.055 + d.offsetPhase) % (Math.PI * 2);
+      const isAirborne = phase > Math.PI * 0.15 && phase < Math.PI * 0.85;
+      const jumpY = -Math.sin(phase) * 38;
+      const spineAngle = Math.cos(phase) * 0.6;
+
+      c.save();
+      c.translate(d.offsetX, jumpY + d.offsetY);
+      c.scale(d.scale, d.scale);
+      c.rotate(spineAngle);
+
+      if (isAirborne) {
+        // Sleek Hydrodynamic Body
+        const dolphGrad = c.createLinearGradient(0, -10, 0, 8);
+        dolphGrad.addColorStop(0, '#1e293b'); // Dark charcoal cape
+        dolphGrad.addColorStop(0.45, '#334155');
+        dolphGrad.addColorStop(0.7, '#d97706'); // Golden-tan flank hourglass
+        dolphGrad.addColorStop(1, '#ffffff'); // White belly
+        c.fillStyle = dolphGrad;
+
+        c.beginPath();
+        c.moveTo(22, 1); // Slender beak
+        c.quadraticCurveTo(16, -6, 12, -7); // Melon forehead
+        c.quadraticCurveTo(0, -11, -16, -4); // Arched back
+        c.quadraticCurveTo(-24, 0, -28, 0); // Peduncle
+        c.quadraticCurveTo(-14, 6, 4, 6); // Belly
+        c.quadraticCurveTo(18, 4, 22, 1);
+        c.closePath();
+        c.fill();
+
+        // Glistening Wet Specular Line
+        c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        c.lineWidth = 1.0;
+        c.beginPath();
+        c.moveTo(10, -7);
+        c.quadraticCurveTo(0, -10, -12, -5);
+        c.stroke();
+
+        // Falcate Curved Dorsal Fin
+        c.fillStyle = '#1e293b';
+        c.beginPath();
+        c.moveTo(-2, -9);
+        c.quadraticCurveTo(2, -18, 5, -18);
+        c.quadraticCurveTo(4, -13, 8, -8);
+        c.closePath();
+        c.fill();
+
+        // Pectoral Flipper
+        c.fillStyle = '#334155';
+        c.beginPath();
+        c.moveTo(6, 2);
+        c.quadraticCurveTo(0, 10, -6, 12);
+        c.quadraticCurveTo(2, 6, 10, 3);
+        c.closePath();
+        c.fill();
+
+        // Notched Tail Flukes
+        c.fillStyle = '#1e293b';
+        c.beginPath();
+        c.moveTo(-26, 0);
+        c.lineTo(-34, -8);
+        c.lineTo(-31, 0);
+        c.lineTo(-34, 8);
+        c.closePath();
+        c.fill();
+      }
+
+      c.restore();
+
+      // Splashing Entry/Exit Particles
+      if (Math.abs(jumpY) < 6 && tick % 14 === 0) {
+        playSplashingWater();
+        for (let sp = 0; sp < 4; sp++) {
+          SPLASH_PARTICLES.push({
+            x: ent.x + d.offsetX + (Math.random() - 0.5) * 12,
+            y: ent.y * 2.5 + 320,
+            vx: (Math.random() - 0.5) * 2.5,
+            vy: -2.5 - Math.random() * 2.0,
+            alpha: 0.9,
+            size: 1.8 + Math.random() * 2.0,
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Giant Oceanic Manta Ray (Mobula Birostris)
+   * - 7-meter cephalofoil diamond wingspan gliding underwater
+   * - Velvet black dorsum with white shoulder chevron patches
+   * - Curled cephalic horn fins near mouth
+   * - Gentle undulating pectoral wing flaps
+   * - Shimmering caustic sunlight ribbons refracting on its wings
+   */
+  function renderLifelikeManta(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    const wingFlap = Math.sin(tick * 0.06) * 6;
+
+    c.save();
+    c.translate(0, 6);
+
+    // Caustic Light Glow in water
+    c.fillStyle = 'rgba(56, 189, 248, 0.25)';
+    c.beginPath();
+    c.ellipse(0, 0, 48, 26, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // Velvet Black Diamond Disk
+    c.fillStyle = '#0f172a';
+    c.beginPath();
+    c.moveTo(0, -18); // Head / cephalic area
+    c.bezierCurveTo(24, -12, 42, wingFlap, 46, wingFlap * 0.8); // Right wing tip
+    c.bezierCurveTo(34, 14, 18, 22, 0, 24); // Posterior margin
+    c.bezierCurveTo(-18, 22, -34, 14, -46, -wingFlap * 0.8); // Left wing tip
+    c.bezierCurveTo(-42, -wingFlap, -24, -12, 0, -18);
+    c.closePath();
+    c.fill();
+
+    // Stark White Shoulder Chevrons (Iconic T/Y Manta Marking)
+    c.fillStyle = 'rgba(255, 255, 255, 0.82)';
+    c.beginPath();
+    c.moveTo(0, -14);
+    c.lineTo(14, -6);
+    c.lineTo(10, 2);
+    c.lineTo(0, -4);
+    c.lineTo(-10, 2);
+    c.lineTo(-14, -6);
+    c.closePath();
+    c.fill();
+
+    // Cephalic Horn Fins (Rolled forward)
+    c.fillStyle = '#0f172a';
+    c.beginPath();
+    c.ellipse(6, -20, 3, 5, 0.3, 0, Math.PI * 2);
+    c.ellipse(-6, -20, 3, 5, -0.3, 0, Math.PI * 2);
+    c.fill();
+
+    // Caustic Sunlight Web Patterns across the Wings
+    c.strokeStyle = 'rgba(254, 240, 138, 0.45)';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(-24, 0);
+    c.quadraticCurveTo(-10, -6, 0, 0);
+    c.quadraticCurveTo(10, -6, 24, 0);
+    c.stroke();
+
+    // Slender Whip-Like Tail
+    c.strokeStyle = '#0f172a';
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(0, 24);
+    c.quadraticCurveTo(Math.sin(tick * 0.08) * 6, 42, 0, 60);
+    c.stroke();
+
+    c.restore();
+  }
+
+  /**
+   * SS BitStream (Triple-E Ultra-Large Container Ship)
+   * - 399-meter container carrier with bulbous bow, massive bow wave spray
+   * - Dark navy hull plates, red antifouling bottom, white boot-topping stripe
+   * - 4 multi-tier container bays in authentic shipping line colors
+   * - Superstructure castle with panoramic bridge windows & rotating radar
+   * - Aerodynamic funnel with blue/gold band emitting diesel smoke plumes
+   * - Stern propeller wash and frothing turbulent wake
+   */
+  function renderLifelikeFreighter(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    // 1. Long Steel Hull
+    c.fillStyle = '#0f172a'; // Topside hull
+    c.fillRect(-70, -14, 140, 20);
+
+    // Red Antifouling Bottom
+    c.fillStyle = '#991b1b';
+    c.fillRect(-70, 6, 140, 6);
+
+    // Crisp White Waterline Stripe (Boot-topping)
+    c.fillStyle = '#ffffff';
+    c.fillRect(-70, 5, 140, 1.2);
+
+    // Bow Flare & Bulbous Curve
+    c.fillStyle = '#0f172a';
+    c.beginPath();
+    c.moveTo(70, -14);
+    c.quadraticCurveTo(82, -4, 76, 6);
+    c.lineTo(70, 6);
+    c.closePath();
+    c.fill();
+
+    // Bulbous Bow Surging Wave Churn (Frothing Bow Wave)
+    c.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    c.beginPath();
+    c.moveTo(76, 5);
+    c.quadraticCurveTo(90, 8, 80, 14);
+    c.lineTo(72, 10);
+    c.closePath();
+    c.fill();
+
+    // 2. Multi-Bay Container Stacks with Corrugated Textures
+    const containerColors = ['#15803d', '#0284c7', '#ea580c', '#1d4ed8', '#eab308', '#dc2626'];
+    for (let bay = 0; bay < 4; bay++) {
+      const bx = -56 + bay * 30;
+      for (let tier = 0; tier < 3; tier++) {
+        const by = -14 - (tier + 1) * 7.5;
+        const col = containerColors[(bay * 3 + tier) % containerColors.length]!;
+
+        c.fillStyle = col;
+        c.fillRect(bx, by, 26, 7);
+
+        // White Frame Outline & Twistlock Corner Castings
+        c.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+        c.lineWidth = 0.8;
+        c.strokeRect(bx, by, 26, 7);
+
+        // Corrugated vertical lines
+        c.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        c.lineWidth = 0.6;
+        for (let cr = 4; cr < 26; cr += 5) {
+          c.beginPath();
+          c.moveTo(bx + cr, by);
+          c.lineTo(bx + cr, by + 7);
+          c.stroke();
+        }
+      }
+    }
+
+    // 3. Superstructure (Bridge Castle Tower)
+    c.fillStyle = '#f8fafc';
+    c.fillRect(-45, -46, 24, 32);
+
+    // Panoramic Navigation Bridge Windows
+    c.fillStyle = '#0284c7';
+    c.fillRect(-42, -42, 18, 4);
+
+    // Radar Mast & Rotating Radar Bar
+    c.strokeStyle = '#475569';
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(-33, -46);
+    c.lineTo(-33, -56);
+    c.stroke();
+
+    // Rotating Radar Scanner
+    const radarAngle = Math.sin(tick * 0.1) * 5;
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 2.0;
+    c.beginPath();
+    c.moveTo(-33 - radarAngle, -56);
+    c.lineTo(-33 + radarAngle, -56);
+    c.stroke();
+
+    // 4. Aerodynamic Funnel / Smokestack
+    c.fillStyle = '#1e293b';
+    c.fillRect(-20, -42, 10, 16);
+    // Gold Livery Band
+    c.fillStyle = '#f59e0b';
+    c.fillRect(-20, -36, 10, 3.5);
+
+    // Billowing Exhaust Smoke Plumes
+    c.fillStyle = 'rgba(203, 213, 225, 0.38)';
+    const smokeDrift = Math.sin(tick * 0.06) * 4;
+    c.beginPath();
+    c.arc(-15 + smokeDrift - 4, -48, 5, 0, Math.PI * 2);
+    c.arc(-15 + smokeDrift - 10, -55, 7, 0, Math.PI * 2);
+    c.arc(-15 + smokeDrift - 18, -64, 10, 0, Math.PI * 2);
+    c.fill();
+
+    // 5. Stern Transom & Churning Propeller Wash
+    c.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    c.beginPath();
+    c.ellipse(-76, 7, 14, 5, 0, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  /**
+   * The Salty Gull (North Sea Wooden Fishing Trawler)
+   * - Weathered timber carvel hull with visible wood grain planking
+   * - Working wheelhouse with amber windows, radar dome & searchlight
+   * - Aft steel gallows, winches, green nylon trawl nets with orange float balls
+   * - Wheeling flock of seagulls circling the stern wash
+   */
+  function renderLifelikeTrawler(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    // 1. Weathered Oak Hull Planking
+    c.fillStyle = '#713f12';
+    c.beginPath();
+    c.moveTo(-32, 6);
+    c.lineTo(-26, -8);
+    c.lineTo(26, -8);
+    c.quadraticCurveTo(36, -2, 34, 6);
+    c.closePath();
+    c.fill();
+
+    // Green Gunwale Rail
+    c.fillStyle = '#15803d';
+    c.fillRect(-26, -10, 56, 2.5);
+
+    // Visible Carvel Timber Plank Lines
+    c.strokeStyle = 'rgba(41, 17, 4, 0.5)';
+    c.lineWidth = 1.0;
+    for (let p = -4; p <= 4; p += 3) {
+      c.beginPath();
+      c.moveTo(-30, p);
+      c.lineTo(32, p);
+      c.stroke();
+    }
+
+    // 2. Wheelhouse Cabin
+    c.fillStyle = '#fef08a'; // Aged paint
+    c.fillRect(-8, -22, 18, 12);
+    c.fillStyle = '#451a03'; // Wheelhouse roof
+    c.fillRect(-10, -24, 22, 2.5);
+
+    // Warm Amber Illuminated Windows
+    c.fillStyle = '#f59e0b';
+    c.fillRect(-5, -19, 5, 5);
+    c.fillRect(3, -19, 5, 5);
+
+    // Brass Searchlight on Roof
+    c.fillStyle = '#fde047';
+    c.beginPath();
+    c.arc(0, -26, 2.5, 0, Math.PI * 2);
+    c.fill();
+
+    // 3. Aft Steel Trawl Gallows & Rigging
+    c.strokeStyle = '#1e293b';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.moveTo(-22, -8);
+    c.lineTo(-18, -32);
+    c.lineTo(14, -8);
+    c.stroke();
+
+    // Spooled Green Trawl Net
+    c.fillStyle = '#166534';
+    c.beginPath();
+    c.ellipse(-20, -12, 6, 4, 0.2, 0, Math.PI * 2);
+    c.fill();
+
+    // Bright Orange Net Buoys
+    c.fillStyle = '#ea580c';
+    c.beginPath();
+    c.arc(-22, -16, 2.2, 0, Math.PI * 2);
+    c.arc(-18, -17, 2.2, 0, Math.PI * 2);
+    c.fill();
+
+    // 4. Circling Seabirds around Trawler Stern
+    for (let sb = 0; sb < 4; sb++) {
+      const gAngle = tick * 0.08 + sb * 1.5;
+      const gx = -24 + Math.cos(gAngle) * 22;
+      const gy = -28 + Math.sin(gAngle) * 10;
+      const gWing = Math.sin(tick * 0.2 + sb) * 3;
+
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(gx - 4, gy + gWing);
+      c.lineTo(gx, gy);
+      c.lineTo(gx + 4, gy + gWing);
+      c.stroke();
+    }
+  }
+
+  /**
+   * Nautilus-X Deep Research Submersible
+   * - Safety yellow hydrodynamic pressure sphere hull
+   * - Acrylic viewport with interior cyan instrument HUD glow
+   * - Powerful twin LED light bars projecting volumetric cone beams
+   * - Rayleigh water light scattering with illuminated marine snow particles
+   * - Manipulator arms with collection claw
+   */
+  function renderLifelikeSub(c: CanvasRenderingContext2D, tick: number, ent: SeaEntity) {
+    // 1. High-Visibility Yellow Hydrodynamic Pressure Hull
+    c.fillStyle = '#eab308';
+    c.beginPath();
+    c.ellipse(0, 0, 24, 12, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // Syntactic Buoyancy Foam White Upper Fairing
+    c.fillStyle = '#f8fafc';
+    c.beginPath();
+    c.ellipse(0, -8, 20, 6, 0, 0, Math.PI);
+    c.fill();
+
+    // Titanium Lifting Bail / Tower
+    c.strokeStyle = '#94a3b8';
+    c.lineWidth = 2.0;
+    c.beginPath();
+    c.moveTo(0, -12);
+    c.lineTo(0, -18);
+    c.lineTo(6, -18);
+    c.stroke();
+
+    // 2. Acrylic Forward Viewport with Cyan HUD Instruments
+    c.fillStyle = '#06b6d4';
+    c.beginPath();
+    c.arc(18, 0, 5, -Math.PI * 0.5, Math.PI * 0.5);
+    c.closePath();
+    c.fill();
+
+    // Viewport Glare Highlight
+    c.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    c.beginPath();
+    c.arc(19, -2, 1.5, 0, Math.PI * 2);
+    c.fill();
+
+    // 3. Articulated Hydraulic Manipulator Arm
+    c.strokeStyle = '#64748b';
+    c.lineWidth = 1.8;
+    c.beginPath();
+    c.moveTo(14, 6);
+    c.lineTo(24, 12);
+    c.lineTo(28, 8); // Gripper claw
+    c.stroke();
+
+    // 4. Volumetric Underwater LED Cone Beams
+    const beam = c.createRadialGradient(24, 0, 4, 85, 0, 65);
+    beam.addColorStop(0, 'rgba(254, 240, 138, 0.85)');
+    beam.addColorStop(0.35, 'rgba(56, 189, 248, 0.4)');
+    beam.addColorStop(1, 'transparent');
+    c.fillStyle = beam;
+
+    c.beginPath();
+    c.moveTo(22, -3);
+    c.lineTo(95, -28);
+    c.lineTo(95, 28);
+    c.lineTo(22, 3);
+    c.closePath();
+    c.fill();
+
+    // Drifting Marine Snow in Light Beam
+    c.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    for (const ms of MARINE_SNOW) {
+      ms.x = (ms.x + ms.speed) % 75;
+      const snowX = 22 + ms.x;
+      const snowY = (ms.y * (ms.x / 75));
+      c.beginPath();
+      c.arc(snowX, snowY, ms.size, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // 5. Stern Thruster Pods & Cavitation Bubbles
+    c.fillStyle = '#475569';
+    c.fillRect(-26, -4, 6, 8);
+
+    // Micro-Bubble Cavitation Rings
+    c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    c.lineWidth = 1.0;
+    const bub1 = (tick * 0.2) % 18;
+    c.beginPath();
+    c.arc(-26 - bub1, 0, bub1 * 0.35, 0, Math.PI * 2);
+    c.stroke();
+  }
+
+  // ── Drag & Pan Interaction ────────────────────────────────────────────────
+  function bindCanvasEvents() {
+    if (!canvas) return;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - dragStartX;
+        dragStartX = e.clientX;
+        panX += dx / zoom;
+      }
+    });
+
+    const endDrag = (e: PointerEvent) => {
+      if (!isDragging) return;
+      isDragging = false;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      // Hit-test clicked sea creature or vessel
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+      const W = canvas.width;
+      const H = canvas.height;
+      const horizonY = H * 0.44;
+
+      // Transform click to ocean space
+      const oceanX = clickX - (W / 2 + panX * zoom);
+      const oceanY = clickY;
+
+      let hit: SeaEntity | null = null;
+      for (const ent of SEA_ENTITIES) {
+        const ey = horizonY + ent.y * 2.5;
+        const dist = Math.hypot(oceanX - ent.x * zoom, oceanY - ey);
+        if (dist <= Math.max(28, ent.radius * zoom + 12)) {
+          hit = ent;
+          break;
+        }
+      }
+
+      if (hit) {
+        selectSeaEntity(hit);
+      }
+    };
+
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+
+    // Wheel zoom
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoom(zoom + delta);
+    }, { passive: false });
+  }
+
+  function selectSeaEntity(ent: SeaEntity) {
+    selectedEntity = ent;
+    if (ent.id === 'whale') playWhaleSong();
+    else if (ent.id === 'freighter') playShipFoghorn();
+    else playSplashingWater();
+
+    if (logCard && logTitle && logClass && logDesc && logIcon && logStat1 && logStat2 && logStat3) {
+      logTitle.textContent = ent.name;
+      logClass.textContent = ent.species;
+      logDesc.textContent = ent.desc;
+      logIcon.textContent = ent.icon;
+      logStat1.textContent = ent.stat1;
+      logStat2.textContent = ent.stat2;
+      logStat3.textContent = ent.stat3;
+      logCard.style.display = 'block';
+    }
+  }
+
+  function setZoom(val: number) {
+    zoom = Math.max(0.6, Math.min(2.4, val));
+    if (zoomSlider) zoomSlider.value = zoom.toFixed(2);
+    if (zoomReadout) zoomReadout.textContent = `${zoom.toFixed(1)}×`;
+  }
+
+  // ── UI Controls Wireup ───────────────────────────────────────────────────
+  zoomSlider?.addEventListener('input', () => {
+    setZoom(parseFloat(zoomSlider.value));
+  });
+
+  btnZoomIn?.addEventListener('click', () => {
+    setZoom(zoom + 0.2);
+  });
+
+  btnZoomOut?.addEventListener('click', () => {
+    setZoom(zoom - 0.2);
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    panX = 0;
+    setZoom(1.0);
+  });
+
+  soundBtn?.addEventListener('click', () => {
+    oceanSoundEnabled = !oceanSoundEnabled;
+    if (soundIcon) soundIcon.textContent = oceanSoundEnabled ? '🐋' : '🔇';
+    if (oceanSoundEnabled) {
+      startOceanAmbience();
+    } else {
+      stopOceanAmbience();
+    }
+  });
+
+  logCloseBtn?.addEventListener('click', () => {
+    if (logCard) logCard.style.display = 'none';
+    selectedEntity = null;
+  });
+
+  seaTags.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const target = SEA_ENTITIES.find((s) => s.id === targetId);
+      if (target) {
+        panX = -target.x;
+        setZoom(1.4);
+        selectSeaEntity(target);
+      }
+    });
+  });
+
+  bindCanvasEvents();
+
+  // ── Global Modal Open / Close ─────────────────────────────────────────────
+  function openBinocularModal() {
+    if (!backdrop) return;
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+
+    startOceanAmbience();
+
+    if (!animFrameId) {
+      animFrameId = requestAnimationFrame(renderFrame);
+    }
+  }
+
+  function closeBinocularModal() {
+    if (!backdrop) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    stopOceanAmbience();
+
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+    if (logCard) logCard.style.display = 'none';
+    selectedEntity = null;
+  }
+
+  (window as unknown as { openBinocularModal: () => void; closeBinocularModal: () => void }).openBinocularModal = openBinocularModal;
+  (window as unknown as { openBinocularModal: () => void; closeBinocularModal: () => void }).closeBinocularModal = closeBinocularModal;
+
+  closeBtn?.addEventListener('click', closeBinocularModal);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeBinocularModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeBinocularModal();
+    }
+  });
+</script>

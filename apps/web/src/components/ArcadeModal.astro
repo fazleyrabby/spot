@@ -362,6 +362,7 @@
   .marquee-sign-box {
     position: relative;
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -394,6 +395,7 @@
     letter-spacing: 0.1em;
     margin: 0;
     line-height: 1.1;
+    white-space: nowrap;
     text-shadow:
       0 0 4px #ffffff,
       0 0 10px #38bdf8,
@@ -476,6 +478,13 @@
     cursor: pointer;
     transition: all 0.18s ease;
     white-space: nowrap;
+    min-width: 0;
+  }
+
+  .game-tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .arcade-game-tab:hover {
@@ -533,6 +542,7 @@
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
     gap: 2px;
+    min-width: 0;
   }
 
   .score-label {
@@ -1132,6 +1142,7 @@
   .fight-action-btn {
     width: 62px;
     height: 62px;
+    flex-shrink: 0;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -1510,7 +1521,420 @@
     transform: scale(1.3);
   }
 
+  /* ══════════════════════════════════════════════════════════════════════════
+     ── RESPONSIVE ADAPTATIONS (Mobile & Compact Viewports) ───────────────────
+     ══════════════════════════════════════════════════════════════════════════ */
+  @media (max-width: 480px) {
+    .arcade-modal-backdrop {
+      padding: 8px 6px;
+    }
 
+    .arcade-card {
+      padding: 10px 8px;
+      gap: 8px;
+      border-radius: 14px;
+      border-width: 2px;
+      box-shadow:
+        0 0 0 1px #0f172a,
+        0 0 0 3px #090d16,
+        0 16px 36px rgba(0, 0, 0, 0.95);
+      max-height: calc(100dvh - 16px);
+    }
+
+    /* Marquee Hood */
+    .arcade-cabinet-marquee {
+      padding: 6px 8px;
+      gap: 6px;
+    }
+
+    .marquee-speaker {
+      display: none;
+    }
+
+    .marquee-sign-box {
+      padding: 4px 8px;
+      min-width: 0;
+    }
+
+    .marquee-sub-badge {
+      font-size: 0.48rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 2px;
+    }
+
+    .marquee-glow-text {
+      font-size: clamp(0.9rem, 4.2vw, 1.15rem);
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .arcade-tool-btn,
+    .arcade-close-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    /* Game Switcher Tabs */
+    .arcade-game-tabs {
+      gap: 4px;
+      padding: 3px;
+      border-radius: 10px;
+    }
+
+    .arcade-game-tab {
+      padding: 5px 3px;
+      font-size: 0.68rem;
+      gap: 3px;
+      border-radius: 7px;
+    }
+
+    .game-tab-icon {
+      font-size: 0.8rem;
+    }
+
+    /* Score Bar */
+    .arcade-score-bar {
+      gap: 5px;
+    }
+
+    .score-pill {
+      padding: 4px 4px;
+      gap: 1px;
+    }
+
+    .score-label {
+      font-size: 0.52rem;
+      letter-spacing: 0.05em;
+    }
+
+    .score-val {
+      font-size: 0.86rem;
+    }
+
+    .score-badge-text {
+      font-size: 0.62rem;
+    }
+
+    /* CRT Frame */
+    .crt-screen-frame {
+      max-height: min(330px, 44dvh);
+      border-width: 4px;
+      border-radius: 10px;
+    }
+
+    .bezel-rivet {
+      width: 7px;
+      height: 7px;
+    }
+    .bezel-rivet.top-left { top: 3px; left: 3px; }
+    .bezel-rivet.top-right { top: 3px; right: 3px; }
+    .bezel-rivet.bot-left { bottom: 3px; left: 3px; }
+    .bezel-rivet.bot-right { bottom: 3px; right: 3px; }
+
+    /* CRT Overlay Content */
+    .crt-overlay {
+      padding: 8px 10px;
+    }
+
+    .crt-overlay-content {
+      gap: 6px;
+    }
+
+    .crt-title {
+      font-size: clamp(1.15rem, 5vw, 1.45rem);
+    }
+
+    .crt-subtitle {
+      font-size: 0.72rem;
+    }
+
+    .fighter-select-bar {
+      gap: 3px;
+      margin: 2px 0;
+    }
+
+    .fighter-select-label {
+      font-size: 0.55rem;
+    }
+
+    .fighter-portraits-grid {
+      gap: 4px;
+      padding: 1px;
+    }
+
+    .fighter-portrait-tile {
+      width: 30px;
+      height: 30px;
+      border-radius: 5px;
+    }
+
+    .fighter-portrait-tile canvas {
+      width: 20px;
+      height: 20px;
+    }
+
+    .fighter-portrait-tile .p1-tag {
+      font-size: 0.45rem;
+      top: -4px;
+      left: -2px;
+      padding: 1px 2px;
+    }
+
+    .fighter-inspect-bar {
+      padding: 2px 8px;
+      gap: 6px;
+      margin-top: 1px;
+    }
+
+    .fighter-inspect-name {
+      font-size: 0.68rem;
+    }
+
+    .fighter-inspect-move {
+      font-size: 0.58rem;
+    }
+
+    .crt-instructions {
+      font-size: 0.62rem;
+      gap: 2px;
+    }
+
+    .crt-start-btn {
+      padding: 7px 16px;
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+
+    /* Brawler Controller Deck */
+    .brawler-ctrl-deck {
+      padding: 8px 10px;
+      gap: 8px;
+      border-radius: 12px;
+    }
+
+    .brawler-dpad-wrapper {
+      gap: 3px;
+    }
+
+    .brawler-dpad-grid {
+      gap: 2px;
+    }
+
+    .brawler-dpad-mid {
+      gap: 2px;
+    }
+
+    .brawler-dpad-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 5px;
+    }
+
+    .brawler-dpad-center {
+      width: 28px;
+      height: 28px;
+    }
+
+    .btn-dpad-icon {
+      font-size: 0.62rem;
+    }
+
+    .btn-key-hint {
+      font-size: 0.48rem;
+    }
+
+    .ctrl-helper-label {
+      font-size: 0.6rem;
+    }
+
+    .brawler-actions-wrapper {
+      gap: 8px;
+    }
+
+    .fight-action-btn {
+      width: 48px;
+      height: 48px;
+      box-shadow:
+        0 0 0 2px #0f172a,
+        0 4px 8px rgba(0, 0, 0, 0.8),
+        inset 0 3px 4px rgba(255, 255, 255, 0.35),
+        inset 0 -3px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .action-btn-key {
+      font-size: 0.6rem;
+    }
+
+    .action-btn-label {
+      font-size: 0.5rem;
+      margin-top: 1px;
+      letter-spacing: 0.02em;
+    }
+
+    .action-btn-spark {
+      font-size: 0.52rem;
+      top: 3px;
+      right: 4px;
+    }
+
+    /* Snake Controls */
+    .arcade-ctrl-tabs {
+      gap: 4px;
+      padding: 3px;
+    }
+
+    .ctrl-tab-btn {
+      padding: 5px 6px;
+      font-size: 0.68rem;
+      gap: 4px;
+    }
+
+    .tab-icon {
+      font-size: 0.78rem;
+    }
+
+    .arcade-ctrl-panel {
+      min-height: 110px;
+      gap: 6px;
+    }
+
+    .joystick-base {
+      width: 96px;
+      height: 96px;
+    }
+
+    .joystick-thumb {
+      width: 38px;
+      height: 38px;
+    }
+
+    .dpad-btn {
+      width: 44px;
+      height: 36px;
+      font-size: 0.85rem;
+    }
+
+    .swipe-touchpad {
+      max-width: 240px;
+      height: 90px;
+      padding: 4px 8px;
+    }
+
+    /* Hall of Fame & Quests */
+    .hof-title, .quests-title {
+      font-size: 1.15rem;
+    }
+
+    .hof-leaderboard-list {
+      max-height: 140px;
+      padding: 4px;
+    }
+
+    .hof-row {
+      font-size: 0.7rem;
+      padding: 3px 6px;
+    }
+
+    .quest-card {
+      padding: 6px 8px;
+    }
+
+    .quest-title-text {
+      font-size: 0.7rem;
+    }
+
+    .quest-desc-text {
+      font-size: 0.6rem;
+    }
+
+    .quests-cards-list {
+      gap: 4px;
+    }
+  }
+
+  /* Ultra-compact screens (e.g. <= 360px wide, iPhone SE 1st gen) */
+  @media (max-width: 360px) {
+    .arcade-modal-backdrop {
+      padding: 4px;
+    }
+
+    .arcade-card {
+      padding: 8px 6px;
+      gap: 6px;
+    }
+
+    .arcade-game-tab {
+      padding: 4px 2px;
+      font-size: 0.62rem;
+      gap: 2px;
+    }
+
+    .game-tab-icon {
+      font-size: 0.72rem;
+    }
+
+    .brawler-dpad-btn {
+      width: 28px;
+      height: 28px;
+    }
+
+    .brawler-dpad-center {
+      width: 24px;
+      height: 24px;
+    }
+
+    .fight-action-btn {
+      width: 42px;
+      height: 42px;
+    }
+
+    .brawler-actions-wrapper {
+      gap: 6px;
+    }
+
+    .fighter-portrait-tile {
+      width: 26px;
+      height: 26px;
+    }
+
+    .fighter-portrait-tile canvas {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  /* Vertical Height Constraints (Screen Height <= 720px, Mobile Landscape or Short Screens) */
+  @media (max-height: 720px) {
+    .arcade-card {
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .crt-screen-frame {
+      max-height: min(260px, 36dvh);
+    }
+
+    .arcade-ctrl-panel {
+      min-height: 95px;
+    }
+
+    .joystick-base {
+      width: 84px;
+      height: 84px;
+    }
+
+    .joystick-thumb {
+      width: 32px;
+      height: 32px;
+    }
+
+    .swipe-touchpad {
+      height: 76px;
+    }
+  }
 </style>
 
 <script>

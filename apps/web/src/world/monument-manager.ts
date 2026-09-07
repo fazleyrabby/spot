@@ -23,13 +23,17 @@ import { AVATAR_CATALOG } from '../canvas/avatars.js';
 import type { SpriteManager } from './sprite-manager.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 import { WORLD_BANNERS } from './banner-manager.js';
+import {
+  isSafeCitizenTile,
+  getSafeCitizenCoords,
+} from './terrain-generator.js';
 
 export function isInsideBillboardZone(wx: number, wy: number): boolean {
   for (const b of WORLD_BANNERS) {
-    const bWx = b.gx * 16 + 8;
-    const bWy = b.gy * 16 + 8;
+    const bWx = b.gx * TILE_WIDTH + TILE_WIDTH / 2;
+    const bWy = b.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
     const halfW = (b.pixelWidth || 76) / 2 + 12;
-    // Billboard elevated screen spans from (bWy - 54) to (bWy + 10)
+    // Billboard elevated screen spans from (bWy - 54) to (bWy + 14)
     if (Math.abs(wx - bWx) < halfW && wy >= bWy - 54 && wy <= bWy + 14) {
       return true;
     }
@@ -231,8 +235,10 @@ export class MonumentManager {
       const key = `${spot.x},${spot.y}`;
       currentKeys.add(key);
 
-      let baseWx = spot.x * TILE_WIDTH + TILE_WIDTH / 2;
-      let baseWy = spot.y * TILE_HEIGHT + TILE_HEIGHT;
+      // Strictly realistic placement: relocate citizens whose database plots fall on roads or water to the nearest sidewalk/plaza/grass
+      const safe = getSafeCitizenCoords(spot.x, spot.y);
+      let baseWx = safe.gx * TILE_WIDTH + TILE_WIDTH / 2;
+      let baseWy = safe.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
       if (isInsideBillboardZone(baseWx, baseWy)) {
         baseWy += 36;
       }
@@ -322,6 +328,19 @@ export class MonumentManager {
   }
 
   private updateCitizenAI(ent: CitizenEntity): void {
+    // Realism Rule: Citizens must never be on roads or in water. Snap immediately to safe dry pedestrian ground.
+    const curGx = Math.floor(ent.wx / TILE_WIDTH);
+    const curGy = Math.floor(ent.wy / TILE_HEIGHT);
+    if (!isSafeCitizenTile(curGx, curGy)) {
+      const safe = getSafeCitizenCoords(ent.spot.x, ent.spot.y);
+      ent.wx = safe.gx * TILE_WIDTH + TILE_WIDTH / 2;
+      ent.wy = safe.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+      ent.targetWx = ent.wx;
+      ent.targetWy = ent.wy;
+      ent.isMoving = false;
+      return;
+    }
+
     if (ent.state === 'sleeping') {
       this.updateSleepParticles(ent);
       if (Math.random() < 0.001) {
@@ -389,8 +408,23 @@ export class MonumentManager {
         ent.state = choices[Math.floor(Math.random() * choices.length)];
       } else {
         const speed = 0.65;
-        ent.wx += (dx / dist) * speed;
-        ent.wy += (dy / dist) * speed;
+        const nextWx = ent.wx + (dx / dist) * speed;
+        const nextWy = ent.wy + (dy / dist) * speed;
+        const nextGx = Math.floor(nextWx / TILE_WIDTH);
+        const nextGy = Math.floor(nextWy / TILE_HEIGHT);
+
+        // Realism boundary: never step into roads, vehicle lanes, or water surfaces
+        if (!isSafeCitizenTile(nextGx, nextGy)) {
+          ent.isMoving = false;
+          ent.frame = 0;
+          ent.pauseTimer = 180 + Math.floor(Math.random() * 240);
+          const choices: CitizenActivityMode[] = ['working', 'having_coffee', 'thinking', 'gaming', 'reading', 'meditating', 'idle'];
+          ent.state = choices[Math.floor(Math.random() * choices.length)];
+          return;
+        }
+
+        ent.wx = nextWx;
+        ent.wy = nextWy;
 
         if (Math.abs(dx) > Math.abs(dy)) {
           ent.direction = dx > 0 ? 'right' : 'left';
@@ -412,21 +446,42 @@ export class MonumentManager {
     if (ent.pauseTimer <= 0) {
       const roll = Math.random();
       if (roll < 0.25) {
-        // Start walking around their home plot area
-        const baseWx = ent.spot.x * TILE_WIDTH + TILE_WIDTH / 2;
-        const baseWy = ent.spot.y * TILE_HEIGHT + TILE_HEIGHT;
-        const wanderR = 24;
-        let targetX = baseWx + (Math.random() * wanderR * 2 - wanderR);
-        let targetY = baseWy + (Math.random() * wanderR * 2 - wanderR);
+        // Start walking around their safe pedestrian plot area
+        const safe = getSafeCitizenCoords(ent.spot.x, ent.spot.y);
+        const baseWx = safe.gx * TILE_WIDTH + TILE_WIDTH / 2;
+        const baseWy = safe.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+        let chosenX = baseWx;
+        let chosenY = baseWy;
+        let foundSafeTarget = false;
 
-        if (isInsideBillboardZone(targetX, targetY)) {
-          targetY += 36;
+        // Try 8 sample directions for a valid walkable sidewalk/plaza/park tile
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const angle = Math.random() * Math.PI * 2;
+          const wanderDist = 4 + Math.random() * 10;
+          const candX = baseWx + Math.cos(angle) * wanderDist;
+          const candY = baseWy + Math.sin(angle) * wanderDist;
+          const candGx = Math.floor(candX / TILE_WIDTH);
+          const candGy = Math.floor(candY / TILE_HEIGHT);
+
+          if (isSafeCitizenTile(candGx, candGy) && !isInsideBillboardZone(candX, candY)) {
+            chosenX = candX;
+            chosenY = candY;
+            foundSafeTarget = true;
+            break;
+          }
         }
 
-        ent.targetWx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, targetX));
-        ent.targetWy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, targetY));
-        ent.isMoving = true;
-        ent.state = 'walking';
+        if (foundSafeTarget) {
+          ent.targetWx = Math.max(16, Math.min(TOTAL_WORLD_WIDTH - 16, chosenX));
+          ent.targetWy = Math.max(16, Math.min(TOTAL_WORLD_HEIGHT - 16, chosenY));
+          ent.isMoving = true;
+          ent.state = 'walking';
+        } else {
+          // If in a tight corridor, remain stationary and switch activity
+          const choices: CitizenActivityMode[] = ['working', 'having_coffee', 'thinking', 'gaming', 'reading', 'meditating', 'idle'];
+          ent.state = choices[Math.floor(Math.random() * choices.length)];
+          ent.pauseTimer = 600 + Math.floor(Math.random() * 600);
+        }
       } else {
         // Switch activity mode (calm, long duration ~35-75 seconds)
         const randomMode = MODES[Math.floor(Math.random() * MODES.length)];

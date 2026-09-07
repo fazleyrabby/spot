@@ -51,8 +51,10 @@ export class Camera {
 
   /** Smooth fly-to a world coordinate (optionally with a zoom level). */
   centerOn(wx: number, wy: number, zoom?: number, immediate = false): void {
-    this.targetX = Math.max(0, Math.min(TOTAL_WORLD_WIDTH, wx));
-    this.targetY = Math.max(0, Math.min(TOTAL_WORLD_HEIGHT, wy));
+    const minX = -24 * 48;
+    const maxX = TOTAL_WORLD_WIDTH + 24 * 48;
+    this.targetX = Math.max(minX, Math.min(maxX, wx));
+    this.targetY = Math.max(-100, Math.min(TOTAL_WORLD_HEIGHT + 100, wy));
     if (zoom !== undefined) {
       this.targetZoom = Math.max(this.minZoom, Math.min(this.maxZoom, zoom));
     }
@@ -65,16 +67,20 @@ export class Camera {
 
   /** Instant pan by screen-space deltas (called from pointer drag). */
   panBy(screenDx: number, screenDy: number): void {
+    const minX = -24 * 48;
+    const maxX = TOTAL_WORLD_WIDTH + 24 * 48;
     const dx = screenDx / this.zoom;
     const dy = screenDy / this.zoom;
-    this.targetX = Math.max(0, Math.min(TOTAL_WORLD_WIDTH, this.targetX - dx));
-    this.targetY = Math.max(0, Math.min(TOTAL_WORLD_HEIGHT, this.targetY - dy));
+    this.targetX = Math.max(minX, Math.min(maxX, this.targetX - dx));
+    this.targetY = Math.max(-100, Math.min(TOTAL_WORLD_HEIGHT + 100, this.targetY - dy));
     this.x = this.targetX;
     this.y = this.targetY;
   }
 
   /** Zoom keeping the screen point (sx, sy) anchored in world space. */
   zoomAt(sx: number, sy: number, delta: number): void {
+    const minX = -24 * 48;
+    const maxX = TOTAL_WORLD_WIDTH + 24 * 48;
     const worldBefore = this.screenToWorld(sx, sy);
 
     const factor = Math.exp(-delta * this.zoomSpeed);
@@ -85,10 +91,29 @@ export class Camera {
     // Re-anchor: adjust centre so the hovered world point stays under cursor
     const newX = worldBefore.x - (sx - this.viewportWidth / 2) / newZoom;
     const newY = worldBefore.y - (sy - this.viewportHeight / 2) / newZoom;
-    this.targetX = Math.max(0, Math.min(TOTAL_WORLD_WIDTH, newX));
-    this.targetY = Math.max(0, Math.min(TOTAL_WORLD_HEIGHT, newY));
+    this.targetX = Math.max(minX, Math.min(maxX, newX));
+    this.targetY = Math.max(-100, Math.min(TOTAL_WORLD_HEIGHT + 100, newY));
     this.x = this.targetX;
     this.y = this.targetY;
+  }
+
+  /**
+   * Cycle through Floor796 Diorama Zoom Presets:
+   * - Macro Diorama (0.45x) -> Wide overview of the metropolis
+   * - Street Level (1.1x) -> Standard walking and browsing
+   * - Micro Inspector (2.0x) -> Crisp pixel art close-up
+   */
+  cycleZoomPreset(): number {
+    let nextZoom = 1.1;
+    if (this.targetZoom < 0.8) {
+      nextZoom = 1.1; // Jump to Street
+    } else if (this.targetZoom < 1.6) {
+      nextZoom = 2.0; // Jump to Micro Detail
+    } else {
+      nextZoom = 0.45; // Jump to Macro Diorama
+    }
+    this.targetZoom = nextZoom;
+    return nextZoom;
   }
 
   /**

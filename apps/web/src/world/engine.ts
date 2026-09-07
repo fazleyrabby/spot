@@ -273,7 +273,58 @@ export class Engine {
     this.renderer.traffic.onPassBy = (proximity) => {
       this.audio.playCarPass(proximity);
     };
+    this.renderer.vignettes.onPlaySFX = (type) => {
+      switch (type) {
+        case 'purr':
+          this.audio.playCatPurr();
+          break;
+        case 'beat':
+          this.audio.playEmotePop();
+          break;
+        case 'code':
+          this.audio.playNeonBuzz();
+          break;
+        case 'quack':
+          this.audio.playDuckQuack();
+          break;
+        case 'vending':
+        case 'solder':
+        case 'splash':
+        case 'chime':
+        default:
+          this.audio.playDiscoveryFanfare();
+          break;
+      }
+    };
     this.player.bindInput();
+    // Sync initial biome and watch for changes (player + camera pan)
+    this.audio.setPlayerPosition(this.player.gx, this.player.gy);
+    let lastBiomeGx = this.player.gx;
+    let lastBiomeGy = this.player.gy;
+    setInterval(() => {
+      // Prefer camera center when user has panned away from player
+      const camGx = Math.floor(this.camera.x / 48);
+      const camGy = Math.floor(this.camera.y / 32);
+      const distToPlayer = Math.hypot(camGx - this.player.gx, camGy - this.player.gy);
+      const gx = distToPlayer > 6 ? camGx : this.player.gx;
+      const gy = distToPlayer > 6 ? camGy : this.player.gy;
+      if (gx !== lastBiomeGx || gy !== lastBiomeGy) {
+        lastBiomeGx = gx;
+        lastBiomeGy = gy;
+        this.audio.setPlayerPosition(gx, gy);
+      }
+    }, 220);
+    // Also hook step/teleport immediately
+    const origSetPos = this.player.setPosition.bind(this.player);
+    this.player.setPosition = (gx: number, gy: number) => {
+      origSetPos(gx, gy);
+      this.audio.setPlayerPosition(gx, gy);
+    };
+    const origTeleport = this.player.teleport.bind(this.player);
+    this.player.teleport = (gx: number, gy: number) => {
+      origTeleport(gx, gy);
+      this.audio.setPlayerPosition(gx, gy);
+    };
 
     // 6. Bind mouse/touch input handler
     this.input = new InteractionHandler(

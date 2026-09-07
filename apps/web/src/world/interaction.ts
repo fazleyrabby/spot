@@ -107,9 +107,15 @@ export class InteractionHandler {
         const citizen = this.monuments.hitTest(world.x, world.y);
         const banner = hitTestBanner(world.x, world.y);
         const secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
+        const vignette = this.renderer.vignettes.getHoveredVignette(world.x, world.y);
 
         if (citizen) {
           this.renderer.hoveredCitizen = citizen;
+          this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
+          canvas.style.cursor = 'pointer';
+        } else if (vignette) {
+          this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
           canvas.style.cursor = 'pointer';
@@ -149,6 +155,13 @@ export class InteractionHandler {
         }
 
         const world = this.screenToWorld(e.clientX, e.clientY);
+
+        // 0. Check if clicked directly on an interactive Floor796 vignette
+        const vignette = this.renderer.vignettes.handleClick(world.x, world.y);
+        if (vignette) {
+          this.renderer.selectedCitizen = null;
+          return;
+        }
 
         // 1. Check if clicked directly on a citizen character
         const citizen = this.monuments.hitTest(world.x, world.y);
@@ -228,6 +241,19 @@ export class InteractionHandler {
       this.renderer.handleResize();
     };
 
+    // ── 4. Floor796 Diorama Zoom Shortcuts (DblClick / 'Z' Key) ───────────
+    const onDblClick = (e: MouseEvent) => {
+      if (this.isUiElement(e.target)) return;
+      this.camera.cycleZoomPreset();
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (this.isUiElement(document.activeElement)) return;
+      if (e.key === 'z' || e.key === 'Z') {
+        this.camera.cycleZoomPreset();
+      }
+    };
+
     canvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
@@ -235,6 +261,8 @@ export class InteractionHandler {
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
+    canvas.addEventListener('dblclick', onDblClick);
+    window.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', onResize);
 
     this.disposers.push(() => {
@@ -245,6 +273,8 @@ export class InteractionHandler {
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('dblclick', onDblClick);
+      window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', onResize);
     });
   }

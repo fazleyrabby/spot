@@ -1,0 +1,1330 @@
+---
+/**
+ * TelescopeModal — Astrid's Brass Nautical Horizon Observatory Viewfinder.
+ *
+ * Features:
+ * - Steampunk / Brass circular telescope chassis with azimuth/altitude ticks & reticle
+ * - Interactive 60fps celestial canvas simulation (orbits, planets, moon, stations, comets)
+ * - Click celestial bodies for astronomical lore cards & tracking reticle
+ * - Pan & drag across the 360° celestial sphere + magnification / focus slider
+ * - Procedural Web Audio cosmic drone, gear ratchets & harmonic star chimes
+ */
+---
+
+<div class="telescope-modal-backdrop modal-backdrop" id="telescope-modal-backdrop" aria-hidden="true">
+  <div class="telescope-chassis" role="dialog" aria-modal="true" aria-labelledby="telescope-title">
+    
+    <!-- Top Brass Mounting Hood & Header -->
+    <div class="telescope-top-bar">
+      <div class="telescope-branding">
+        <span class="telescope-icon">🔭</span>
+        <div>
+          <h2 class="telescope-title" id="telescope-title">HORIZON OBSERVATORY</h2>
+          <div class="telescope-coords" id="telescope-coords">AZ 142.4° • ALT +48.2° • SECTOR 796</div>
+        </div>
+      </div>
+
+      <div class="telescope-header-actions">
+        <button type="button" class="telescope-tool-btn" id="telescope-sound-btn" title="Toggle Cosmic Audio">
+          <span id="telescope-sound-icon">🌌</span>
+        </button>
+        <button type="button" class="telescope-tool-btn" id="telescope-reset-btn" title="Center Viewfinder">
+          <span>🎯</span>
+        </button>
+        <button type="button" class="telescope-close-btn" id="telescope-modal-close" aria-label="Exit Observatory">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Circular Telescope Eyepiece & Reticle -->
+    <div class="telescope-eyepiece-frame" id="telescope-eyepiece-frame">
+      <!-- Outer Rivets on Brass Bezel -->
+      <div class="brass-rivet rivet-t"></div>
+      <div class="brass-rivet rivet-b"></div>
+      <div class="brass-rivet rivet-l"></div>
+      <div class="brass-rivet rivet-r"></div>
+
+      <!-- Azimuth Degree Ring Markings -->
+      <div class="azimuth-dial-overlay" aria-hidden="true">
+        <span class="deg-mark deg-n">0° N</span>
+        <span class="deg-mark deg-e">90° E</span>
+        <span class="deg-mark deg-s">180° S</span>
+        <span class="deg-mark deg-w">270° W</span>
+      </div>
+
+      <!-- Celestial Canvas -->
+      <canvas id="telescope-sky-canvas" width="600" height="600" class="telescope-canvas"></canvas>
+
+      <!-- Optical Glass Layers: Crosshairs, Lens Glare & Vignette -->
+      <div class="optical-crosshair">
+        <div class="cross-line-h"></div>
+        <div class="cross-line-v"></div>
+        <div class="cross-reticle-ring"></div>
+        <div class="cross-reticle-ring inner"></div>
+      </div>
+      <div class="optical-glass-glare"></div>
+      <div class="optical-vignette-shadow"></div>
+
+      <!-- Clicked Planet / Celestial Body Lore Popout Card -->
+      <div class="celestial-lore-card" id="celestial-lore-card" style="display: none;">
+        <button type="button" class="lore-close-btn" id="lore-close-btn">✕</button>
+        <div class="lore-header">
+          <span class="lore-icon" id="lore-icon">🪐</span>
+          <div>
+            <h3 class="lore-title" id="lore-title">Aethelgard</h3>
+            <span class="lore-class" id="lore-class">Ringed Gas Giant</span>
+          </div>
+        </div>
+        <p class="lore-desc" id="lore-desc">
+          A colossal turquoise gas giant flanked by shimmering crystal rings. Its upper clouds reflect deep space nebulae.
+        </p>
+        <div class="lore-stats">
+          <div class="lore-stat">
+            <span class="stat-label">DISTANCE</span>
+            <span class="stat-val" id="lore-dist">4.2 AU</span>
+          </div>
+          <div class="lore-stat">
+            <span class="stat-label">ORBIT PERIOD</span>
+            <span class="stat-val" id="lore-period">29.4 Yrs</span>
+          </div>
+          <div class="lore-stat">
+            <span class="stat-label">SURFACE TYPE</span>
+            <span class="stat-val" id="lore-type">Cryo-Fluid</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Brass Gearwork & Magnification Slider -->
+    <div class="telescope-bottom-controls">
+      <div class="zoom-control-group">
+        <span class="zoom-label">🔭 MAGNIFICATION</span>
+        <div class="slider-wrapper">
+          <span class="zoom-btn-icon" id="btn-zoom-out">−</span>
+          <input
+            type="range"
+            id="telescope-zoom-slider"
+            min="0.5"
+            max="2.5"
+            step="0.05"
+            value="1.0"
+            class="brass-slider"
+            aria-label="Telescope Magnification"
+          />
+          <span class="zoom-btn-icon" id="btn-zoom-in">+</span>
+        </div>
+        <span class="zoom-readout mono-num" id="zoom-readout">1.0×</span>
+      </div>
+
+      <div class="celestial-quick-tags" id="celestial-quick-tags">
+        <button type="button" class="quick-tag-btn" data-target="moon">🌙 Moon</button>
+        <button type="button" class="quick-tag-btn" data-target="aethelgard">🪐 Aethelgard</button>
+        <button type="button" class="quick-tag-btn" data-target="genesis_iv">🔴 Genesis-IV</button>
+        <button type="button" class="quick-tag-btn" data-target="station">🛰️ Habitat-796</button>
+        <button type="button" class="quick-tag-btn" data-target="sol">☀️ Sol-Prime</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .telescope-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 12, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 350;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+  }
+
+  .telescope-modal-backdrop.open {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Authentic Nautical Steampunk Brass Chassis */
+  .telescope-chassis {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    background: linear-gradient(180deg, #181c26 0%, #0d121c 100%);
+    border-radius: 24px;
+    padding: 16px;
+    border: 3px solid #b45309;
+    box-shadow:
+      0 0 0 1px #451a03,
+      0 0 0 4px #090d16,
+      0 0 0 6px #78350f,
+      0 28px 70px -10px rgba(0, 0, 0, 0.95),
+      0 0 35px rgba(245, 158, 11, 0.18),
+      inset 0 1px 0 rgba(254, 240, 138, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: #f8fafc;
+    box-sizing: border-box;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  /* Top Bar */
+  .telescope-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: linear-gradient(180deg, #241a12 0%, #15100a 100%);
+    border: 1.5px solid #d97706;
+    border-radius: 12px;
+    padding: 8px 12px;
+    box-shadow:
+      inset 0 1px 1px rgba(254, 240, 138, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.6);
+  }
+
+  .telescope-branding {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .telescope-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+  }
+
+  .telescope-title {
+    font-family: var(--font-display, monospace);
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #fef08a;
+    letter-spacing: 0.1em;
+    margin: 0;
+    line-height: 1.1;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .telescope-coords {
+    font-family: monospace;
+    font-size: 0.64rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .telescope-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .telescope-tool-btn,
+  .telescope-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #1e1b18;
+    border: 1.5px solid #78350f;
+    color: #fde047;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    box-shadow: inset 0 1px 0 rgba(254, 240, 138, 0.15), 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .telescope-tool-btn:hover,
+  .telescope-close-btn:hover {
+    background: #451a03;
+    border-color: #f59e0b;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+  }
+
+  .telescope-tool-btn:active,
+  .telescope-close-btn:active {
+    transform: scale(0.92);
+  }
+
+  /* Circular Eyepiece Housing */
+  .telescope-eyepiece-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 420px;
+    background: #030712;
+    border-radius: 50%;
+    border: 8px solid #78350f;
+    outline: 3px solid #b45309;
+    outline-offset: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow:
+      inset 0 0 60px rgba(0, 0, 0, 0.98),
+      0 0 0 2px #0f172a,
+      0 12px 32px rgba(0, 0, 0, 0.8),
+      0 0 24px rgba(217, 119, 6, 0.25);
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+  }
+
+  .telescope-eyepiece-frame:active {
+    cursor: grabbing;
+  }
+
+  /* Decorative Brass Rivets on Rim */
+  .brass-rivet {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at 35% 35%, #fef08a 0%, #b45309 60%, #451a03 100%);
+    border-radius: 50%;
+    border: 1px solid #78350f;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .rivet-t { top: 4px; left: 50%; transform: translateX(-50%); }
+  .rivet-b { bottom: 4px; left: 50%; transform: translateX(-50%); }
+  .rivet-l { left: 4px; top: 50%; transform: translateY(-50%); }
+  .rivet-r { right: 4px; top: 50%; transform: translateY(-50%); }
+
+  /* Compass Azimuth Dial */
+  .azimuth-dial-overlay {
+    position: absolute;
+    inset: 16px;
+    border-radius: 50%;
+    border: 1px dashed rgba(245, 158, 11, 0.2);
+    pointer-events: none;
+    z-index: 8;
+  }
+
+  .deg-mark {
+    position: absolute;
+    font-family: monospace;
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: rgba(254, 240, 138, 0.45);
+    letter-spacing: 0.05em;
+  }
+  .deg-n { top: 2px; left: 50%; transform: translateX(-50%); }
+  .deg-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+  .deg-w { left: 2px; top: 50%; transform: translateY(-50%); }
+  .deg-e { right: 2px; top: 50%; transform: translateY(-50%); }
+
+  .telescope-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  /* Optical Glass Overlays */
+  .optical-crosshair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  .cross-line-h {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: rgba(56, 189, 248, 0.22);
+    box-shadow: 0 0 4px rgba(56, 189, 248, 0.4);
+  }
+
+  .cross-line-v {
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    bottom: 10%;
+    width: 1px;
+    background: rgba(56, 189, 248, 0.22);
+    box-shadow: 0 0 4px rgba(56, 189, 248, 0.4);
+  }
+
+  .cross-reticle-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+  }
+
+  .cross-reticle-ring.inner {
+    width: 24px;
+    height: 24px;
+    border-color: rgba(245, 158, 11, 0.5);
+  }
+
+  .optical-glass-glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 7;
+  }
+
+  .optical-vignette-shadow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, transparent 55%, rgba(0, 0, 0, 0.85) 100%);
+    pointer-events: none;
+    z-index: 7;
+  }
+
+  /* Celestial Lore Popout Card */
+  .celestial-lore-card {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 64px);
+    max-width: 340px;
+    background: rgba(13, 18, 28, 0.94);
+    border: 1.5px solid #d97706;
+    border-radius: 12px;
+    padding: 12px 14px;
+    z-index: 20;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 16px rgba(245, 158, 11, 0.3);
+    backdrop-filter: blur(8px);
+    animation: loreFadeIn 0.2s ease-out;
+  }
+
+  @keyframes loreFadeIn {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .lore-close-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .lore-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .lore-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .lore-title {
+    font-family: var(--font-display, monospace);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #fef08a;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .lore-class {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+
+  .lore-desc {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    line-height: 1.35;
+    margin: 0 0 8px 0;
+  }
+
+  .lore-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+  }
+
+  .lore-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .stat-label {
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  .stat-val {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #facc15;
+    font-family: monospace;
+  }
+
+  /* Bottom Controls & Slider */
+  .telescope-bottom-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  .zoom-control-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .zoom-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #d97706;
+    white-space: nowrap;
+  }
+
+  .slider-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zoom-btn-icon {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #94a3b8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .brass-slider {
+    flex: 1;
+    accent-color: #f59e0b;
+    height: 5px;
+    border-radius: 3px;
+    background: #1e293b;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .zoom-readout {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #facc15;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* Quick Destination Jump Tags */
+  .celestial-quick-tags {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .quick-tag-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #fde047;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+  }
+
+  .quick-tag-btn:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #f59e0b;
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+  }
+
+  .quick-tag-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 480px) {
+    .telescope-modal-backdrop {
+      padding: 6px;
+    }
+    .telescope-chassis {
+      padding: 10px 8px;
+      gap: 8px;
+      border-radius: 16px;
+    }
+    .telescope-title {
+      font-size: 0.84rem;
+    }
+    .telescope-coords {
+      font-size: 0.56rem;
+    }
+    .telescope-eyepiece-frame {
+      max-height: 310px;
+      border-width: 5px;
+    }
+    .celestial-lore-card {
+      width: calc(100% - 32px);
+      padding: 8px 10px;
+      bottom: 12px;
+    }
+    .lore-title {
+      font-size: 0.82rem;
+    }
+    .lore-desc {
+      font-size: 0.65rem;
+    }
+  }
+</style>
+
+<script>
+  // ── Celestial Bodies Database ──────────────────────────────────────────────
+  interface CelestialBody {
+    id: string;
+    name: string;
+    type: string;
+    desc: string;
+    icon: string;
+    distAU: string;
+    period: string;
+    surface: string;
+    orbitRadius: number; // in simulation units
+    orbitSpeed: number;
+    angle: number;
+    radius: number; // size in px
+    color: string;
+    ring?: boolean;
+    hasMoon?: boolean;
+    focalX: number;
+    focalY: number;
+  }
+
+  const CELESTIAL_BODIES: CelestialBody[] = [
+    {
+      id: 'sol',
+      name: 'Sol-Prime',
+      type: 'Golden Dwarf Star',
+      desc: 'The brilliant primary star illuminating the Spot planetary cluster with golden thermonuclear flare rays.',
+      icon: '☀️',
+      distAU: '1.0 AU',
+      period: 'Center',
+      surface: 'Plasma Flare',
+      orbitRadius: 0,
+      orbitSpeed: 0,
+      angle: 0,
+      radius: 22,
+      color: '#f59e0b',
+      focalX: 0,
+      focalY: 0,
+    },
+    {
+      id: 'moon',
+      name: 'Luna Spot',
+      type: 'Terrestrial Moon',
+      desc: 'The silent silver sentinel watching over Spot World. Its cratered maria reflect ancient digital impacts.',
+      icon: '🌙',
+      distAU: '0.0026 AU',
+      period: '27.3 Days',
+      surface: 'Basalt Regolith',
+      orbitRadius: 90,
+      orbitSpeed: 0.008,
+      angle: 0.6,
+      radius: 14,
+      color: '#e2e8f0',
+      focalX: 0,
+      focalY: 0,
+    },
+    {
+      id: 'genesis_iv',
+      name: 'Genesis-IV',
+      type: 'Rust Desert World',
+      desc: 'A rugged terracotta planet with deep canyon rifts, ancient dried sea beds, and an orbiting iron moonlet.',
+      icon: '🔴',
+      distAU: '1.52 AU',
+      period: '1.88 Yrs',
+      surface: 'Ferrous Oxide',
+      orbitRadius: 160,
+      orbitSpeed: 0.005,
+      angle: 2.1,
+      radius: 11,
+      color: '#ef4444',
+      hasMoon: true,
+      focalX: 0,
+      focalY: 0,
+    },
+    {
+      id: 'aethelgard',
+      name: 'Aethelgard',
+      type: 'Ringed Gas Giant',
+      desc: 'A majestic turquoise giant flanked by multi-layered cryo-rings. Its stormy bands reflect radiant cyan glow.',
+      icon: '🪐',
+      distAU: '5.20 AU',
+      period: '11.8 Yrs',
+      surface: 'Hydrogen / Helium',
+      orbitRadius: 245,
+      orbitSpeed: 0.0028,
+      angle: 4.2,
+      radius: 19,
+      color: '#06b6d4',
+      ring: true,
+      focalX: 0,
+      focalY: 0,
+    },
+    {
+      id: 'station',
+      name: 'Habitat-796',
+      type: 'Orbital Cyber Station',
+      desc: 'The legendary deep-space orbital station where the 796th floor resides. Solar panels glint as navigation beacons blink.',
+      icon: '🛰️',
+      distAU: '0.008 AU',
+      period: '92 Mins',
+      surface: 'Titanium Truss',
+      orbitRadius: 120,
+      orbitSpeed: 0.014,
+      angle: 3.4,
+      radius: 7,
+      color: '#a855f7',
+      focalX: 0,
+      focalY: 0,
+    },
+  ];
+
+  // Starfield Generator
+  interface SkyStar {
+    x: number;
+    y: number;
+    radius: number;
+    color: string;
+    twinkleSpeed: number;
+    phase: number;
+  }
+
+  const STARS: SkyStar[] = [];
+  const STAR_COLORS = ['#ffffff', '#bae6fd', '#fef08a', '#fbcfe8', '#67e8f9'];
+  for (let i = 0; i < 320; i++) {
+    STARS.push({
+      x: (Math.random() - 0.5) * 1200,
+      y: (Math.random() - 0.5) * 1200,
+      radius: 0.6 + Math.random() * 1.5,
+      color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]!,
+      twinkleSpeed: 0.02 + Math.random() * 0.06,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+
+  // Shooting Star / Comet System
+  interface Comet {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    length: number;
+    alpha: number;
+    life: number;
+    maxLife: number;
+  }
+  let activeComet: Comet | null = null;
+
+  // ── Procedural Cosmic Web Audio ───────────────────────────────────────────
+  let audioCtx: AudioContext | null = null;
+  let cosmicSoundEnabled = true;
+  let droneOsc: OscillatorNode | null = null;
+  let droneGain: GainNode | null = null;
+
+  function initCosmicAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function startCosmicDrone() {
+    if (!cosmicSoundEnabled) return;
+    try {
+      initCosmicAudio();
+      if (!audioCtx) return;
+
+      if (droneGain) return; // Already playing
+
+      // Low ethereal space drone (55Hz + filter)
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(55, now);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(180, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 1.2);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      droneOsc = osc;
+      droneGain = gain;
+    } catch (_) {}
+  }
+
+  function stopCosmicDrone() {
+    if (droneGain && audioCtx) {
+      try {
+        const now = audioCtx.currentTime;
+        droneGain.gain.setValueAtTime(droneGain.gain.value, now);
+        droneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        setTimeout(() => {
+          droneOsc?.stop();
+          droneOsc = null;
+          droneGain = null;
+        }, 450);
+      } catch (_) {
+        droneGain = null;
+      }
+    }
+  }
+
+  function playStarChime(freq = 880) {
+    if (!cosmicSoundEnabled) return;
+    try {
+      initCosmicAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + 0.15);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch (_) {}
+  }
+
+  function playGearRatchet() {
+    if (!cosmicSoundEnabled) return;
+    try {
+      initCosmicAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320 + Math.random() * 60, now);
+
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch (_) {}
+  }
+
+  // ── Canvas Setup & Simulation Loop ────────────────────────────────────────
+  const canvas = document.getElementById('telescope-sky-canvas') as HTMLCanvasElement | null;
+  const ctx = canvas?.getContext('2d');
+  const backdrop = document.getElementById('telescope-modal-backdrop');
+  const closeBtn = document.getElementById('telescope-modal-close');
+  const soundBtn = document.getElementById('telescope-sound-btn');
+  const soundIcon = document.getElementById('telescope-sound-icon');
+  const resetBtn = document.getElementById('telescope-reset-btn');
+  const zoomSlider = document.getElementById('telescope-zoom-slider') as HTMLInputElement | null;
+  const zoomReadout = document.getElementById('zoom-readout');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const coordsReadout = document.getElementById('telescope-coords');
+  const loreCard = document.getElementById('celestial-lore-card');
+  const loreTitle = document.getElementById('lore-title');
+  const loreClass = document.getElementById('lore-class');
+  const loreDesc = document.getElementById('lore-desc');
+  const loreIcon = document.getElementById('lore-icon');
+  const loreDist = document.getElementById('lore-dist');
+  const lorePeriod = document.getElementById('lore-period');
+  const loreType = document.getElementById('lore-type');
+  const loreCloseBtn = document.getElementById('lore-close-btn');
+  const quickTags = document.querySelectorAll<HTMLButtonElement>('.quick-tag-btn');
+
+  let panX = 0;
+  let panY = 0;
+  let zoom = 1.0;
+  let animTick = 0;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let animFrameId: number | null = null;
+  let selectedBody: CelestialBody | null = null;
+
+  function renderFrame() {
+    if (!ctx || !canvas) return;
+    animTick++;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // 1. Deep Space Cosmic Void Background
+    ctx.fillStyle = '#030712';
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Cosmic Nebulae Clouds (Swirling cyan and magenta gas)
+    const g1 = ctx.createRadialGradient(cx + panX * 0.4 - 120, cy + panY * 0.4 - 60, 20, cx + panX * 0.4 - 120, cy + panY * 0.4 - 60, 220);
+    g1.addColorStop(0, 'rgba(126, 34, 206, 0.22)');
+    g1.addColorStop(0.6, 'rgba(30, 58, 138, 0.12)');
+    g1.addColorStop(1, 'transparent');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, W, H);
+
+    const g2 = ctx.createRadialGradient(cx + panX * 0.4 + 140, cy + panY * 0.4 + 90, 30, cx + panX * 0.4 + 140, cy + panY * 0.4 + 90, 260);
+    g2.addColorStop(0, 'rgba(6, 182, 212, 0.20)');
+    g2.addColorStop(0.7, 'rgba(15, 23, 42, 0.08)');
+    g2.addColorStop(1, 'transparent');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    // Center lens translation
+    ctx.translate(cx + panX * zoom, cy + panY * zoom);
+    ctx.scale(zoom, zoom);
+
+    // 3. Twinkling Background Starfield
+    for (const s of STARS) {
+      const twinkle = 0.5 + Math.sin(animTick * s.twinkleSpeed + s.phase) * 0.5;
+      ctx.fillStyle = s.color;
+      ctx.globalAlpha = twinkle;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    // 4. Constellation Lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(STARS[5]!.x, STARS[5]!.y);
+    ctx.lineTo(STARS[12]!.x, STARS[12]!.y);
+    ctx.lineTo(STARS[24]!.x, STARS[24]!.y);
+    ctx.lineTo(STARS[38]!.x, STARS[38]!.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(STARS[60]!.x, STARS[60]!.y);
+    ctx.lineTo(STARS[72]!.x, STARS[72]!.y);
+    ctx.lineTo(STARS[85]!.x, STARS[85]!.y);
+    ctx.stroke();
+
+    // 5. Draw Elliptical Orbit Paths
+    for (const b of CELESTIAL_BODIES) {
+      if (b.orbitRadius > 0) {
+        ctx.strokeStyle = selectedBody?.id === b.id ? 'rgba(245, 158, 11, 0.5)' : 'rgba(148, 163, 184, 0.12)';
+        ctx.lineWidth = selectedBody?.id === b.id ? 1.5 : 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(b.focalX, b.focalY, b.orbitRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    // 6. Draw Celestial Bodies
+    for (const b of CELESTIAL_BODIES) {
+      b.angle += b.orbitSpeed;
+      const bx = b.focalX + Math.cos(b.angle) * b.orbitRadius;
+      const by = b.focalY + Math.sin(b.angle) * b.orbitRadius;
+
+      // Draw Sun / Star Glow Corona
+      if (b.id === 'sol') {
+        const pulse = 1 + Math.sin(animTick * 0.08) * 0.08;
+        const sunGlow = ctx.createRadialGradient(bx, by, 10, bx, by, 45 * pulse);
+        sunGlow.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+        sunGlow.addColorStop(0.4, 'rgba(245, 158, 11, 0.45)');
+        sunGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = sunGlow;
+        ctx.beginPath();
+        ctx.arc(bx, by, 45 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Planetary Body
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(bx, by, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Atmospheric Rim Highlight
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Moon Cratering
+      if (b.id === 'moon') {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.arc(bx - 3, by - 3, 3, 0, Math.PI * 2);
+        ctx.arc(bx + 4, by + 2, 2.5, 0, Math.PI * 2);
+        ctx.arc(bx - 1, by + 5, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Gas Giant Ring System (Aethelgard)
+      if (b.ring) {
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(-0.35); // 20-degree tilt
+        ctx.strokeStyle = 'rgba(103, 232, 249, 0.6)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, b.radius * 2.2, b.radius * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, b.radius * 2.5, b.radius * 0.6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Red Planet Orbiting Moonlet (Genesis-IV)
+      if (b.hasMoon) {
+        const mAngle = animTick * 0.05;
+        const mx = bx + Math.cos(mAngle) * 20;
+        const my = by + Math.sin(mAngle) * 12;
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(mx, my, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Orbital Station Solar Panels & Beacon
+      if (b.id === 'station') {
+        ctx.fillStyle = '#38bdf8'; // Solar panels
+        ctx.fillRect(bx - 10, by - 1.5, 20, 3);
+        // Blinking Navigation Strobe
+        const beacon = animTick % 30 < 15 ? '#22c55e' : '#ef4444';
+        ctx.fillStyle = beacon;
+        ctx.fillRect(bx - 1, by - 4, 2, 2);
+      }
+
+      // Body Label
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.75)';
+      ctx.font = 'bold 7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.name.toUpperCase(), bx, by + b.radius + 9);
+    }
+
+    // 7. Shooting Star / Comet Occurrence
+    if (!activeComet && Math.random() < 0.008) {
+      activeComet = {
+        x: (Math.random() - 0.5) * 600,
+        y: -300,
+        vx: 6 + Math.random() * 4,
+        vy: 4 + Math.random() * 3,
+        length: 60 + Math.random() * 40,
+        alpha: 1.0,
+        life: 0,
+        maxLife: 45,
+      };
+      playStarChime(1200);
+    }
+
+    if (activeComet) {
+      activeComet.x += activeComet.vx;
+      activeComet.y += activeComet.vy;
+      activeComet.life++;
+      activeComet.alpha = 1 - activeComet.life / activeComet.maxLife;
+
+      const cometGrad = ctx.createLinearGradient(
+        activeComet.x,
+        activeComet.y,
+        activeComet.x - activeComet.vx * 6,
+        activeComet.y - activeComet.vy * 6
+      );
+      cometGrad.addColorStop(0, `rgba(254, 240, 138, ${activeComet.alpha})`);
+      cometGrad.addColorStop(0.4, `rgba(56, 189, 248, ${activeComet.alpha * 0.6})`);
+      cometGrad.addColorStop(1, 'transparent');
+
+      ctx.strokeStyle = cometGrad;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(activeComet.x, activeComet.y);
+      ctx.lineTo(activeComet.x - activeComet.vx * 6, activeComet.y - activeComet.vy * 6);
+      ctx.stroke();
+
+      if (activeComet.life >= activeComet.maxLife) {
+        activeComet = null;
+      }
+    }
+
+    ctx.restore();
+
+    // 8. Update Azimuth / Altitude Readout
+    if (coordsReadout) {
+      const az = ((142.4 - panX * 0.12) % 360 + 360) % 360;
+      const alt = Math.max(-10, Math.min(85, 48.2 - panY * 0.1));
+      coordsReadout.textContent = `AZ ${az.toFixed(1)}° • ALT ${alt >= 0 ? '+' : ''}${alt.toFixed(1)}° • SECTOR 796`;
+    }
+
+    animFrameId = requestAnimationFrame(renderFrame);
+  }
+
+  // ── Drag & Pan Interaction ────────────────────────────────────────────────
+  function bindCanvasEvents() {
+    if (!canvas) return;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+
+        panX += dx / zoom;
+        panY += dy / zoom;
+
+        // Sound ratchet
+        if (Math.hypot(dx, dy) > 8 && animTick % 6 === 0) {
+          playGearRatchet();
+        }
+      }
+    });
+
+    const endDrag = (e: PointerEvent) => {
+      if (!isDragging) return;
+      isDragging = false;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      // Hit-test clicked celestial body
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Transform screen click to celestial space
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const worldX = (clickX - cx) / zoom - panX;
+      const worldY = (clickY - cy) / zoom - panY;
+
+      let hit: CelestialBody | null = null;
+      for (const b of CELESTIAL_BODIES) {
+        const bx = b.focalX + Math.cos(b.angle) * b.orbitRadius;
+        const by = b.focalY + Math.sin(b.angle) * b.orbitRadius;
+        const dist = Math.hypot(worldX - bx, worldY - by);
+        if (dist <= Math.max(16, b.radius + 6)) {
+          hit = b;
+          break;
+        }
+      }
+
+      if (hit) {
+        selectCelestialBody(hit);
+      }
+    };
+
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoom(zoom + delta);
+    }, { passive: false });
+  }
+
+  function selectCelestialBody(b: CelestialBody) {
+    selectedBody = b;
+    playStarChime(780);
+
+    if (loreCard && loreTitle && loreClass && loreDesc && loreIcon && loreDist && lorePeriod && loreType) {
+      loreTitle.textContent = b.name;
+      loreClass.textContent = b.type;
+      loreDesc.textContent = b.desc;
+      loreIcon.textContent = b.icon;
+      loreDist.textContent = b.distAU;
+      lorePeriod.textContent = b.period;
+      loreType.textContent = b.surface;
+      loreCard.style.display = 'block';
+    }
+  }
+
+  function setZoom(val: number) {
+    zoom = Math.max(0.5, Math.min(2.5, val));
+    if (zoomSlider) zoomSlider.value = zoom.toFixed(2);
+    if (zoomReadout) zoomReadout.textContent = `${zoom.toFixed(1)}×`;
+  }
+
+  // ── UI Controls Wireup ───────────────────────────────────────────────────
+  zoomSlider?.addEventListener('input', () => {
+    setZoom(parseFloat(zoomSlider.value));
+    playGearRatchet();
+  });
+
+  btnZoomIn?.addEventListener('click', () => {
+    setZoom(zoom + 0.2);
+    playGearRatchet();
+  });
+
+  btnZoomOut?.addEventListener('click', () => {
+    setZoom(zoom - 0.2);
+    playGearRatchet();
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    panX = 0;
+    panY = 0;
+    setZoom(1.0);
+    playGearRatchet();
+  });
+
+  soundBtn?.addEventListener('click', () => {
+    cosmicSoundEnabled = !cosmicSoundEnabled;
+    if (soundIcon) soundIcon.textContent = cosmicSoundEnabled ? '🌌' : '🔇';
+    if (cosmicSoundEnabled) {
+      startCosmicDrone();
+    } else {
+      stopCosmicDrone();
+    }
+  });
+
+  loreCloseBtn?.addEventListener('click', () => {
+    if (loreCard) loreCard.style.display = 'none';
+    selectedBody = null;
+  });
+
+  quickTags.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const target = CELESTIAL_BODIES.find((b) => b.id === targetId);
+      if (target) {
+        // Pan smoothly toward target
+        const bx = target.focalX + Math.cos(target.angle) * target.orbitRadius;
+        const by = target.focalY + Math.sin(target.angle) * target.orbitRadius;
+        panX = -bx;
+        panY = -by;
+        setZoom(1.4);
+        selectCelestialBody(target);
+      }
+    });
+  });
+
+  bindCanvasEvents();
+
+  // ── Global Modal Open / Close ─────────────────────────────────────────────
+  function openTelescopeModal() {
+    if (!backdrop) return;
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+
+    startCosmicDrone();
+
+    if (!animFrameId) {
+      animFrameId = requestAnimationFrame(renderFrame);
+    }
+  }
+
+  function closeTelescopeModal() {
+    if (!backdrop) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    stopCosmicDrone();
+
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+    if (loreCard) loreCard.style.display = 'none';
+    selectedBody = null;
+  }
+
+  (window as unknown as { openTelescopeModal: () => void; closeTelescopeModal: () => void }).openTelescopeModal = openTelescopeModal;
+  (window as unknown as { openTelescopeModal: () => void; closeTelescopeModal: () => void }).closeTelescopeModal = closeTelescopeModal;
+
+  closeBtn?.addEventListener('click', closeTelescopeModal);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeTelescopeModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeTelescopeModal();
+    }
+  });
+</script>

@@ -9,12 +9,35 @@
  * - Interactive SFX (Quacks, Purrs, Emote Pops, Discovery Fanfares)
  */
 
+export type BiomeType = 'jungle' | 'forest' | 'beach' | 'city' | 'mountains' | 'ocean' | 'boardwalk';
+
+function resolveBiome(gx: number, gy: number): BiomeType {
+  if (gx < 0) return 'jungle';
+  if (gx >= 100) return 'forest';
+  if (gy <= -4) return 'mountains';
+  if (gy >= -3 && gy <= -2) return 'mountains';
+  if (gy === -1) return 'city';
+  if (gy >= 98) return 'ocean';
+  if (gy >= 96) return 'beach';
+  if (gy >= 90) return 'beach';
+  if (gy >= 88) return 'boardwalk';
+  // city jungle pockets
+  if (gx >= 55 && gy <= 36) return 'jungle'; // Central Park
+  if (gx >= 55 && gy >= 55) return 'jungle'; // Zen Garden
+  return 'city';
+}
+
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = true;
   private windGain: GainNode | null = null;
   private waterGain: GainNode | null = null;
+  private jungleGain: GainNode | null = null;
+  private waveGain: GainNode | null = null;
+  private cityGain: GainNode | null = null;
   private ambientInterval: number | null = null;
+  private biome: BiomeType = 'city';
+  private waveLfo: OscillatorNode | null = null;
 
   constructor() {
     this.isMuted = true; // Always start muted to respect browser autoplay policies
@@ -58,6 +81,123 @@ export class AudioManager {
     return this.ctx;
   }
 
+  // ── Public Biome API ───────────────────────────────────────────────────
+  /** Call each frame or on player move to crossfade ambience */
+  public setPlayerPosition(gx: number, gy: number): void {
+    const next = resolveBiome(gx, gy);
+    if (next !== this.biome) {
+      this.biome = next;
+      if (!this.isMuted && this.ctx) this.crossfadeToBiome(next);
+      this.restartBiomeChirps();
+    }
+  }
+
+  private crossfadeToBiome(biome: BiomeType): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const fade = 1.1;
+
+    const targets: Record<string, number> = {
+      wind: 0.08,
+      water: 0.02,
+      jungle: 0.0,
+      wave: 0.0,
+      city: 0.0,
+    };
+
+    switch (biome) {
+      case 'jungle':
+      case 'forest':
+        targets.jungle = 0.18;
+        targets.water = 0.09;
+        targets.wind = 0.06;
+        targets.wave = 0.0;
+        targets.city = 0.0;
+        break;
+      case 'beach':
+      case 'boardwalk':
+        targets.wave = 0.22;
+        targets.wind = 0.12;
+        targets.water = 0.03;
+        targets.jungle = 0.04;
+        break;
+      case 'ocean':
+        targets.wave = 0.28;
+        targets.wind = 0.10;
+        targets.water = 0.0;
+        targets.jungle = 0.0;
+        break;
+      case 'mountains':
+        targets.wind = 0.20;
+        targets.wave = 0.0;
+        targets.jungle = 0.02;
+        break;
+      case 'city':
+      default:
+        targets.city = 0.13;
+        targets.wind = 0.09;
+        targets.water = 0.05;
+        targets.jungle = 0.03;
+        break;
+    }
+
+    const ramp = (node: GainNode | null, v: number) => {
+      if (!node || !this.ctx) return;
+      try {
+        node.gain.cancelScheduledValues(t);
+        node.gain.linearRampToValueAtTime(node.gain.value, t);
+        node.gain.linearRampToValueAtTime(v, t + fade);
+      } catch (_) {}
+    };
+
+    ramp(this.windGain, targets.wind);
+    ramp(this.waterGain, targets.water);
+    ramp(this.jungleGain, targets.jungle);
+    ramp(this.waveGain, targets.wave);
+    ramp(this.cityGain, targets.city);
+
+    // Filter tweaks for wind by biome
+    // (kept simple — gain does most of the work)
+  }
+
+  private restartBiomeChirps(): void {
+    if (this.ambientInterval) {
+      clearInterval(this.ambientInterval);
+      this.ambientInterval = null;
+    }
+    if (this.isMuted) return;
+
+    const period = this.biome === 'jungle' || this.biome === 'forest' ? 3200 : this.biome === 'beach' || this.biome === 'boardwalk' || this.biome === 'ocean' ? 5200 : this.biome === 'city' ? 7000 : 8000;
+
+    this.ambientInterval = window.setInterval(() => {
+      if (this.isMuted) return;
+      switch (this.biome) {
+        case 'jungle':
+        case 'forest':
+          if (Math.random() < 0.75) this.playBirdChirp();
+          if (Math.random() < 0.35) this.playInsectBuzz();
+          if (Math.random() < 0.15) this.playWaterDrip();
+          break;
+        case 'beach':
+        case 'boardwalk':
+          if (Math.random() < 0.45) this.playGullCry();
+          if (Math.random() < 0.30) this.playBirdChirp();
+          break;
+        case 'ocean':
+          if (Math.random() < 0.50) this.playGullCry();
+          break;
+        case 'city':
+          if (Math.random() < 0.25) this.playNeonBuzz();
+          if (Math.random() < 0.20) this.playBirdChirp();
+          break;
+        case 'mountains':
+          if (Math.random() < 0.30) this.playBirdChirp();
+          if (Math.random() < 0.10) this.playWindHowl();
+          break;
+      }
+    }, period);
+  }
+
   // ── Ambient Environmental Loop (Air Breeze, Birds, Water) ────────────────
 
   private startAmbient(): void {
@@ -90,7 +230,7 @@ export class AudioManager {
       filter.frequency.setValueAtTime(450, ctx.currentTime);
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.setValueAtTime(0.09, ctx.currentTime);
 
       windSource.connect(filter);
       filter.connect(gain);
@@ -119,7 +259,7 @@ export class AudioManager {
       bq.Q.setValueAtTime(1.8, ctx.currentTime);
 
       const wGain = ctx.createGain();
-      wGain.gain.setValueAtTime(0.12, ctx.currentTime);
+      wGain.gain.setValueAtTime(0.05, ctx.currentTime);
 
       waterSource.connect(bq);
       bq.connect(wGain);
@@ -129,13 +269,83 @@ export class AudioManager {
       this.waterGain = wGain;
     } catch (_) {}
 
-    // 3. Periodic Natural Bird Chirps (Occasional & Natural)
-    this.ambientInterval = window.setInterval(() => {
-      if (this.isMuted) return;
-      if (Math.random() < 0.55) {
-        this.playBirdChirp();
-      }
-    }, 6500);
+    // 3. Jungle / Forest canopy rustle + creek
+    try {
+      const bufferSize = ctx.sampleRate * 2;
+      const jBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = jBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.045;
+      const src = ctx.createBufferSource();
+      src.buffer = jBuffer;
+      src.loop = true;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(1400, ctx.currentTime);
+      bp.Q.setValueAtTime(0.9, ctx.currentTime);
+      const jGain = ctx.createGain();
+      jGain.gain.setValueAtTime(0.03, ctx.currentTime);
+      src.connect(bp);
+      bp.connect(jGain);
+      jGain.connect(ctx.destination);
+      src.start();
+      this.jungleGain = jGain;
+    } catch (_) {}
+
+    // 4. Ocean waves — low surf with LFO
+    try {
+      const bufferSize = ctx.sampleRate * 4;
+      const wBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = wBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.07;
+      const src = ctx.createBufferSource();
+      src.buffer = wBuffer;
+      src.loop = true;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(220, ctx.currentTime);
+      const wGain = ctx.createGain();
+      wGain.gain.setValueAtTime(0.0, ctx.currentTime);
+      // slow swell LFO 0.18 Hz
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.18, ctx.currentTime);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(0.07, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(wGain.gain);
+      src.connect(lp);
+      lp.connect(wGain);
+      wGain.connect(ctx.destination);
+      src.start();
+      lfo.start();
+      this.waveGain = wGain;
+      this.waveLfo = lfo;
+    } catch (_) {}
+
+    // 5. City hum — warm 80Hz filtered noise
+    try {
+      const bufferSize = ctx.sampleRate * 2;
+      const cBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = cBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.035;
+      const src = ctx.createBufferSource();
+      src.buffer = cBuffer;
+      src.loop = true;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(110, ctx.currentTime);
+      bp.Q.setValueAtTime(1.2, ctx.currentTime);
+      const cGain = ctx.createGain();
+      cGain.gain.setValueAtTime(0.0, ctx.currentTime);
+      src.connect(bp);
+      bp.connect(cGain);
+      cGain.connect(ctx.destination);
+      src.start();
+      this.cityGain = cGain;
+    } catch (_) {}
+
+    // initialize to current biome
+    this.crossfadeToBiome(this.biome);
+    this.restartBiomeChirps();
   }
 
   private stopAmbient(): void {
@@ -143,18 +353,125 @@ export class AudioManager {
       clearInterval(this.ambientInterval);
       this.ambientInterval = null;
     }
-    if (this.windGain && this.ctx) {
-      try {
-        this.windGain.gain.setValueAtTime(0, this.ctx.currentTime);
-      } catch (_) {}
-      this.windGain = null;
+    const fadeOut = (node: GainNode | null) => {
+      if (node && this.ctx) {
+        try {
+          node.gain.setValueAtTime(0, this.ctx.currentTime);
+        } catch (_) {}
+      }
+    };
+    fadeOut(this.windGain);
+    fadeOut(this.waterGain);
+    fadeOut(this.jungleGain);
+    fadeOut(this.waveGain);
+    fadeOut(this.cityGain);
+    this.windGain = null;
+    this.waterGain = null;
+    this.jungleGain = null;
+    this.waveGain = null;
+    this.cityGain = null;
+    if (this.waveLfo) {
+      try { this.waveLfo.stop(); } catch (_) {}
+      this.waveLfo = null;
     }
-    if (this.waterGain && this.ctx) {
-      try {
-        this.waterGain.gain.setValueAtTime(0, this.ctx.currentTime);
-      } catch (_) {}
-      this.waterGain = null;
-    }
+  }
+
+  // ── Biome SFX ──────────────────────────────────────────────────────────
+  private playInsectBuzz(): void {
+    if (this.isMuted || !this.ctx) return;
+    try {
+      const ctx = this.ctx!;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(6200 + Math.random() * 800, now);
+      osc.frequency.linearRampToValueAtTime(6200 + Math.random() * 400, now + 0.22);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.035, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(5500, now);
+      bp.Q.setValueAtTime(2.0, now);
+      osc.connect(bp);
+      bp.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } catch (_) {}
+  }
+
+  private playWaterDrip(): void {
+    if (this.isMuted || !this.ctx) return;
+    try {
+      const ctx = this.ctx!;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1800, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.14);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } catch (_) {}
+  }
+
+  private playGullCry(): void {
+    if (this.isMuted || !this.ctx) return;
+    try {
+      const ctx = this.ctx!;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(900, now);
+      osc.frequency.linearRampToValueAtTime(1350, now + 0.22);
+      osc.frequency.linearRampToValueAtTime(1050, now + 0.45);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+      const vib = ctx.createOscillator();
+      vib.frequency.setValueAtTime(18, now);
+      const vg = ctx.createGain();
+      vg.gain.setValueAtTime(80, now);
+      vib.connect(vg);
+      vg.connect(osc.frequency);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      vib.start(now);
+      osc.start(now);
+      vib.stop(now + 0.48);
+      osc.stop(now + 0.48);
+    } catch (_) {}
+  }
+
+  private playWindHowl(): void {
+    if (this.isMuted || !this.ctx) return;
+    try {
+      const ctx = this.ctx!;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.linearRampToValueAtTime(150, now + 0.9);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(800, now);
+      osc.connect(lp);
+      lp.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.1);
+    } catch (_) {}
   }
 
   // ── Procedural Sound Effects ──────────────────────────────────────────────
@@ -536,6 +853,64 @@ export class AudioManager {
 
       osc.start(now);
       osc.stop(now + 0.65);
+    } catch (_) {}
+  }
+
+  playDiscoveryFanfare(): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const notes = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
+      notes.forEach((freq, idx) => {
+        const now = ctx.currentTime + idx * 0.07;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.28);
+      });
+    } catch (_) {}
+  }
+
+  playNeonBuzz(): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now); // 120Hz mains hum
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(480, now);
+      filter.Q.setValueAtTime(3.0, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.07, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.4);
     } catch (_) {}
   }
 }

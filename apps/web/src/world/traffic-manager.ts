@@ -51,7 +51,13 @@ export class TrafficManager {
   private majorX = [20, 80];
   private majorY = [20, 80];
   private secX = [8, 35, 65, 92];
-  private secY = [8, 35, 65, 92];
+  private secY = [8, 35, 65, 86];
+
+  // Safe city bounds for road traffic (never in mountains gy < 0, never in beach gy >= 88, never in jungles gx < 0 or gx > 99)
+  private readonly MIN_TRAFFIC_WY = 6 * TILE_HEIGHT;
+  private readonly MAX_TRAFFIC_WY = 86.8 * TILE_HEIGHT;
+  private readonly MIN_TRAFFIC_WX = 0;
+  private readonly MAX_TRAFFIC_WX = 99.5 * TILE_WIDTH;
 
   constructor() {
     this.seedVehicles();
@@ -61,18 +67,18 @@ export class TrafficManager {
     const allX = [...this.majorX, ...this.secX];
     const allY = [...this.majorY, ...this.secY];
 
-    // Initial pool of distributed cars
+    // Initial pool of distributed cars strictly on city roads
     for (let i = 0; i < 12; i++) {
       const isXRoad = Math.random() < 0.5;
       const corridor = isXRoad
         ? allX[Math.floor(Math.random() * allX.length)]
         : allY[Math.floor(Math.random() * allY.length)];
       const v = this.createVehicle(corridor, isXRoad);
-      // Randomize initial progress along road
+      // Randomize initial progress along road strictly within city road limits
       if (isXRoad) {
-        v.wy = Math.random() * TOTAL_WORLD_HEIGHT;
+        v.wy = this.MIN_TRAFFIC_WY + Math.random() * (this.MAX_TRAFFIC_WY - this.MIN_TRAFFIC_WY);
       } else {
-        v.wx = Math.random() * TOTAL_WORLD_WIDTH;
+        v.wx = this.MIN_TRAFFIC_WX + Math.random() * (this.MAX_TRAFFIC_WX - this.MIN_TRAFFIC_WX);
       }
       this.vehicles.push(v);
     }
@@ -125,10 +131,10 @@ export class TrafficManager {
       // North/South road at gx = corridor
       const dirSouth = Math.random() < 0.5;
       direction = dirSouth ? 'south' : 'north';
-      // Dual lanes: southbound on right side of road (+8px), northbound on left side (-8px)
+      // Dual lanes: southbound on right side of road (+9px), northbound on left side (-9px)
       const laneOffset = dirSouth ? 9 : -9;
       wx = corridor * TILE_WIDTH + TILE_WIDTH / 2 + laneOffset;
-      wy = dirSouth ? -length - 40 : TOTAL_WORLD_HEIGHT + length + 40;
+      wy = dirSouth ? this.MIN_TRAFFIC_WY - length : this.MAX_TRAFFIC_WY + length;
     } else {
       // East/West road at gy = corridor
       const dirEast = Math.random() < 0.5;
@@ -136,7 +142,7 @@ export class TrafficManager {
       // Dual lanes: eastbound on lower side (+6px), westbound on upper side (-6px)
       const laneOffset = dirEast ? 6 : -6;
       wy = corridor * TILE_HEIGHT + TILE_HEIGHT / 2 + laneOffset;
-      wx = dirEast ? -length - 40 : TOTAL_WORLD_WIDTH + length + 40;
+      wx = dirEast ? this.MIN_TRAFFIC_WX - length : this.MAX_TRAFFIC_WX + length;
     }
 
     return {
@@ -255,15 +261,23 @@ export class TrafficManager {
       else if (v.direction === 'south') v.wy += v.speed;
       else if (v.direction === 'north') v.wy -= v.speed;
 
-      // 4. Wrap or Despawn at World Bounds
-      const boundPad = 120;
-      const isOutOfWorld =
-        v.wx < -boundPad ||
-        v.wx > TOTAL_WORLD_WIDTH + boundPad ||
-        v.wy < -boundPad ||
-        v.wy > TOTAL_WORLD_HEIGHT + boundPad;
+      // 4. Strict Road Boundary Check:
+      // Despawn if the vehicle reaches the end of the city road grid:
+      // - North edge (gy < 6, approaching northern mountains/railway)
+      // - South edge (gy > 87, approaching beach boardwalk & ocean)
+      // - West edge (gx < 0, approaching western jungle)
+      // - East edge (gx > 99, approaching eastern jungle)
+      const isOutOfRoads =
+        v.wx < this.MIN_TRAFFIC_WX - 40 ||
+        v.wx > this.MAX_TRAFFIC_WX + 40 ||
+        v.wy < this.MIN_TRAFFIC_WY - 40 ||
+        v.wy > this.MAX_TRAFFIC_WY + 40 ||
+        gy >= 88 ||
+        gy < 5 ||
+        gx < 0 ||
+        gx > 99;
 
-      if (isOutOfWorld) {
+      if (isOutOfRoads) {
         this.vehicles.splice(i, 1);
       }
     }

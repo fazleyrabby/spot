@@ -20,6 +20,7 @@ import {
 import { AVATAR_CATALOG } from '../canvas/avatars.js';
 import type { AvatarDefinition } from '@spot/shared';
 import type { Plot, PlotManager } from './plot-manager.js';
+import { isWaterTile } from './terrain-generator.js';
 
 // ---------------------------------------------------------------------------
 // Types & Constants
@@ -29,9 +30,9 @@ export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
 export const MIN_WALKABLE_WY = -1.0 * TILE_HEIGHT; // South of northern railway safety fence
-export const MAX_WALKABLE_WY = 106.0 * TILE_HEIGHT; // Southern beach surf limit (encompasses city 0..99, boardwalk 100..101, and beach 102..106)
-export const MIN_WALKABLE_WX = 0.5 * TILE_WIDTH;
-export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 0.5 * TILE_WIDTH;
+export const MAX_WALKABLE_WY = 106.0 * TILE_HEIGHT; // Southern beach surf limit
+export const MIN_WALKABLE_WX = -48.0 * TILE_WIDTH; // Western Emerald Jungle wilderness
+export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH + 48.0 * TILE_WIDTH; // Eastern Emerald Jungle wilderness
 
 const MOVE_SPEED = 2.6; // smooth continuous speed
 const WALK_FRAME_INTERVAL = 7;
@@ -126,7 +127,14 @@ export class PlayerManager {
   private updateCurrentPlot(): void {
     if (!this.plotManager) return;
     const grid = worldToGrid(this.wx, this.wy);
-    if (!grid) return;
+    if (!grid) {
+      this.gx = Math.floor(this.wx / TILE_WIDTH);
+      this.gy = Math.floor(this.wy / TILE_HEIGHT);
+      if (this.currentPlot) {
+        this.currentPlot = null;
+      }
+      return;
+    }
     this.gx = grid.gx;
     this.gy = grid.gy;
 
@@ -134,6 +142,8 @@ export class PlayerManager {
     if (plot && plot !== this.currentPlot) {
       this.currentPlot = plot;
       this.onPlotChange?.(plot);
+    } else if (!plot && this.currentPlot) {
+      this.currentPlot = null;
     }
   }
 
@@ -280,8 +290,23 @@ export class PlayerManager {
       const moveX = (dx / len) * speed;
       const moveY = (dy / len) * speed;
 
-      this.wx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, this.wx + moveX));
-      this.wy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, this.wy + moveY));
+      const candWx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, this.wx + moveX));
+      const candWy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, this.wy + moveY));
+
+      const candGx = Math.floor(candWx / TILE_WIDTH);
+      const candGy = Math.floor(candWy / TILE_HEIGHT);
+
+      if (isWaterTile(candGx, candGy)) {
+        // Sliding collision: allow movement along unobstructed axis
+        const canMoveX = !isWaterTile(Math.floor(candWx / TILE_WIDTH), Math.floor(this.wy / TILE_HEIGHT));
+        const canMoveY = !isWaterTile(Math.floor(this.wx / TILE_WIDTH), Math.floor(candWy / TILE_HEIGHT));
+
+        if (canMoveX) this.wx = candWx;
+        if (canMoveY) this.wy = candWy;
+      } else {
+        this.wx = candWx;
+        this.wy = candWy;
+      }
 
       if (this.speedMultiplier > 1.0 && this.tick % 3 === 0) {
         this.speedTrail.push({ wx: this.wx, wy: this.wy, alpha: 0.65 });
