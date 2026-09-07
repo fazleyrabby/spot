@@ -346,6 +346,14 @@ export class Engine {
         onSecretClick: (secret) => this.options.onSecretClick?.(secret),
         onBannerClick: (banner) => this.options.onBannerClick?.(banner),
         onTileClick: (gx, gy) => this.options.onEmptyClick?.(gx, gy),
+        onMarineClick: (kind) => {
+          if (kind === 'dolphin') this.audio.playMarineClickSound('dolphin');
+          else if (kind === 'shark') this.audio.playMarineClickSound('shark');
+          else if (kind === 'speedboat') this.audio.playMarineClickSound('speedboat');
+          else if (kind === 'surfer') this.audio.playMarineClickSound('surfer');
+          else if (kind === 'ship') this.audio.playMarineClickSound('ship');
+        },
+        onJungleAnimalClick: (id) => this.audio.playJungleAnimalSound(id),
       },
     );
 

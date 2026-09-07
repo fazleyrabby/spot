@@ -16,6 +16,8 @@ export interface InteractionEvents {
   onSecretClick?: (secret: WorldSecret) => void;
   onBannerClick?: (banner: WorldBanner) => void;
   onTileClick?: (gx: number, gy: number) => void;
+  onMarineClick?: (kind: string) => void;
+  onJungleAnimalClick?: (id: string) => void;
 }
 
 export class InteractionHandler {
@@ -114,7 +116,9 @@ export class InteractionHandler {
         const doorWy = 38 * 32 + 16;
         const onDoor = Math.hypot(world.x - doorWx, world.y - doorWy) < 40;
 
-        if (onDoor) {
+        const onMarine = this.renderer.marine.hitTestMarine(world.x, world.y);
+
+        if (onDoor || onMarine) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -185,10 +189,20 @@ export class InteractionHandler {
           return;
         }
 
+        // -0.5. Marine life click
+        const marineHit = this.renderer.marine.hitTestMarine(world.x, world.y);
+        if (marineHit) {
+          this.events.onMarineClick?.(marineHit.kind);
+          return;
+        }
+
         // 0. Check if clicked directly on an interactive Floor796 vignette
         const vignette = this.renderer.vignettes.handleClick(world.x, world.y);
         if (vignette) {
           this.renderer.selectedCitizen = null;
+          if (vignette.id.startsWith('jungle_')) {
+            this.events.onJungleAnimalClick?.(vignette.id);
+          }
           return;
         }
 

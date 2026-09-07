@@ -913,4 +913,330 @@ export class AudioManager {
       osc.stop(now + 0.4);
     } catch (_) {}
   }
+
+  // ── Marine Click SFX ────────────────────────────────────────────────────
+  playMarineClickSound(kind: 'shark' | 'speedboat' | 'surfer' | 'ship'): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      if (kind === 'shark') {
+        // Low menacing growl — deep sawtooth sweep
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.linearRampToValueAtTime(65, now + 0.35);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, now);
+        filter.Q.setValueAtTime(2.5, now);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+
+        // Second harmonic for bite
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(180, now);
+        osc2.frequency.linearRampToValueAtTime(90, now + 0.25);
+        g2.gain.setValueAtTime(0.14, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc2.connect(g2);
+        g2.connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + 0.3);
+      } else if (kind === 'speedboat') {
+        // Motor rev — rapid sawtooth pitch rise then fall
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(380, now + 0.12);
+        osc.frequency.linearRampToValueAtTime(160, now + 0.3);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(600, now);
+        filter.Q.setValueAtTime(1.8, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      } else if (kind === 'surfer') {
+        // Splash — filtered noise burst
+        const dur = 0.28;
+        const bufSize = Math.floor(ctx.sampleRate * dur);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(2200, now);
+        bp.frequency.exponentialRampToValueAtTime(800, now + dur);
+        bp.Q.setValueAtTime(0.7, now);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(bp);
+        bp.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(now);
+        src.stop(now + dur);
+      } else if (kind === 'dolphin') {
+        // Dolphin click chatter — rapid sine chirps
+        for (let i = 0; i < 4; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200 + i * 180, now + i * 0.04);
+          osc.frequency.exponentialRampToValueAtTime(800 + i * 120, now + i * 0.04 + 0.06);
+          gain.gain.setValueAtTime(0.18, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.07);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.07);
+        }
+      } else {
+        // Ship — deep foghorn: two-tone sine, long sustain
+        [82.41, 110].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(300, now);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now + 0.35);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.7);
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ── Jungle Animal Click SFX ─────────────────────────────────────────────
+  playJungleAnimalSound(id: string): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+
+      if (id === 'jungle_monkeys') {
+        // Chittering chirps — rapid alternating sine bursts
+        for (let i = 0; i < 5; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1800 + (i % 2) * 600, now + i * 0.055);
+          osc.frequency.exponentialRampToValueAtTime(1200 + (i % 2) * 400, now + i * 0.055 + 0.04);
+          gain.gain.setValueAtTime(0.15, now + i * 0.055);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.05);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.055);
+          osc.stop(now + i * 0.055 + 0.05);
+        }
+      } else if (id === 'jungle_macaw') {
+        // Squawk — harsh sawtooth sweep with vibrato
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1400, now);
+        osc.frequency.linearRampToValueAtTime(2200, now + 0.08);
+        osc.frequency.linearRampToValueAtTime(1600, now + 0.22);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1800, now);
+        filter.Q.setValueAtTime(2.5, now);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (id === 'jungle_panther') {
+        // Deep growl — low sawtooth with slow rumble
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(85, now);
+        osc.frequency.linearRampToValueAtTime(65, now + 0.4);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(350, now);
+        filter.Q.setValueAtTime(2, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+        // Rumble overtone
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(130, now);
+        osc2.frequency.linearRampToValueAtTime(80, now + 0.3);
+        g2.gain.setValueAtTime(0.12, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc2.connect(g2);
+        g2.connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + 0.35);
+      } else if (id === 'jungle_treefrog') {
+        // Ribbit — two quick sine pops
+        for (let i = 0; i < 2; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now + i * 0.14);
+          osc.frequency.exponentialRampToValueAtTime(350, now + i * 0.14 + 0.08);
+          gain.gain.setValueAtTime(0.22, now + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.1);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.14);
+          osc.stop(now + i * 0.14 + 0.1);
+        }
+      } else if (id === 'jungle_sloth') {
+        // Slow drawn-out groan
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(180, now + 0.6);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.14, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      } else if (id === 'jungle_tiger') {
+        // Roar — rising sawtooth + low rumble
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(250, now + 0.15);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.5);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, now);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.55);
+      } else if (id === 'jungle_caiman') {
+        // Snap — sharp noise burst + low growl
+        const dur = 0.12;
+        const bufSize = Math.floor(ctx.sampleRate * dur);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const hp = ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(1200, now);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(hp);
+        hp.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(now);
+        src.stop(now + dur);
+        // trailing growl
+        const gosc = ctx.createOscillator();
+        const gg = ctx.createGain();
+        gosc.type = 'sawtooth';
+        gosc.frequency.setValueAtTime(90, now + 0.08);
+        gg.gain.setValueAtTime(0.1, now + 0.08);
+        gg.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        gosc.connect(gg);
+        gg.connect(ctx.destination);
+        gosc.start(now + 0.08);
+        gosc.stop(now + 0.3);
+      } else if (id === 'jungle_capybaras') {
+        // Squeak-purr — gentle sine chirp + low purr
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.06);
+        osc.frequency.exponentialRampToValueAtTime(700, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else if (id === 'jungle_parrots') {
+        // Kree-kree — two quick high squawks
+        for (let i = 0; i < 2; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(2000 + i * 200, now + i * 0.1);
+          osc.frequency.linearRampToValueAtTime(2400 + i * 200, now + i * 0.1 + 0.05);
+          osc.frequency.linearRampToValueAtTime(1800, now + i * 0.1 + 0.1);
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(2200, now);
+          filter.Q.setValueAtTime(2, now);
+          gain.gain.setValueAtTime(0.14, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.12);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.12);
+        }
+      } else if (id === 'jungle_tamarin') {
+        // High-pitched chirp — rapid sine trill
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(3200 + i * 300, now + i * 0.04);
+          osc.frequency.exponentialRampToValueAtTime(2600, now + i * 0.04 + 0.05);
+          gain.gain.setValueAtTime(0.12, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.06);
+        }
+      }
+    } catch (_) {}
+  }
 }

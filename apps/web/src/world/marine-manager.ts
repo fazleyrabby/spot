@@ -10,7 +10,7 @@ import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
 
 export type MarineEntity = {
   id: string;
-  kind: 'shark' | 'speedboat' | 'surfer' | 'ship';
+  kind: 'shark' | 'speedboat' | 'surfer' | 'ship' | 'dolphin';
   wx: number;
   wy: number;
   dir: 1 | -1; // east / west
@@ -46,7 +46,7 @@ export class MarineManager {
         wx: (22 + i * 48) * TILE_WIDTH,
         wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.55,
         dir: i % 2 === 0 ? 1 : -1,
-        speed: 2.2 + Math.random() * 0.6,
+        speed: 1.5 + Math.random() * 0.5,
         phase: Math.random() * Math.PI * 2,
       });
     }
@@ -75,6 +75,19 @@ export class MarineManager {
         phase: Math.random() * Math.PI * 2,
       });
     }
+    // 3 dolphins in surf zone (gy 107..110) — pods swim + jump
+    for (let i = 0; i < 3; i++) {
+      const gy = 107 + i;
+      this.entities.push({
+        id: `dolphin-${i}`,
+        kind: 'dolphin',
+        wx: (15 + i * 30) * TILE_WIDTH,
+        wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.5,
+        dir: i % 2 === 0 ? 1 : -1,
+        speed: 1.2 + Math.random() * 0.4,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
   }
 
   update(): void {
@@ -95,10 +108,26 @@ export class MarineManager {
       if (e.kind === 'ship') {
         e.wy += Math.sin(this.tick * 0.018 + e.phase) * 0.08;
       }
+      if (e.kind === 'dolphin') {
+        e.wy += Math.sin(this.tick * 0.035 + e.phase) * 0.15;
+      }
     }
   }
 
   getEntities(): MarineEntity[] { return this.entities; }
+
+  hitTestMarine(wx: number, wy: number): MarineEntity | null {
+    for (const e of this.entities) {
+      const dx = wx - e.wx;
+      const dy = wy - e.wy;
+      if (e.kind === 'shark' && Math.abs(dx) < 28 && Math.abs(dy) < 14) return e;
+      if (e.kind === 'speedboat' && Math.abs(dx) < 18 && Math.abs(dy) < 10) return e;
+      if (e.kind === 'surfer' && Math.abs(dx) < 14 && Math.abs(dy) < 14) return e;
+      if (e.kind === 'ship' && Math.abs(dx) < 52 && Math.abs(dy) < 18) return e;
+      if (e.kind === 'dolphin' && Math.abs(dx) < 20 && Math.abs(dy) < 14) return e;
+    }
+    return null;
+  }
 
   render(ctx: CanvasRenderingContext2D, e: MarineEntity, sx: number, sy: number, z: number, tick: number): void {
     ctx.save();
@@ -223,6 +252,78 @@ export class MarineManager {
         ctx.beginPath();
         ctx.arc(sx + hullW * 0.12, y - hullH / 2 - 10 * z * s, 2.2 * z * s, 0, Math.PI * 2);
         ctx.fill();
+      }
+    } else if (e.kind === 'dolphin') {
+      // Jumping arc cycle
+      const jumpPhase = Math.sin(tick * 0.03 + e.phase);
+      const jumping = jumpPhase > 0.6;
+      const arcY = jumping ? -Math.sin((jumpPhase - 0.6) * 2.5) * 18 * z : 0;
+
+      // Underwater body silhouette (always visible)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy + 3 * z, 14 * z, 3.5 * z, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main body — sleek curved dolphin shape
+      const dy = sy + arcY;
+      const bodyLen = 16 * z, bodyH = 5 * z;
+
+      // Body fill
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.ellipse(sx, dy, bodyLen / 2, bodyH / 2, jumping ? -0.15 : 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Lighter belly
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.ellipse(sx, dy + 1.5 * z, bodyLen * 0.38, bodyH * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dorsal fin
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.moveTo(sx - 2 * z, dy - bodyH / 2);
+      ctx.lineTo(sx + 1 * z, dy - bodyH / 2 - 6 * z);
+      ctx.lineTo(sx + 4 * z, dy - bodyH / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Tail fluke
+      ctx.fillStyle = '#475569';
+      const tailX = e.dir === 1 ? sx - bodyLen / 2 : sx + bodyLen / 2;
+      ctx.beginPath();
+      ctx.moveTo(tailX, dy);
+      ctx.lineTo(tailX - e.dir * 6 * z, dy - 3 * z);
+      ctx.lineTo(tailX - e.dir * 6 * z, dy + 3 * z);
+      ctx.closePath();
+      ctx.fill();
+
+      // Beak / rostrum
+      ctx.fillStyle = '#64748b';
+      const beakX = e.dir === 1 ? sx + bodyLen / 2 : sx - bodyLen / 2;
+      ctx.beginPath();
+      ctx.moveTo(beakX, dy - 1 * z);
+      ctx.lineTo(beakX + e.dir * 5 * z, dy);
+      ctx.lineTo(beakX, dy + 1 * z);
+      ctx.closePath();
+      ctx.fill();
+
+      // Eye
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(sx + e.dir * 6 * z, dy - 1 * z, 1 * z, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Jump splash
+      if (jumping && jumpPhase < 0.75) {
+        ctx.fillStyle = 'rgba(224,242,254,0.6)';
+        for (let s = 0; s < 3; s++) {
+          ctx.beginPath();
+          ctx.arc(sx + (s - 1) * 5 * z, sy + 2 * z, (1.5 - s * 0.3) * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     } else {
       // surfer

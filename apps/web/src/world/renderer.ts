@@ -415,7 +415,7 @@ export class Renderer {
       }
 
       entities.push({
-        depth: ent.wy,
+        depth: ent.wy - 0.5,
         render: (c, currentZoom) => {
           this.monuments.renderEntity(c, ent, screen.x, screen.y, currentZoom, this.sprites, showNameTag);
         },
