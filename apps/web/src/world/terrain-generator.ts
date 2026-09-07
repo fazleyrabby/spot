@@ -195,8 +195,8 @@ export function isSafeCitizenTile(gx: number, gy: number): boolean {
       const tile = getCityTileType(gx, gy);
       return tile !== 'forest_creek' && tile !== 'ocean_deep' && tile !== 'ocean_surf';
     }
-    if (gy >= 100 && gy <= 104 && gx >= 0 && gx < 100) {
-      return true; // Boardwalk & beach
+    if (gy >= 100 && gy <= 107 && gx >= 0 && gx < 100) {
+      return true; // Boardwalk (100-101) & beach dry (102-107)
     }
     return false;
   }
@@ -275,12 +275,14 @@ export type DistrictType =
   | 'ocean';
 
 export function getDistrict(gx: number, gy: number): DistrictType {
-  // External surroundings
+  // External surroundings — beach/ocean now outside city grid (>=100)
   if (gy <= -4) return 'mountains';
   if (gy <= -2) return 'railway';
-  if (gy >= 98 || gx < 0 || gx >= 100) return 'ocean';
-  if (gy >= 90) return 'beach';
-  if (gy >= 88) return 'boardwalk';
+  if (gx < 0 || gx >= 100) return 'ocean';
+  if (gy >= 110) return 'ocean';
+  if (gy >= 108) return 'beach'; // surf edge
+  if (gy >= 102) return 'beach';
+  if (gy >= 100) return 'boardwalk';
 
   // Internal City (0..99, 0..87)
   if (gx >= 36 && gx <= 64 && gy >= 36 && gy <= 64) {
@@ -318,25 +320,25 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
     return 'road_asphalt';
   }
 
-  // ── 2. Southern Coast & Beach (gy >= 88) ──────────────────────────────
-  if (gy === 88 || gy === 89) {
+  // ── 2. Southern Coast & Beach (gy >= 100, outside city) ─────────────
+  if (gy === 100 || gy === 101) {
     return 'boardwalk';
   }
-  if (gy >= 90 && gy <= 95) {
+  if (gy >= 102 && gy <= 107) {
     return 'beach_sand';
   }
-  if (gy === 96 || gy === 97) {
+  if (gy === 108 || gy === 109) {
     return 'ocean_surf';
   }
-  if (gy >= 98) {
+  if (gy >= 110) {
     return 'ocean_deep';
   }
 
   // ── 3. External East / West Wilderness Flanks & Oceans ───────────────────
-  // Western Emerald Jungle (gx: -24..-1 — compact cozy jungle buffer)
+  // Western Emerald Jungle (gx: -24..-1 — compact cozy jungle buffer, now to boardwalk line 100)
   if (gx >= -24 && gx < 0) {
-    if (gy >= 90) return 'void';
-    if (gy >= -2 && gy <= 89) {
+    if (gy >= 100) return 'void';
+    if (gy >= -2 && gy <= 99) {
       // Winding tropical jungle creek
       const creekDist = Math.abs(Math.sin(gy * 0.12) * 4.0 - (gx + 12));
       if (creekDist < 1.4) return 'jungle_creek';
@@ -345,10 +347,10 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
     }
   }
 
-  // Eastern Emerald Jungle Wilderness (gx: 100..124 — compact cozy jungle buffer)
+  // Eastern Emerald Jungle Wilderness (gx: 100..124 — compact cozy jungle buffer, to boardwalk)
   if (gx >= 100 && gx <= 124) {
-    if (gy >= 90) return 'void';
-    if (gy >= -2 && gy <= 89) {
+    if (gy >= 100) return 'void';
+    if (gy >= -2 && gy <= 99) {
       // Winding tropical jungle creek
       const creekDist = Math.abs(Math.cos(gy * 0.11) * 4.0 - (gx - 112));
       if (creekDist < 1.4) return 'jungle_creek';
@@ -447,33 +449,33 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     };
   }
 
-  // ── 2. Southern Boardwalk & Beach Props (gy >= 86) ──────────────────────
-  // Scenic Beach Parking Slot overlooking the boardwalk & ocean surf (gx: 50, gy: 86)
-  if (gx === 50 && gy === 86) {
+  // ── 2. Southern Boardwalk & Beach Props (shifted to 100+) ──────────────
+  // Scenic Beach Parking Slot overlooking the boardwalk & ocean surf (gx: 50, gy: 98)
+  if (gx === 50 && gy === 98) {
     return {
       gx, gy, type: 'beach_parking_bay', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 100,
     };
   }
 
-  // Boardwalk lamps along the timber boardwalk
-  if ((gy === 88 || gy === 89) && (gx % 8 === 0)) {
+  // Boardwalk lamps along the timber boardwalk (100,101)
+  if ((gy === 100 || gy === 101) && (gx % 8 === 0)) {
     return {
       gx, gy, type: 'boardwalk_lamp', wx, wy,
       hasLight: true, lightColor: 'rgba(251, 191, 36, 0.40)', lightRadius: 85,
     };
   }
 
-  // Beach Bonfires at scenic beach gathering spots
-  if (gy === 93 && (gx === 50 || gx === 14 || gx === 86 || gx === -12 || gx === 112)) {
+  // Beach Bonfires at scenic beach gathering spots (gy 105)
+  if (gy === 105 && (gx === 50 || gx === 14 || gx === 86 || gx === -12 || gx === 112)) {
     return {
       gx, gy, type: 'beach_bonfire', wx, wy,
       hasLight: true, lightColor: 'rgba(249, 115, 22, 0.65)', lightRadius: 130,
     };
   }
 
-  // Colorful Beach Umbrellas & Loungers along the dry sand (gy: 91)
-  if (gy === 91) {
+  // Colorful Beach Umbrellas & Loungers along the dry sand (gy: 103)
+  if (gy === 103) {
     if (gx % 12 === 2) {
       return { gx, gy, type: 'beach_umbrella', wx, wy, hasLight: false };
     }
@@ -482,16 +484,16 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     }
   }
 
-  // Starfish resting on the wet sand near the water surf (gy === 95)
-  if (gy === 95) {
+  // Starfish resting on the wet sand near the water surf (gy === 107)
+  if (gy === 107) {
     const starR = spatialHash(gx, gy, 311);
     if (starR > 0.85) {
       return { gx, gy, type: 'starfish', wx, wy, hasLight: false };
     }
   }
 
-  // 🌴 Tropical Coconut Palm Trees dotted along the entire sandy beach (gy: 90..94)
-  if (gy >= 90 && gy <= 94) {
+  // 🌴 Tropical Coconut Palm Trees dotted along the entire sandy beach (gy: 102..106)
+  if (gy >= 102 && gy <= 106) {
     const palmR = spatialHash(gx, gy, 709);
     // Placed in organic clusters along the beach coastline
     if (palmR > 0.68) {
@@ -500,7 +502,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   }
 
   // ── 2b. Western Emerald Jungle Wilderness Props (gx: -24..-1) ──────────────
-  if (gx >= -24 && gx < 0 && gy >= 0 && gy <= 89) {
+  if (gx >= -24 && gx < 0 && gy >= 0 && gy <= 99) {
     const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
@@ -527,7 +529,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   }
 
   // ── 2c. Eastern Emerald Jungle Wilderness Props (gx: 100..124) ────────────
-  if (gx >= 100 && gx <= 124 && gy >= 0 && gy <= 89) {
+  if (gx >= 100 && gx <= 124 && gy >= 0 && gy <= 99) {
     const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
@@ -553,7 +555,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return null;
   }
 
-  if (gy >= 88 || gx < 0 || gx >= 100) {
+  if (gy >= 100 || gx < 0 || gx >= 100) {
     return null;
   }
 
@@ -634,7 +636,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     };
   }
 
-  if (gx === 4 && gy === 94) {
+  if (gx === 4 && gy === 106) {
     return {
       gx, gy, type: 'cyber_lighthouse', wx, wy,
       hasLight: true, lightColor: 'rgba(0, 240, 255, 0.75)', lightRadius: 140,

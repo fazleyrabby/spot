@@ -51,8 +51,14 @@
       <button type="button" class="warp-pill" data-warp="44,52" title="The Grand Codex Library">
         <span class="warp-icon">📚</span> Library
       </button>
-      <button type="button" class="warp-pill" data-warp="50,104" title="Moonlit Beach & Bonfire">
+      <button type="button" class="warp-pill" data-warp="50,105" title="Moonlit Beach & Bonfire">
         <span class="warp-icon">🏖️</span> Beach
+      </button>
+      <button type="button" class="warp-pill" data-warp="82,101" title="Brass Horizon Telescope — Astrid">
+        <span class="warp-icon">🔭</span> Scope
+      </button>
+      <button type="button" class="warp-pill" data-warp="32,101" title="Seaside Tower Lookout — Barnacle">
+        <span class="warp-icon">🗼</span> Lookout
       </button>
       <button type="button" class="warp-pill warp-my-spot" id="radar-warp-my-spot" style="display: none;" title="Teleport to Your Spot">
         <span class="warp-icon">📍</span> My Spot
@@ -340,14 +346,16 @@
     let hoveredGridX: number | null = null;
     let hoveredGridY: number | null = null;
 
-    // Major Landmark Locations
+    // Major Landmark Locations — now includes boardwalk optics (shifted to 101 post-coastline move)
     const LANDMARKS = [
       { name: 'Central Plaza', icon: '🏛️', gx: 50, gy: 50, color: '#f59e0b' },
       { name: 'Cyber Arcade', icon: '🕹️', gx: 86, gy: 22, color: '#ec4899' },
       { name: 'Dev Library', icon: '📚', gx: 44, gy: 52, color: '#3b82f6' },
       { name: 'Genesis Monolith', icon: '💎', gx: 64, gy: 16, color: '#06b6d4' },
-      { name: 'Beach Bonfire', icon: '🏖️', gx: 50, gy: 104, color: '#f97316' },
-      { name: 'Grand Station', icon: '🏔️', gx: 50, gy: -2, color: '#a855f7' }
+      { name: 'Beach Bonfire', icon: '🏖️', gx: 50, gy: 105, color: '#f97316' },
+      { name: 'Grand Station', icon: '🏔️', gx: 50, gy: -2, color: '#a855f7' },
+      { name: 'Horizon Telescope', icon: '🔭', gx: 82, gy: 101, color: '#38bdf8' },
+      { name: 'Tower Lookout', icon: '🗼', gx: 32, gy: 101, color: '#06b6d4' }
     ];
 
     function setRadarExpanded(expanded: boolean) {

@@ -142,7 +142,7 @@ export const WORLD_SECRETS: WorldSecret[] = [
     district: 'Southern Ocean Beach',
     icon: '🗼',
     gx: 4,
-    gy: 94,
+    gy: 106,
     category: 'interactive',
     title: 'The Headland Lighthouse',
     subtitle: 'Beacon over the southern surf',

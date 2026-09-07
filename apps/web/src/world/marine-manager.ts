@@ -24,9 +24,9 @@ export class MarineManager {
   private tick = 0;
 
   constructor() {
-    // 3 sharks deep (gy 101..106) — more visible
+    // 3 sharks deep (gy 113..117) — shifted outside city
     for (let i = 0; i < 3; i++) {
-      const gy = 101 + i * 2;
+      const gy = 113 + i * 2;
       this.entities.push({
         id: `shark-${i}`,
         kind: 'shark',
@@ -37,9 +37,9 @@ export class MarineManager {
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 2 speedboats on surf line (gy 97..99)
+    // 2 speedboats on surf line (gy 108..109)
     for (let i = 0; i < 2; i++) {
-      const gy = 97 + (i % 2);
+      const gy = 108 + (i % 2);
       this.entities.push({
         id: `boat-${i}`,
         kind: 'speedboat',
@@ -50,21 +50,21 @@ export class MarineManager {
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 3 surfers bobbing (gy 96..97)
+    // 3 surfers bobbing (gy 108.6)
     for (let i = 0; i < 3; i++) {
       this.entities.push({
         id: `surfer-${i}`,
         kind: 'surfer',
         wx: (30 + i * 18) * TILE_WIDTH,
-        wy: 96.6 * TILE_HEIGHT + (i % 2) * 8,
+        wy: 108.6 * TILE_HEIGHT + (i % 2) * 8,
         dir: i % 2 === 0 ? 1 : -1,
         speed: 0.28 + Math.random() * 0.18,
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 2 distant ships on deep horizon (gy 108..112) — barely moving / docked drift
+    // 2 distant ships on deep horizon (gy 121..124)
     for (let i = 0; i < 2; i++) {
-      const gy = 109 + i * 3;
+      const gy = 121 + i * 3;
       this.entities.push({
         id: `ship-${i}`,
         kind: 'ship',

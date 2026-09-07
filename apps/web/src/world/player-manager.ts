@@ -30,7 +30,7 @@ export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
 export const MIN_WALKABLE_WY = 0.5 * TILE_HEIGHT; // Keep inside city — no mountains/railway
-export const MAX_WALKABLE_WY = 93.5 * TILE_HEIGHT; // Dry sand only — blocks surf (96) & deep ocean, stays on beach
+export const MAX_WALKABLE_WY = 99.5 * TILE_HEIGHT; // City dry land up to gy 99 — beach (100+) is outside city and blocked
 export const MIN_WALKABLE_WX = 0.5 * TILE_WIDTH; // Block western jungle
 export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 0.5 * TILE_WIDTH; // Block eastern forest — stay inside 0..99
 
@@ -110,16 +110,16 @@ export class PlayerManager {
   }
 
   setPosition(gx: number, gy: number): void {
-    // snap water/jungle or gy>=94 to nearest dry city tile
+    // snap water/jungle or gy>=100 to nearest dry city tile (city is 0..99)
     let sgx = gx, sgy = gy;
-    if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 94) {
-      for (let r = 0; r < 12; r++) {
+    if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 100) {
+      for (let r = 0; r < 16; r++) {
         const ny = sgy - 1 - r;
-        if (ny < 0 || ny >= 94) continue;
+        if (ny < 0 || ny >= 100) continue;
         const nx = Math.max(0, Math.min(99, sgx));
         if (!isWaterTile(nx, ny)) { sgx = nx; sgy = ny; break; }
       }
-      if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 94) {
+      if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 100) {
         sgx = 50; sgy = 50;
       }
     }
@@ -243,10 +243,7 @@ export class PlayerManager {
     // Hard block water / jungle clicks — don't even set a target
     if (isWaterTile(gx, gy)) return;
     if (gx < 0 || gx >= 100) return;
-    if (gy < 0 || gy >= 94) {
-      // gy 94+ is surf onward — only allow up to dry beach
-      if (gy >= 94) return;
-    }
+    if (gy < 0 || gy >= 100) return;
     this.targetDestination = { wx: clampedWx, wy: clampedWy };
     this.resetIdle();
   }
@@ -256,12 +253,12 @@ export class PlayerManager {
     this.updateChatBubble();
     this.updateSpeedTrail();
 
-    // Rescue: if somehow in water/jungle (old save, teleport), nudge north to dry city
-    if (this.gx < 0 || this.gx >= 100 || isWaterTile(this.gx, this.gy) || this.gy >= 94) {
-      for (let r = 0; r < 8; r++) {
+    // Rescue: if somehow in water/jungle (old save, teleport), nudge north to dry city (city is 0..99)
+    if (this.gx < 0 || this.gx >= 100 || isWaterTile(this.gx, this.gy) || this.gy >= 100) {
+      for (let r = 0; r < 12; r++) {
         const ny = this.gy - 1 - r;
         if (ny < 0) break;
-        if (ny >= 94) continue;
+        if (ny >= 100) continue;
         if (this.gx < 0 || this.gx >= 100) {
           // snap x inside city
           const safeGx = Math.max(0, Math.min(99, this.gx));

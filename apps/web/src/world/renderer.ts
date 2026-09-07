@@ -24,6 +24,7 @@ import {
 import { SpriteManager } from './sprite-manager.js';
 import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
+import { AVATAR_CATALOG } from '../canvas/avatars.js';
 import { PlotManager } from './plot-manager.js';
 import { TrainManager } from './train-manager.js';
 import { TrafficManager } from './traffic-manager.js';
@@ -280,7 +281,7 @@ export class Renderer {
     ctx.save();
     {
       const tl = camera.worldToScreen(-24 * 48, -16 * 32);
-      const br = camera.worldToScreen(125 * 48, 120 * 32);
+      const br = camera.worldToScreen(125 * 48, 130 * 32);
       ctx.beginPath();
       ctx.rect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
       ctx.clip();
@@ -336,8 +337,13 @@ export class Renderer {
       }
     }
 
-    // 4c. Citizen Chibi Characters
+    // 4c. Citizen Chibi Characters — batched LOD only when 2k+ (else original full chibi UI)
     const allCitizens = this.monuments.getAllEntities();
+    const useLOD = allCitizens.length >= 2000;
+    const lodThreshold = 1.25;
+    const isMacroLOD = useLOD && z < lodThreshold;
+    // collect LOD dots for single batched draw (otherwise 2.5k entities + sort = lag)
+    const lodDots: Array<{ x: number; y: number; col: string; r: number; alpha: number }> = [];
     for (const ent of allCitizens) {
       const screen = camera.worldToScreen(ent.wx, ent.wy);
       if (screen.x < -80 || screen.x > W + 80 || screen.y < -80 || screen.y > H + 80) continue;
@@ -366,6 +372,26 @@ export class Renderer {
             c.restore();
           },
         });
+      }
+
+      if (isMacroLOD && !isHovered && !isSelected) {
+        // ultra-macro headache: 1 in 4, mid-macro 1 in 2, and even when zoomed in at 10k keep dots to avoid confetti wall
+        if (z < 0.45) {
+          if ((ent.spot.x + ent.spot.y) % 2 !== 0) continue;
+          if ((ent.spot.x % 2) !== 0) continue;
+        } else if (z < 0.65) {
+          if ((ent.spot.x + ent.spot.y) % 2 !== 0) continue;
+        }
+        // at 5k+ even 116% is still dense — keep dots until you go really close
+        const avatarId = (ent.spot as any).avatarId || (ent.spot as any).avatar_id || 'astronaut';
+        const col = (AVATAR_CATALOG as any)[avatarId]?.colors?.primary || '#38bdf8';
+        const isUltra = z < 0.45;
+        const isMid = z < 0.65;
+        // larger but more transparent dots when zoomed in so pavement still dominates
+        const r = isUltra ? 2.0 * z : isMid ? 1.7 * z : 2.6 * z;
+        const alpha = isUltra ? 0.32 : isMid ? 0.42 : 0.52;
+        lodDots.push({ x: screen.x, y: screen.y - 0.8 * z, col, r, alpha });
+        continue;
       }
 
       entities.push({
@@ -409,7 +435,20 @@ export class Renderer {
       this.drawStreetLighting(ctx, lights, z);
     }
 
-    // 6. Unified Depth Sort (Y ascending)
+    // 5b. Batched LOD dots for macro — single path, no per-dot save/shadow/sort (fixes lag at 35%)
+    if (lodDots.length > 0) {
+      ctx.save();
+      for (const d of lodDots) {
+        ctx.globalAlpha = d.alpha;
+        ctx.fillStyle = d.col;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 6. Unified Depth Sort (Y ascending) — only non-LOD entities (player, hovered, marine, etc.)
     entities.sort((a, b) => a.depth - b.depth);
 
     // 7. Draw all sorted physical entities
