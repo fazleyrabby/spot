@@ -24,64 +24,64 @@ export class MarineManager {
   private tick = 0;
 
   constructor() {
-    // 3 sharks deep (gy 113..117) — shifted outside city
+    // 3 sharks deep (gy 113..117) — well spaced across ocean
     for (let i = 0; i < 3; i++) {
       const gy = 113 + i * 2;
       this.entities.push({
         id: `shark-${i}`,
         kind: 'shark',
-        wx: (8 + i * 32) * TILE_WIDTH,
+        wx: (-10 + i * 55) * TILE_WIDTH,
         wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.5,
         dir: i % 2 === 0 ? 1 : -1,
         speed: 0.72 + Math.random() * 0.35,
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 2 speedboats on surf line (gy 108..109)
+    // 2 speedboats on surf line (gy 108..109) — far apart
     for (let i = 0; i < 2; i++) {
       const gy = 108 + (i % 2);
       this.entities.push({
         id: `boat-${i}`,
         kind: 'speedboat',
-        wx: (22 + i * 48) * TILE_WIDTH,
+        wx: (5 + i * 75) * TILE_WIDTH,
         wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.55,
         dir: i % 2 === 0 ? 1 : -1,
         speed: 1.5 + Math.random() * 0.5,
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 3 surfers bobbing (gy 108.6)
+    // 3 surfers bobbing (gy 108.6) — spread wide
     for (let i = 0; i < 3; i++) {
       this.entities.push({
         id: `surfer-${i}`,
         kind: 'surfer',
-        wx: (30 + i * 18) * TILE_WIDTH,
+        wx: (10 + i * 38) * TILE_WIDTH,
         wy: 108.6 * TILE_HEIGHT + (i % 2) * 8,
         dir: i % 2 === 0 ? 1 : -1,
         speed: 0.28 + Math.random() * 0.18,
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 2 distant ships on deep horizon (gy 121..124)
+    // 2 distant ships on deep horizon (gy 121..124) — far apart
     for (let i = 0; i < 2; i++) {
       const gy = 121 + i * 3;
       this.entities.push({
         id: `ship-${i}`,
         kind: 'ship',
-        wx: (28 + i * 38) * TILE_WIDTH,
+        wx: (15 + i * 70) * TILE_WIDTH,
         wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.5,
         dir: 1 as const,
-        speed: 0.12 + Math.random() * 0.10, // very slow drift; set to 0 to fully dock
+        speed: 0.12 + Math.random() * 0.10,
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 3 dolphins in surf zone (gy 107..110) — pods swim + jump
+    // 3 dolphins in surf zone (gy 107..110) — widely spaced pods
     for (let i = 0; i < 3; i++) {
       const gy = 107 + i;
       this.entities.push({
         id: `dolphin-${i}`,
         kind: 'dolphin',
-        wx: (15 + i * 30) * TILE_WIDTH,
+        wx: (-5 + i * 50) * TILE_WIDTH,
         wy: gy * TILE_HEIGHT + TILE_HEIGHT * 0.5,
         dir: i % 2 === 0 ? 1 : -1,
         speed: 1.2 + Math.random() * 0.4,

@@ -35,6 +35,7 @@ import { WeatherManager, type WeatherMode } from './weather-manager.js';
 import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
 import { VignetteManager } from './vignette-manager.js';
 import { MarineManager } from './marine-manager.js';
+import { JungleWildlifeManager } from './jungle-wildlife.js';
 import { MuseumManager, MUSEUM_SIZE, MUSEUM_FRAMES } from './museum-manager.js';
 import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
@@ -148,6 +149,7 @@ export class Renderer {
   readonly weather: WeatherManager;
   readonly vignettes: VignetteManager;
   readonly marine: MarineManager;
+  readonly jungleWildlife: JungleWildlifeManager;
   readonly museum: MuseumManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
@@ -189,6 +191,7 @@ export class Renderer {
     this.weather = new WeatherManager();
     this.vignettes = new VignetteManager();
     this.marine = new MarineManager();
+    this.jungleWildlife = new JungleWildlifeManager();
     this.museum = new MuseumManager();
 
     this.initCityParticles();
@@ -448,6 +451,19 @@ export class Renderer {
       if (m.kind === 'surfer' && this.timeOfDay !== 'day') {
         lights.push({ wx: m.wx, wy: m.wy, radius: 45, color: 'rgba(251, 191, 36, 0.18)' });
       }
+    }
+
+    // 4f. Jungle Wildlife — snakes, monkeys, frogs, deer, butterflies, birds
+    this.jungleWildlife.update();
+    for (const w of this.jungleWildlife.getEntities()) {
+      const screen = camera.worldToScreen(w.wx, w.wy);
+      if (screen.x < -80 || screen.x > W + 80 || screen.y < -80 || screen.y > H + 80) continue;
+      entities.push({
+        depth: w.wy,
+        render: (c, currentZoom) => {
+          this.jungleWildlife.render(c, w, screen.x, screen.y, currentZoom, this.tick);
+        },
+      });
     }
 
     // 5. Draw Ambient Radial Light Glows on the ground
