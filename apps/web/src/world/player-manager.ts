@@ -29,10 +29,10 @@ import { isWaterTile } from './terrain-generator.js';
 export type Direction = 'down' | 'up' | 'left' | 'right';
 export type PlayerState = 'idle' | 'walking' | 'sleeping';
 
-export const MIN_WALKABLE_WY = -1.0 * TILE_HEIGHT; // South of northern railway safety fence
-export const MAX_WALKABLE_WY = 106.0 * TILE_HEIGHT; // Southern beach surf limit
-export const MIN_WALKABLE_WX = -48.0 * TILE_WIDTH; // Western Emerald Jungle wilderness
-export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH + 48.0 * TILE_WIDTH; // Eastern Emerald Jungle wilderness
+export const MIN_WALKABLE_WY = 0.5 * TILE_HEIGHT; // Keep inside city — no mountains/railway
+export const MAX_WALKABLE_WY = 93.5 * TILE_HEIGHT; // Dry sand only — blocks surf (96) & deep ocean, stays on beach
+export const MIN_WALKABLE_WX = 0.5 * TILE_WIDTH; // Block western jungle
+export const MAX_WALKABLE_WX = TOTAL_WORLD_WIDTH - 0.5 * TILE_WIDTH; // Block eastern forest — stay inside 0..99
 
 const MOVE_SPEED = 2.6; // smooth continuous speed
 const WALK_FRAME_INTERVAL = 7;
@@ -223,10 +223,18 @@ export class PlayerManager {
 
   walkTo(wx: number, wy: number): void {
     if (this.isInputBlocked()) return;
-    this.targetDestination = {
-      wx: Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, wx)),
-      wy: Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, wy)),
-    };
+    const clampedWx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, wx));
+    const clampedWy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, wy));
+    const gx = Math.floor(clampedWx / TILE_WIDTH);
+    const gy = Math.floor(clampedWy / TILE_HEIGHT);
+    // Hard block water / jungle clicks — don't even set a target
+    if (isWaterTile(gx, gy)) return;
+    if (gx < 0 || gx >= 100) return;
+    if (gy < 0 || gy >= 94) {
+      // gy 94+ is surf onward — only allow up to dry beach
+      if (gy >= 94) return;
+    }
+    this.targetDestination = { wx: clampedWx, wy: clampedWy };
     this.resetIdle();
   }
 
@@ -234,6 +242,30 @@ export class PlayerManager {
     this.tick++;
     this.updateChatBubble();
     this.updateSpeedTrail();
+
+    // Rescue: if somehow in water/jungle (old save, teleport), nudge north to dry city
+    if (this.gx < 0 || this.gx >= 100 || isWaterTile(this.gx, this.gy) || this.gy >= 94) {
+      for (let r = 0; r < 8; r++) {
+        const ny = this.gy - 1 - r;
+        if (ny < 0) break;
+        if (ny >= 94) continue;
+        if (this.gx < 0 || this.gx >= 100) {
+          // snap x inside city
+          const safeGx = Math.max(0, Math.min(99, this.gx));
+          if (!isWaterTile(safeGx, ny)) {
+            this.wx = safeGx * TILE_WIDTH + TILE_WIDTH / 2;
+            this.wy = ny * TILE_HEIGHT + TILE_HEIGHT / 2;
+            this.gx = safeGx;
+            this.gy = ny;
+            break;
+          }
+        } else if (!isWaterTile(this.gx, ny)) {
+          this.wy = ny * TILE_HEIGHT + TILE_HEIGHT / 2;
+          this.gy = ny;
+          break;
+        }
+      }
+    }
 
     // If modal opened or input focused while moving, freeze player in place immediately
     if (this.isInputBlocked()) {
@@ -296,10 +328,17 @@ export class PlayerManager {
       const candGx = Math.floor(candWx / TILE_WIDTH);
       const candGy = Math.floor(candWy / TILE_HEIGHT);
 
-      if (isWaterTile(candGx, candGy)) {
-        // Sliding collision: allow movement along unobstructed axis
-        const canMoveX = !isWaterTile(Math.floor(candWx / TILE_WIDTH), Math.floor(this.wy / TILE_HEIGHT));
-        const canMoveY = !isWaterTile(Math.floor(this.wx / TILE_WIDTH), Math.floor(candWy / TILE_HEIGHT));
+      const isJungle = candGx < 0 || candGx >= 100;
+      const isWater = isWaterTile(candGx, candGy);
+
+      if (isJungle || isWater) {
+        // Sliding collision: allow movement along unobstructed axis only if that axis stays in city dry land
+        const xGx = Math.floor(candWx / TILE_WIDTH);
+        const xGy = Math.floor(this.wy / TILE_HEIGHT);
+        const yGx = Math.floor(this.wx / TILE_WIDTH);
+        const yGy = Math.floor(candWy / TILE_HEIGHT);
+        const canMoveX = !(xGx < 0 || xGx >= 100) && !isWaterTile(xGx, xGy);
+        const canMoveY = !(yGx < 0 || yGx >= 100) && !isWaterTile(yGx, yGy);
 
         if (canMoveX) this.wx = candWx;
         if (canMoveY) this.wy = candWy;
