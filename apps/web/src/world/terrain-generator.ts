@@ -107,6 +107,7 @@ export type UrbanPropType =
   | 'toadstool_cluster'
   | 'mossy_boulder'
   | 'hollow_log'
+  | 'museum_door'
   | 'jungle_fern'
   | 'city_parking_bay'
   | 'beach_parking_bay'
@@ -654,6 +655,13 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'retro_arcade', wx, wy,
       hasLight: true, lightColor: 'rgba(239, 68, 68, 0.5)', lightRadius: 85,
+    };
+  }
+
+  if (gx === 60 && gy === 38) {
+    return {
+      gx, gy, type: 'museum_door', wx, wy,
+      hasLight: true, lightColor: 'rgba(251, 191, 36, 0.50)', lightRadius: 110,
     };
   }
 

@@ -14,6 +14,7 @@ import ArcadeModal from '../components/ArcadeModal.astro';
 import ShareModal from '../components/ShareModal.astro';
 import TelescopeModal from '../components/TelescopeModal.astro';
 import BinocularModal from '../components/BinocularModal.astro';
+import ArtMuseumModal from '../components/ArtMuseumModal.astro';
 ---
 
 <Layout
@@ -28,6 +29,8 @@ import BinocularModal from '../components/BinocularModal.astro';
 
     <!-- Full-screen top-down canvas -->
     <canvas id="world-canvas" class="world-canvas"></canvas>
+    <!-- Walkable Museum iframe overlay (2D arts only) -->
+    <div id="museum-frames-overlay" style="display:none; position:absolute; inset:0; pointer-events:none; z-index:5;"></div>
 
     <!-- Non-blocking floating status pill -->
     <div class="world-loader" id="world-loader" role="status" aria-live="polite">
@@ -73,6 +76,9 @@ import BinocularModal from '../components/BinocularModal.astro';
 
     <!-- Seaside Tower Coin-Op Binoculars Ocean Viewfinder Modal -->
     <BinocularModal />
+
+    <!-- Math Art Museum simple gallery modal -->
+    <ArtMuseumModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -210,10 +216,45 @@ import BinocularModal from '../components/BinocularModal.astro';
       transform: translateY(0) scale(1);
     }
   }
+
+  /* ── Museum iframe overlay ────────────────────────────────────────── */
+  .museum-frame {
+    position: absolute;
+    background: #0f172a;
+    border: 2px solid #eab308;
+    border-radius: 4px;
+    overflow: hidden;
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.65), 0 0 12px rgba(251,191,36,0.22);
+  }
+  .museum-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #050608;
+  }
+  .museum-frame-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,23,42,0.92);
+    color: #fde68a;
+    font-size: 7px;
+    font-family: monospace;
+    text-align: center;
+    padding: 2px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
 </style>
 
 <script>
   import { Engine } from '../world/engine.js';
+  import { MUSEUM_FRAMES } from '../world/museum-manager.js';
   import { WORLD_SECRETS, BADGE_DEFINITIONS, getUnlockedBadges } from '../world/secrets.js';
   import { applyActiveSponsorships, WORLD_BANNERS } from '../world/banner-manager.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
@@ -1692,6 +1733,61 @@ import BinocularModal from '../components/BinocularModal.astro';
       });
 
       (window as any).__SPOT_ENGINE__ = engine;
+
+      // ── Museum iframe overlay (2D arts only) — anchored grid, not per-frame worldToScreen
+      const museumOverlay = document.getElementById('museum-frames-overlay') as HTMLDivElement | null;
+      if (museumOverlay) {
+        // inner grid that will be positioned to museum interior rect
+        const grid = document.createElement('div');
+        grid.id = 'museum-grid';
+        grid.style.position = 'absolute';
+        grid.style.pointerEvents = 'none';
+        museumOverlay.appendChild(grid);
+
+        for (const f of MUSEUM_FRAMES) {
+          const wrap = document.createElement('div');
+          wrap.className = 'museum-frame';
+          // percent inside 22x16 museum
+          const fwPct = (3.2 / 22) * 100;
+          const fhPct = (2.2 / 16) * 100;
+          const leftPct = (f.gx / 22) * 100 - fwPct / 2;
+          const topPct = (f.gy / 16) * 100 - fhPct / 2;
+          wrap.style.left = `${leftPct}%`;
+          wrap.style.top = `${topPct}%`;
+          wrap.style.width = `${fwPct}%`;
+          wrap.style.height = `${fhPct}%`;
+          const iframe = document.createElement('iframe');
+          iframe.loading = 'lazy';
+          iframe.src = `https://art.fazleyrabbi.xyz/embed/${f.slug}`;
+          iframe.title = f.title;
+          iframe.referrerPolicy = 'no-referrer';
+          const label = document.createElement('div');
+          label.className = 'museum-frame-label';
+          label.textContent = f.title;
+          wrap.appendChild(iframe);
+          wrap.appendChild(label);
+          grid.appendChild(wrap);
+        }
+
+        const updateMuseumGrid = () => {
+          requestAnimationFrame(updateMuseumGrid);
+          if (!engine || !engine.renderer.museum.isInside) {
+            grid.style.display = 'none';
+            return;
+          }
+          grid.style.display = 'block';
+          // center grid in viewport — independent of world pan, keeps frames aligned with canvas interior
+          const z = engine.camera.zoom;
+          const w = Math.round(22 * 48 * z);
+          const h = Math.round(16 * 32 * z);
+          grid.style.left = '50%';
+          grid.style.top = '50%';
+          grid.style.width = `${w}px`;
+          grid.style.height = `${h}px`;
+          grid.style.transform = 'translate(-50%, -50%)';
+        };
+        updateMuseumGrid();
+      }
 
       // If session citizen was resolved, ensure engine has full identity & plot camera
       if (citizenId && displayName !== 'Visitor') {

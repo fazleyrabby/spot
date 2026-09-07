@@ -282,15 +282,15 @@
     width: 100%;
     aspect-ratio: 16 / 10;
     max-height: 390px;
-    background: #020617;
+    background: #0a1e38;
     border-radius: 18px;
-    border: 4px solid #0f2742;
+    border: 4px solid #38bdf8;
     overflow: hidden;
     margin: 0 auto;
     box-shadow:
-      inset 0 0 45px rgba(0, 0, 0, 0.95),
-      0 12px 32px rgba(0, 0, 0, 0.8),
-      0 0 20px rgba(2, 132, 199, 0.2);
+      inset 0 0 28px rgba(0, 0, 0, 0.55),
+      0 12px 32px rgba(0, 0, 0, 0.7),
+      0 0 24px rgba(56, 189, 248, 0.35);
     touch-action: none;
     user-select: none;
     cursor: grab;
@@ -315,8 +315,8 @@
     flex: 1;
     height: 100%;
     border-radius: 50%;
-    box-shadow: 0 0 0 9999px rgba(3, 7, 18, 0.82);
-    border: 3px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 0 9999px rgba(3, 7, 18, 0.48);
+    border: 3px solid rgba(56, 189, 248, 0.55);
   }
 
   .left-barrel {
@@ -401,7 +401,7 @@
   .binocular-glass-gleam {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
+    background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.14) 0%, transparent 58%);
     pointer-events: none;
     z-index: 12;
   }
@@ -1006,13 +1006,13 @@
 
     ctx.clearRect(0, 0, W, H);
 
-    // ── 1. Realistic Twilight Atmosphere & Rayleigh Scattering Sky ──────────
+    // ── 1. Brighter Twilight Sky for lens clarity
     const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
-    skyGrad.addColorStop(0, '#070f1e'); // Deep indigo zenith
-    skyGrad.addColorStop(0.45, '#132845');
-    skyGrad.addColorStop(0.72, '#282f5b'); // Soft violet horizon haze
-    skyGrad.addColorStop(0.9, '#c2410c'); // Rich sunset orange band
-    skyGrad.addColorStop(1, '#fbbf24'); // Golden sunset edge
+    skyGrad.addColorStop(0, '#12294a');
+    skyGrad.addColorStop(0.45, '#1e3a5f');
+    skyGrad.addColorStop(0.72, '#3b4a7a');
+    skyGrad.addColorStop(0.9, '#ea580c');
+    skyGrad.addColorStop(1, '#fde68a');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, W, horizonY);
 
@@ -1120,14 +1120,17 @@
 
     ctx.restore();
 
-    // ── 4. Deep Sea Body with Subsurface Scattering Gradients ───────────────
+    // ── 4. Brighter Sea Body for lens visibility (was too dark #020914)
     const seaGrad = ctx.createLinearGradient(0, horizonY, 0, H);
-    seaGrad.addColorStop(0, '#09223d'); // Deep oceanic Prussian blue
-    seaGrad.addColorStop(0.3, '#061a30');
-    seaGrad.addColorStop(0.7, '#031020');
-    seaGrad.addColorStop(1, '#020914'); // Abyssal near-depth
+    seaGrad.addColorStop(0, '#14375e'); // Brighter twilight blue
+    seaGrad.addColorStop(0.3, '#0e2f54');
+    seaGrad.addColorStop(0.7, '#0a2648');
+    seaGrad.addColorStop(1, '#081d3a');
     ctx.fillStyle = seaGrad;
     ctx.fillRect(0, horizonY, W, H - horizonY);
+    // subtle water highlight wash
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.06)';
+    ctx.fillRect(0, horizonY, W, 42);
 
     // ── 5. Golden Specular Sun Glitter Path (Caustic Wave Reflections) ───────
     if (sunScreenX > -100 && sunScreenX < W + 100) {

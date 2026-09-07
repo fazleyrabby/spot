@@ -35,6 +35,7 @@ import { WeatherManager, type WeatherMode } from './weather-manager.js';
 import { WORLD_BANNERS, type WorldBanner } from './banner-manager.js';
 import { VignetteManager } from './vignette-manager.js';
 import { MarineManager } from './marine-manager.js';
+import { MuseumManager, MUSEUM_SIZE, MUSEUM_FRAMES } from './museum-manager.js';
 import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
@@ -147,6 +148,7 @@ export class Renderer {
   readonly weather: WeatherManager;
   readonly vignettes: VignetteManager;
   readonly marine: MarineManager;
+  readonly museum: MuseumManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
@@ -187,6 +189,7 @@ export class Renderer {
     this.weather = new WeatherManager();
     this.vignettes = new VignetteManager();
     this.marine = new MarineManager();
+    this.museum = new MuseumManager();
 
     this.initCityParticles();
   }
@@ -276,6 +279,23 @@ export class Renderer {
     // 2. Visible grid bounds
     const bounds = camera.getWorldBounds();
     const range = getVisibleGridRange(bounds.left, bounds.top, bounds.right, bounds.bottom, 2);
+
+    // Museum interior — full 2.5D walkable gallery (2D arts only)
+    if (this.museum.isInside) {
+      this.drawMuseumInterior(ctx, z);
+      // still draw player + lights inside museum
+      const entities: RenderableEntity[] = [];
+      const lights: LightSource[] = [];
+      const pScreen = camera.worldToScreen(this.player.wx, this.player.wy);
+      entities.push({ depth: this.player.wy, render: (c, zm) => this.player.render(c, pScreen.x, pScreen.y, zm) });
+      // exit door hint
+      const exitW = this.museum.getExit();
+      const exitScreen = camera.worldToScreen(exitW.gx * TILE_WIDTH + TILE_WIDTH/2, (MUSEUM_SIZE.h - 1) * TILE_HEIGHT + TILE_HEIGHT/2);
+      lights.push({ wx: exitW.gx * TILE_WIDTH, wy: (MUSEUM_SIZE.h - 1) * TILE_HEIGHT, radius: 90, color: 'rgba(251,191,36,0.35)' });
+      if (this.timeOfDay !== 'day') this.drawStreetLighting(ctx, lights, z);
+      for (const e of entities) e.render(ctx, z);
+      return;
+    }
 
     // Clip all world drawing to the cropped jungle bounds (-24..124) so stray props/lights don't bleed into side voids
     ctx.save();
@@ -555,6 +575,61 @@ export class Renderer {
     ctx.restore();
 
     ctx.restore();
+  }
+
+  private drawMuseumInterior(ctx: CanvasRenderingContext2D, z: number): void {
+    const tw = TILE_WIDTH * z;
+    const th = TILE_HEIGHT * z;
+    // parquet floor + walls
+    for (let gy = 0; gy < MUSEUM_SIZE.h; gy++) {
+      for (let gx = 0; gx < MUSEUM_SIZE.w; gx++) {
+        const wx = gx * TILE_WIDTH;
+        const wy = gy * TILE_HEIGHT;
+        const s = this.camera.worldToScreen(wx, wy);
+        const dx = Math.floor(s.x), dy = Math.floor(s.y), dw = Math.ceil(tw), dh = Math.ceil(th);
+        const isWall = gx === 0 || gx === MUSEUM_SIZE.w - 1 || gy === 0 || gy === MUSEUM_SIZE.h - 1;
+        if (isWall) {
+          ctx.fillStyle = gx === 0 || gx === MUSEUM_SIZE.w - 1 || gy === 0 ? '#0f172a' : '#1e293b';
+          ctx.fillRect(dx, dy, dw, dh);
+          if (gy === 0) {
+            ctx.fillStyle = 'rgba(251,191,36,0.12)';
+            ctx.fillRect(dx, dy + dh - 3 * z, dw, 3 * z);
+          }
+        } else {
+          const isAlt = (gx + gy) % 2 === 0;
+          ctx.fillStyle = isAlt ? '#1a2332' : '#162032';
+          ctx.fillRect(dx, dy, dw, dh);
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.fillRect(dx, dy, dw, 1);
+        }
+        // exit door at bottom center
+        if (gx === Math.floor(MUSEUM_SIZE.w/2) && gy === MUSEUM_SIZE.h - 1) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(dx + dw*0.25, dy + dh*0.15, dw*0.5, dh*0.55);
+          ctx.fillStyle = '#0f172a';
+          ctx.font = `${Math.max(6, Math.floor(6*z))}px monospace`;
+          ctx.textAlign = 'center'; ctx.fillText('EXIT', dx + dw/2, dy + dh*0.55);
+        }
+      }
+    }
+    // frame placeholders on north/south walls (where iframes overlay will sit)
+    for (const f of MUSEUM_FRAMES) {
+      const wx = f.gx * TILE_WIDTH;
+      const wy = f.gy * TILE_HEIGHT;
+      const s = this.camera.worldToScreen(wx, wy);
+      const isNorth = f.gy === 2, isSouth = f.gy === 13;
+      ctx.fillStyle = 'rgba(251,191,36,0.18)';
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 1.2 * z;
+      const fw = 3.2 * TILE_WIDTH * z, fh = 2.2 * TILE_HEIGHT * z;
+      const fx = Math.floor(s.x - fw/2), fy = Math.floor(s.y - fh/2);
+      ctx.beginPath(); ctx.roundRect(fx, fy, fw, fh, 2*z); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(fx + 4*z, fy + 4*z, fw - 8*z, fh - 14*z);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = `${Math.max(5, Math.floor(5*z))}px monospace`;
+      ctx.textAlign = 'center'; ctx.fillText(f.title.slice(0,16), fx + fw/2, fy + fh - 4*z);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -2242,6 +2317,104 @@ export class Renderer {
           ctx.font = `600 ${Math.max(8, Math.floor(8.5 * z))}px 'Outfit', sans-serif`;
           ctx.fillText(sub, sx, pillY + 8 * z);
         }
+        break;
+      }
+
+      case 'museum_door': {
+        const glow = Math.sin(this.tick * 0.06) * 0.12 + 0.88;
+        // ground shadow + spotlight pools
+        ctx.fillStyle = 'rgba(0,0,0,0.32)';
+        ctx.beginPath(); ctx.ellipse(sx, sy + 12 * z, 34 * z, 10 * z, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = `rgba(251,191,36,${0.10 * glow})`;
+        ctx.beginPath(); ctx.ellipse(sx, sy + 10 * z, 48 * z, 16 * z, 0, 0, Math.PI*2); ctx.fill();
+
+        // stepped podium (3 steps)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 26 * z, sy + 4 * z, 52 * z, 4 * z);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 30 * z, sy + 8 * z, 60 * z, 4 * z);
+        ctx.strokeStyle = 'rgba(148,163,184,0.25)'; ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 30 * z, sy + 8 * z, 60 * z, 4 * z);
+
+        // main façade block with cornice
+        ctx.fillStyle = '#162032';
+        ctx.strokeStyle = `rgba(251,191,36,${0.55 * glow})`;
+        ctx.lineWidth = 1.6 * z;
+        ctx.beginPath(); ctx.roundRect(sx - 30 * z, sy - 32 * z, 60 * z, 38 * z, 4 * z); ctx.fill(); ctx.stroke();
+        // cornice
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(sx - 32 * z, sy - 32 * z, 64 * z, 4 * z);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - 32 * z, sy - 28 * z, 64 * z, 1.2 * z);
+
+        // pediment triangle with ƒ(x) emblem
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath(); ctx.moveTo(sx - 22 * z, sy - 32 * z); ctx.lineTo(sx, sy - 42 * z); ctx.lineTo(sx + 22 * z, sy - 32 * z); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(251,191,36,0.55)'; ctx.lineWidth = 1.2 * z; ctx.stroke();
+        ctx.fillStyle = '#facc15';
+        ctx.font = `900 ${Math.max(10, Math.floor(10*z))}px 'Outfit', monospace`;
+        ctx.textAlign = 'center'; ctx.fillText('ƒ(x)', sx, sy - 32.5 * z);
+
+        // colonnade — 4 fluted columns
+        for (const off of [-20, -7, 7, 20]) {
+          const cx = sx + off * z;
+          // shaft
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(cx - 2.2 * z, sy - 28 * z, 4.4 * z, 26 * z);
+          // flutes
+          ctx.fillStyle = 'rgba(15,23,42,0.18)';
+          ctx.fillRect(cx - 1 * z, sy - 28 * z, 0.7 * z, 26 * z);
+          ctx.fillRect(cx + 0.3 * z, sy - 28 * z, 0.7 * z, 26 * z);
+          // capital
+          ctx.fillStyle = '#f1f5f9';
+          ctx.fillRect(cx - 3.5 * z, sy - 30 * z, 7 * z, 3 * z);
+          // base
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(cx - 3.5 * z, sy - 3 * z, 7 * z, 2.5 * z);
+          // uplight
+          ctx.fillStyle = `rgba(251,191,36,${0.18 * glow})`;
+          ctx.beginPath(); ctx.ellipse(cx, sy - 1 * z, 7 * z, 3 * z, 0, 0, Math.PI*2); ctx.fill();
+        }
+
+        // double glass doors with brass mullion
+        ctx.fillStyle = 'rgba(125,211,252,0.18)';
+        ctx.beginPath(); ctx.roundRect(sx - 16 * z, sy - 16 * z, 32 * z, 20 * z, 1.5 * z); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fillRect(sx - 16 * z, sy - 16 * z, 32 * z, 6 * z);
+        ctx.strokeStyle = '#eab308'; ctx.lineWidth = 1.3 * z;
+        ctx.strokeRect(sx - 16 * z, sy - 16 * z, 32 * z, 20 * z);
+        ctx.fillStyle = '#eab308'; ctx.fillRect(sx - 0.8 * z, sy - 16 * z, 1.6 * z, 20 * z);
+        ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(sx - 6 * z, sy - 6 * z, 1.1 * z, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(sx + 6 * z, sy - 6 * z, 1.1 * z, 0, Math.PI*2); ctx.fill();
+        // interior glow spilling out
+        ctx.fillStyle = `rgba(251,191,36,${0.10 * glow})`;
+        ctx.fillRect(sx - 16 * z, sy - 16 * z, 32 * z, 20 * z);
+
+        // suspended brass sign
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.roundRect(sx - 26 * z, sy - 22.5 * z, 52 * z, 9 * z, 3 * z); ctx.fill();
+        ctx.strokeStyle = 'rgba(251,191,36,0.55)'; ctx.lineWidth = 1 * z; ctx.stroke();
+        ctx.fillStyle = '#facc15';
+        ctx.font = `900 ${Math.max(7, Math.floor(7*z))}px 'Outfit', monospace`;
+        ctx.textAlign = 'center'; ctx.fillText('MATH ART MUSEUM', sx, sy - 16.5 * z);
+        // hanging chains
+        ctx.strokeStyle = 'rgba(148,163,184,0.55)'; ctx.lineWidth = 0.7 * z;
+        ctx.beginPath(); ctx.moveTo(sx - 20 * z, sy - 30 * z); ctx.lineTo(sx - 22 * z, sy - 22.5 * z); ctx.moveTo(sx + 20 * z, sy - 30 * z); ctx.lineTo(sx + 22 * z, sy - 22.5 * z); ctx.stroke();
+
+        // brass lanterns flanking doors
+        for (const lx of [sx - 26 * z, sx + 26 * z]) {
+          ctx.fillStyle = '#451a03'; ctx.fillRect(lx - 1.2 * z, sy - 10 * z, 2.4 * z, 10 * z);
+          ctx.fillStyle = `rgba(251,191,36,${0.85 * glow})`;
+          ctx.beginPath(); ctx.arc(lx, sy - 12 * z, 2.8 * z, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = `rgba(251,191,36,${0.22 * glow})`; ctx.beginPath(); ctx.arc(lx, sy - 12 * z, 7 * z, 0, Math.PI*2); ctx.fill();
+        }
+
+        // [E] ENTER pill with pulse
+        ctx.fillStyle = `rgba(15,23,42,${0.92})`;
+        ctx.beginPath(); ctx.roundRect(sx - 18 * z, sy + 6 * z, 36 * z, 8 * z, 4 * z); ctx.fill();
+        ctx.strokeStyle = `rgba(56,189,248,${0.6 * glow})`; ctx.lineWidth = 1 * z; ctx.stroke();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `700 ${Math.max(6, Math.floor(6*z))}px monospace`;
+        ctx.textAlign = 'center'; ctx.fillText('[E] ENTER', sx, sy + 11.5 * z);
         break;
       }
 

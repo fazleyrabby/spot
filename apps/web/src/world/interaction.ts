@@ -94,7 +94,7 @@ export class InteractionHandler {
         this.lastY = e.clientY;
         this.camera.panBy(dx, dy);
       } else {
-        if (this.isUiElement(e.target)) {
+        if (this.isUiElement(e.target) || (this.renderer as any).museum?.isInside) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredGrid = null;
           canvas.style.cursor = 'default';
@@ -155,6 +155,17 @@ export class InteractionHandler {
         }
 
         const world = this.screenToWorld(e.clientX, e.clientY);
+
+        // Inside museum — suppress city clicks, handle frame clicks only (handled by overlay)
+        if ((this.renderer as any).museum?.isInside) {
+          const localGx = Math.floor(world.x / 48);
+          const localGy = Math.floor(world.y / 32);
+          // allow walk inside museum bounds only
+          if (localGx >= 0 && localGx < 22 && localGy >= 0 && localGy < 16) {
+            this.renderer.player.walkTo(world.x, world.y);
+          }
+          return;
+        }
 
         // 0. Check if clicked directly on an interactive Floor796 vignette
         const vignette = this.renderer.vignettes.handleClick(world.x, world.y);

@@ -17,7 +17,7 @@ import { PlayerManager } from './player-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { PlotManager } from './plot-manager.js';
 import { InteractionHandler } from './interaction.js';
-import { gridToWorldCenter, worldToGrid } from '@spot/world';
+import { gridToWorldCenter, worldToGrid, TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
 import type { OccupiedSpotSummary, WorldSnapshot } from '@spot/shared';
 import { getSecretAt } from './secrets.js';
 import { getBannerAt } from './banner-manager.js';
@@ -201,6 +201,13 @@ export class Engine {
 
     // 5. Bind player movement keys (WASD/Arrows) & 'E' / Space interaction
     this.player.onInteract = () => {
+      // 0a. Museum door — simple modal (walkable interior disabled for now)
+      const doorWx = 60 * TILE_WIDTH + TILE_WIDTH/2;
+      const doorWy = 38 * TILE_HEIGHT + TILE_HEIGHT/2;
+      if (Math.hypot(this.player.wx - doorWx, this.player.wy - doorWy) < 68) {
+        (window as any).openMuseumModal?.();
+        return;
+      }
       // 0. Check if near any Street NPC
       const nearestNpc = this.renderer.npcs.getNearestNPC(this.player.wx, this.player.wy);
       if (nearestNpc) {
@@ -236,22 +243,24 @@ export class Engine {
         }
       }
 
-      // 2. Check if near any citizen (within 50px)
-      const allCitizens = this.monuments.getAllEntities();
-      let nearestCitizen: OccupiedSpotSummary | null = null;
-      let minCitizenDist = 55;
+      // 2. Check if near any citizen (within 50px) — suppressed inside museum
+      if (!this.renderer.museum.isInside) {
+        const allCitizens = this.monuments.getAllEntities();
+        let nearestCitizen: OccupiedSpotSummary | null = null;
+        let minCitizenDist = 55;
 
-      for (const ent of allCitizens) {
-        const dist = Math.hypot(this.player.wx - ent.wx, this.player.wy - ent.wy);
-        if (dist < minCitizenDist) {
-          minCitizenDist = dist;
-          nearestCitizen = ent.spot;
+        for (const ent of allCitizens) {
+          const dist = Math.hypot(this.player.wx - ent.wx, this.player.wy - ent.wy);
+          if (dist < minCitizenDist) {
+            minCitizenDist = dist;
+            nearestCitizen = ent.spot;
+          }
         }
-      }
 
-      if (nearestCitizen) {
-        this.renderer.selectedCitizen = nearestCitizen;
-        this.options.onCitizenClick?.(nearestCitizen);
+        if (nearestCitizen) {
+          this.renderer.selectedCitizen = nearestCitizen;
+          this.options.onCitizenClick?.(nearestCitizen);
+        }
       }
     };
     this.player.onStep = () => {
@@ -345,6 +354,12 @@ export class Engine {
 
     // 8. Connect to real-time updates
     this.connectSSE();
+  }
+
+  private updateMuseumOverlay(): void {
+    const overlay = document.getElementById('museum-frames-overlay');
+    if (!overlay) return;
+    overlay.style.display = this.renderer.museum.isInside ? 'block' : 'none';
   }
 
   destroy(): void {
