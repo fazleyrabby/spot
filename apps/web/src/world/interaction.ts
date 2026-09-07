@@ -109,7 +109,17 @@ export class InteractionHandler {
         const secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
         const vignette = this.renderer.vignettes.getHoveredVignette(world.x, world.y);
 
-        if (citizen) {
+        // Museum door hover → pointer
+        const doorWx = 60 * 48 + 24;
+        const doorWy = 38 * 32 + 16;
+        const onDoor = Math.hypot(world.x - doorWx, world.y - doorWy) < 40;
+
+        if (onDoor) {
+          this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
+          canvas.style.cursor = 'pointer';
+        } else if (citizen) {
           this.renderer.hoveredCitizen = citizen;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -164,6 +174,14 @@ export class InteractionHandler {
           if (localGx >= 0 && localGx < 22 && localGy >= 0 && localGy < 16) {
             this.renderer.player.walkTo(world.x, world.y);
           }
+          return;
+        }
+
+        // -1. Museum door (60,38) — click to open (same as pressing E)
+        const doorWx = 60 * 48 + 24;
+        const doorWy = 38 * 32 + 16;
+        if (Math.hypot(world.x - doorWx, world.y - doorWy) < 40) {
+          (window as any).openMuseumModal?.();
           return;
         }
 
