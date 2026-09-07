@@ -187,42 +187,86 @@
   .museum-card {
     position:relative; background:#14100b; border-radius:3px; overflow:hidden;
     display:flex; flex-direction:column; cursor:pointer;
-    padding: 9px;
-    border: 1px solid #7a6a3a;
+    padding: 7px 7px 0;
+    border: 1px solid #8a7443;
     box-shadow:
-      0 6px 18px rgba(0,0,0,0.55),
-      inset 0 0 0 1px #d4b45c,
-      inset 0 0 0 5px #2a2110;
-    transition: transform .15s ease, box-shadow .15s ease;
+      /* outer bevel */
+      0 0 0 1px #241c0d,
+      0 0 0 3px #3a2c12,
+      /* gold lip */
+      inset 0 0 0 1px #d9bc68,
+      inset 0 0 0 4px #8a6a2a,
+      inset 0 0 0 6px #2a2110,
+      /* hang */
+      0 14px 30px rgba(0,0,0,0.65),
+      0 3px 8px rgba(0,0,0,0.5);
+    transition: transform .15s ease, box-shadow .18s ease;
   }
-  .museum-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.6), inset 0 0 0 1px #e5c96a, inset 0 0 0 5px #2a2110, 0 0 22px rgba(251,191,36,0.25); }
+  .museum-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 1px #2e2512,
+      0 0 0 3px #4a3a18,
+      inset 0 0 0 1px #efd27a,
+      inset 0 0 0 4px #a07c28,
+      inset 0 0 0 6px #2a2110,
+      0 20px 44px rgba(0,0,0,0.7),
+      0 0 26px rgba(251,191,36,0.28);
+  }
   /* hanging picture wire */
   .museum-card::after {
-    content:""; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
-    width:1px; height:11px; background: rgba(200,180,120,0.35);
+    content:""; position:absolute; top:-3px; left:50%; transform:translateX(-50%);
+    width:1px; height:12px; background: rgba(200,180,120,0.4);
   }
   /* soft spotlight glint at top */
   .museum-card::before {
-    content:""; position:absolute; top:0; left:0; right:0; height: 16px; pointer-events:none;
-    background: linear-gradient(180deg, rgba(255,235,180,0.12), transparent);
-    z-index:2;
+    content:""; position:absolute; top:0; left:0; right:0; height: 18px; pointer-events:none;
+    background: linear-gradient(180deg, rgba(255,235,180,0.14), transparent);
+    z-index:3;
+  }
+
+  /* ── Plate number (etched brass) ─────────────────────────────── */
+  .museum-card-plate {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding: 4px 6px;
+    background: linear-gradient(180deg, #efe6d0, #e0d0aa);
+    border-bottom: 1px solid #8a7443;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+  .plate-num {
+    font: 800 8px 'Outfit', sans-serif; letter-spacing:0.16em;
+    color:#8a6a2a; border-right:1px solid #c3ac72; padding-right:6px;
+  }
+  .plate-name {
+    font: 700 9px 'Georgia', serif; color:#3a2a10; letter-spacing:0.04em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* ── Ivory mat + canvas ──────────────────────────────────────── */
+  .museum-card-mat {
+    margin: 10px 10px 4px;
+    padding: 10px;
+    background: linear-gradient(160deg, #f8f2e2, #ece1c6);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12), inset 0 0 24px rgba(90,70,35,0.18);
   }
   .museum-card iframe {
-    width:100%; aspect-ratio: 1.5; border:0; display:block;
-    background: #050608; border-radius:1px;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+    width:100%; aspect-ratio: 1.45; border:0; display:block;
+    background: #050608;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.55);
   }
-  @media (max-width:640px){ .museum-card iframe { aspect-ratio: 1.6; } }
+  @media (max-width:640px){ .museum-card iframe { aspect-ratio: 1.55; } }
+
+  /* ── Ivory plaque caption ────────────────────────────────────── */
   .museum-card-foot {
-    margin-top: 8px; padding: 6px 8px;
-    background: linear-gradient(180deg, #efe6d0, #d6c5a0);
-    border:1px solid #8a7443;
+    margin: 8px 10px 10px; padding: 6px 8px;
+    background: linear-gradient(180deg, #f4ecd8, #e2d3ae);
+    border:1px solid #a08a4f;
     border-radius:2px;
     text-align:center;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 0 rgba(0,0,0,0.2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.25);
   }
-  .museum-card-title { font: 700 10px 'Georgia', serif; color:#2b2110; letter-spacing:0.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .museum-card-formula { font: 400 8px 'Courier New', monospace; color:#6b5626; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; font-style:italic; }
+  .museum-card-title { font: 700 10px 'Georgia', serif; color:#2b2110; letter-spacing:0.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .museum-card-formula { font: 400 8.5px 'Courier New', monospace; color:#6b5626; margin-top:3px; font-style:italic; line-height:1.25; }
 </style>
 
 <script>
@@ -256,13 +300,31 @@
     if (!grid) return;
     grid.innerHTML = '';
     const picks = shuffled12();
-    for (const f of picks) {
+    picks.forEach((f, idx) => {
       const card = document.createElement('div');
       card.className = 'museum-card';
+
+      // Etched brass plate row: "PLATE 0X · TITLE"
+      const plate = document.createElement('div');
+      plate.className = 'museum-card-plate';
+      const num = document.createElement('span');
+      num.className = 'plate-num';
+      num.textContent = `PLATE ${String(idx + 1).padStart(2, '0')}`;
+      const name = document.createElement('span');
+      name.className = 'plate-name';
+      name.textContent = f.title;
+      plate.appendChild(num); plate.appendChild(name);
+
+      // Ivory mat holding the live canvas
+      const mat = document.createElement('div');
+      mat.className = 'museum-card-mat';
       const iframe = document.createElement('iframe');
       iframe.loading = 'lazy';
       iframe.src = `https://art.fazleyrabbi.xyz/embed/${f.slug}`;
       iframe.title = f.title;
+      mat.appendChild(iframe);
+
+      // Ivory plaque caption
       const foot = document.createElement('div');
       foot.className = 'museum-card-foot';
       const t = document.createElement('div');
@@ -272,11 +334,12 @@
       fm.className = 'museum-card-formula';
       fm.textContent = f.formula;
       foot.appendChild(t); foot.appendChild(fm);
-      card.appendChild(iframe); card.appendChild(foot);
+
+      card.appendChild(plate); card.appendChild(mat); card.appendChild(foot);
       card.addEventListener('click', () => window.open(`https://art.fazleyrabbi.xyz/art/${f.slug}`, '_blank'));
       card.style.cursor = 'pointer';
       grid.appendChild(card);
-    }
+    });
   }
 
   function openMuseumModal() {
