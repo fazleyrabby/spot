@@ -110,9 +110,22 @@ export class PlayerManager {
   }
 
   setPosition(gx: number, gy: number): void {
-    this.gx = gx;
-    this.gy = gy;
-    const center = gridToWorldCenter(gx, gy);
+    // snap water/jungle or gy>=94 to nearest dry city tile
+    let sgx = gx, sgy = gy;
+    if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 94) {
+      for (let r = 0; r < 12; r++) {
+        const ny = sgy - 1 - r;
+        if (ny < 0 || ny >= 94) continue;
+        const nx = Math.max(0, Math.min(99, sgx));
+        if (!isWaterTile(nx, ny)) { sgx = nx; sgy = ny; break; }
+      }
+      if (sgx < 0 || sgx >= 100 || isWaterTile(sgx, sgy) || sgy >= 94) {
+        sgx = 50; sgy = 50;
+      }
+    }
+    this.gx = sgx;
+    this.gy = sgy;
+    const center = gridToWorldCenter(sgx, sgy);
     this.wx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, center.wx));
     this.wy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, center.wy));
     this.updateCurrentPlot();
