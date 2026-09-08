@@ -27,6 +27,7 @@
  */
 
 import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
+import { ART_EXPERIENCES } from './art-experiences.js';
 
 export type UrbanTileType =
   | 'mountain_rock'
@@ -111,6 +112,8 @@ export type UrbanPropType =
   | 'jungle_fern'
   | 'city_parking_bay'
   | 'beach_parking_bay'
+  | 'sunset_arch'
+  | 'dive_sign'
   | null;
 
 export interface CityProp {
@@ -467,6 +470,23 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     };
   }
 
+  // ── 2a. Art Experience Triggers (art.fazleyrabbi.xyz fullscreen embeds) ──
+  // Placed before random beach scatter so the trigger tiles always win.
+  for (const exp of ART_EXPERIENCES) {
+    if (gx === exp.gx && gy === exp.gy) {
+      return {
+        gx,
+        gy,
+        type: exp.propType,
+        wx,
+        wy,
+        hasLight: !exp.underwater,
+        lightColor: !exp.underwater ? 'rgba(251, 191, 36, 0.5)' : undefined,
+        lightRadius: !exp.underwater ? 120 : undefined,
+      };
+    }
+  }
+
   // Beach Bonfires at scenic beach gathering spots (gy 105)
   if (gy === 105 && (gx === 50 || gx === 14 || gx === 86 || gx === -12 || gx === 112)) {
     return {
@@ -818,20 +838,36 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   }
 
   if (district === 'promenade') {
-    if (r > 0.82) {
+    if (r > 0.84) {
       return { gx, gy, type: 'cafe_table', wx, wy, hasLight: false };
     }
-    if (r > 0.72) {
+    if (r > 0.74) {
       return { gx, gy, type: 'bench', wx, wy, hasLight: false };
+    }
+    if (r > 0.66) {
+      return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
+    }
+    if (r > 0.58) {
+      return { gx, gy, type: 'trash_can', wx, wy, hasLight: false };
     }
   }
 
   if (district === 'downtown') {
-    if (r > 0.90) {
+    // Lively, gently-cluttered street furniture so open sidewalks don't read empty.
+    if (r > 0.94) {
       return { gx, gy, type: 'tree_planter', wx, wy, hasLight: false };
     }
-    if (r > 0.84) {
+    if (r > 0.88) {
+      return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
+    }
+    if (r > 0.82) {
+      return { gx, gy, type: 'bench', wx, wy, hasLight: false };
+    }
+    if (r > 0.77) {
       return { gx, gy, type: 'fire_hydrant', wx, wy, hasLight: false };
+    }
+    if (r > 0.73) {
+      return { gx, gy, type: 'trash_can', wx, wy, hasLight: false };
     }
   }
 

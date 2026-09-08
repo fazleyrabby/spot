@@ -75,9 +75,9 @@ export class MarineManager {
         phase: Math.random() * Math.PI * 2,
       });
     }
-    // 3 dolphins in surf zone (gy 107..110) — widely spaced pods
+    // 3 dolphins in surf zone (gy 108..112, ocean_surf & ocean_deep only) — widely spaced pods
     for (let i = 0; i < 3; i++) {
-      const gy = 107 + i;
+      const gy = 108.5 + i * 1.7;
       this.entities.push({
         id: `dolphin-${i}`,
         kind: 'dolphin',

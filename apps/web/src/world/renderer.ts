@@ -79,16 +79,16 @@ const PALETTES = {
   park_grass_2: '#1c4226',
   water_pond: '#0c4a6e',
 
-  // Coastal Boardwalk & Moonlit Beach (Cohesive with Terracotta & Slate)
-  boardwalk_1: '#2e1c14',
-  boardwalk_2: '#382319',
+  // Coastal Boardwalk & Moonlit Beach (warm sand/wood — reads sandy in day AND dusk)
+  boardwalk_1: '#3a2416',
+  boardwalk_2: '#472d1a',
   boardwalk_seam: 'rgba(0, 0, 0, 0.35)',
 
-  beach_sand_1: '#232b38',
-  beach_sand_2: '#1e2530',
+  beach_sand_1: '#6b5637',
+  beach_sand_2: '#5f4c2f',
   ocean_deep: '#061325',
   ocean_surf: '#0a233f',
-  wave_foam: 'rgba(148, 163, 184, 0.35)',
+  wave_foam: 'rgba(203, 213, 225, 0.4)',
 
   // Western Emerald Jungle
   jungle_grass_1: '#072b18',
@@ -110,6 +110,150 @@ const PALETTES = {
   select_ring: '#38bdf8',
   select_glow: 'rgba(56, 189, 248, 0.28)',
 };
+
+/** Immutable copy of the original night ground palette (night restores from here). */
+const NIGHT_PALETTES: Record<string, string> = { ...PALETTES };
+
+/** Deterministic 0..1 hash from grid coords (same tile => same texture every frame). */
+function tileNoise(gx: number, gy: number, salt = 0): number {
+  let h = (gx * 374761393) ^ (gy * 668265263) ^ (salt * 2246822519);
+  h = (h ^ (h >> 13)) * 1274126177;
+  return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+}
+
+/**
+ * Time-of-day ground palettes. Day surfaces are genuinely sunlit & saturated,
+ * night stays moody/neon. This replaces a single shared near-black palette so
+ * switching modes changes the world's mood instead of just washing it.
+ */
+const DAY_PALETTES: Record<string, string> = {
+  mountain_rock_1: '#3b4252',
+  mountain_rock_2: '#4b5563',
+  mountain_snow: '#f8fafc',
+  rail_ballast: '#3f3f46',
+  rail_sleeper: '#6f4522',
+  rail_steel: '#d6dae0',
+  rail_shine: '#f8fafc',
+  asphalt: '#4a515e',
+  lane_white: 'rgba(255, 255, 255, 0.88)',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.93)',
+  sidewalk_base: '#7e8796',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.3)',
+  grand_plaza_1: '#a8aeba',
+  grand_plaza_2: '#9aa2b0',
+  terracotta_1: '#b8603e',
+  terracotta_2: '#c9704a',
+  zen_paving_1: '#8f98a6',
+  zen_paving_2: '#9ca4b0',
+  park_grass_1: '#4a8a43',
+  park_grass_2: '#54994b',
+  water_pond: '#2f8fc4',
+  boardwalk_1: '#7a4f2c',
+  boardwalk_2: '#8a5c36',
+  boardwalk_seam: 'rgba(50, 25, 10, 0.4)',
+  beach_sand_1: '#dcc795',
+  beach_sand_2: '#d0b987',
+  ocean_deep: '#165a8a',
+  ocean_surf: '#2a7fb0',
+  wave_foam: 'rgba(255, 255, 255, 0.65)',
+  jungle_grass_1: '#2c6f37',
+  jungle_grass_2: '#357f41',
+  jungle_dense: '#205a29',
+  jungle_creek: '#1c6f58',
+  jungle_creek_ripple: 'rgba(110, 231, 183, 0.6)',
+  forest_grass_1: '#377f45',
+  forest_grass_2: '#418d4f',
+  forest_dense: '#276235',
+  forest_creek: '#3778a8',
+  forest_creek_ripple: 'rgba(125, 211, 252, 0.6)',
+};
+
+const TWILIGHT_PALETTES: Record<string, string> = {
+  mountain_rock_1: '#1e293b',
+  mountain_rock_2: '#312e81',
+  mountain_snow: '#f8fafc',
+  rail_ballast: '#1f2330',
+  rail_sleeper: '#5c3010',
+  rail_steel: '#a5b4c2',
+  rail_shine: '#e2e8f0',
+  asphalt: '#232a38',
+  lane_white: 'rgba(226, 232, 240, 0.8)',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.85)',
+  sidewalk_base: '#4b5568',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.1)',
+  grand_plaza_1: '#3f4a63',
+  grand_plaza_2: '#4a5875',
+  terracotta_1: '#7a4030',
+  terracotta_2: '#8d4a38',
+  zen_paving_1: '#4a5266',
+  zen_paving_2: '#545e75',
+  park_grass_1: '#2f6b3a',
+  park_grass_2: '#387d45',
+  water_pond: '#16508f',
+  boardwalk_1: '#4e2f1c',
+  boardwalk_2: '#5c3822',
+  boardwalk_seam: 'rgba(0, 0, 0, 0.4)',
+  beach_sand_1: '#8a7550',
+  beach_sand_2: '#7e6a46',
+  ocean_deep: '#0b2340',
+  ocean_surf: '#17456f',
+  wave_foam: 'rgba(226, 232, 240, 0.5)',
+  jungle_grass_1: '#1d5528',
+  jungle_grass_2: '#246232',
+  jungle_dense: '#15421c',
+  jungle_creek: '#12674f',
+  jungle_creek_ripple: 'rgba(74, 222, 128, 0.5)',
+  forest_grass_1: '#275e2f',
+  forest_grass_2: '#2f6b3a',
+  forest_dense: '#1a4a24',
+  forest_creek: '#1f5d94',
+  forest_creek_ripple: 'rgba(96, 165, 250, 0.5)',
+};
+
+function pickPalette(mode: 'day' | 'twilight' | 'night'): Record<string, string> {
+  if (mode === 'day') return DAY_PALETTES;
+  if (mode === 'twilight') return TWILIGHT_PALETTES;
+  return NIGHT_PALETTES;
+}
+
+/**
+ * Re-skins the shared PALETTES object (used ~37x inside the ground switch)
+ * with the active time-of-day surface tones. PALETTES is mutated in place, so
+ * night must restore from an immutable NIGHT_PALETTES snapshot — never from
+ * itself, otherwise the world stays stuck on the previous mode's colors.
+ */
+function applyGroundPalette(mode: 'day' | 'twilight' | 'night'): void {
+  const ramp = pickPalette(mode);
+  const target = PALETTES as unknown as Record<string, string>;
+  for (const key of Object.keys(ramp)) {
+    if (key in target) target[key] = ramp[key];
+  }
+}
+
+/** Pick between two surface shades using stable noise (kills rigid checkerboard). */
+function shadeA(noise: number, a: string, b: string): string {
+  return noise < 0.5 ? a : b;
+}
+
+/**
+ * Organic two/three-tone ground mottling. Quantises to 3x3-tile blocks so
+ * shades form natural patches (not a 1-tile diagonal checkerboard). Fully
+ * deterministic per tile so frames never flicker.
+ */
+function groundPatch(
+  gx: number,
+  gy: number,
+  salt: number,
+  a: string,
+  b: string,
+  c?: string,
+): string {
+  let h = (Math.floor(gx / 3) * 374761393) ^ (Math.floor(gy / 3) * 668265263) ^ (salt * 2246822519);
+  h = (h ^ (h >> 13)) * 1274126177;
+  const n = ((h ^ (h >> 16)) >>> 0) / 4294967295;
+  if (c !== undefined && n < 0.13) return c; // occasional lighter patch
+  return n < 0.58 ? a : b;
+}
 
 interface RenderableEntity {
   depth: number;
@@ -268,7 +412,11 @@ export class Renderer {
 
     // 1. Sky / World background
     if (this.timeOfDay === 'day') {
-      ctx.fillStyle = '#0f172a';
+      const dayGrad = ctx.createLinearGradient(0, 0, 0, H);
+      dayGrad.addColorStop(0, '#38bdf8');
+      dayGrad.addColorStop(0.45, '#7dd3fc');
+      dayGrad.addColorStop(1, '#fef3c7');
+      ctx.fillStyle = dayGrad;
     } else if (this.timeOfDay === 'twilight') {
       ctx.fillStyle = '#1e1b4b';
     } else {
@@ -502,8 +650,18 @@ export class Renderer {
 
     // 8. Time of Day Atmospheric Wash
     if (this.timeOfDay === 'day') {
+      // Ground is now painted sunlit via per-mode palettes, so only a soft
+      // warm unifying tint is needed over props/characters (no more muddy wash).
       ctx.save();
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.fillStyle = 'rgba(255, 214, 130, 0.22)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+
+      // faint warm bloom for a high-noon glow
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = 'rgba(255, 236, 180, 0.05)';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     } else if (this.timeOfDay === 'twilight') {
@@ -657,6 +815,8 @@ export class Renderer {
     range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
     z: number,
   ): void {
+    // Re-skin shared ground colors for the current time-of-day each frame.
+    applyGroundPalette(this.timeOfDay);
     const tw = TILE_WIDTH * z;
     const th = TILE_HEIGHT * z;
 
@@ -680,8 +840,7 @@ export class Renderer {
 
           // ── Northern Mountains ─────────────────────────────────────────────
           case 'mountain_rock': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.mountain_rock_1 : PALETTES.mountain_rock_2;
+            ctx.fillStyle = groundPatch(gx, gy, 908, PALETTES.mountain_rock_1, PALETTES.mountain_rock_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
@@ -742,8 +901,7 @@ export class Renderer {
 
           // ── Coastal Timber Boardwalk (gy: 89..90) ─────────────────────────
           case 'boardwalk': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.boardwalk_1 : PALETTES.boardwalk_2;
+            ctx.fillStyle = groundPatch(gx, gy, 909, PALETTES.boardwalk_1, PALETTES.boardwalk_2);
             ctx.fillRect(dx, dy, dw, dh);
 
             // Horizontal wood plank seams
@@ -755,8 +913,7 @@ export class Renderer {
 
           // ── Moonlit Beach & Midnight Ocean (Cohesive & Atmospheric) ────────
           case 'beach_sand': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.beach_sand_1 : PALETTES.beach_sand_2;
+            ctx.fillStyle = groundPatch(gx, gy, 901, PALETTES.beach_sand_1, PALETTES.beach_sand_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Subtle slate flecks to match city pavement
             if ((gx * 11 + gy * 7) % 5 === 0) {
@@ -799,8 +956,7 @@ export class Renderer {
 
           // ── Western Emerald Jungle Ground ─────────────────────────────────
           case 'jungle_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.jungle_grass_1 : PALETTES.jungle_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 902, PALETTES.jungle_grass_1, PALETTES.jungle_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Leafy moss speckle
             if ((gx * 7 + gy * 13) % 5 === 0) {
@@ -834,8 +990,7 @@ export class Renderer {
 
           // ── Eastern Whispering Woods Ground ───────────────────────────────
           case 'forest_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.forest_grass_1 : PALETTES.forest_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 903, PALETTES.forest_grass_1, PALETTES.forest_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Pine needle / fallen amber leaf specks
             if ((gx * 11 + gy * 5) % 4 === 0) {
@@ -907,38 +1062,39 @@ export class Renderer {
           }
 
           case 'sidewalk': {
-            ctx.fillStyle = PALETTES.sidewalk_base;
+            // Continuous pavement: mottled tone, no per-tile top/left seam so it
+            // reads as large slabs instead of a visible 1-tile grid.
+            ctx.fillStyle = groundPatch(gx, gy, 910, PALETTES.sidewalk_base, PALETTES.sidewalk_base);
             ctx.fillRect(dx, dy, dw, dh);
-            ctx.fillStyle = PALETTES.sidewalk_seam;
-            ctx.fillRect(dx, dy, dw, 1);
-            ctx.fillRect(dx, dy, 1, dh);
+            // Faint slab joints on a 2-tile lattice only (breaks the sheet look)
+            if (gx % 2 === 0 && gy % 2 === 0) {
+              ctx.fillStyle = PALETTES.sidewalk_seam;
+              ctx.fillRect(dx, dy, dw, 1);
+              ctx.fillRect(dx, dy, 1, dh);
+            }
             break;
           }
 
           case 'plaza_grand': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.grand_plaza_1 : PALETTES.grand_plaza_2;
+            ctx.fillStyle = groundPatch(gx, gy, 904, PALETTES.grand_plaza_1, PALETTES.grand_plaza_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'plaza_terracotta': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.terracotta_1 : PALETTES.terracotta_2;
+            ctx.fillStyle = groundPatch(gx, gy, 905, PALETTES.terracotta_1, PALETTES.terracotta_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'plaza_zen': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.zen_paving_1 : PALETTES.zen_paving_2;
+            ctx.fillStyle = groundPatch(gx, gy, 906, PALETTES.zen_paving_1, PALETTES.zen_paving_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'park_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.park_grass_1 : PALETTES.park_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 907, PALETTES.park_grass_1, PALETTES.park_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
@@ -953,6 +1109,187 @@ export class Renderer {
             break;
           }
         }
+
+        this.drawGroundDetail(ctx, tileType, gx, gy, dx, dy, dw, dh, z);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ground Micro-Texture & Living Detail (deterministic, no flicker)
+  // ---------------------------------------------------------------------------
+
+  private drawGroundDetail(
+    ctx: CanvasRenderingContext2D,
+    tileType: string,
+    gx: number,
+    gy: number,
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+    z: number,
+  ): void {
+    if (z < 0.45) return; // too zoomed out for fine detail
+
+    // hairline pixel sizing helpers
+    const pw = Math.max(1, 1 * z);
+    const px = (u: number) => dx + u * dw;
+    const py = (v: number) => dy + v * dh;
+
+    // ── Subtle per-tile border (keeps the tile-grid readability without
+    //    the harsh spreadsheet seams). Drawn on right+bottom so shared edges
+    //    render exactly once per boundary. ────────────────────────────────
+    const bordered = tileType === 'sidewalk' ||
+      tileType === 'plaza_grand' ||
+      tileType === 'plaza_terracotta' ||
+      tileType === 'plaza_zen' ||
+      tileType === 'park_grass' ||
+      tileType === 'jungle_grass' ||
+      tileType === 'jungle_dense' ||
+      tileType === 'forest_grass' ||
+      tileType === 'forest_dense' ||
+      tileType === 'beach_sand' ||
+      tileType === 'boardwalk';
+    if (bordered) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
+      ctx.fillRect(dx + dw - pw, dy, pw, dh);           // right edge
+      ctx.fillRect(dx, dy + dh - pw, dw, pw);           // bottom edge
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(dx, dy, pw, dh);                     // left highlight
+      ctx.fillRect(dx, dy, dw, pw);                     // top highlight
+    }
+
+    switch (tileType) {
+      // ── Park / meadow grass: tufts, blades, clover ─────────────────────
+      case 'park_grass': {
+        // sparse light blades
+        if (tileNoise(gx, gy, 1) < 0.34) {
+          ctx.fillStyle = 'rgba(134, 239, 172, 0.16)';
+          const bx = px(0.15 + tileNoise(gx, gy, 2) * 0.7);
+          const by = py(0.2 + tileNoise(gx, gy, 3) * 0.6);
+          ctx.fillRect(bx, by, pw, Math.max(1, 2.2 * z));
+          ctx.fillRect(bx + pw, by - Math.max(0, 1.5 * z), pw, Math.max(1, 2.2 * z));
+        }
+        // tiny wildflower dots
+        if (tileNoise(gx, gy, 4) < 0.08) {
+          const colors = ['rgba(251, 191, 36, 0.5)', 'rgba(196, 181, 253, 0.5)', 'rgba(249, 168, 212, 0.5)'];
+          ctx.fillStyle = colors[Math.floor(tileNoise(gx, gy, 5) * 3)];
+          const fx = px(0.2 + tileNoise(gx, gy, 6) * 0.6);
+          const fy = py(0.2 + tileNoise(gx, gy, 7) * 0.6);
+          ctx.fillRect(fx, fy, pw, pw);
+        }
+        break;
+      }
+
+      // ── Jungle / forest floor: moss & leaf litter ──────────────────────
+      case 'jungle_grass':
+      case 'forest_grass': {
+        if (tileNoise(gx, gy, 8) < 0.4) {
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+          ctx.fillRect(px(tileNoise(gx, gy, 9) * 0.9), py(tileNoise(gx, gy, 10) * 0.9), pw * 1.4, pw);
+        }
+        break;
+      }
+
+      // ── Grand plaza stone: grout + polish flecks ────────────────────────
+      case 'plaza_grand': {
+        // subtle diagonal slab sheen
+        if (tileNoise(gx, gy, 11) < 0.28) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.045)';
+          ctx.fillRect(px(0.12), py(0.12), dw * 0.76, pw);
+        }
+        // faint corner crack
+        if (tileNoise(gx, gy, 12) < 0.1) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+          ctx.fillRect(px(0.6), py(0.55), dw * 0.32, pw);
+          ctx.fillRect(px(0.82), py(0.2), pw, dh * 0.6);
+        }
+        break;
+      }
+
+      // ── Terracotta promenade: brick grain ──────────────────────────────
+      case 'plaza_terracotta': {
+        // horizontal brick mortar
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        ctx.fillRect(px(0.06), py(0.5), dw * 0.88, pw);
+        // staggered vertical joints
+        if ((gx + gy) % 2 === 0) {
+          ctx.fillRect(px(0.5), py(0.06), pw, dh * 0.38);
+        } else {
+          ctx.fillRect(px(0.25), py(0.62), pw, dh * 0.3);
+          ctx.fillRect(px(0.75), py(0.62), pw, dh * 0.3);
+        }
+        // warm speckle
+        if (tileNoise(gx, gy, 13) < 0.2) {
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.10)';
+          ctx.fillRect(px(tileNoise(gx, gy, 14) * 0.85), py(tileNoise(gx, gy, 15) * 0.85), pw, pw);
+        }
+        break;
+      }
+
+      // ── Zen garden: raked sand + pebbles ───────────────────────────────
+      case 'plaza_zen': {
+        // faint raked concentric arcs feel via dots
+        if (tileNoise(gx, gy, 16) < 0.2) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+          ctx.fillRect(px(0.1 + tileNoise(gx, gy, 17) * 0.8), py(0.1 + tileNoise(gx, gy, 18) * 0.8), pw, pw);
+        }
+        // zen pebbles
+        if (tileNoise(gx, gy, 19) < 0.12) {
+          ctx.fillStyle = 'rgba(203, 213, 225, 0.18)';
+          ctx.fillRect(px(0.15 + tileNoise(gx, gy, 20) * 0.7), py(0.15 + tileNoise(gx, gy, 21) * 0.7), pw * 1.3, pw);
+        }
+        break;
+      }
+
+      // ── Sidewalk: paving joint speckle & tiny gum dots ─────────────────
+      case 'sidewalk': {
+        if (tileNoise(gx, gy, 22) < 0.14) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+          ctx.fillRect(px(0.2 + tileNoise(gx, gy, 23) * 0.6), py(0.2 + tileNoise(gx, gy, 24) * 0.6), pw, pw);
+        }
+        break;
+      }
+
+      // ── Beach sand: wet ripple speckle + shells ────────────────────────
+      case 'beach_sand': {
+        // shell fleck
+        if (tileNoise(gx, gy, 25) < 0.1) {
+          ctx.fillStyle = 'rgba(226, 232, 240, 0.22)';
+          ctx.fillRect(px(0.2 + tileNoise(gx, gy, 26) * 0.6), py(0.2 + tileNoise(gx, gy, 27) * 0.6), pw, pw * 0.7);
+        }
+        // dry grain streaks
+        if (tileNoise(gx, gy, 28) < 0.3) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+          ctx.fillRect(px(0.1), py(tileNoise(gx, gy, 29) * 0.9), dw * 0.8, pw);
+        }
+        break;
+      }
+
+      // ── Boardwalk: timber grain lines ──────────────────────────────────
+      case 'boardwalk': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+        ctx.fillRect(px(0.5), py(0.15), pw, dh * 0.7);
+        ctx.fillRect(px(0.82), py(0.1), pw, dh * 0.8);
+        // nail
+        if ((gx + gy) % 2 === 0) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(px(0.92), py(0.16), pw, pw);
+        }
+        break;
+      }
+
+      // ── Asphalt roads: faint mottling ──────────────────────────────────
+      case 'road_asphalt':
+      case 'road_h_stripe':
+      case 'road_v_stripe':
+      case 'crosswalk': {
+        if (tileNoise(gx, gy, 30) < 0.2) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+          ctx.fillRect(px(tileNoise(gx, gy, 31) * 0.85), py(tileNoise(gx, gy, 32) * 0.85), pw * 1.6, pw);
+        }
+        break;
       }
     }
   }
@@ -4795,6 +5132,170 @@ export class Renderer {
           ctx.fillStyle = '#34d399';
           ctx.fillRect(ex - 0.8 * z, ey - 0.8 * z, 1.6 * z, 1.6 * z);
         }
+        break;
+      }
+
+      // ── Art Experience: Crepuscular Sunset Arch (fullscreen embed trigger) ─
+      case 'sunset_arch': {
+        const pulse = Math.sin(this.tick * 0.02 + prop.wx * 0.01) * 0.5 + 0.5;
+        const isHovered =
+          this.hoveredGrid && this.hoveredGrid.gx === prop.gx && this.hoveredGrid.gy === prop.gy;
+
+        // 1. Contact shadow on the sand
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 20 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Golden horizontal horizon band through the arch
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillRect(sx - 22 * z, sy - 2 * z, 44 * z, 2 * z);
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.45)';
+        ctx.fillRect(sx - 22 * z, sy, 44 * z, 3 * z);
+
+        // 3. Big glowing sun disc floating above the horizon
+        const sunY = sy - 13 * z - pulse * 1.2 * z;
+        const sunGrad = ctx.createRadialGradient(sx, sunY, 0, sx, sunY, 9 * z);
+        sunGrad.addColorStop(0, '#fff7c2');
+        sunGrad.addColorStop(0.45, '#fcd34d');
+        sunGrad.addColorStop(1, 'rgba(251, 146, 60, 0.1)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(sx, sunY, 9 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Crepuscular rays fanning out behind the sun
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.16)';
+        for (let r = 0; r < 5; r++) {
+          const ang = -Math.PI / 2 + (r - 2) * 0.18;
+          ctx.beginPath();
+          ctx.moveTo(sx, sunY);
+          ctx.lineTo(sx + Math.cos(ang) * 40 * z, sunY + Math.sin(ang) * 40 * z);
+          ctx.lineTo(sx + Math.cos(ang + 0.12) * 40 * z, sunY + Math.sin(ang + 0.12) * 40 * z);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // 5. Bronze arch frame over the scene
+        ctx.fillStyle = '#7c5a34';
+        ctx.beginPath();
+        ctx.moveTo(sx - 22 * z, sy);
+        ctx.lineTo(sx - 22 * z, sy - 26 * z);
+        ctx.lineTo(sx - 17 * z, sy - 34 * z);
+        ctx.quadraticCurveTo(sx, sy - 46 * z, sx + 17 * z, sy - 34 * z);
+        ctx.lineTo(sx + 22 * z, sy - 26 * z);
+        ctx.lineTo(sx + 22 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner arch opening
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 16 * z, sy);
+        ctx.lineTo(sx - 16 * z, sy - 24 * z);
+        ctx.quadraticCurveTo(sx, sy - 38 * z, sx + 16 * z, sy - 24 * z);
+        ctx.lineTo(sx + 16 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // 6. Keystone capstone + brass rivets
+        ctx.fillStyle = '#9a7447';
+        ctx.fillRect(sx - 4 * z, sy - 49 * z, 8 * z, 5 * z);
+        ctx.fillStyle = '#d6b98c';
+        ctx.fillRect(sx - 2 * z, sy - 48 * z, 4 * z, 2 * z);
+        ctx.fillStyle = '#b99263';
+        ctx.fillRect(sx - 23 * z, sy - 27 * z, 3 * z, 3 * z);
+        ctx.fillRect(sx + 20 * z, sy - 27 * z, 3 * z, 3 * z);
+
+        // 7. Hover highlight + caption
+        if (isHovered) {
+          ctx.fillStyle = '#fde047';
+          ctx.font = `bold ${Math.round(7 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('⛩ WATCH THE SUNSET', sx, sy - 55 * z);
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.6)';
+          ctx.lineWidth = 1.5 * z;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 24 * z, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      // ── Art Experience: Dive Signpost (underwater embed trigger) ─────────
+      case 'dive_sign': {
+        const isHovered =
+          this.hoveredGrid && this.hoveredGrid.gx === prop.gx && this.hoveredGrid.gy === prop.gy;
+        const wave = Math.sin(this.tick * 0.05 + prop.wx * 0.02) * 1.5 * z;
+
+        // 1. Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 13 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Wooden post
+        ctx.fillStyle = '#5b3a1a';
+        ctx.fillRect(sx - 2.5 * z, sy - 30 * z, 5 * z, 30 * z);
+        ctx.fillStyle = '#7c5126';
+        ctx.fillRect(sx - 2.5 * z, sy - 30 * z, 5 * z, 3 * z);
+
+        // 3. Circular signboard with wave motif
+        ctx.fillStyle = '#e8e2d0';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 34 * z, 12 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2 * z;
+        ctx.stroke();
+
+        // wave chevrons pointing down
+        ctx.strokeStyle = '#1d4ed8';
+        ctx.lineWidth = 2.4 * z;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx - 6 * z, sy - 38 * z);
+        ctx.lineTo(sx, sy - 33 * z + wave * 0.4);
+        ctx.lineTo(sx + 6 * z, sy - 38 * z);
+        ctx.moveTo(sx - 6 * z, sy - 32 * z);
+        ctx.lineTo(sx, sy - 27 * z + wave * 0.4);
+        ctx.lineTo(sx + 6 * z, sy - 32 * z);
+        ctx.stroke();
+
+        // 4. Bracket + bobbing float buoy beside the post
+        ctx.fillStyle = '#5b3a1a';
+        ctx.fillRect(sx + 9 * z, sy - 12 * z, 6 * z, 2.5 * z);
+        ctx.strokeStyle = '#a3a3a3';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx + 15 * z, sy - 11 * z);
+        ctx.lineTo(sx + 15 * z, sy - 3 * z - wave);
+        ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(sx + 15 * z, sy - 4 * z - wave, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(sx + 14 * z, sy - 5 * z - wave, 1 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Hover highlight + caption
+        if (isHovered) {
+          ctx.fillStyle = '#7dd3fc';
+          ctx.font = `bold ${Math.round(7 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('🌊 DIVE', sx, sy - 50 * z);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 1.5 * z;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 20 * z, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.lineCap = 'butt';
         break;
       }
     }

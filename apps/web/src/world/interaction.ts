@@ -10,6 +10,7 @@ import { worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
 import { getSecretAt, type WorldSecret } from './secrets.js';
 import { hitTestBanner, type WorldBanner } from './banner-manager.js';
+import { getArtExperienceNear } from './art-experiences.js';
 
 export interface InteractionEvents {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
@@ -117,8 +118,19 @@ export class InteractionHandler {
         const onDoor = Math.hypot(world.x - doorWx, world.y - doorWy) < 40;
 
         const onMarine = this.renderer.marine.hitTestMarine(world.x, world.y);
+        // Art experiences sit on the beach (gy >= 100), outside the 0..99 city
+        // grid worldToGrid validates, and their props extend above the base tile
+        // (signpost arrow / arch). Use a radial world-distance hit test so the
+        // whole visible prop is hoverable/clickable.
+        const artExp = getArtExperienceNear(world.x, world.y);
 
-        if (onDoor || onMarine) {
+        if (artExp) {
+          this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
+          this.renderer.hoveredGrid = { gx: artExp.gx, gy: artExp.gy };
+          canvas.style.cursor = 'pointer';
+        } else if (onDoor || onMarine) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -193,6 +205,15 @@ export class InteractionHandler {
         const marineHit = this.renderer.marine.hitTestMarine(world.x, world.y);
         if (marineHit) {
           this.events.onMarineClick?.(marineHit.kind);
+          return;
+        }
+
+        // -0.25. Art Experience trigger (sunset arch / dive signpost)
+        // Radial world-distance hit so the whole prop (arrow/sign/arch) is clickable.
+        const artExp = getArtExperienceNear(world.x, world.y);
+        if (artExp) {
+          this.renderer.selectedCitizen = null;
+          (window as any).openArtExperience?.(artExp.slug, artExp.title);
           return;
         }
 
