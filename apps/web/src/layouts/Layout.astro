@@ -107,6 +107,38 @@ const author = 'Md. Fazley Rabbi';
       ]
     })} />
 
+    <!-- Canvas 2D roundRect polyfill (Safari < 16 / older WebKit lack it) -->
+    <script is:inline>
+      (function () {
+        if (typeof CanvasRenderingContext2D === 'undefined') return;
+        var proto = CanvasRenderingContext2D.prototype;
+        if (typeof proto.roundRect === 'function') return;
+
+        function radiusOf(v, max) {
+          var r = Array.isArray(v) ? Number(v[0]) : Number(v);
+          if (!isFinite(r) || r < 0) r = 0;
+          return Math.min(r, max);
+        }
+
+        proto.roundRect = function (x, y, w, h, radii) {
+          var max = Math.min(Math.abs(w), Math.abs(h)) / 2;
+          var r = radiusOf(radii, max);
+          if (w < 0 || h < 0) { x += w; w = -w; y += h; h = -h; }
+          this.moveTo(x + r, y);
+          this.lineTo(x + w - r, y);
+          if (r > 0) this.arcTo(x + w, y, x + w, y + r, r);
+          this.lineTo(x + w, y + h - r);
+          if (r > 0) this.arcTo(x + w, y + h, x + w - r, y + h, r);
+          this.lineTo(x + r, y + h);
+          if (r > 0) this.arcTo(x, y + h, x, y + h - r, r);
+          this.lineTo(x, y + r);
+          if (r > 0) this.arcTo(x, y, x + r, y, r);
+          this.closePath();
+          return this;
+        };
+      })();
+    </script>
+
     <!-- Auto-recovery from stale deployment asset hashes & bfcache drops -->
     <script is:inline>
       // 1. If any stylesheet fails to load (e.g. 404 during live deployment rollout)
