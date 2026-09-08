@@ -235,6 +235,26 @@ function shadeA(noise: number, a: string, b: string): string {
   return noise < 0.5 ? a : b;
 }
 
+/**
+ * Organic two/three-tone ground mottling. Quantises to 3x3-tile blocks so
+ * shades form natural patches (not a 1-tile diagonal checkerboard). Fully
+ * deterministic per tile so frames never flicker.
+ */
+function groundPatch(
+  gx: number,
+  gy: number,
+  salt: number,
+  a: string,
+  b: string,
+  c?: string,
+): string {
+  let h = (Math.floor(gx / 3) * 374761393) ^ (Math.floor(gy / 3) * 668265263) ^ (salt * 2246822519);
+  h = (h ^ (h >> 13)) * 1274126177;
+  const n = ((h ^ (h >> 16)) >>> 0) / 4294967295;
+  if (c !== undefined && n < 0.13) return c; // occasional lighter patch
+  return n < 0.58 ? a : b;
+}
+
 interface RenderableEntity {
   depth: number;
   render: (ctx: CanvasRenderingContext2D, z: number) => void;
@@ -820,8 +840,7 @@ export class Renderer {
 
           // ── Northern Mountains ─────────────────────────────────────────────
           case 'mountain_rock': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.mountain_rock_1 : PALETTES.mountain_rock_2;
+            ctx.fillStyle = groundPatch(gx, gy, 908, PALETTES.mountain_rock_1, PALETTES.mountain_rock_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
@@ -882,8 +901,7 @@ export class Renderer {
 
           // ── Coastal Timber Boardwalk (gy: 89..90) ─────────────────────────
           case 'boardwalk': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.boardwalk_1 : PALETTES.boardwalk_2;
+            ctx.fillStyle = groundPatch(gx, gy, 909, PALETTES.boardwalk_1, PALETTES.boardwalk_2);
             ctx.fillRect(dx, dy, dw, dh);
 
             // Horizontal wood plank seams
@@ -895,8 +913,7 @@ export class Renderer {
 
           // ── Moonlit Beach & Midnight Ocean (Cohesive & Atmospheric) ────────
           case 'beach_sand': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.beach_sand_1 : PALETTES.beach_sand_2;
+            ctx.fillStyle = groundPatch(gx, gy, 901, PALETTES.beach_sand_1, PALETTES.beach_sand_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Subtle slate flecks to match city pavement
             if ((gx * 11 + gy * 7) % 5 === 0) {
@@ -939,8 +956,7 @@ export class Renderer {
 
           // ── Western Emerald Jungle Ground ─────────────────────────────────
           case 'jungle_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.jungle_grass_1 : PALETTES.jungle_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 902, PALETTES.jungle_grass_1, PALETTES.jungle_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Leafy moss speckle
             if ((gx * 7 + gy * 13) % 5 === 0) {
@@ -974,8 +990,7 @@ export class Renderer {
 
           // ── Eastern Whispering Woods Ground ───────────────────────────────
           case 'forest_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.forest_grass_1 : PALETTES.forest_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 903, PALETTES.forest_grass_1, PALETTES.forest_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             // Pine needle / fallen amber leaf specks
             if ((gx * 11 + gy * 5) % 4 === 0) {
@@ -1047,38 +1062,39 @@ export class Renderer {
           }
 
           case 'sidewalk': {
-            ctx.fillStyle = PALETTES.sidewalk_base;
+            // Continuous pavement: mottled tone, no per-tile top/left seam so it
+            // reads as large slabs instead of a visible 1-tile grid.
+            ctx.fillStyle = groundPatch(gx, gy, 910, PALETTES.sidewalk_base, PALETTES.sidewalk_base);
             ctx.fillRect(dx, dy, dw, dh);
-            ctx.fillStyle = PALETTES.sidewalk_seam;
-            ctx.fillRect(dx, dy, dw, 1);
-            ctx.fillRect(dx, dy, 1, dh);
+            // Faint slab joints on a 2-tile lattice only (breaks the sheet look)
+            if (gx % 2 === 0 && gy % 2 === 0) {
+              ctx.fillStyle = PALETTES.sidewalk_seam;
+              ctx.fillRect(dx, dy, dw, 1);
+              ctx.fillRect(dx, dy, 1, dh);
+            }
             break;
           }
 
           case 'plaza_grand': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.grand_plaza_1 : PALETTES.grand_plaza_2;
+            ctx.fillStyle = groundPatch(gx, gy, 904, PALETTES.grand_plaza_1, PALETTES.grand_plaza_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'plaza_terracotta': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.terracotta_1 : PALETTES.terracotta_2;
+            ctx.fillStyle = groundPatch(gx, gy, 905, PALETTES.terracotta_1, PALETTES.terracotta_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'plaza_zen': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.zen_paving_1 : PALETTES.zen_paving_2;
+            ctx.fillStyle = groundPatch(gx, gy, 906, PALETTES.zen_paving_1, PALETTES.zen_paving_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
 
           case 'park_grass': {
-            const isAlt = (gx + gy) % 2 === 0;
-            ctx.fillStyle = isAlt ? PALETTES.park_grass_1 : PALETTES.park_grass_2;
+            ctx.fillStyle = groundPatch(gx, gy, 907, PALETTES.park_grass_1, PALETTES.park_grass_2);
             ctx.fillRect(dx, dy, dw, dh);
             break;
           }
