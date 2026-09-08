@@ -63,6 +63,12 @@
       <button type="button" class="warp-pill" data-warp="60,38" title="Math Art Museum — ƒ(x) Gallery">
         <span class="warp-icon">🎨</span> Museum
       </button>
+      <button type="button" class="warp-pill art-warp" data-art="sunset_rays" data-warp="6,105" title="Crepuscular Sunset Rays — fullscreen art experience">
+        <span class="warp-icon">🌅</span> Sunset
+      </button>
+      <button type="button" class="warp-pill art-warp" data-art="ocean_dive" data-warp="46,107" title="Dive beneath the waves — fullscreen art experience">
+        <span class="warp-icon">🤿</span> Dive
+      </button>
       <button type="button" class="warp-pill warp-my-spot" id="radar-warp-my-spot" style="display: none;" title="Teleport to Your Spot">
         <span class="warp-icon">📍</span> My Spot
       </button>
@@ -401,15 +407,22 @@
       }
     }
 
-    // Quick-warp buttons
+    // Quick-warp buttons (some carry an art-experience auto-open)
     document.querySelectorAll('.warp-pill[data-warp]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const coord = btn.getAttribute('data-warp');
         if (!coord) return;
         const [x, y] = coord.split(',').map(Number);
-        if (!isNaN(x) && !isNaN(y)) {
-          triggerWarp(x, y);
-        }
+        if (isNaN(x) || isNaN(y)) return;
+        triggerWarp(x, y);
+
+        // Auto-open fullscreen art experiences after the camera glides over
+        const artId = btn.getAttribute('data-art');
+        if (!artId) return;
+        setTimeout(() => {
+          const exp = ((window as any).ART_EXPERIENCES || []).find((e: any) => e.id === artId);
+          if (exp) (window as any).openArtExperience?.(exp.slug, exp.title);
+        }, 900);
       });
     });
 

@@ -10,6 +10,7 @@ import { worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
 import { getSecretAt, type WorldSecret } from './secrets.js';
 import { hitTestBanner, type WorldBanner } from './banner-manager.js';
+import { getArtExperienceAt } from './art-experiences.js';
 
 export interface InteractionEvents {
   onCitizenClick?: (spot: OccupiedSpotSummary) => void;
@@ -117,8 +118,18 @@ export class InteractionHandler {
         const onDoor = Math.hypot(world.x - doorWx, world.y - doorWy) < 40;
 
         const onMarine = this.renderer.marine.hitTestMarine(world.x, world.y);
+        // Art experiences can sit on the beach (gy >= 100), outside the 0..99
+        // city grid worldToGrid validates — use raw floor coords instead.
+        const artGx = Math.floor(world.x / 48);
+        const artGy = Math.floor(world.y / 32);
+        const artExp = getArtExperienceAt(artGx, artGy);
 
-        if (onDoor || onMarine) {
+        if (artExp) {
+          this.renderer.hoveredCitizen = null;
+          this.renderer.hoveredBanner = null;
+          this.renderer.hoveredSecret = null;
+          canvas.style.cursor = 'pointer';
+        } else if (onDoor || onMarine) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -193,6 +204,17 @@ export class InteractionHandler {
         const marineHit = this.renderer.marine.hitTestMarine(world.x, world.y);
         if (marineHit) {
           this.events.onMarineClick?.(marineHit.kind);
+          return;
+        }
+
+        // -0.25. Art Experience trigger (sunset arch / dive signpost)
+        // Raw floor coords (not worldToGrid) so beach gy>=100 props are clickable.
+        const artGx = Math.floor(world.x / 48);
+        const artGy = Math.floor(world.y / 32);
+        const artExp = getArtExperienceAt(artGx, artGy);
+        if (artExp) {
+          this.renderer.selectedCitizen = null;
+          (window as any).openArtExperience?.(artExp.slug, artExp.title);
           return;
         }
 

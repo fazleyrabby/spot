@@ -1130,12 +1130,35 @@ export class Renderer {
     dh: number,
     z: number,
   ): void {
-    if (z < 0.3) return; // too zoomed out for texture
+    if (z < 0.45) return; // too zoomed out for fine detail
 
     // hairline pixel sizing helpers
     const pw = Math.max(1, 1 * z);
     const px = (u: number) => dx + u * dw;
     const py = (v: number) => dy + v * dh;
+
+    // ── Subtle per-tile border (keeps the tile-grid readability without
+    //    the harsh spreadsheet seams). Drawn on right+bottom so shared edges
+    //    render exactly once per boundary. ────────────────────────────────
+    const bordered = tileType === 'sidewalk' ||
+      tileType === 'plaza_grand' ||
+      tileType === 'plaza_terracotta' ||
+      tileType === 'plaza_zen' ||
+      tileType === 'park_grass' ||
+      tileType === 'jungle_grass' ||
+      tileType === 'jungle_dense' ||
+      tileType === 'forest_grass' ||
+      tileType === 'forest_dense' ||
+      tileType === 'beach_sand' ||
+      tileType === 'boardwalk';
+    if (bordered) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
+      ctx.fillRect(dx + dw - pw, dy, pw, dh);           // right edge
+      ctx.fillRect(dx, dy + dh - pw, dw, pw);           // bottom edge
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(dx, dy, pw, dh);                     // left highlight
+      ctx.fillRect(dx, dy, dw, pw);                     // top highlight
+    }
 
     switch (tileType) {
       // ── Park / meadow grass: tufts, blades, clover ─────────────────────
@@ -5109,6 +5132,170 @@ export class Renderer {
           ctx.fillStyle = '#34d399';
           ctx.fillRect(ex - 0.8 * z, ey - 0.8 * z, 1.6 * z, 1.6 * z);
         }
+        break;
+      }
+
+      // ── Art Experience: Crepuscular Sunset Arch (fullscreen embed trigger) ─
+      case 'sunset_arch': {
+        const pulse = Math.sin(this.tick * 0.02 + prop.wx * 0.01) * 0.5 + 0.5;
+        const isHovered =
+          this.hoveredGrid && this.hoveredGrid.gx === prop.gx && this.hoveredGrid.gy === prop.gy;
+
+        // 1. Contact shadow on the sand
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 20 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Golden horizontal horizon band through the arch
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillRect(sx - 22 * z, sy - 2 * z, 44 * z, 2 * z);
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.45)';
+        ctx.fillRect(sx - 22 * z, sy, 44 * z, 3 * z);
+
+        // 3. Big glowing sun disc floating above the horizon
+        const sunY = sy - 13 * z - pulse * 1.2 * z;
+        const sunGrad = ctx.createRadialGradient(sx, sunY, 0, sx, sunY, 9 * z);
+        sunGrad.addColorStop(0, '#fff7c2');
+        sunGrad.addColorStop(0.45, '#fcd34d');
+        sunGrad.addColorStop(1, 'rgba(251, 146, 60, 0.1)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(sx, sunY, 9 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Crepuscular rays fanning out behind the sun
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.16)';
+        for (let r = 0; r < 5; r++) {
+          const ang = -Math.PI / 2 + (r - 2) * 0.18;
+          ctx.beginPath();
+          ctx.moveTo(sx, sunY);
+          ctx.lineTo(sx + Math.cos(ang) * 40 * z, sunY + Math.sin(ang) * 40 * z);
+          ctx.lineTo(sx + Math.cos(ang + 0.12) * 40 * z, sunY + Math.sin(ang + 0.12) * 40 * z);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // 5. Bronze arch frame over the scene
+        ctx.fillStyle = '#7c5a34';
+        ctx.beginPath();
+        ctx.moveTo(sx - 22 * z, sy);
+        ctx.lineTo(sx - 22 * z, sy - 26 * z);
+        ctx.lineTo(sx - 17 * z, sy - 34 * z);
+        ctx.quadraticCurveTo(sx, sy - 46 * z, sx + 17 * z, sy - 34 * z);
+        ctx.lineTo(sx + 22 * z, sy - 26 * z);
+        ctx.lineTo(sx + 22 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner arch opening
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 16 * z, sy);
+        ctx.lineTo(sx - 16 * z, sy - 24 * z);
+        ctx.quadraticCurveTo(sx, sy - 38 * z, sx + 16 * z, sy - 24 * z);
+        ctx.lineTo(sx + 16 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // 6. Keystone capstone + brass rivets
+        ctx.fillStyle = '#9a7447';
+        ctx.fillRect(sx - 4 * z, sy - 49 * z, 8 * z, 5 * z);
+        ctx.fillStyle = '#d6b98c';
+        ctx.fillRect(sx - 2 * z, sy - 48 * z, 4 * z, 2 * z);
+        ctx.fillStyle = '#b99263';
+        ctx.fillRect(sx - 23 * z, sy - 27 * z, 3 * z, 3 * z);
+        ctx.fillRect(sx + 20 * z, sy - 27 * z, 3 * z, 3 * z);
+
+        // 7. Hover highlight + caption
+        if (isHovered) {
+          ctx.fillStyle = '#fde047';
+          ctx.font = `bold ${Math.round(7 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('⛩ WATCH THE SUNSET', sx, sy - 55 * z);
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.6)';
+          ctx.lineWidth = 1.5 * z;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 24 * z, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      // ── Art Experience: Dive Signpost (underwater embed trigger) ─────────
+      case 'dive_sign': {
+        const isHovered =
+          this.hoveredGrid && this.hoveredGrid.gx === prop.gx && this.hoveredGrid.gy === prop.gy;
+        const wave = Math.sin(this.tick * 0.05 + prop.wx * 0.02) * 1.5 * z;
+
+        // 1. Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 13 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Wooden post
+        ctx.fillStyle = '#5b3a1a';
+        ctx.fillRect(sx - 2.5 * z, sy - 30 * z, 5 * z, 30 * z);
+        ctx.fillStyle = '#7c5126';
+        ctx.fillRect(sx - 2.5 * z, sy - 30 * z, 5 * z, 3 * z);
+
+        // 3. Circular signboard with wave motif
+        ctx.fillStyle = '#e8e2d0';
+        ctx.beginPath();
+        ctx.arc(sx, sy - 34 * z, 12 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2 * z;
+        ctx.stroke();
+
+        // wave chevrons pointing down
+        ctx.strokeStyle = '#1d4ed8';
+        ctx.lineWidth = 2.4 * z;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx - 6 * z, sy - 38 * z);
+        ctx.lineTo(sx, sy - 33 * z + wave * 0.4);
+        ctx.lineTo(sx + 6 * z, sy - 38 * z);
+        ctx.moveTo(sx - 6 * z, sy - 32 * z);
+        ctx.lineTo(sx, sy - 27 * z + wave * 0.4);
+        ctx.lineTo(sx + 6 * z, sy - 32 * z);
+        ctx.stroke();
+
+        // 4. Bracket + bobbing float buoy beside the post
+        ctx.fillStyle = '#5b3a1a';
+        ctx.fillRect(sx + 9 * z, sy - 12 * z, 6 * z, 2.5 * z);
+        ctx.strokeStyle = '#a3a3a3';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx + 15 * z, sy - 11 * z);
+        ctx.lineTo(sx + 15 * z, sy - 3 * z - wave);
+        ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(sx + 15 * z, sy - 4 * z - wave, 3 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(sx + 14 * z, sy - 5 * z - wave, 1 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Hover highlight + caption
+        if (isHovered) {
+          ctx.fillStyle = '#7dd3fc';
+          ctx.font = `bold ${Math.round(7 * z)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('🌊 DIVE', sx, sy - 50 * z);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 1.5 * z;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 20 * z, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.lineCap = 'butt';
         break;
       }
     }

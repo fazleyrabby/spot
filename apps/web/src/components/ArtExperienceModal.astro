@@ -1,0 +1,174 @@
+---
+/**
+ * ArtExperienceModal — Clean fullscreen viewer for art.fazleyrabbi.xyz embeds.
+ * No extra chrome: the iframe fills the whole screen; only a slim close button
+ * (plus ESC / backdrop click) gets you back into the world.
+ */
+---
+
+<div class="art-exp-backdrop" id="art-exp-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Fullscreen art experience">
+  <div class="art-exp-stage">
+    <iframe
+      id="art-exp-iframe"
+      class="art-exp-iframe"
+      src="about:blank"
+      loading="eager"
+      allow="autoplay; fullscreen"
+      referrerPolicy="no-referrer"
+      title="Art experience"
+    ></iframe>
+
+    <!-- Slim top chrome: title chip (left) + close (right) -->
+    <div class="art-exp-chrome">
+      <div class="art-exp-title" id="art-exp-title"></div>
+      <button type="button" class="art-exp-close" id="art-exp-close" aria-label="Close fullscreen experience">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        <span class="art-exp-close-label">Exit</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .art-exp-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: #030509;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+  }
+
+  .art-exp-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .art-exp-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+
+  .art-exp-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #000;
+  }
+
+  .art-exp-chrome {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 16px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(2, 6, 12, 0.55), transparent);
+  }
+
+  .art-exp-title {
+    color: rgba(248, 250, 252, 0.92);
+    font-family: 'Chakra Petch', ui-monospace, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    max-width: 60%;
+    padding-top: 4px;
+  }
+
+  .art-exp-close {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(2, 8, 20, 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #f8fafc;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+
+  .art-exp-close:hover {
+    background: rgba(15, 23, 42, 0.92);
+    transform: scale(1.03);
+  }
+
+  .art-exp-close-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  @media (max-width: 560px) {
+    .art-exp-close-label {
+      display: none;
+    }
+    .art-exp-title {
+      font-size: 0.72rem;
+    }
+  }
+</style>
+
+<script>
+  const backdrop = document.getElementById('art-exp-backdrop') as HTMLDivElement | null;
+  const iframe = document.getElementById('art-exp-iframe') as HTMLIFrameElement | null;
+  const titleEl = document.getElementById('art-exp-title') as HTMLDivElement | null;
+
+  function openArtExperience(slug: string, title?: string) {
+    if (!backdrop || !iframe) return;
+    iframe.src = `https://art.fazleyrabbi.xyz/embed/${slug}`;
+    if (titleEl && title) titleEl.textContent = title;
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeArtExperience() {
+    if (!backdrop || !iframe) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    // Stop audio/animations in the embed once dismissed
+    iframe.src = 'about:blank';
+    document.body.style.overflow = '';
+  }
+
+  const closeBtn = document.getElementById('art-exp-close') as HTMLButtonElement | null;
+  closeBtn?.addEventListener('click', closeArtExperience);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeArtExperience();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeArtExperience();
+    }
+  });
+
+  (window as any).openArtExperience = openArtExperience;
+  (window as any).closeArtExperience = closeArtExperience;
+
+  // Registry for radar/HUD quick-launch buttons
+  (window as any).ART_EXPERIENCES = [
+    { id: 'sunset_rays', slug: 'crepuscular-sunset-rays', title: 'Crepuscular Sunset Rays' },
+    { id: 'ocean_dive', slug: 'underwater-oceanic-sunbeams', title: 'Underwater Oceanic Sunbeams' },
+  ];
+</script>

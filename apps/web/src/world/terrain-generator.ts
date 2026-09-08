@@ -27,6 +27,7 @@
  */
 
 import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
+import { ART_EXPERIENCES } from './art-experiences.js';
 
 export type UrbanTileType =
   | 'mountain_rock'
@@ -111,6 +112,8 @@ export type UrbanPropType =
   | 'jungle_fern'
   | 'city_parking_bay'
   | 'beach_parking_bay'
+  | 'sunset_arch'
+  | 'dive_sign'
   | null;
 
 export interface CityProp {
@@ -465,6 +468,23 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
       gx, gy, type: 'boardwalk_lamp', wx, wy,
       hasLight: true, lightColor: 'rgba(251, 191, 36, 0.40)', lightRadius: 85,
     };
+  }
+
+  // ── 2a. Art Experience Triggers (art.fazleyrabbi.xyz fullscreen embeds) ──
+  // Placed before random beach scatter so the trigger tiles always win.
+  for (const exp of ART_EXPERIENCES) {
+    if (gx === exp.gx && gy === exp.gy) {
+      return {
+        gx,
+        gy,
+        type: exp.propType,
+        wx,
+        wy,
+        hasLight: !exp.underwater,
+        lightColor: !exp.underwater ? 'rgba(251, 191, 36, 0.5)' : undefined,
+        lightRadius: !exp.underwater ? 120 : undefined,
+      };
+    }
   }
 
   // Beach Bonfires at scenic beach gathering spots (gy 105)
