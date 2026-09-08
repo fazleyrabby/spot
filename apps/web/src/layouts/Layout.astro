@@ -217,7 +217,12 @@ const author = 'Md. Fazley Rabbi';
           if (typeof msg === 'string' && (
             msg.indexOf('ResizeObserver') !== -1 ||
             msg.indexOf('chrome-extension://') !== -1 ||
-            msg.indexOf('moz-extension://') !== -1
+            msg.indexOf('moz-extension://') !== -1 ||
+            // In-app browser bridges (Facebook/Instagram/other WebViews) whose
+            // native side is already gone — not our code, cannot be fixed by us.
+            msg.indexOf('Java object is gone') !== -1 ||
+            msg.indexOf('Error invoking postMessage') !== -1 ||
+            msg.indexOf('iabjs://') !== -1
           )) return;
 
           relayClientError({
@@ -237,7 +242,10 @@ const author = 'Md. Fazley Rabbi';
           if (typeof msg === 'string' && (
             msg.indexOf('ResizeObserver') !== -1 ||
             msg.indexOf('chrome-extension://') !== -1 ||
-            msg.indexOf('moz-extension://') !== -1
+            msg.indexOf('moz-extension://') !== -1 ||
+            msg.indexOf('Java object is gone') !== -1 ||
+            msg.indexOf('Error invoking postMessage') !== -1 ||
+            msg.indexOf('iabjs://') !== -1
           )) return;
 
           relayClientError({
