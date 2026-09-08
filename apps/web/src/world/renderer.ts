@@ -111,11 +111,128 @@ const PALETTES = {
   select_glow: 'rgba(56, 189, 248, 0.28)',
 };
 
+/** Immutable copy of the original night ground palette (night restores from here). */
+const NIGHT_PALETTES: Record<string, string> = { ...PALETTES };
+
 /** Deterministic 0..1 hash from grid coords (same tile => same texture every frame). */
 function tileNoise(gx: number, gy: number, salt = 0): number {
   let h = (gx * 374761393) ^ (gy * 668265263) ^ (salt * 2246822519);
   h = (h ^ (h >> 13)) * 1274126177;
   return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+}
+
+/**
+ * Time-of-day ground palettes. Day surfaces are genuinely sunlit & saturated,
+ * night stays moody/neon. This replaces a single shared near-black palette so
+ * switching modes changes the world's mood instead of just washing it.
+ */
+const DAY_PALETTES: Record<string, string> = {
+  mountain_rock_1: '#3b4252',
+  mountain_rock_2: '#4b5563',
+  mountain_snow: '#f8fafc',
+  rail_ballast: '#3f3f46',
+  rail_sleeper: '#6f4522',
+  rail_steel: '#d6dae0',
+  rail_shine: '#f8fafc',
+  asphalt: '#4a515e',
+  lane_white: 'rgba(255, 255, 255, 0.88)',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.93)',
+  sidewalk_base: '#7e8796',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.3)',
+  grand_plaza_1: '#a8aeba',
+  grand_plaza_2: '#9aa2b0',
+  terracotta_1: '#b8603e',
+  terracotta_2: '#c9704a',
+  zen_paving_1: '#8f98a6',
+  zen_paving_2: '#9ca4b0',
+  park_grass_1: '#4a8a43',
+  park_grass_2: '#54994b',
+  water_pond: '#2f8fc4',
+  boardwalk_1: '#7a4f2c',
+  boardwalk_2: '#8a5c36',
+  boardwalk_seam: 'rgba(50, 25, 10, 0.4)',
+  beach_sand_1: '#dcc795',
+  beach_sand_2: '#d0b987',
+  ocean_deep: '#165a8a',
+  ocean_surf: '#2a7fb0',
+  wave_foam: 'rgba(255, 255, 255, 0.65)',
+  jungle_grass_1: '#2c6f37',
+  jungle_grass_2: '#357f41',
+  jungle_dense: '#205a29',
+  jungle_creek: '#1c6f58',
+  jungle_creek_ripple: 'rgba(110, 231, 183, 0.6)',
+  forest_grass_1: '#377f45',
+  forest_grass_2: '#418d4f',
+  forest_dense: '#276235',
+  forest_creek: '#3778a8',
+  forest_creek_ripple: 'rgba(125, 211, 252, 0.6)',
+};
+
+const TWILIGHT_PALETTES: Record<string, string> = {
+  mountain_rock_1: '#1e293b',
+  mountain_rock_2: '#312e81',
+  mountain_snow: '#f8fafc',
+  rail_ballast: '#1f2330',
+  rail_sleeper: '#5c3010',
+  rail_steel: '#a5b4c2',
+  rail_shine: '#e2e8f0',
+  asphalt: '#232a38',
+  lane_white: 'rgba(226, 232, 240, 0.8)',
+  crosswalk_bar: 'rgba(255, 255, 255, 0.85)',
+  sidewalk_base: '#4b5568',
+  sidewalk_seam: 'rgba(255, 255, 255, 0.1)',
+  grand_plaza_1: '#3f4a63',
+  grand_plaza_2: '#4a5875',
+  terracotta_1: '#7a4030',
+  terracotta_2: '#8d4a38',
+  zen_paving_1: '#4a5266',
+  zen_paving_2: '#545e75',
+  park_grass_1: '#2f6b3a',
+  park_grass_2: '#387d45',
+  water_pond: '#16508f',
+  boardwalk_1: '#4e2f1c',
+  boardwalk_2: '#5c3822',
+  boardwalk_seam: 'rgba(0, 0, 0, 0.4)',
+  beach_sand_1: '#8a7550',
+  beach_sand_2: '#7e6a46',
+  ocean_deep: '#0b2340',
+  ocean_surf: '#17456f',
+  wave_foam: 'rgba(226, 232, 240, 0.5)',
+  jungle_grass_1: '#1d5528',
+  jungle_grass_2: '#246232',
+  jungle_dense: '#15421c',
+  jungle_creek: '#12674f',
+  jungle_creek_ripple: 'rgba(74, 222, 128, 0.5)',
+  forest_grass_1: '#275e2f',
+  forest_grass_2: '#2f6b3a',
+  forest_dense: '#1a4a24',
+  forest_creek: '#1f5d94',
+  forest_creek_ripple: 'rgba(96, 165, 250, 0.5)',
+};
+
+function pickPalette(mode: 'day' | 'twilight' | 'night'): Record<string, string> {
+  if (mode === 'day') return DAY_PALETTES;
+  if (mode === 'twilight') return TWILIGHT_PALETTES;
+  return NIGHT_PALETTES;
+}
+
+/**
+ * Re-skins the shared PALETTES object (used ~37x inside the ground switch)
+ * with the active time-of-day surface tones. PALETTES is mutated in place, so
+ * night must restore from an immutable NIGHT_PALETTES snapshot — never from
+ * itself, otherwise the world stays stuck on the previous mode's colors.
+ */
+function applyGroundPalette(mode: 'day' | 'twilight' | 'night'): void {
+  const ramp = pickPalette(mode);
+  const target = PALETTES as unknown as Record<string, string>;
+  for (const key of Object.keys(ramp)) {
+    if (key in target) target[key] = ramp[key];
+  }
+}
+
+/** Pick between two surface shades using stable noise (kills rigid checkerboard). */
+function shadeA(noise: number, a: string, b: string): string {
+  return noise < 0.5 ? a : b;
 }
 
 interface RenderableEntity {
@@ -513,18 +630,18 @@ export class Renderer {
 
     // 8. Time of Day Atmospheric Wash
     if (this.timeOfDay === 'day') {
-      // Screen-blend warm sunlight over the whole scene: lifts near-black
-      // night-tuned tiles into a bright, sunlit daytime look.
+      // Ground is now painted sunlit via per-mode palettes, so only a soft
+      // warm unifying tint is needed over props/characters (no more muddy wash).
       ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = 'rgba(255, 219, 140, 0.44)';
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.fillStyle = 'rgba(255, 214, 130, 0.22)';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
 
-      // Very subtle extra bloom for depth on the horizon glow
+      // faint warm bloom for a high-noon glow
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = 'rgba(255, 240, 200, 0.06)';
+      ctx.fillStyle = 'rgba(255, 236, 180, 0.05)';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     } else if (this.timeOfDay === 'twilight') {
@@ -678,6 +795,8 @@ export class Renderer {
     range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
     z: number,
   ): void {
+    // Re-skin shared ground colors for the current time-of-day each frame.
+    applyGroundPalette(this.timeOfDay);
     const tw = TILE_WIDTH * z;
     const th = TILE_HEIGHT * z;
 
