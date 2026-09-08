@@ -49,6 +49,29 @@ export function getArtExperienceAt(gx: number, gy: number): ArtExperience | null
   return ART_EXPERIENCES.find((e) => e.gx === gx && e.gy === gy) ?? null;
 }
 
+/** World-pixel center of an experience prop (base of the prop on its tile). */
+export function artExperienceCenter(exp: ArtExperience): { wx: number; wy: number } {
+  return { wx: exp.gx * 48 + 24, wy: exp.gy * 32 + 16 };
+}
+
+/**
+ * Radial hit test in world pixels. Props like the dive signpost / sunset arch
+ * extend well above their base tile, so we test distance to the prop's anchor
+ * rather than requiring the exact tile — making the whole visible prop
+ * (including the arrow and signboard) clickable.
+ */
+export function getArtExperienceNear(
+  wx: number,
+  wy: number,
+  radius = 56,
+): ArtExperience | null {
+  for (const exp of ART_EXPERIENCES) {
+    const c = artExperienceCenter(exp);
+    if (Math.hypot(wx - c.wx, wy - c.wy) <= radius) return exp;
+  }
+  return null;
+}
+
 export function artEmbedUrl(slug: string): string {
   return `https://art.fazleyrabbi.xyz/embed/${slug}`;
 }
