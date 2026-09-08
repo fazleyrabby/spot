@@ -818,20 +818,36 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   }
 
   if (district === 'promenade') {
-    if (r > 0.82) {
+    if (r > 0.84) {
       return { gx, gy, type: 'cafe_table', wx, wy, hasLight: false };
     }
-    if (r > 0.72) {
+    if (r > 0.74) {
       return { gx, gy, type: 'bench', wx, wy, hasLight: false };
+    }
+    if (r > 0.66) {
+      return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
+    }
+    if (r > 0.58) {
+      return { gx, gy, type: 'trash_can', wx, wy, hasLight: false };
     }
   }
 
   if (district === 'downtown') {
-    if (r > 0.90) {
+    // Lively, gently-cluttered street furniture so open sidewalks don't read empty.
+    if (r > 0.94) {
       return { gx, gy, type: 'tree_planter', wx, wy, hasLight: false };
     }
-    if (r > 0.84) {
+    if (r > 0.88) {
+      return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
+    }
+    if (r > 0.82) {
+      return { gx, gy, type: 'bench', wx, wy, hasLight: false };
+    }
+    if (r > 0.77) {
       return { gx, gy, type: 'fire_hydrant', wx, wy, hasLight: false };
+    }
+    if (r > 0.73) {
+      return { gx, gy, type: 'trash_can', wx, wy, hasLight: false };
     }
   }
 

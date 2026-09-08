@@ -79,16 +79,16 @@ const PALETTES = {
   park_grass_2: '#1c4226',
   water_pond: '#0c4a6e',
 
-  // Coastal Boardwalk & Moonlit Beach (Cohesive with Terracotta & Slate)
-  boardwalk_1: '#2e1c14',
-  boardwalk_2: '#382319',
+  // Coastal Boardwalk & Moonlit Beach (warm sand/wood — reads sandy in day AND dusk)
+  boardwalk_1: '#3a2416',
+  boardwalk_2: '#472d1a',
   boardwalk_seam: 'rgba(0, 0, 0, 0.35)',
 
-  beach_sand_1: '#232b38',
-  beach_sand_2: '#1e2530',
+  beach_sand_1: '#6b5637',
+  beach_sand_2: '#5f4c2f',
   ocean_deep: '#061325',
   ocean_surf: '#0a233f',
-  wave_foam: 'rgba(148, 163, 184, 0.35)',
+  wave_foam: 'rgba(203, 213, 225, 0.4)',
 
   // Western Emerald Jungle
   jungle_grass_1: '#072b18',
@@ -110,6 +110,13 @@ const PALETTES = {
   select_ring: '#38bdf8',
   select_glow: 'rgba(56, 189, 248, 0.28)',
 };
+
+/** Deterministic 0..1 hash from grid coords (same tile => same texture every frame). */
+function tileNoise(gx: number, gy: number, salt = 0): number {
+  let h = (gx * 374761393) ^ (gy * 668265263) ^ (salt * 2246822519);
+  h = (h ^ (h >> 13)) * 1274126177;
+  return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+}
 
 interface RenderableEntity {
   depth: number;
@@ -268,7 +275,11 @@ export class Renderer {
 
     // 1. Sky / World background
     if (this.timeOfDay === 'day') {
-      ctx.fillStyle = '#0f172a';
+      const dayGrad = ctx.createLinearGradient(0, 0, 0, H);
+      dayGrad.addColorStop(0, '#38bdf8');
+      dayGrad.addColorStop(0.45, '#7dd3fc');
+      dayGrad.addColorStop(1, '#fef3c7');
+      ctx.fillStyle = dayGrad;
     } else if (this.timeOfDay === 'twilight') {
       ctx.fillStyle = '#1e1b4b';
     } else {
@@ -502,8 +513,18 @@ export class Renderer {
 
     // 8. Time of Day Atmospheric Wash
     if (this.timeOfDay === 'day') {
+      // Screen-blend warm sunlight over the whole scene: lifts near-black
+      // night-tuned tiles into a bright, sunlit daytime look.
       ctx.save();
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = 'rgba(255, 219, 140, 0.44)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+
+      // Very subtle extra bloom for depth on the horizon glow
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = 'rgba(255, 240, 200, 0.06)';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     } else if (this.timeOfDay === 'twilight') {
@@ -953,6 +974,164 @@ export class Renderer {
             break;
           }
         }
+
+        this.drawGroundDetail(ctx, tileType, gx, gy, dx, dy, dw, dh, z);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ground Micro-Texture & Living Detail (deterministic, no flicker)
+  // ---------------------------------------------------------------------------
+
+  private drawGroundDetail(
+    ctx: CanvasRenderingContext2D,
+    tileType: string,
+    gx: number,
+    gy: number,
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+    z: number,
+  ): void {
+    if (z < 0.3) return; // too zoomed out for texture
+
+    // hairline pixel sizing helpers
+    const pw = Math.max(1, 1 * z);
+    const px = (u: number) => dx + u * dw;
+    const py = (v: number) => dy + v * dh;
+
+    switch (tileType) {
+      // ── Park / meadow grass: tufts, blades, clover ─────────────────────
+      case 'park_grass': {
+        // sparse light blades
+        if (tileNoise(gx, gy, 1) < 0.34) {
+          ctx.fillStyle = 'rgba(134, 239, 172, 0.16)';
+          const bx = px(0.15 + tileNoise(gx, gy, 2) * 0.7);
+          const by = py(0.2 + tileNoise(gx, gy, 3) * 0.6);
+          ctx.fillRect(bx, by, pw, Math.max(1, 2.2 * z));
+          ctx.fillRect(bx + pw, by - Math.max(0, 1.5 * z), pw, Math.max(1, 2.2 * z));
+        }
+        // tiny wildflower dots
+        if (tileNoise(gx, gy, 4) < 0.08) {
+          const colors = ['rgba(251, 191, 36, 0.5)', 'rgba(196, 181, 253, 0.5)', 'rgba(249, 168, 212, 0.5)'];
+          ctx.fillStyle = colors[Math.floor(tileNoise(gx, gy, 5) * 3)];
+          const fx = px(0.2 + tileNoise(gx, gy, 6) * 0.6);
+          const fy = py(0.2 + tileNoise(gx, gy, 7) * 0.6);
+          ctx.fillRect(fx, fy, pw, pw);
+        }
+        break;
+      }
+
+      // ── Jungle / forest floor: moss & leaf litter ──────────────────────
+      case 'jungle_grass':
+      case 'forest_grass': {
+        if (tileNoise(gx, gy, 8) < 0.4) {
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+          ctx.fillRect(px(tileNoise(gx, gy, 9) * 0.9), py(tileNoise(gx, gy, 10) * 0.9), pw * 1.4, pw);
+        }
+        break;
+      }
+
+      // ── Grand plaza stone: grout + polish flecks ────────────────────────
+      case 'plaza_grand': {
+        // subtle diagonal slab sheen
+        if (tileNoise(gx, gy, 11) < 0.28) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.045)';
+          ctx.fillRect(px(0.12), py(0.12), dw * 0.76, pw);
+        }
+        // faint corner crack
+        if (tileNoise(gx, gy, 12) < 0.1) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+          ctx.fillRect(px(0.6), py(0.55), dw * 0.32, pw);
+          ctx.fillRect(px(0.82), py(0.2), pw, dh * 0.6);
+        }
+        break;
+      }
+
+      // ── Terracotta promenade: brick grain ──────────────────────────────
+      case 'plaza_terracotta': {
+        // horizontal brick mortar
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        ctx.fillRect(px(0.06), py(0.5), dw * 0.88, pw);
+        // staggered vertical joints
+        if ((gx + gy) % 2 === 0) {
+          ctx.fillRect(px(0.5), py(0.06), pw, dh * 0.38);
+        } else {
+          ctx.fillRect(px(0.25), py(0.62), pw, dh * 0.3);
+          ctx.fillRect(px(0.75), py(0.62), pw, dh * 0.3);
+        }
+        // warm speckle
+        if (tileNoise(gx, gy, 13) < 0.2) {
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.10)';
+          ctx.fillRect(px(tileNoise(gx, gy, 14) * 0.85), py(tileNoise(gx, gy, 15) * 0.85), pw, pw);
+        }
+        break;
+      }
+
+      // ── Zen garden: raked sand + pebbles ───────────────────────────────
+      case 'plaza_zen': {
+        // faint raked concentric arcs feel via dots
+        if (tileNoise(gx, gy, 16) < 0.2) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+          ctx.fillRect(px(0.1 + tileNoise(gx, gy, 17) * 0.8), py(0.1 + tileNoise(gx, gy, 18) * 0.8), pw, pw);
+        }
+        // zen pebbles
+        if (tileNoise(gx, gy, 19) < 0.12) {
+          ctx.fillStyle = 'rgba(203, 213, 225, 0.18)';
+          ctx.fillRect(px(0.15 + tileNoise(gx, gy, 20) * 0.7), py(0.15 + tileNoise(gx, gy, 21) * 0.7), pw * 1.3, pw);
+        }
+        break;
+      }
+
+      // ── Sidewalk: paving joint speckle & tiny gum dots ─────────────────
+      case 'sidewalk': {
+        if (tileNoise(gx, gy, 22) < 0.14) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+          ctx.fillRect(px(0.2 + tileNoise(gx, gy, 23) * 0.6), py(0.2 + tileNoise(gx, gy, 24) * 0.6), pw, pw);
+        }
+        break;
+      }
+
+      // ── Beach sand: wet ripple speckle + shells ────────────────────────
+      case 'beach_sand': {
+        // shell fleck
+        if (tileNoise(gx, gy, 25) < 0.1) {
+          ctx.fillStyle = 'rgba(226, 232, 240, 0.22)';
+          ctx.fillRect(px(0.2 + tileNoise(gx, gy, 26) * 0.6), py(0.2 + tileNoise(gx, gy, 27) * 0.6), pw, pw * 0.7);
+        }
+        // dry grain streaks
+        if (tileNoise(gx, gy, 28) < 0.3) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+          ctx.fillRect(px(0.1), py(tileNoise(gx, gy, 29) * 0.9), dw * 0.8, pw);
+        }
+        break;
+      }
+
+      // ── Boardwalk: timber grain lines ──────────────────────────────────
+      case 'boardwalk': {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+        ctx.fillRect(px(0.5), py(0.15), pw, dh * 0.7);
+        ctx.fillRect(px(0.82), py(0.1), pw, dh * 0.8);
+        // nail
+        if ((gx + gy) % 2 === 0) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(px(0.92), py(0.16), pw, pw);
+        }
+        break;
+      }
+
+      // ── Asphalt roads: faint mottling ──────────────────────────────────
+      case 'road_asphalt':
+      case 'road_h_stripe':
+      case 'road_v_stripe':
+      case 'crosswalk': {
+        if (tileNoise(gx, gy, 30) < 0.2) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+          ctx.fillRect(px(tileNoise(gx, gy, 31) * 0.85), py(tileNoise(gx, gy, 32) * 0.85), pw * 1.6, pw);
+        }
+        break;
       }
     }
   }
