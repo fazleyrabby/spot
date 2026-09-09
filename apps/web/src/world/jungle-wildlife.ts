@@ -329,7 +329,42 @@ export class JungleWildlifeManager {
           }
           break;
       }
+
+      // Never let an animal leave its jungle flank & step into the city grid.
+      this.confineToJungle(e);
     }
+  }
+
+  /**
+   * Hard-clamps every creature to the jungle flanks (west gx -24..-1, east gx 100..124).
+   * Prevents long/wide bodies (pythons, snakes, deer wander paths) from spilling into the
+   * 0..99 city grid no matter how far past their base they roam.
+   */
+  private confineToJungle(e: WildlifeEntity): void {
+    const isWest = e.baseWx < 0;
+    // Body length margin per kind so tails/heads can never cross the city border.
+    const margin =
+      e.kind === 'python' ? 2.6 :
+      e.kind === 'snake' || e.kind === 'crocodile' ? 1.6 :
+      e.kind === 'monkey' || e.kind === 'deer' || e.kind === 'frog' ? 1.1 :
+      0.7;
+
+    const minX = isWest ? -24 * TILE_WIDTH : (100 + margin) * TILE_WIDTH;
+    const maxX = isWest ? -margin * TILE_WIDTH : 125 * TILE_WIDTH;
+
+    if (e.wx < minX) {
+      e.wx = minX;
+      e.dir = 1;
+    } else if (e.wx > maxX) {
+      e.wx = maxX;
+      e.dir = -1;
+    }
+
+    // Vertical band = the jungle strip itself (gy -2..99); below that is ocean/beach.
+    const minY = -2 * TILE_HEIGHT;
+    const maxY = 99 * TILE_HEIGHT + TILE_HEIGHT * 0.5;
+    if (e.wy < minY) e.wy = minY;
+    else if (e.wy > maxY) e.wy = maxY;
   }
 
   getEntities(): WildlifeEntity[] { return this.entities; }

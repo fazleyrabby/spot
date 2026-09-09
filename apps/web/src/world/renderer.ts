@@ -3707,6 +3707,341 @@ export class Renderer {
         break;
       }
 
+      case 'pond_fisher': {
+        // ── 🎣 Lake anglers on the Central Park pond banks ─────────────────
+        // Rod, line & float aim out toward the lake centre so they land on the water.
+        const ldx = 72 * TILE_WIDTH + TILE_WIDTH / 2 - prop.wx;
+        const ldy = 25 * TILE_HEIGHT + TILE_HEIGHT / 2 - prop.wy;
+        const lm = Math.hypot(ldx, ldy) || 1;
+        const ux = ldx / lm;
+        const uy = ldy / lm;
+        const seed = Math.abs(prop.gx * 31 + prop.gy * 17);
+        const variant = seed % 3;
+        const bob = Math.sin(this.tick * 0.05 + seed * 0.3) * 1.3;
+        const bodyBob = Math.sin(this.tick * 0.06 + seed) * 0.9;
+        const shirts = ['#0ea5e9', '#16a34a', '#d97706'];
+        const hats = ['#eab308', '#ca8a04', '#dc2626'];
+        const shirt = shirts[variant % 3]!;
+        const hat = hats[variant % 3]!;
+        const skin = '#fed7aa';
+
+        // Ground shadow (angler + kit)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 1.5 * z, 13 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bucket on the land side (behind the angler)
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - ux * 11 * z - 3 * z, sy - uy * 6 * z - 4.5 * z, 6 * z, 5 * z);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(sx - ux * 11 * z - 3.4 * z, sy - uy * 6 * z - 5.5 * z, 6.8 * z, 1.4 * z);
+
+        if (variant === 1) {
+          // Seated angler on a small folding stool
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(sx - 2.5 * z, sy - 3 * z, 6 * z, 3.4 * z);
+          ctx.fillStyle = shirt;
+          ctx.fillRect(sx - 4.5 * z, sy + (-13 + bob) * z, 9 * z, 10 * z);
+          ctx.fillStyle = skin;
+          ctx.fillRect(sx - 3.5 * z, sy + (-19 + bob) * z, 7 * z, 6.5 * z);
+          ctx.fillStyle = hat;
+          ctx.fillRect(sx - 5 * z, sy + (-21.5 + bob) * z, 10 * z, 3 * z);
+        } else {
+          // Standing anglers (straw hat / cap + vest)
+          ctx.fillStyle = '#3f4a5c';
+          ctx.fillRect(sx - 4.5 * z, sy + (-6 + bodyBob) * z, 4 * z, 7 * z);
+          ctx.fillRect(sx + 0.5 * z, sy + (-6 + bodyBob) * z, 4 * z, 7 * z);
+          ctx.fillStyle = shirt;
+          ctx.fillRect(sx - 4.5 * z, sy + (-15 + bodyBob) * z, 9 * z, 10 * z);
+          if (variant === 2) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(sx - 4.5 * z, sy + (-10 + bodyBob) * z, 9 * z, 2.4 * z);
+          }
+          ctx.fillStyle = skin;
+          ctx.fillRect(sx - 3.5 * z, sy + (-21 + bodyBob) * z, 7 * z, 6.5 * z);
+          if (variant === 0) {
+            ctx.fillStyle = hat;
+            ctx.fillRect(sx - 6 * z, sy + (-22 + bodyBob) * z, 12 * z, 1.6 * z);
+            ctx.fillRect(sx - 4 * z, sy + (-25 + bodyBob) * z, 8 * z, 3.6 * z);
+          } else {
+            ctx.fillStyle = hat;
+            ctx.fillRect(sx - 4.5 * z, sy + (-23.5 + bodyBob) * z, 9 * z, 3.6 * z);
+            ctx.fillRect(sx - 5.5 * z, sy + (-22.5 + bodyBob) * z, 11 * z, 1.6 * z);
+          }
+        }
+
+        // Rod gripped near the shoulder, reaching out over the pond
+        const shoulderY = variant === 1 ? (-12 + bob) * z : (-14 + bodyBob) * z;
+        const handX = sx + ux * 3 * z;
+        const handY = sy + shoulderY + uy * 2 * z;
+        const rodLen = variant === 1 ? 26 : 32;
+        const tipX = handX + ux * rodLen * z;
+        const tipY = handY + uy * rodLen * z;
+
+        // Bobbing float out on the water (occasional tug under the surface)
+        const fDist = rodLen - 5;
+        const fBaseX = sx + ux * fDist * z;
+        const fBaseY = sy + uy * fDist * z;
+        const nibble = Math.sin(this.tick * 0.16 + seed * 0.7);
+        const dip = nibble > 0.55 ? (nibble - 0.55) * 4 : 0;
+        const floatY = fBaseY + (Math.sin(this.tick * 0.08 + seed) * 1.1 + dip) * z;
+
+        // Expanding water ripple around the float
+        const ring = (this.tick * 0.035 + seed * 0.1) % 1;
+        ctx.strokeStyle = `rgba(125, 211, 252, ${0.5 * (1 - ring)})`;
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.ellipse(fBaseX, fBaseY, (4 + ring * 7) * z, (2.2 + ring * 3.4) * z, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Fishing line from rod tip to float
+        ctx.strokeStyle = 'rgba(241, 245, 249, 0.9)';
+        ctx.lineWidth = 0.7 * z;
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(fBaseX, floatY);
+        ctx.stroke();
+
+        // Bamboo rod (slight droop toward the water)
+        ctx.strokeStyle = '#7c4a1e';
+        ctx.lineWidth = 1.8 * z;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(handX, handY);
+        ctx.quadraticCurveTo((handX + tipX) / 2 + ux * 3 * z, (handY + tipY) / 2 + 2 * z, tipX, tipY);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+
+        // Red/white float
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(fBaseX, floatY, 2.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.arc(fBaseX, floatY - 0.9 * z, 1.6 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nibble splash droplets
+        if (nibble > 0.6) {
+          ctx.fillStyle = 'rgba(224, 242, 254, 0.8)';
+          ctx.beginPath();
+          ctx.arc(fBaseX - 2.4 * z, floatY - 2.2 * z, 0.9 * z, 0, Math.PI * 2);
+          ctx.arc(fBaseX + 2.4 * z, floatY - 3 * z, 0.8 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'jungle_hut': {
+        // ── 🛖 Bamboo & thatch hut in the jungle clearing ──────────────────
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2 * z, 22 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Raised bamboo floor platform
+        ctx.fillStyle = '#3b2710';
+        ctx.fillRect(sx - 19 * z, sy - 2 * z, 38 * z, 4 * z);
+        ctx.fillStyle = '#2a1b0a';
+        ctx.fillRect(sx - 19 * z, sy + 2 * z, 38 * z, 2 * z);
+
+        // Bamboo slat wall
+        ctx.fillStyle = '#6b4a2a';
+        ctx.fillRect(sx - 17 * z, sy - 20 * z, 34 * z, 20 * z);
+        ctx.fillStyle = '#52351a';
+        for (let i = -15; i <= 15; i += 3) {
+          ctx.fillRect(sx + i * z, sy - 20 * z, 1.4 * z, 20 * z);
+        }
+
+        // Warm lit side window
+        ctx.fillStyle = 'rgba(255, 205, 120, 0.85)';
+        ctx.fillRect(sx - 13.5 * z, sy - 15 * z, 5.5 * z, 6 * z);
+        ctx.strokeStyle = '#3b2710';
+        ctx.lineWidth = 1 * z;
+        ctx.strokeRect(sx - 13.5 * z, sy - 15 * z, 5.5 * z, 6 * z);
+        ctx.strokeStyle = 'rgba(120, 53, 15, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 10.75 * z, sy - 15 * z);
+        ctx.lineTo(sx - 10.75 * z, sy - 9 * z);
+        ctx.stroke();
+
+        // Open doorway with warm interior
+        ctx.fillStyle = '#1d0f04';
+        ctx.fillRect(sx - 6 * z, sy - 18 * z, 12 * z, 18 * z);
+        ctx.fillStyle = 'rgba(254, 215, 102, 0.35)';
+        ctx.fillRect(sx - 4.5 * z, sy - 16 * z, 9 * z, 15 * z);
+        ctx.fillStyle = '#2a1b0a';
+        ctx.fillRect(sx - 6 * z, sy - 18 * z, 12 * z, 2 * z); // lintel
+
+        // Thatched canopy (layered scallops over a ridge)
+        const roofY = sy - 21 * z;
+        const ridge = sy - 39 * z;
+        ctx.fillStyle = '#8a6534';
+        ctx.beginPath();
+        ctx.moveTo(sx - 23 * z, roofY);
+        ctx.lineTo(sx, ridge);
+        ctx.lineTo(sx + 23 * z, roofY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#6b4a2a';
+        ctx.beginPath();
+        ctx.moveTo(sx - 20 * z, roofY);
+        ctx.lineTo(sx, ridge - 2 * z);
+        ctx.lineTo(sx + 20 * z, roofY);
+        ctx.closePath();
+        ctx.fill();
+        // Overhanging thatch fringe + dark underside
+        ctx.fillStyle = '#52351a';
+        for (let i = -4; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.arc(sx + i * 5 * z, roofY + 2 * z, 3.6 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(90, 63, 28, 0.55)';
+        ctx.fillRect(sx - 23 * z, roofY, 46 * z, 2 * z);
+        // Ridge cap
+        ctx.fillStyle = '#a3763c';
+        ctx.fillRect(sx - 4 * z, ridge - 1.6 * z, 8 * z, 2 * z);
+
+        // Hanging jungle vine tendrils on the eaves
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(sx - 21 * z, roofY + 2 * z, 1.2 * z, 6 * z);
+        ctx.fillRect(sx + 18 * z, roofY + 2 * z, 1.2 * z, 5 * z);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(sx - 22.5 * z, roofY + 3 * z, 2 * z, 2 * z);
+        ctx.fillRect(sx + 18.8 * z, roofY + 2 * z, 2 * z, 2 * z);
+
+        // Wooden step & clay water pot
+        ctx.fillStyle = '#4e3115';
+        ctx.fillRect(sx - 10 * z, sy, 7 * z, 2 * z);
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.ellipse(sx + 10 * z, sy - 2 * z, 3 * z, 4.4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#8a3418';
+        ctx.beginPath();
+        ctx.ellipse(sx + 10 * z, sy - 6 * z, 1.6 * z, 0.9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Small bamboo lantern glow beside the door
+        const lanFlick = 0.5 + Math.sin(this.tick * 0.12 + prop.gx) * 0.15;
+        ctx.fillStyle = 'rgba(254, 215, 102, 0.5)';
+        ctx.beginPath();
+        ctx.arc(sx + 9 * z, sy - 10 * z, 5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(254, 215, 102, ${lanFlick})`;
+        ctx.fillRect(sx + 8.4 * z, sy - 11.5 * z, 2.6 * z, 4 * z);
+        ctx.fillStyle = '#6b4a2a';
+        ctx.fillRect(sx + 8.4 * z, sy - 13 * z, 2.6 * z, 1.6 * z);
+        break;
+      }
+
+      case 'mountain_tent': {
+        // ── ⛺ Hiker camp on the northern snow ridge ────────────────────────
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2 * z, 22 * z, 8 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // A-framed dome trekking tent
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.moveTo(sx - 17 * z, sy - 1 * z);
+        ctx.quadraticCurveTo(sx - 13 * z, sy - 13 * z, sx, sy - 21 * z);
+        ctx.quadraticCurveTo(sx + 13 * z, sy - 13 * z, sx + 17 * z, sy - 1 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right-side shade panel
+        ctx.fillStyle = 'rgba(180, 52, 24, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(sx + 1 * z, sy - 21 * z);
+        ctx.quadraticCurveTo(sx + 13 * z, sy - 13 * z, sx + 17 * z, sy - 1 * z);
+        ctx.lineTo(sx + 4 * z, sy - 1 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ridge seam highlight
+        ctx.strokeStyle = '#fdba74';
+        ctx.lineWidth = 1.4 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 21 * z);
+        ctx.lineTo(sx, sy - 1 * z);
+        ctx.moveTo(sx, sy - 21 * z);
+        ctx.lineTo(sx - 17 * z, sy - 1 * z);
+        ctx.moveTo(sx, sy - 21 * z);
+        ctx.lineTo(sx + 17 * z, sy - 1 * z);
+        ctx.stroke();
+
+        // Dark entrance opening
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(sx - 4.4 * z, sy - 1 * z);
+        ctx.quadraticCurveTo(sx, sy - 9 * z, sx + 4.4 * z, sy - 1 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(254, 215, 102, 0.22)';
+        ctx.beginPath();
+        ctx.moveTo(sx - 2.6 * z, sy - 1 * z);
+        ctx.quadraticCurveTo(sx, sy - 6.4 * z, sx + 2.6 * z, sy - 1 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Guy lines staked out
+        ctx.strokeStyle = 'rgba(226, 232, 240, 0.5)';
+        ctx.lineWidth = 0.8 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 15 * z, sy - 2 * z);
+        ctx.lineTo(sx - 20 * z, sy + 1 * z);
+        ctx.moveTo(sx + 15 * z, sy - 2 * z);
+        ctx.lineTo(sx + 20 * z, sy + 1 * z);
+        ctx.stroke();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(sx - 21 * z, sy + 0.4 * z, 1.8 * z, 1.8 * z);
+        ctx.fillRect(sx + 19.2 * z, sy + 0.4 * z, 1.8 * z, 1.8 * z);
+
+        // Snow boots left of the tent
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - 25 * z, sy - 1 * z, 4 * z, 2 * z);
+        ctx.fillRect(sx - 21 * z, sy - 1 * z, 4 * z, 2 * z);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(sx - 26.4 * z, sy - 2.4 * z, 4.8 * z, 2 * z);
+        ctx.fillRect(sx - 22.4 * z, sy - 2.4 * z, 4.8 * z, 2 * z);
+
+        // Campfire in front with flickering flame + embers
+        const fireFlicker = Math.sin(this.tick * 0.22 + prop.gy) * 1.6 * z;
+        const fx = sx + 6 * z;
+        const fy = sy + 5 * z;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(fx, fy + 1 * z, 8 * z, 3.2 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(fx - 5 * z, fy - 1 * z, 10 * z, 2.4 * z);
+        ctx.fillRect(fx - 2 * z, fy - 2 * z, 4 * z, 2.4 * z);
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.arc(fx, fy - 4 * z + fireFlicker, 3.6 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(fx, fy - 5.4 * z + fireFlicker, 2.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(fx, fy - 6.4 * z + fireFlicker, 1.1 * z, 0, Math.PI * 2);
+        ctx.fill();
+        // Drifting embers
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.8)';
+        for (let e2 = 0; e2 < 3; e2++) {
+          const ePhase = (this.tick * 0.25 + e2 * 18 + (Math.abs(prop.gy) * 10) % 24);
+          ctx.fillRect(fx + Math.sin(ePhase * 0.7) * 4 * z, fy - 3 * z - ePhase * 0.7 * z, 1.4 * z, 1.4 * z);
+        }
+        break;
+      }
+
       case 'cherry_tree': {
         // 🌸 Flowering Japanese Sakura Blossom
         ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';

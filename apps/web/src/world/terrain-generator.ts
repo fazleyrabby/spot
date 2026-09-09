@@ -114,6 +114,9 @@ export type UrbanPropType =
   | 'beach_parking_bay'
   | 'sunset_arch'
   | 'dive_sign'
+  | 'pond_fisher'
+  | 'jungle_hut'
+  | 'mountain_tent'
   | null;
 
 export interface CityProp {
@@ -439,6 +442,13 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
 
   // ── 1. External Northern Mountain Landscape (gy <= -4) ────────────────────
   if (gy <= -4 && gy >= -16) {
+    // ⛺ Mountain Hiker Camp on the scenic northern ridge (visible from the railway overlook)
+    if (gx === 52 && gy === -13) {
+      return {
+        gx, gy, type: 'mountain_tent', wx, wy,
+        hasLight: true, lightColor: 'rgba(251, 146, 60, 0.38)', lightRadius: 110,
+      };
+    }
     const r = spatialHash(gx, gy, 77);
     if (r > 0.82) {
       return { gx, gy, type: 'mountain_pine', wx, wy, hasLight: false };
@@ -527,6 +537,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
+    // 🛖 Rustic thatched hut tucked into a jungle clearing (west emerald jungle)
+    if (gx === -7 && gy === 51) {
+      return {
+        gx, gy, type: 'jungle_hut', wx, wy,
+        hasLight: true, lightColor: 'rgba(251, 191, 36, 0.42)', lightRadius: 120,
+      };
+    }
+
     const r = spatialHash(gx, gy, 142);
     if (r > 0.58) {
       const v = spatialHash(gx, gy, 203);
@@ -596,6 +614,16 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
 
   if (isWater && !(gx === 72 && gy === 22) && !(gx === 14 && gy === 78)) {
     return null;
+  }
+
+  // ── 2d. Central Park Lake Anglers (living shoreline scenes around the pond) ──
+  const FISHER_SPOTS: ReadonlyArray<[number, number]> = [
+    [66, 21], [78, 21], [79, 28], [73, 31], [67, 30],
+  ];
+  for (const [fgx, fgy] of FISHER_SPOTS) {
+    if (gx === fgx && gy === fgy) {
+      return { gx, gy, type: 'pond_fisher', wx, wy, hasLight: false };
+    }
   }
 
   // ── 3. Internal City World Secrets & Lore Landmarks (0..99, 0..99) ───────

@@ -119,12 +119,12 @@ export class SkyManager {
   }
 
   private initFlocks(): void {
-    // 4 atmospheric flock locations across world
+    // 4 atmospheric flock locations — strictly inside the jungle flanks (never in the city)
     const locations = [
-      { id: 'park_grove', name: 'Park Pigeons', gx: 62, gy: 18, count: 5, color: '#94a3b8' },
-      { id: 'central_plaza', name: 'Plaza Doves', gx: 46, gy: 48, count: 4, color: '#cbd5e1' },
-      { id: 'beach_boardwalk', name: 'Beach Seagulls', gx: 32, gy: 86, count: 5, color: '#f1f5f9' },
-      { id: 'south_pier', name: 'Pier Gulls', gx: 72, gy: 90, count: 4, color: '#e2e8f0' },
+      { id: 'jungle_west_1', name: 'West Canopy Birds', gx: -13, gy: 23, count: 5, color: '#94a3b8' },
+      { id: 'jungle_west_2', name: 'West Creek Birds', gx: -15, gy: 49, count: 4, color: '#cbd5e1' },
+      { id: 'jungle_east_1', name: 'East Canopy Birds', gx: 105, gy: 23, count: 5, color: '#f1f5f9' },
+      { id: 'jungle_east_2', name: 'East Creek Birds', gx: 108, gy: 61, count: 4, color: '#e2e8f0' },
     ];
 
     for (const loc of locations) {
