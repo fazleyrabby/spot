@@ -2,6 +2,8 @@
  * Easter Eggs, Hidden Landmarks, and Curated Resources in Spot World.
  */
 
+import { TILE_WIDTH, TILE_HEIGHT } from '@spot/world';
+
 export interface WorldSecret {
   id: string;
   name: string;
@@ -350,6 +352,38 @@ export const WORLD_SECRETS: WorldSecret[] = [
     reward: 'Harmony of the Mind',
     quote: '“In the smallest branch, find the spirit of the entire forest.”',
   },
+  {
+    id: 'jungle_hut',
+    name: 'The Bamboo Herbalist Hut',
+    district: 'Western Emerald Jungle',
+    icon: '🛖',
+    gx: -7,
+    gy: 51,
+    category: 'lore',
+    title: 'The Bamboo Herbalist Hut',
+    subtitle: 'Cozy shelter in the emerald canopy',
+    description:
+      'A hand-built bamboo hut tucked into a quiet jungle clearing. A soft lantern flickers beside the door, rain drips from the thatched eaves, and warm light spills from the window onto the mossy trail.',
+    clue: 'In the western emerald jungle, follow the winding creeks until the canopy opens into a clearing with a thatched roof.',
+    reward: 'Jungle Wayfarer',
+    quote: '“Even in the deep green, a single warm light makes a home.”',
+  },
+  {
+    id: 'mountain_tent',
+    name: 'High Ridge Hiker Camp',
+    district: 'Northern Mountain Range',
+    icon: '⛺',
+    gx: 52,
+    gy: -13,
+    category: 'lore',
+    title: 'High Ridge Hiker Camp',
+    subtitle: 'Wilderness bivouac above the metropolis',
+    description:
+      'A bright tent pitched on the snowy northern ridge with a small campfire crackling in front. From this perch, hikers watch the bullet trains glide along the line far below the metropolis lights.',
+    clue: 'Climb into the snowy peaks above the northern railway and find the campfire glow on the high ridge.',
+    reward: 'Alpine Camper',
+    quote: '“The city below glitters like a circuit board at night.”',
+  },
 ];
 
 export function getSecretAt(gx: number, gy: number): WorldSecret | null {
@@ -367,6 +401,22 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
       if (dx === 0 && dy === 0) {
         return s;
       }
+    }
+  }
+  return null;
+}
+
+/**
+ * Radial world-space hit test for landmark props that live OUTSIDE the 0..99 city
+ * grid (jungle hut, mountain tent, lighthouse…) where worldToGrid() can't resolve
+ * tile coordinates. Used as a fallback so those props stay hoverable & clickable.
+ */
+export function getSecretAtWorld(wx: number, wy: number): WorldSecret | null {
+  for (const s of WORLD_SECRETS) {
+    const sx = s.gx * TILE_WIDTH + TILE_WIDTH / 2;
+    const sy = s.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+    if (Math.abs(wx - sx) <= TILE_WIDTH * 0.6 && Math.abs(wy - sy) <= TILE_HEIGHT * 0.8) {
+      return s;
     }
   }
   return null;

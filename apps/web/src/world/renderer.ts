@@ -4042,6 +4042,52 @@ export class Renderer {
         break;
       }
 
+      case 'jungle_bridge': {
+        // ── 🌉 Small plank bridge crossing the jungle creek ────────────────
+        const bLen = 132 * z;
+        const left = sx - bLen / 2;
+        const deckTop = sy - 3 * z;
+
+        // Soft contact shadow cast on the water below
+        ctx.fillStyle = 'rgba(2, 20, 30, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 6 * z, bLen * 0.5, 4.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wooden plank deck
+        ctx.fillStyle = '#6b4620';
+        ctx.fillRect(left, deckTop, bLen, 6 * z);
+        ctx.fillStyle = '#8a5a2b';
+        ctx.fillRect(left, deckTop, bLen, 2.2 * z);
+        ctx.strokeStyle = '#4a2f12';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        for (let px = 8; px < bLen; px += 9) {
+          ctx.moveTo(left + px, deckTop);
+          ctx.lineTo(left + px, deckTop + 6 * z);
+        }
+        ctx.stroke();
+
+        // Trim logs along both edges
+        ctx.fillStyle = '#4a2f12';
+        ctx.fillRect(left - 2 * z, deckTop - 1 * z, bLen + 4 * z, 1.4 * z);
+        ctx.fillRect(left - 2 * z, deckTop + 6.4 * z, bLen + 4 * z, 1.4 * z);
+
+        // End posts
+        ctx.fillStyle = '#3a2410';
+        ctx.fillRect(left - 3 * z, deckTop - 9 * z, 2.4 * z, 16 * z);
+        ctx.fillRect(left + bLen + 0.6 * z, deckTop - 9 * z, 2.4 * z, 16 * z);
+
+        // Rope handrail sagging gently between the posts
+        ctx.strokeStyle = '#5b3c1d';
+        ctx.lineWidth = 1.1 * z;
+        ctx.beginPath();
+        ctx.moveTo(left, deckTop - 9 * z);
+        ctx.quadraticCurveTo(sx, deckTop - 4.5 * z, left + bLen, deckTop - 9 * z);
+        ctx.stroke();
+        break;
+      }
+
       case 'cherry_tree': {
         // 🌸 Flowering Japanese Sakura Blossom
         ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';

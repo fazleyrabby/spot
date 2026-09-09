@@ -116,6 +116,7 @@ export type UrbanPropType =
   | 'dive_sign'
   | 'pond_fisher'
   | 'jungle_hut'
+  | 'jungle_bridge'
   | 'mountain_tent'
   | null;
 
@@ -535,6 +536,12 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   // ── 2b. Western Emerald Jungle Wilderness Props (gx: -24..-1) ──────────────
   if (gx >= -24 && gx < 0 && gy >= 0 && gy <= 99) {
     const tile = getCityTileType(gx, gy);
+
+    // Small plank bridges crossing the jungle creek (west)
+    if ((gx === -10 && gy === 58) || (gx === -14 && gy === 84)) {
+      return { gx, gy, type: 'jungle_bridge', wx, wy, hasLight: false };
+    }
+
     if (tile === 'jungle_creek') return null;
 
     // 🛖 Rustic thatched hut tucked into a jungle clearing (west emerald jungle)
@@ -570,6 +577,12 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   // ── 2c. Eastern Emerald Jungle Wilderness Props (gx: 100..124) ────────────
   if (gx >= 100 && gx <= 124 && gy >= 0 && gy <= 99) {
     const tile = getCityTileType(gx, gy);
+
+    // Small plank bridges crossing the jungle creek (east)
+    if ((gx === 109 && gy === 24) || (gx === 115 && gy === 53)) {
+      return { gx, gy, type: 'jungle_bridge', wx, wy, hasLight: false };
+    }
+
     if (tile === 'jungle_creek') return null;
 
     const r = spatialHash(gx, gy, 177);

@@ -8,7 +8,7 @@ import { PlotManager } from './plot-manager.js';
 import { MonumentManager } from './monument-manager.js';
 import { worldToGrid } from '@spot/world';
 import type { OccupiedSpotSummary } from '@spot/shared';
-import { getSecretAt, type WorldSecret } from './secrets.js';
+import { getSecretAt, getSecretAtWorld, type WorldSecret } from './secrets.js';
 import { hitTestBanner, type WorldBanner } from './banner-manager.js';
 import { getArtExperienceNear } from './art-experiences.js';
 
@@ -109,7 +109,8 @@ export class InteractionHandler {
         this.renderer.hoveredGrid = grid;
         const citizen = this.monuments.hitTest(world.x, world.y);
         const banner = hitTestBanner(world.x, world.y);
-        const secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
+        let secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
+        if (!secret) secret = getSecretAtWorld(world.x, world.y);
         const vignette = this.renderer.vignettes.getHoveredVignette(world.x, world.y);
 
         // Museum door hover → pointer
@@ -244,15 +245,15 @@ export class InteractionHandler {
         }
 
         const grid = worldToGrid(world.x, world.y);
-        if (grid) {
-          // 2. Check if clicked on a secret landmark or study kiosk
-          const secret = getSecretAt(grid.gx, grid.gy);
-          if (secret) {
-            this.renderer.selectedCitizen = null;
-            this.events.onSecretClick?.(secret);
-            return;
-          }
+        let secret = grid ? getSecretAt(grid.gx, grid.gy) : null;
+        if (!secret) secret = getSecretAtWorld(world.x, world.y);
+        if (secret) {
+          this.renderer.selectedCitizen = null;
+          this.events.onSecretClick?.(secret);
+          return;
+        }
 
+        if (grid) {
           // 3. Tap on ground -> walk to destination
           this.renderer.selectedCitizen = null;
           this.renderer.player.walkTo(world.x, world.y);
