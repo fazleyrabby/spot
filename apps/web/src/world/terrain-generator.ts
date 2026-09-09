@@ -117,7 +117,15 @@ export type UrbanPropType =
   | 'pond_fisher'
   | 'jungle_hut'
   | 'jungle_bridge'
+  | 'giant_banyan'
+  | 'tall_kapok'
+  | 'fallen_coconut'
   | 'mountain_tent'
+  | 'yeti'
+  | 'kandahar_giant'
+  | 'ice_crystal'
+  | 'snow_boulder'
+  | 'beach_hotel'
   | null;
 
 export interface CityProp {
@@ -443,7 +451,18 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
 
   // ── 1. External Northern Mountain Landscape (gy <= -4) ────────────────────
   if (gy <= -4 && gy >= -16) {
-    // ⛺ Mountain Hiker Camp on the scenic northern ridge (visible from the railway overlook)
+    // 🗿 Kandahar Giant — always-present ancient stone colossus (fixed landmark)
+    if (gx === 40 && gy === -10) {
+      return { gx, gy, type: 'kandahar_giant', wx, wy, hasLight: false };
+    }
+    // 🦣 Yeti — exactly 2 in the world, fixed positions deep in the snow
+    if (gx === 18 && gy === -12) {
+      return { gx, gy, type: 'yeti', wx, wy, hasLight: false };
+    }
+    if (gx === 78 && gy === -11) {
+      return { gx, gy, type: 'yeti', wx, wy, hasLight: false };
+    }
+    // ⛺ Mountain Hiker Camp on the scenic northern ridge
     if (gx === 52 && gy === -13) {
       return {
         gx, gy, type: 'mountain_tent', wx, wy,
@@ -451,8 +470,15 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
       };
     }
     const r = spatialHash(gx, gy, 77);
-    if (r > 0.82) {
+    const rv = spatialHash(gx, gy, 512);
+    if (r > 0.88) {
       return { gx, gy, type: 'mountain_pine', wx, wy, hasLight: false };
+    }
+    if (rv > 0.90) {
+      return { gx, gy, type: 'ice_crystal', wx, wy, hasLight: false };
+    }
+    if (rv > 0.82) {
+      return { gx, gy, type: 'snow_boulder', wx, wy, hasLight: false };
     }
     return null;
   }
@@ -471,6 +497,18 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
       gx, gy, type: 'beach_parking_bay', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.45)', lightRadius: 100,
     };
+  }
+
+  // 🏨 Grand Beachfront Hotel — multi-storey resort for visitors (gx: 30, gy: 95)
+  // Clearance zone so props don't overlap the hotel footprint
+  if (gy >= 94 && gy <= 97 && gx >= 27 && gx <= 34) {
+    if (gx === 30 && gy === 95) {
+      return {
+        gx, gy, type: 'beach_hotel', wx, wy,
+        hasLight: true, lightColor: 'rgba(251, 191, 36, 0.55)', lightRadius: 180,
+      };
+    }
+    return null; // Keep clearance corridor open around hotel
   }
 
   // Boardwalk lamps along the timber boardwalk (100,101)
@@ -531,17 +569,35 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     if (palmR > 0.68) {
       return { gx, gy, type: 'palm_tree', wx, wy, hasLight: false };
     }
+    // Fallen ripe coconuts scattered on the beach sand under the palms
+    const nutR = spatialHash(gx, gy, 821);
+    if (nutR > 0.88) {
+      return { gx, gy, type: 'fallen_coconut', wx, wy, hasLight: false };
+    }
   }
 
   // ── 2b. Western Emerald Jungle Wilderness Props (gx: -24..-1) ──────────────
   if (gx >= -24 && gx < 0 && gy >= 0 && gy <= 99) {
-    const tile = getCityTileType(gx, gy);
-
-    // Small plank bridges crossing the jungle creek (west)
-    if ((gx === -10 && gy === 58) || (gx === -14 && gy === 84)) {
-      return { gx, gy, type: 'jungle_bridge', wx, wy, hasLight: false };
+    // Bridges crossing the western jungle creek:
+    // West Bridge 1 (gy: 58): creek is at gx -10..-9. Clear gx -12..-7, gy 57..59
+    if (gy >= 57 && gy <= 59 && gx >= -12 && gx <= -7) {
+      if (gx === -10 && gy === 58) {
+        // Center wx between -10 and -9 so bridge spans symmetrically across the creek
+        return { gx, gy, type: 'jungle_bridge', wx: wx + TILE_WIDTH / 2, wy, hasLight: false };
+      }
+      return null; // Keep clearance corridor completely open across bridge approach and deck
     }
 
+    // West Bridge 2 (gy: 84): creek is at gx -15..-14. Clear gx -17..-12, gy 83..85
+    if (gy >= 83 && gy <= 85 && gx >= -17 && gx <= -12) {
+      if (gx === -15 && gy === 84) {
+        // Center wx between -15 and -14 so bridge spans symmetrically across the creek
+        return { gx, gy, type: 'jungle_bridge', wx: wx + TILE_WIDTH / 2, wy, hasLight: false };
+      }
+      return null; // Keep clearance corridor completely open
+    }
+
+    const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
     // 🛖 Rustic thatched hut tucked into a jungle clearing (west emerald jungle)
@@ -553,17 +609,22 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     }
 
     const r = spatialHash(gx, gy, 142);
-    if (r > 0.58) {
+    if (r > 0.68) {
       const v = spatialHash(gx, gy, 203);
-      if (v > 0.65) {
+      // Large trees — rare, only ~9% of spawned spots each
+      if (v > 0.91) {
+        return { gx, gy, type: 'giant_banyan', wx, wy, hasLight: false };
+      } else if (v > 0.83) {
+        return { gx, gy, type: 'tall_kapok', wx, wy, hasLight: false };
+      } else if (v > 0.52) {
         return { gx, gy, type: 'jungle_tree', wx, wy, hasLight: false };
-      } else if (v > 0.44) {
+      } else if (v > 0.36) {
         return { gx, gy, type: 'palm_tree', wx, wy, hasLight: false };
-      } else if (v > 0.28) {
+      } else if (v > 0.22) {
         return { gx, gy, type: 'jungle_fern', wx, wy, hasLight: false };
-      } else if (v > 0.16) {
+      } else if (v > 0.12) {
         return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
-      } else if (v > 0.08) {
+      } else if (v > 0.06) {
         return { gx, gy, type: 'mossy_boulder', wx, wy, hasLight: false };
       } else if (v > 0.03) {
         return { gx, gy, type: 'toadstool_cluster', wx, wy, hasLight: false };
@@ -576,27 +637,45 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
 
   // ── 2c. Eastern Emerald Jungle Wilderness Props (gx: 100..124) ────────────
   if (gx >= 100 && gx <= 124 && gy >= 0 && gy <= 99) {
-    const tile = getCityTileType(gx, gy);
-
-    // Small plank bridges crossing the jungle creek (east)
-    if ((gx === 109 && gy === 24) || (gx === 115 && gy === 53)) {
-      return { gx, gy, type: 'jungle_bridge', wx, wy, hasLight: false };
+    // Bridges crossing the eastern jungle creek:
+    // East Bridge 1 (gy: 24): creek is at gx 108..109. Clear gx 106..111, gy 23..25
+    if (gy >= 23 && gy <= 25 && gx >= 106 && gx <= 111) {
+      if (gx === 108 && gy === 24) {
+        // Center wx between 108 and 109 so bridge spans symmetrically across the creek
+        return { gx, gy, type: 'jungle_bridge', wx: wx + TILE_WIDTH / 2, wy, hasLight: false };
+      }
+      return null; // Keep clearance corridor completely open
     }
 
+    // East Bridge 2 (gy: 53): creek is at gx 115..116. Clear gx 113..118, gy 52..54
+    if (gy >= 52 && gy <= 54 && gx >= 113 && gx <= 118) {
+      if (gx === 115 && gy === 53) {
+        // Center wx between 115 and 116 so bridge spans symmetrically across the creek
+        return { gx, gy, type: 'jungle_bridge', wx: wx + TILE_WIDTH / 2, wy, hasLight: false };
+      }
+      return null; // Keep clearance corridor completely open
+    }
+
+    const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
     const r = spatialHash(gx, gy, 177);
-    if (r > 0.58) {
+    if (r > 0.68) {
       const v = spatialHash(gx, gy, 299);
-      if (v > 0.65) {
+      // Large trees — rare, only ~9% of spawned spots each
+      if (v > 0.91) {
+        return { gx, gy, type: 'giant_banyan', wx, wy, hasLight: false };
+      } else if (v > 0.83) {
+        return { gx, gy, type: 'tall_kapok', wx, wy, hasLight: false };
+      } else if (v > 0.52) {
         return { gx, gy, type: 'jungle_tree', wx, wy, hasLight: false };
-      } else if (v > 0.44) {
+      } else if (v > 0.36) {
         return { gx, gy, type: 'palm_tree', wx, wy, hasLight: false };
-      } else if (v > 0.28) {
+      } else if (v > 0.22) {
         return { gx, gy, type: 'jungle_fern', wx, wy, hasLight: false };
-      } else if (v > 0.16) {
+      } else if (v > 0.12) {
         return { gx, gy, type: 'flower_bed', wx, wy, hasLight: false };
-      } else if (v > 0.08) {
+      } else if (v > 0.06) {
         return { gx, gy, type: 'mossy_boulder', wx, wy, hasLight: false };
       } else if (v > 0.03) {
         return { gx, gy, type: 'toadstool_cluster', wx, wy, hasLight: false };

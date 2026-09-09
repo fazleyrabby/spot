@@ -459,6 +459,8 @@ export class Renderer {
     }
 
     // 3. Ground Layer (Mountains, Railway, Districts, Boardwalk, Beach, Ocean)
+    // 3-pre. Mountain panoramic backdrop (drawn before ground tiles so tiles sit on top)
+    this.drawMountainSkyline(ctx, range, z);
     this.drawCityGround(ctx, range, z);
 
     // 3b. Atmospheric Ground Shadows & Wildlife
@@ -838,23 +840,151 @@ export class Renderer {
             break;
           }
 
-          // ── Northern Mountains ─────────────────────────────────────────────
           case 'mountain_rock': {
-            ctx.fillStyle = groundPatch(gx, gy, 908, PALETTES.mountain_rock_1, PALETTES.mountain_rock_2);
+            // Per-tile hash for structure and height variation
+            const mrH1 = (Math.imul(gx * 374761393, gy * 668265263) ^ 908) >>> 0;
+            const mrN1 = (mrH1 ^ (mrH1 >>> 13)) * 1274126177 >>> 0;
+            const mrV1 = (mrN1 ^ (mrN1 >>> 16)) / 4294967295;
+            const mrH2 = (Math.imul((gx + 5) * 668265263, (gy + 2) * 374761393) ^ 1337) >>> 0;
+            const mrN2 = (mrH2 ^ (mrH2 >>> 11)) * 2246822519 >>> 0;
+            const mrV2 = (mrN2 ^ (mrN2 >>> 15)) / 4294967295;
+            const mrH3 = (Math.imul(gx * 1274126177, gy * 2246822519) ^ 2299) >>> 0;
+            const mrN3 = (mrH3 ^ (mrH3 >>> 14)) * 668265263 >>> 0;
+            const mrV3 = (mrN3 ^ (mrN3 >>> 17)) / 4294967295;
+
+            // Base ground under the rock
+            const stoneR = 60 + Math.floor(mrV1 * 15);
+            const stoneG = 55 + Math.floor(mrV1 * 12);
+            const stoneB = 50 + Math.floor(mrV2 * 10);
+            ctx.fillStyle = `rgb(${stoneR},${stoneG},${stoneB})`;
             ctx.fillRect(dx, dy, dw, dh);
+
+            // The Rock Peak itself (jagged 3D structure sticking up)
+            const peakH = dh * (1.1 + mrV1 * 0.8); // 110% to 190% of tile height
+            const peakX = dx + dw * (0.35 + mrV2 * 0.3); // X offset 35% to 65%
+            const peakY = dy + dh - peakH;
+
+            // Shadow face (Left side — darker warm brown/grey)
+            ctx.fillStyle = '#3a3430';
+            ctx.beginPath();
+            ctx.moveTo(dx, dy + dh);
+            // Add a mid-ridge point for jaggedness
+            ctx.lineTo(dx + dw * (0.15 + mrV3 * 0.1), peakY + peakH * 0.4);
+            ctx.lineTo(peakX, peakY);
+            // Center ridge line goes down
+            ctx.lineTo(dx + dw * 0.5 + (mrV1 - 0.5) * dw * 0.2, dy + dh);
+            ctx.closePath();
+            ctx.fill();
+
+            // Highlight face (Right side — lighter brown/grey)
+            ctx.fillStyle = '#5c544a';
+            ctx.beginPath();
+            ctx.moveTo(dx + dw * 0.5 + (mrV1 - 0.5) * dw * 0.2, dy + dh);
+            ctx.lineTo(peakX, peakY);
+            ctx.lineTo(dx + dw * (0.85 + mrV2 * 0.1), peakY + peakH * 0.5);
+            ctx.lineTo(dx + dw, dy + dh);
+            ctx.closePath();
+            ctx.fill();
+
+            // Rocky facets (lighter edge lines)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = Math.max(1, 0.9 * z);
+            ctx.beginPath();
+            // Ridge line 1
+            ctx.moveTo(peakX, peakY);
+            ctx.lineTo(dx + dw * 0.5 + (mrV1 - 0.5) * dw * 0.2, dy + dh);
+            // Ridge line 2
+            if (mrV3 > 0.4) {
+              ctx.moveTo(peakX, peakY);
+              ctx.lineTo(dx + dw * 0.8, dy + dh * 0.7);
+            }
+            ctx.stroke();
+
+            // Small snow dusting on the very top of taller rocks
+            if (peakH > dh * 1.5) {
+              ctx.fillStyle = 'rgba(238, 244, 251, 0.8)';
+              ctx.beginPath();
+              ctx.moveTo(peakX, peakY);
+              ctx.lineTo(peakX + dw * 0.1, peakY + peakH * 0.15);
+              ctx.lineTo(peakX - dw * 0.08, peakY + peakH * 0.12);
+              ctx.closePath();
+              ctx.fill();
+            }
             break;
           }
 
           case 'mountain_snow': {
-            ctx.fillStyle = PALETTES.mountain_rock_1;
+            // Per-tile hash for snow peak structure
+            const snH = (Math.imul(gx * 2246822519, gy * 374761393) ^ 777) >>> 0;
+            const snN = (snH ^ (snH >>> 13)) * 1274126177 >>> 0;
+            const snV = (snN ^ (snN >>> 16)) / 4294967295;
+            const snH2 = (Math.imul(gx * 668265263, gy * 1274126177) ^ 512) >>> 0;
+            const snN2 = (snH2 ^ (snH2 >>> 11)) * 374761393 >>> 0;
+            const snV2 = (snN2 ^ (snN2 >>> 15)) / 4294967295;
+            const snH3 = (Math.imul(gx * 374761393, gy * 1274126177) ^ 999) >>> 0;
+            const snN3 = (snH3 ^ (snH3 >>> 12)) * 2246822519 >>> 0;
+            const snV3 = (snN3 ^ (snN3 >>> 15)) / 4294967295;
+
+            // Base ground
+            ctx.fillStyle = '#3a3430'; // rock base visible around the edges
             ctx.fillRect(dx, dy, dw, dh);
-            ctx.fillStyle = PALETTES.mountain_snow;
+
+            // Tall Snow Peak (this is what makes up the "SPOT" letters)
+            const peakH = dh * (1.6 + snV * 1.2); // 160% to 280% of tile height (tall and majestic)
+            const peakX = dx + dw * (0.3 + snV2 * 0.4); // X offset 30% to 70%
+            const peakY = dy + dh - peakH;
+            const centerBaseX = dx + dw * 0.5 + (snV - 0.5) * dw * 0.3;
+
+            // Left (shadow) face — cool icy blue
+            ctx.fillStyle = '#8ab4d6';
             ctx.beginPath();
-            ctx.moveTo(dx, dy + dh);
-            ctx.lineTo(dx + dw / 2, dy);
-            ctx.lineTo(dx + dw, dy + dh);
+            ctx.moveTo(dx - dw * 0.1, dy + dh);
+            // Jagged edge halfway up
+            ctx.lineTo(dx + dw * (0.1 + snV3 * 0.1), peakY + peakH * 0.4);
+            ctx.lineTo(peakX, peakY);
+            ctx.lineTo(centerBaseX, dy + dh);
             ctx.closePath();
             ctx.fill();
+
+            // Right (highlight) face — bright white snow
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(centerBaseX, dy + dh);
+            ctx.lineTo(peakX, peakY);
+            ctx.lineTo(dx + dw * (0.9 - snV3 * 0.1), peakY + peakH * 0.45);
+            ctx.lineTo(dx + dw * 1.1, dy + dh);
+            ctx.closePath();
+            ctx.fill();
+
+            // Central ridge highlight (sharp line separating faces)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = Math.max(1.5, 1.2 * z);
+            ctx.beginPath();
+            ctx.moveTo(peakX, peakY);
+            ctx.lineTo(centerBaseX, dy + dh);
+            ctx.stroke();
+
+            // Exposed dark rock patches poking through the snow on the shadow face
+            if (snV2 > 0.3) {
+              ctx.fillStyle = '#2c3540';
+              ctx.beginPath();
+              ctx.moveTo(dx + dw * 0.2, peakY + peakH * 0.6);
+              ctx.lineTo(dx + dw * 0.35, peakY + peakH * 0.7);
+              ctx.lineTo(dx + dw * 0.25, peakY + peakH * 0.85);
+              ctx.closePath();
+              ctx.fill();
+            }
+
+            // Exposed rock patches on the highlight face
+            if (snV > 0.4) {
+              ctx.fillStyle = '#4a5360';
+              ctx.beginPath();
+              ctx.moveTo(dx + dw * 0.75, peakY + peakH * 0.55);
+              ctx.lineTo(dx + dw * 0.65, peakY + peakH * 0.65);
+              ctx.lineTo(dx + dw * 0.8, peakY + peakH * 0.75);
+              ctx.closePath();
+              ctx.fill();
+            }
             break;
           }
 
@@ -1115,6 +1245,105 @@ export class Renderer {
     }
   }
 
+  /**
+   * 3-pre. Panoramic mountain backdrop — two far jagged snow ridges silhouetted
+   * behind the playable mountain band (gy <= -4). Drawn before ground tiles so the
+   * nearer per-tile peaks sit on top. This replaces the harsh flat "sky cut" above
+   * the northern crop with a deep, continuous alpine horizon. Fully deterministic
+   * per grid column, so the silhouette never flickers while panning.
+   */
+  private drawMountainSkyline(
+    ctx: CanvasRenderingContext2D,
+    range: { minGx: number; maxGx: number; minGy: number; maxGy: number },
+    z: number,
+  ): void {
+    // Only draw when the northern mountain band is actually on screen.
+    if (range.minGy > -4) return;
+
+    const cam = this.camera;
+    const H = cam.viewportHeight;
+    const TW = TILE_WIDTH;
+    const TH = TILE_HEIGHT;
+
+    // North edge of the tallest drawable mountain row — beyond this the tile loop
+    // stops, so this ridge crests are the only thing filling the sky above it.
+    const baseWy = -16 * TH;
+
+    // Quick off-screen test for the base line (cheap per-frame guard).
+    const baseScreenY = cam.worldToScreen(0, baseWy).y;
+    if (baseScreenY < -700 * z || baseScreenY > H + 1200 * z) return;
+
+    const b = cam.getWorldBounds();
+    const pad = TW * 3;
+    const col0 = Math.floor((b.left - pad) / TW);
+    const col1 = Math.ceil((b.right + pad) / TW);
+
+    const farAlt: number[] = [];
+    const nearAlt: number[] = [];
+    for (let gx = col0; gx <= col1; gx++) {
+      // Smooth layered altitudes: macro variation + per-column jitter.
+      const macro = Math.sin(gx * 0.37 + 1.7) * 0.5 + 0.5;
+      const jitter = tileNoise(gx, -20, 501);
+      const jitter2 = tileNoise(gx, -20, 502);
+      farAlt.push(2.5 + macro * 3.0 + jitter * 3.5);        // ≈ 2.5..9 tiles up
+      nearAlt.push(1.0 + macro * 1.6 + jitter2 * 2.2);       // ≈ 1..4.8 tiles up
+    }
+
+    const tod = this.timeOfDay;
+    const farFill = tod === 'day' ? '#8497b2' : tod === 'twilight' ? '#37304f' : '#0a1122';
+    const nearFill = tod === 'day' ? '#c7d6e8' : tod === 'twilight' ? '#5b547e' : '#16203a';
+    const capFill = tod === 'day' ? '#f8fafc' : tod === 'twilight' ? '#e2e8f0' : '#2a3555';
+
+    const buildRidge = (alt: number[], fill: string, cap: string): void => {
+      ctx.save();
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < alt.length; i++) {
+        const gx = col0 + i;
+        const wx = gx * TW + TW / 2;
+        const wy = baseWy - alt[i] * TH;
+        const s = cam.worldToScreen(wx, wy);
+        if (!started) {
+          ctx.moveTo(s.x, s.y);
+          started = true;
+        } else {
+          ctx.lineTo(s.x, s.y);
+        }
+      }
+      const rightWx = (col1 + 1) * TW;
+      const rightS = cam.worldToScreen(rightWx, baseWy);
+      ctx.lineTo(rightS.x, rightS.y);
+      const leftS = cam.worldToScreen(col0 * TW, baseWy);
+      ctx.lineTo(leftS.x, leftS.y);
+      ctx.closePath();
+
+      ctx.fillStyle = fill;
+      ctx.fill();
+
+      // Snow crest highlight along the ridge top.
+      if (cap) {
+        ctx.strokeStyle = cap;
+        ctx.lineWidth = Math.max(1, 1.6 * z);
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < alt.length; i++) {
+          const gx = col0 + i;
+          const wx = gx * TW + TW / 2;
+          const wy = baseWy - alt[i] * TH;
+          const s = cam.worldToScreen(wx, wy);
+          if (i === 0) ctx.moveTo(s.x, s.y);
+          else ctx.lineTo(s.x, s.y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
+    // Draw far range first (darker, taller), then the near snow ridge on top.
+    buildRidge(farAlt, farFill, '');
+    buildRidge(nearAlt, nearFill, capFill);
+  }
+
   // ---------------------------------------------------------------------------
   // Ground Micro-Texture & Living Detail (deterministic, no flicker)
   // ---------------------------------------------------------------------------
@@ -1316,6 +1545,8 @@ export class Renderer {
           prop.type === 'park_tree' ||
           prop.type === 'fruit_tree' ||
           prop.type === 'jungle_tree' ||
+          prop.type === 'giant_banyan' ||
+          prop.type === 'tall_kapok' ||
           prop.type === 'ancient_redwood' ||
           prop.type === 'willow_tree' ||
           prop.type === 'birch_tree' ||
@@ -1377,7 +1608,241 @@ export class Renderer {
     const windSway = Math.sin(this.tick * 0.04 + prop.wx * 0.1) * 1.6 * z;
 
     switch (prop.type) {
+      case 'beach_hotel': {
+        // 🏨 Grand Beachfront Hotel — 6-storey tropical resort
+        // Ground shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 4 * z, 70 * z, 16 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ── Foundation / Ground floor podium ─────────────────────────────────
+        ctx.fillStyle = '#c8a96e'; // warm sand-stone base
+        ctx.beginPath();
+        ctx.roundRect(sx - 62 * z, sy - 8 * z, 124 * z, 18 * z, 2 * z);
+        ctx.fill();
+
+        ctx.fillStyle = '#b8934a';
+        ctx.fillRect(sx - 62 * z, sy - 8 * z, 124 * z, 5 * z);
+
+        // Entrance steps
+        ctx.fillStyle = '#d4b483';
+        ctx.fillRect(sx - 22 * z, sy - 12 * z, 44 * z, 5 * z);
+        ctx.fillRect(sx - 18 * z, sy - 16 * z, 36 * z, 5 * z);
+        ctx.fillRect(sx - 14 * z, sy - 20 * z, 28 * z, 5 * z);
+
+        // ── Main hotel body (6 floors) ────────────────────────────────────────
+        const FLOORS = 6;
+        const floorH = 18 * z;
+        const bodyW = 116 * z;
+        const bodyLeft = sx - bodyW / 2;
+        const bodyTop = sy - 8 * z - FLOORS * floorH;
+
+        // Main facade — creamy white with tropical warmth
+        ctx.fillStyle = '#fef9f0';
+        ctx.beginPath();
+        ctx.roundRect(bodyLeft, bodyTop, bodyW, FLOORS * floorH, [4 * z, 4 * z, 0, 0]);
+        ctx.fill();
+
+        // Right-face shade (3D depth)
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.beginPath();
+        ctx.roundRect(bodyLeft + bodyW * 0.72, bodyTop, bodyW * 0.28, FLOORS * floorH, [0, 4 * z, 0, 0]);
+        ctx.fill();
+
+        // ── Floor bands & balconies ───────────────────────────────────────────
+        for (let f = 0; f < FLOORS; f++) {
+          const fy = sy - 8 * z - (f + 1) * floorH;
+
+          // Floor divider line
+          ctx.strokeStyle = 'rgba(180,160,120,0.35)';
+          ctx.lineWidth = Math.max(1, 0.8 * z);
+          ctx.beginPath();
+          ctx.moveTo(bodyLeft, fy + floorH);
+          ctx.lineTo(bodyLeft + bodyW, fy + floorH);
+          ctx.stroke();
+
+          // Balcony rail (teal)
+          ctx.fillStyle = '#0d9488';
+          ctx.fillRect(bodyLeft + 4 * z, fy + floorH - 5 * z, bodyW - 8 * z, 3 * z);
+
+          // Balcony rail posts
+          const postCount = 8;
+          for (let p = 0; p <= postCount; p++) {
+            const px = bodyLeft + 4 * z + (p / postCount) * (bodyW - 8 * z);
+            ctx.fillStyle = '#0f766e';
+            ctx.fillRect(px - 0.8 * z, fy + floorH - 5 * z, 1.6 * z, 5 * z);
+          }
+
+          // Balcony floor tile
+          ctx.fillStyle = 'rgba(13,148,136,0.12)';
+          ctx.fillRect(bodyLeft + 4 * z, fy + floorH - 3 * z, bodyW - 8 * z, 3 * z);
+
+          // Sun lounger silhouettes on balcony (every other floor)
+          if (f % 2 === 0) {
+            for (let l = 0; l < 3; l++) {
+              const lx = bodyLeft + (0.15 + l * 0.28) * bodyW;
+              ctx.fillStyle = '#f97316';
+              ctx.fillRect(lx, fy + floorH - 8 * z, 10 * z, 3 * z);
+              ctx.fillStyle = '#ea580c';
+              ctx.fillRect(lx + 8 * z, fy + floorH - 10 * z, 4 * z, 2 * z);
+            }
+          }
+
+          // Windows per floor (animated light)
+          const winCols = 7;
+          for (let w = 0; w < winCols; w++) {
+            // Skip middle for the entrance gap on ground floor
+            if (f === 0 && (w === 3)) continue;
+            const wx2 = bodyLeft + (w + 0.5) * (bodyW / winCols);
+            const wy2 = fy + floorH * 0.28;
+            const winH = floorH * 0.48;
+            const winW = (bodyW / winCols) * 0.48;
+
+            // Window frame
+            ctx.fillStyle = '#0c4a6e';
+            ctx.beginPath();
+            ctx.roundRect(wx2 - winW / 2, wy2, winW, winH, 1.5 * z);
+            ctx.fill();
+
+            // Window glass — warm amber glow (most rooms lit)
+            const litHash = (Math.imul((w + 1) * 374761393, (f + 1) * 668265263) ^ 512) >>> 0;
+            const litV = ((litHash ^ (litHash >>> 13)) * 1274126177 >>> 0) / 4294967295;
+            const isLit = litV > 0.25;
+            if (isLit) {
+              const flicker = Math.sin(this.tick * 0.03 + w * 1.3 + f * 0.7) * 0.05;
+              ctx.fillStyle = `rgba(254, 215, 102, ${0.75 + flicker})`;
+              ctx.beginPath();
+              ctx.roundRect(wx2 - winW / 2 + 1.5 * z, wy2 + 1.5 * z, winW - 3 * z, winH - 3 * z, 1 * z);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = 'rgba(14,60,100,0.8)';
+              ctx.beginPath();
+              ctx.roundRect(wx2 - winW / 2 + 1.5 * z, wy2 + 1.5 * z, winW - 3 * z, winH - 3 * z, 1 * z);
+              ctx.fill();
+            }
+          }
+        }
+
+        // ── Grand entrance canopy ─────────────────────────────────────────────
+        ctx.fillStyle = '#0d9488'; // teal canopy
+        ctx.beginPath();
+        ctx.moveTo(sx - 30 * z, sy - 8 * z);
+        ctx.lineTo(sx - 26 * z, sy - 22 * z);
+        ctx.lineTo(sx + 26 * z, sy - 22 * z);
+        ctx.lineTo(sx + 30 * z, sy - 8 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#0f766e';
+        ctx.fillRect(sx - 30 * z, sy - 24 * z, 60 * z, 3 * z);
+
+        // Canopy stripe highlights
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        for (let s = 0; s < 5; s++) {
+          ctx.fillRect(sx - 22 * z + s * 11 * z, sy - 22 * z, 5 * z, 14 * z);
+        }
+
+        // Entrance columns
+        ctx.fillStyle = '#f5f0e8';
+        ctx.fillRect(sx - 24 * z, sy - 30 * z, 5 * z, 22 * z);
+        ctx.fillRect(sx + 19 * z, sy - 30 * z, 5 * z, 22 * z);
+        ctx.fillStyle = '#d4c9a8';
+        ctx.fillRect(sx - 24 * z, sy - 32 * z, 5 * z, 4 * z);
+        ctx.fillRect(sx + 19 * z, sy - 32 * z, 5 * z, 4 * z);
+
+        // Entrance door (glass)
+        ctx.fillStyle = 'rgba(14,116,144,0.7)';
+        ctx.beginPath();
+        ctx.roundRect(sx - 8 * z, sy - 8 * z - 10 * z, 16 * z, 10 * z, 1 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#0e7490';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 8 * z - 10 * z);
+        ctx.lineTo(sx, sy - 8 * z);
+        ctx.stroke();
+
+        // Welcome mat
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(sx - 10 * z, sy - 8 * z, 20 * z, 3 * z);
+
+        // ── Rooftop pool ──────────────────────────────────────────────────────
+        const roofY = bodyTop - 6 * z;
+        // Parapet
+        ctx.fillStyle = '#e8d5b5';
+        ctx.fillRect(bodyLeft - 2 * z, bodyTop - 6 * z, bodyW + 4 * z, 6 * z);
+
+        // Pool water
+        const poolWave = Math.sin(this.tick * 0.06) * 0.5;
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.roundRect(bodyLeft + bodyW * 0.15, bodyTop - 5 * z, bodyW * 0.52, 4 * z, 1 * z);
+        ctx.fill();
+        // Pool shimmer
+        ctx.fillStyle = `rgba(125,211,252,${0.5 + poolWave * 0.15})`;
+        ctx.beginPath();
+        ctx.roundRect(bodyLeft + bodyW * 0.15 + 2 * z, bodyTop - 4.5 * z, bodyW * 0.52 - 4 * z, 1.5 * z, 0.5 * z);
+        ctx.fill();
+
+        // Rooftop water tower
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(sx + 38 * z, bodyTop - 14 * z, 10 * z, 10 * z);
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.moveTo(sx + 37 * z, bodyTop - 14 * z);
+        ctx.lineTo(sx + 43 * z, bodyTop - 20 * z);
+        ctx.lineTo(sx + 49 * z, bodyTop - 14 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // ── Hotel sign on facade ──────────────────────────────────────────────
+        ctx.fillStyle = '#0d9488';
+        ctx.beginPath();
+        ctx.roundRect(sx - 28 * z, bodyTop + 4 * z, 56 * z, 10 * z, 2 * z);
+        ctx.fill();
+        ctx.fillStyle = '#fef9f0';
+        ctx.font = `bold ${Math.max(5, Math.floor(6 * z))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('GRAND BEACH RESORT', sx, bodyTop + 9 * z);
+
+        // ── Flanking palm trees ───────────────────────────────────────────────
+        for (const side of [-1, 1]) {
+          const px2 = sx + side * 52 * z;
+          // Palm trunk
+          ctx.fillStyle = '#92400e';
+          ctx.beginPath();
+          ctx.moveTo(px2 - 2 * z, sy - 8 * z);
+          ctx.quadraticCurveTo(px2 + side * 3 * z, sy - 25 * z, px2 + side * 1 * z, sy - 40 * z);
+          ctx.lineTo(px2 + side * 3 * z, sy - 40 * z);
+          ctx.quadraticCurveTo(px2 + side * 5 * z, sy - 25 * z, px2 + 2 * z, sy - 8 * z);
+          ctx.closePath();
+          ctx.fill();
+          // Fronds
+          const frondColors = ['#064e3b', '#065f46', '#047857'];
+          for (let fr = 0; fr < 5; fr++) {
+            const angle = (fr * Math.PI * 2) / 5;
+            const fx2 = px2 + side * 1 * z + Math.cos(angle) * 16 * z;
+            const fy2 = sy - 40 * z + Math.sin(angle) * 8 * z;
+            ctx.strokeStyle = frondColors[fr % 3];
+            ctx.lineWidth = 2.5 * z;
+            ctx.beginPath();
+            ctx.moveTo(px2 + side * 1 * z, sy - 40 * z);
+            ctx.quadraticCurveTo(
+              px2 + side * 1 * z + Math.cos(angle) * 8 * z,
+              sy - 40 * z + Math.sin(angle) * 4 * z,
+              fx2, fy2
+            );
+            ctx.stroke();
+          }
+        }
+
+        break;
+      }
+
       case 'beach_bonfire': {
+
         // Glowing Beach Bonfire with warm radial light and crackling embers
         ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
@@ -1497,47 +1962,22 @@ export class Renderer {
           ctx.globalAlpha = 0.32;
         }
 
-        // 🥥 Cluster of Ripe Coconuts hanging right under the crown
-        const coconutColors = ['#5c3a1e', '#713f12', '#78350f'];
-        const nutOffsets = [
-          { x: -2.2, y: 1.5, r: 2.2 },
-          { x: 1.8, y: 1.8, r: 2.3 },
-          { x: 0, y: 3.2, r: 2.0 },
-          { x: -0.8, y: -0.5, r: 1.8 },
-        ];
-        nutOffsets.forEach((nut, idx) => {
-          // Coconut body
-          ctx.fillStyle = coconutColors[idx % 3];
-          ctx.beginPath();
-          ctx.arc(topX + nut.x * z, topY + nut.y * z, nut.r * z, 0, Math.PI * 2);
-          ctx.fill();
-          // Lighter highlight
-          ctx.fillStyle = '#a16207';
-          ctx.beginPath();
-          ctx.arc(topX + (nut.x - 0.5) * z, topY + (nut.y - 0.5) * z, nut.r * 0.45 * z, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        // 🌴 Arching Tropical Coconut Palm Fronds
-        // 7 layered fronds with natural droop and wind sway
-        const fronds = [
-          { angle: -Math.PI * 0.85, len: 19, droop: 8, col: '#064e3b' },
-          { angle: -Math.PI * 0.60, len: 21, droop: 5, col: '#047857' },
-          { angle: -Math.PI * 0.35, len: 22, droop: 7, col: '#059669' },
-          { angle: -Math.PI * 0.12, len: 20, droop: 10, col: '#10b981' },
-          { angle: Math.PI * 0.15,  len: 20, droop: 9, col: '#047857' },
-          { angle: -Math.PI * 0.98, len: 17, droop: 11, col: '#065f46' },
-          { angle: -Math.PI * 0.50, len: 23, droop: 4, col: '#34d399' },
+        // 🌴 Arching Tropical Coconut Palm Fronds & Heavy Coconuts
+        // 1. Rear fronds behind the crown
+        const rearFronds = [
+          { angle: -Math.PI * 0.85, len: 21, droop: 7, col: '#064e3b' },
+          { angle: -Math.PI * 0.60, len: 23, droop: 5, col: '#047857' },
+          { angle: -Math.PI * 0.98, len: 18, droop: 10, col: '#065f46' },
+          { angle: -Math.PI * 0.50, len: 24, droop: 4, col: '#059669' },
         ];
 
-        fronds.forEach((f) => {
+        rearFronds.forEach((f) => {
           const frondAngle = f.angle + windSway * 0.04;
           const endX = topX + Math.cos(frondAngle) * f.len * z;
           const endY = topY + Math.sin(frondAngle) * f.len * 0.65 * z + f.droop * z;
           const ctrlX = topX + Math.cos(frondAngle) * f.len * 0.55 * z;
           const ctrlY = topY + Math.sin(frondAngle) * f.len * 0.4 * z - 4 * z;
 
-          // Main Frond Stem
           ctx.strokeStyle = f.col;
           ctx.lineWidth = 3.2 * z;
           ctx.beginPath();
@@ -1545,7 +1985,6 @@ export class Renderer {
           ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
           ctx.stroke();
 
-          // Leaflet fringe along frond
           ctx.strokeStyle = f.col;
           ctx.lineWidth = 1.4 * z;
           ctx.beginPath();
@@ -1553,9 +1992,86 @@ export class Renderer {
             const lx = topX * (1 - p) + endX * p;
             const ly = topY * (1 - p) + endY * p;
             ctx.moveTo(lx, ly);
-            ctx.lineTo(lx - 2 * z, ly + 4 * z);
+            ctx.lineTo(lx - 2.5 * z, ly + 4.5 * z);
             ctx.moveTo(lx, ly);
-            ctx.lineTo(lx + 2 * z, ly + 4 * z);
+            ctx.lineTo(lx + 2.5 * z, ly + 4.5 * z);
+          }
+          ctx.stroke();
+        });
+
+        // 2. 🥥 Cluster of Bold Ripe Coconuts hanging directly under the crown
+        const coconutColors = ['#451a03', '#713f12', '#78350f'];
+        const nutOffsets = [
+          { x: -3.0, y: 1.8, r: 3.0 },
+          { x: 2.2,  y: 2.2, r: 3.2 },
+          { x: -0.5, y: 4.2, r: 2.8 },
+          { x: -1.2, y: -0.2, r: 2.6 },
+          { x: 3.2,  y: 0.8, r: 2.5 },
+        ];
+
+        // Coconut drop shadows under cluster
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(topX + 0.5 * z, topY + 4.5 * z, 5.5 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        nutOffsets.forEach((nut, idx) => {
+          // Coconut dark husk body
+          ctx.fillStyle = coconutColors[idx % 3]!;
+          ctx.beginPath();
+          ctx.arc(topX + nut.x * z, topY + nut.y * z, nut.r * z, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Dark rim / edge depth
+          ctx.strokeStyle = '#27170a';
+          ctx.lineWidth = 0.8 * z;
+          ctx.stroke();
+
+          // Warm golden-brown sunlit highlight
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.arc(topX + (nut.x - 0.7) * z, topY + (nut.y - 0.7) * z, nut.r * 0.5 * z, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Three distinct coconut germination pores ("eyes")
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(topX + (nut.x + 0.3) * z, topY + (nut.y - 0.5) * z, 0.9 * z, 0.9 * z);
+          ctx.fillRect(topX + (nut.x + 1.2) * z, topY + (nut.y) * z, 0.9 * z, 0.9 * z);
+          ctx.fillRect(topX + (nut.x + 0.4) * z, topY + (nut.y + 0.6) * z, 0.9 * z, 0.9 * z);
+        });
+
+        // 3. Foreground Arching Fronds draping naturally across and over the crown
+        const foreFronds = [
+          { angle: -Math.PI * 0.35, len: 23, droop: 7, col: '#059669' },
+          { angle: -Math.PI * 0.12, len: 22, droop: 10, col: '#10b981' },
+          { angle: Math.PI * 0.15,  len: 21, droop: 9, col: '#047857' },
+          { angle: -Math.PI * 0.40, len: 24, droop: 5, col: '#34d399' },
+        ];
+
+        foreFronds.forEach((f) => {
+          const frondAngle = f.angle + windSway * 0.04;
+          const endX = topX + Math.cos(frondAngle) * f.len * z;
+          const endY = topY + Math.sin(frondAngle) * f.len * 0.65 * z + f.droop * z;
+          const ctrlX = topX + Math.cos(frondAngle) * f.len * 0.55 * z;
+          const ctrlY = topY + Math.sin(frondAngle) * f.len * 0.4 * z - 4 * z;
+
+          ctx.strokeStyle = f.col;
+          ctx.lineWidth = 3.2 * z;
+          ctx.beginPath();
+          ctx.moveTo(topX, topY);
+          ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+          ctx.stroke();
+
+          ctx.strokeStyle = f.col;
+          ctx.lineWidth = 1.4 * z;
+          ctx.beginPath();
+          for (let p = 0.3; p <= 0.9; p += 0.15) {
+            const lx = topX * (1 - p) + endX * p;
+            const ly = topY * (1 - p) + endY * p;
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx - 2.5 * z, ly + 4.5 * z);
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx + 2.5 * z, ly + 4.5 * z);
           }
           ctx.stroke();
         });
@@ -1563,6 +2079,37 @@ export class Renderer {
         if (isOccluding) {
           ctx.restore();
         }
+        break;
+      }
+
+      case 'fallen_coconut': {
+        // 🥥 Fallen ripe coconut resting on the sandy beach
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(sx + 1 * z, sy + 1.5 * z, 4 * z, 2.2 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Coconut husk
+        ctx.fillStyle = '#713f12';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 3.5 * z, 3 * z, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 0.7 * z;
+        ctx.stroke();
+
+        // Sunlit highlight
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.ellipse(sx - 0.8 * z, sy - 0.8 * z, 1.8 * z, 1.4 * z, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Three germination eyes
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(sx + 0.8 * z, sy - 0.6 * z, 0.8 * z, 0.8 * z);
+        ctx.fillRect(sx + 1.6 * z, sy - 0.1 * z, 0.8 * z, 0.8 * z);
+        ctx.fillRect(sx + 0.9 * z, sy + 0.5 * z, 0.8 * z, 0.8 * z);
         break;
       }
 
@@ -1608,8 +2155,11 @@ export class Renderer {
         ctx.ellipse(sx, sy, 10 * z, 4.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
+        // Trunk with bark texture
+        ctx.fillStyle = '#2c1503';
+        ctx.fillRect(sx - 2.5 * z, sy - 9 * z, 5 * z, 9 * z);
         ctx.fillStyle = '#451a03';
-        ctx.fillRect(sx - 2 * z, sy - 8 * z, 4 * z, 8 * z);
+        ctx.fillRect(sx - 1.5 * z, sy - 9 * z, 2.5 * z, 9 * z);
 
         const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
         if (isOccluding) {
@@ -1618,14 +2168,36 @@ export class Renderer {
         }
 
         const pineColors = ['#064e3b', '#065f46', '#047857'];
+        const pineLightColors = ['#047857', '#059669', '#10b981'];
         for (let t = 0; t < 3; t++) {
+          const py = sy - 9 * z - t * 8 * z;
+          const pw = (15 - t * 3.5) * z;
+
+          // Dark side (right shadow)
           ctx.fillStyle = pineColors[t];
-          const py = sy - 8 * z - t * 7 * z;
-          const pw = (14 - t * 3) * z;
           ctx.beginPath();
           ctx.moveTo(sx - pw / 2, py);
-          ctx.lineTo(sx, py - 9 * z);
+          ctx.lineTo(sx, py - 10 * z);
           ctx.lineTo(sx + pw / 2, py);
+          ctx.closePath();
+          ctx.fill();
+
+          // Lighter left face
+          ctx.fillStyle = pineLightColors[t];
+          ctx.beginPath();
+          ctx.moveTo(sx - pw / 2, py);
+          ctx.lineTo(sx, py - 10 * z);
+          ctx.lineTo(sx, py);
+          ctx.closePath();
+          ctx.fill();
+
+          // Snow cap on each tier
+          const snowW = (pw * 0.55);
+          ctx.fillStyle = 'rgba(241,245,249,0.88)';
+          ctx.beginPath();
+          ctx.moveTo(sx - snowW / 2, py - 3 * z);
+          ctx.lineTo(sx, py - 10 * z);
+          ctx.lineTo(sx + snowW / 2, py - 3 * z);
           ctx.closePath();
           ctx.fill();
         }
@@ -3938,7 +4510,391 @@ export class Renderer {
         break;
       }
 
+      // ────────────────────────────────────────────────────────────────────────
+      // MOUNTAIN MYTHICAL CREATURES & SCATTER PROPS
+      // ────────────────────────────────────────────────────────────────────────
+
+      case 'yeti': {
+        // 🦣 Yeti — hulking white-furred creature crouching in the snow
+        // Ground shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 1 * z, 20 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Foot pads
+        ctx.fillStyle = '#b0c4d8';
+        ctx.beginPath();
+        ctx.ellipse(sx - 8 * z, sy - 1 * z, 6 * z, 3.5 * z, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 8 * z, sy - 1 * z, 6 * z, 3.5 * z, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower body / haunches
+        ctx.fillStyle = '#dce8f5';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 6 * z, 16 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Torso (slightly hunched forward)
+        ctx.fillStyle = '#eef4fb';
+        ctx.beginPath();
+        ctx.ellipse(sx - 2 * z, sy - 18 * z, 13 * z, 10 * z, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Fur shading on torso right side
+        ctx.fillStyle = 'rgba(160,190,220,0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx + 5 * z, sy - 17 * z, 7 * z, 9 * z, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Long shaggy arms hanging down
+        ctx.fillStyle = '#dce8f5';
+        // Left arm
+        ctx.beginPath();
+        ctx.moveTo(sx - 12 * z, sy - 22 * z);
+        ctx.quadraticCurveTo(sx - 20 * z, sy - 14 * z, sx - 18 * z, sy - 3 * z);
+        ctx.lineTo(sx - 12 * z, sy - 3 * z);
+        ctx.quadraticCurveTo(sx - 10 * z, sy - 12 * z, sx - 6 * z, sy - 20 * z);
+        ctx.closePath();
+        ctx.fill();
+        // Right arm
+        ctx.beginPath();
+        ctx.moveTo(sx + 10 * z, sy - 22 * z);
+        ctx.quadraticCurveTo(sx + 18 * z, sy - 14 * z, sx + 16 * z, sy - 3 * z);
+        ctx.lineTo(sx + 10 * z, sy - 3 * z);
+        ctx.quadraticCurveTo(sx + 8 * z, sy - 12 * z, sx + 4 * z, sy - 20 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Head — large rounded with heavy brow ridge
+        ctx.fillStyle = '#eef4fb';
+        ctx.beginPath();
+        ctx.ellipse(sx - 1 * z, sy - 30 * z, 11 * z, 10 * z, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Brow ridge (dark, heavy)
+        ctx.fillStyle = '#7b9ab5';
+        ctx.beginPath();
+        ctx.ellipse(sx - 1 * z, sy - 36 * z, 10 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Snout
+        ctx.fillStyle = '#c5d8ec';
+        ctx.beginPath();
+        ctx.ellipse(sx - 1 * z, sy - 28 * z, 5 * z, 3.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glowing red eyes (animated pulse)
+        const eyePulse = 0.7 + Math.sin(this.tick * 0.05 + prop.gx) * 0.3;
+        ctx.fillStyle = `rgba(220, 38, 38, ${eyePulse})`;
+        ctx.beginPath();
+        ctx.arc(sx - 4.5 * z, sy - 32 * z, 2.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + 2.5 * z, sy - 32 * z, 2.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye highlight
+        ctx.fillStyle = 'rgba(255,200,200,0.7)';
+        ctx.beginPath();
+        ctx.arc(sx - 3.8 * z, sy - 32.6 * z, 0.8 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + 3.2 * z, sy - 32.6 * z, 0.8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nostrils
+        ctx.fillStyle = '#5a7a95';
+        ctx.fillRect(sx - 3 * z, sy - 27.5 * z, 1.5 * z, 1.5 * z);
+        ctx.fillRect(sx + 0.5 * z, sy - 27.5 * z, 1.5 * z, 1.5 * z);
+
+        // Snow dusting on shoulders/head
+        ctx.fillStyle = 'rgba(241,245,249,0.6)';
+        ctx.beginPath();
+        ctx.ellipse(sx - 10 * z, sy - 22 * z, 4 * z, 2 * z, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 8 * z, sy - 24 * z, 3 * z, 1.5 * z, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'kandahar_giant': {
+        // 🗿 Kandahar Giant — ancient stone colossus standing guard in the peaks
+        // Massive ground shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 2 * z, 30 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Feet — huge slab-like stone feet
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.roundRect(sx - 22 * z, sy - 4 * z, 16 * z, 8 * z, 2 * z);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(sx + 6 * z, sy - 4 * z, 16 * z, 8 * z, 2 * z);
+        ctx.fill();
+        // Foot highlight
+        ctx.fillStyle = '#4b5563';
+        ctx.fillRect(sx - 20 * z, sy - 3 * z, 12 * z, 3 * z);
+        ctx.fillRect(sx + 8 * z, sy - 3 * z, 12 * z, 3 * z);
+
+        // Legs — massive stone pillars
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(sx - 20 * z, sy - 40 * z, 14 * z, 38 * z);
+        ctx.fillRect(sx + 6 * z, sy - 40 * z, 14 * z, 38 * z);
+        // Leg highlight
+        ctx.fillStyle = '#4b5563';
+        ctx.fillRect(sx - 18 * z, sy - 40 * z, 6 * z, 38 * z);
+        ctx.fillRect(sx + 8 * z, sy - 40 * z, 6 * z, 38 * z);
+
+        // Torso — broad cracked stone slab
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.roundRect(sx - 26 * z, sy - 88 * z, 52 * z, 52 * z, 3 * z);
+        ctx.fill();
+        // Torso highlight face
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.roundRect(sx - 22 * z, sy - 87 * z, 20 * z, 50 * z, 2 * z);
+        ctx.fill();
+        // Torso shadow face (right)
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.roundRect(sx + 6 * z, sy - 87 * z, 18 * z, 50 * z, 2 * z);
+        ctx.fill();
+
+        // Crack lines on torso
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1.5 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 5 * z, sy - 85 * z);
+        ctx.lineTo(sx + 3 * z, sy - 65 * z);
+        ctx.lineTo(sx - 2 * z, sy - 42 * z);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx + 10 * z, sy - 80 * z);
+        ctx.lineTo(sx + 5 * z, sy - 68 * z);
+        ctx.stroke();
+
+        // Moss patches (green)
+        ctx.fillStyle = '#065f46';
+        ctx.fillRect(sx - 24 * z, sy - 72 * z, 8 * z, 5 * z);
+        ctx.fillRect(sx + 12 * z, sy - 60 * z, 7 * z, 4 * z);
+        ctx.fillRect(sx - 10 * z, sy - 50 * z, 5 * z, 3 * z);
+
+        // Arms — outstretched slightly downward
+        ctx.fillStyle = '#374151';
+        // Left arm
+        ctx.beginPath();
+        ctx.moveTo(sx - 26 * z, sy - 82 * z);
+        ctx.lineTo(sx - 48 * z, sy - 64 * z);
+        ctx.lineTo(sx - 44 * z, sy - 54 * z);
+        ctx.lineTo(sx - 24 * z, sy - 70 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.moveTo(sx - 26 * z, sy - 82 * z);
+        ctx.lineTo(sx - 46 * z, sy - 64 * z);
+        ctx.lineTo(sx - 24 * z, sy - 72 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right arm
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.moveTo(sx + 26 * z, sy - 82 * z);
+        ctx.lineTo(sx + 48 * z, sy - 64 * z);
+        ctx.lineTo(sx + 44 * z, sy - 54 * z);
+        ctx.lineTo(sx + 24 * z, sy - 70 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Head — craggy blocky stone skull
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.roundRect(sx - 20 * z, sy - 118 * z, 40 * z, 34 * z, 4 * z);
+        ctx.fill();
+        // Head highlight
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.roundRect(sx - 18 * z, sy - 117 * z, 14 * z, 32 * z, 3 * z);
+        ctx.fill();
+        // Head shadow
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.roundRect(sx + 6 * z, sy - 117 * z, 12 * z, 32 * z, 3 * z);
+        ctx.fill();
+
+        // Forehead crack
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 1.2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx + 2 * z, sy - 117 * z);
+        ctx.lineTo(sx - 3 * z, sy - 105 * z);
+        ctx.stroke();
+
+        // Glowing amber eyes (slow pulse)
+        const eyeGlow = 0.7 + Math.sin(this.tick * 0.02 + prop.gx * 0.5) * 0.3;
+        // Eye sockets (dark)
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.ellipse(sx - 9 * z, sy - 104 * z, 5 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 9 * z, sy - 104 * z, 5 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Amber iris
+        ctx.fillStyle = `rgba(245, 158, 11, ${eyeGlow})`;
+        ctx.beginPath();
+        ctx.ellipse(sx - 9 * z, sy - 104 * z, 3.5 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 9 * z, sy - 104 * z, 3.5 * z, 3 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Eye highlight
+        ctx.fillStyle = 'rgba(254,215,102,0.8)';
+        ctx.beginPath();
+        ctx.arc(sx - 7.5 * z, sy - 105.5 * z, 1.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + 10.5 * z, sy - 105.5 * z, 1.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nose ridge
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 100 * z);
+        ctx.lineTo(sx - 3 * z, sy - 95 * z);
+        ctx.lineTo(sx + 3 * z, sy - 95 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Jaw / mouth grimace
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.moveTo(sx - 12 * z, sy - 90 * z);
+        ctx.quadraticCurveTo(sx, sy - 87 * z, sx + 12 * z, sy - 90 * z);
+        ctx.quadraticCurveTo(sx, sy - 93 * z, sx - 12 * z, sy - 90 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // Snow settled on head and shoulders
+        ctx.fillStyle = 'rgba(241,245,249,0.72)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 118 * z, 18 * z, 5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx - 22 * z, sy - 90 * z, 8 * z, 3 * z, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 22 * z, sy - 90 * z, 8 * z, 3 * z, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'ice_crystal': {
+        // 🔷 Ice Crystal Cluster — sharp blue-white shard formation
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 10 * z, 4 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const crystalShards = [
+          { ox: -6, h: 18, w: 3, angle: -0.25 },
+          { ox: -1, h: 24, w: 3.5, angle: 0.05 },
+          { ox: 5, h: 20, w: 3, angle: 0.2 },
+          { ox: 9, h: 13, w: 2.5, angle: 0.35 },
+          { ox: -10, h: 11, w: 2, angle: -0.4 },
+        ];
+
+        for (const shard of crystalShards) {
+          ctx.save();
+          ctx.translate(sx + shard.ox * z, sy);
+          ctx.rotate(shard.angle);
+
+          // Shadow face
+          ctx.fillStyle = '#93c5fd';
+          ctx.beginPath();
+          ctx.moveTo(-shard.w * z / 2, 0);
+          ctx.lineTo(0, -shard.h * z);
+          ctx.lineTo(shard.w * z / 2, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          // Highlight face
+          ctx.fillStyle = '#dbeafe';
+          ctx.beginPath();
+          ctx.moveTo(-shard.w * z / 2, 0);
+          ctx.lineTo(0, -shard.h * z);
+          ctx.lineTo(0, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          // Tip glint
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.beginPath();
+          ctx.arc(0, -shard.h * z, 1 * z, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        }
+        break;
+      }
+
+      case 'snow_boulder': {
+        // ⚪ Snow-capped Boulder — rounded rock with snow settled on top
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 13 * z, 5.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rock body
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 7 * z, 12 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight face (left)
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.ellipse(sx - 4 * z, sy - 8 * z, 7 * z, 6 * z, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shadow face (right)
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.ellipse(sx + 5 * z, sy - 7 * z, 6 * z, 5 * z, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Small crack
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 0.9 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx + 2 * z, sy - 5 * z);
+        ctx.lineTo(sx + 5 * z, sy - 10 * z);
+        ctx.stroke();
+
+        // Snow cap on top
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.ellipse(sx - 1 * z, sy - 14 * z, 9 * z, 4 * z, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Snow rim highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath();
+        ctx.ellipse(sx - 3 * z, sy - 15 * z, 5 * z, 2 * z, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
       case 'mountain_tent': {
+
         // ── ⛺ Hiker camp on the northern snow ridge ────────────────────────
         ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
         ctx.beginPath();
@@ -4043,48 +4999,142 @@ export class Renderer {
       }
 
       case 'jungle_bridge': {
-        // ── 🌉 Small plank bridge crossing the jungle creek ────────────────
-        const bLen = 132 * z;
+        // ── 🌉 Sturdy Handcrafted Wooden Footbridge spanning the jungle creek ──
+        // Total bridge length spans ~92px (creek is 64px wide; 14px on each bank).
+        const bLen = 92 * z;
+        const deckH = 15 * z;
         const left = sx - bLen / 2;
-        const deckTop = sy - 3 * z;
+        const right = left + bLen;
+        const deckTop = sy - deckH / 2;
+        const deckBottom = deckTop + deckH;
 
-        // Soft contact shadow cast on the water below
-        ctx.fillStyle = 'rgba(2, 20, 30, 0.35)';
+        // 1. Water & Shore Under-Shadow
+        ctx.fillStyle = 'rgba(2, 20, 30, 0.42)';
         ctx.beginPath();
-        ctx.ellipse(sx, sy + 6 * z, bLen * 0.5, 4.5 * z, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, sy + 7 * z, bLen * 0.48, 6.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Wooden plank deck
-        ctx.fillStyle = '#6b4620';
-        ctx.fillRect(left, deckTop, bLen, 6 * z);
-        ctx.fillStyle = '#8a5a2b';
-        ctx.fillRect(left, deckTop, bLen, 2.2 * z);
-        ctx.strokeStyle = '#4a2f12';
-        ctx.lineWidth = 1 * z;
+        // 2. Heavy Stone / Timber Abutments resting firmly on the green grass shores
+        // Left bank abutment
+        ctx.fillStyle = '#292524';
         ctx.beginPath();
-        for (let px = 8; px < bLen; px += 9) {
-          ctx.moveTo(left + px, deckTop);
-          ctx.lineTo(left + px, deckTop + 6 * z);
+        ctx.roundRect(left - 3 * z, deckTop - 2 * z, 15 * z, deckH + 4 * z, 2 * z);
+        ctx.fill();
+        ctx.fillStyle = '#44403c';
+        ctx.fillRect(left - 2 * z, deckTop - 1 * z, 13 * z, 2.5 * z);
+
+        // Right bank abutment
+        ctx.fillStyle = '#292524';
+        ctx.beginPath();
+        ctx.roundRect(right - 12 * z, deckTop - 2 * z, 15 * z, deckH + 4 * z, 2 * z);
+        ctx.fill();
+        ctx.fillStyle = '#44403c';
+        ctx.fillRect(right - 11 * z, deckTop - 1 * z, 13 * z, 2.5 * z);
+
+        // Submerged Support Pilings underneath the bridge in the creek bed
+        const p1X = sx - 16 * z;
+        const p2X = sx + 16 * z;
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(p1X - 2 * z, deckBottom, 4 * z, 5 * z);
+        ctx.fillRect(p2X - 2 * z, deckBottom, 4 * z, 5 * z);
+
+        // 3. Longitudinal Stringer Beams (Under-deck structural timber support)
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(left, deckBottom, bLen, 2.8 * z);
+        ctx.fillStyle = '#1b110a';
+        ctx.fillRect(left, deckBottom + 2.8 * z, bLen, 1.2 * z);
+
+        // 4. Heavy Wooden Cross Planks (Stardew-style warm varied timber)
+        const plankPalette = ['#854d0e', '#78350f', '#92400e', '#a16207', '#713f12'];
+        const plankWidth = 5.6 * z;
+        const numPlanks = Math.floor(bLen / plankWidth);
+
+        for (let i = 0; i < numPlanks; i++) {
+          const px = left + i * plankWidth;
+          const pw = plankWidth - 0.9 * z; // subtle gap between planks
+          const plankColor = plankPalette[(Math.abs(prop.gx * 7 + i * 3)) % plankPalette.length]!;
+
+          // Plank base
+          ctx.fillStyle = plankColor;
+          ctx.fillRect(px, deckTop, pw, deckH);
+
+          // Top sunlight bevel highlight
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.18)';
+          ctx.fillRect(px, deckTop, pw, 1.8 * z);
+
+          // Dark gap & bottom shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.fillRect(px, deckBottom - 1.8 * z, pw, 1.8 * z);
+
+          // Iron bolt / nail studs on top & bottom edges
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(px + pw * 0.5 - 0.7 * z, deckTop + 1.8 * z, 1.4 * z, 1.4 * z);
+          ctx.fillRect(px + pw * 0.5 - 0.7 * z, deckBottom - 3.2 * z, 1.4 * z, 1.4 * z);
         }
-        ctx.stroke();
 
-        // Trim logs along both edges
-        ctx.fillStyle = '#4a2f12';
-        ctx.fillRect(left - 2 * z, deckTop - 1 * z, bLen + 4 * z, 1.4 * z);
-        ctx.fillRect(left - 2 * z, deckTop + 6.4 * z, bLen + 4 * z, 1.4 * z);
+        // 5. Heavy Guide Curbs (Guard rails along deck edges)
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(left, deckTop - 1.2 * z, bLen, 2.2 * z);
+        ctx.fillRect(left, deckBottom - 1.2 * z, bLen, 2.2 * z);
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(left, deckTop - 1.2 * z, bLen, 0.8 * z);
 
-        // End posts
-        ctx.fillStyle = '#3a2410';
-        ctx.fillRect(left - 3 * z, deckTop - 9 * z, 2.4 * z, 16 * z);
-        ctx.fillRect(left + bLen + 0.6 * z, deckTop - 9 * z, 2.4 * z, 16 * z);
+        // 6. Vertical Handrail Timber Posts (Anchored into bank abutments and mid-span)
+        // 4 Key support posts: Left Bank, Mid-Left, Mid-Right, Right Bank
+        const postXs = [left + 2 * z, sx - 16 * z, sx + 16 * z, right - 2 * z];
+        const postH = 13 * z;
 
-        // Rope handrail sagging gently between the posts
-        ctx.strokeStyle = '#5b3c1d';
-        ctx.lineWidth = 1.1 * z;
+        // Draw posts on the far side (top railing)
+        for (const px of postXs) {
+          // Post shadow
+          ctx.fillStyle = '#1f130b';
+          ctx.fillRect(px - 1.5 * z, deckTop - postH, 3 * z, postH + 2 * z);
+          // Highlight facet
+          ctx.fillStyle = '#5c3a21';
+          ctx.fillRect(px - 1.5 * z, deckTop - postH, 1.2 * z, postH);
+          // Post cap
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(px - 2 * z, deckTop - postH - 1 * z, 4 * z, 1.4 * z);
+        }
+
+        // 7. Hanging Twisted Hemp Rope Handrails with Realistic Sag
+        const railTopY = deckTop - postH + 1 * z;
+        const midRailY = deckTop - postH * 0.5;
+
+        // Top braided rope cable
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 1.6 * z;
         ctx.beginPath();
-        ctx.moveTo(left, deckTop - 9 * z);
-        ctx.quadraticCurveTo(sx, deckTop - 4.5 * z, left + bLen, deckTop - 9 * z);
+        ctx.moveTo(left + 2 * z, railTopY);
+        ctx.quadraticCurveTo(sx, railTopY + 2.5 * z, right - 2 * z, railTopY);
         ctx.stroke();
+
+        ctx.strokeStyle = '#d97706'; // Golden hemp highlight
+        ctx.lineWidth = 0.9 * z;
+        ctx.beginPath();
+        ctx.moveTo(left + 2 * z, railTopY - 0.4 * z);
+        ctx.quadraticCurveTo(sx, railTopY + 2.1 * z, right - 2 * z, railTopY - 0.4 * z);
+        ctx.stroke();
+
+        // Lower safety rope cable
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 1.2 * z;
+        ctx.beginPath();
+        ctx.moveTo(left + 2 * z, midRailY);
+        ctx.quadraticCurveTo(sx, midRailY + 1.8 * z, right - 2 * z, midRailY);
+        ctx.stroke();
+
+        // Vertical suspension rope ties between handrail and deck
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 0.8 * z;
+        for (let rx = left + 14 * z; rx <= right - 14 * z; rx += 12 * z) {
+          const t = (rx - left) / bLen;
+          const sag = 4 * t * (1 - t) * 2.5 * z;
+          ctx.beginPath();
+          ctx.moveTo(rx, railTopY + sag);
+          ctx.lineTo(rx, deckTop);
+          ctx.stroke();
+        }
         break;
       }
 
@@ -4482,6 +5532,272 @@ export class Renderer {
         ctx.fillRect(sx - 2 * z, sy - 17 * z, 1 * z, 1 * z);
 
         if (isOccluding) {
+          ctx.restore();
+        }
+        break;
+      }
+
+      case 'giant_banyan': {
+        // 🌳 Colossal Ancient Jungle Banyan (Grand Emergent Rainforest Canopy)
+        // 1. Broad Ground Shadow & Moss Mound
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 32 * z, 13 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#022c22';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 22 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Colossal Flared Buttress Roots (Ancient twisting hollowed trunk)
+        ctx.fillStyle = '#140c05'; // Darkest trunk core shadow
+        ctx.beginPath();
+        ctx.moveTo(sx - 16 * z, sy);
+        ctx.quadraticCurveTo(sx - 10 * z, sy - 18 * z, sx - 5 * z, sy - 36 * z);
+        ctx.lineTo(sx + 5 * z, sy - 36 * z);
+        ctx.quadraticCurveTo(sx + 10 * z, sy - 18 * z, sx + 16 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Warm Gnarled Bark Body
+        ctx.fillStyle = '#3e2311';
+        ctx.beginPath();
+        ctx.moveTo(sx - 12 * z, sy);
+        ctx.quadraticCurveTo(sx - 8 * z, sy - 18 * z, sx - 4 * z, sy - 35 * z);
+        ctx.lineTo(sx + 4 * z, sy - 35 * z);
+        ctx.quadraticCurveTo(sx + 8 * z, sy - 18 * z, sx + 12 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Highlighting bark flutes & vertical ridges
+        ctx.fillStyle = '#63381a';
+        ctx.beginPath();
+        ctx.moveTo(sx - 4 * z, sy);
+        ctx.quadraticCurveTo(sx - 4 * z, sy - 18 * z, sx - 1 * z, sy - 34 * z);
+        ctx.lineTo(sx + 2 * z, sy - 34 * z);
+        ctx.quadraticCurveTo(sx + 1 * z, sy - 18 * z, sx + 1 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Mossy bark patches on north/west face
+        ctx.fillStyle = '#065f46';
+        ctx.fillRect(sx - 9 * z, sy - 12 * z, 3.5 * z, 8 * z);
+        ctx.fillRect(sx + 5 * z, sy - 8 * z, 3 * z, 6 * z);
+
+        // 3. Hanging Aerial Stilt Pillar Roots anchoring into the earth
+        const stiltOffsets = [-15, -9, 9, 15];
+        for (const stX of stiltOffsets) {
+          ctx.fillStyle = '#27170a';
+          ctx.fillRect(sx + (stX - 1.2) * z, sy - 24 * z, 2.4 * z, 24 * z);
+          ctx.fillStyle = '#5c3a1e';
+          ctx.fillRect(sx + (stX - 0.8) * z, sy - 24 * z, 1.2 * z, 24 * z);
+        }
+
+        // Epiphyte jungle orchids growing on the trunk
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(sx - 5 * z, sy - 22 * z, 3 * z, 3 * z);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(sx - 4 * z, sy - 21 * z, 1.2 * z, 1.2 * z);
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(sx + 4 * z, sy - 26 * z, 3 * z, 3 * z);
+
+        // 4. Grand Canopy (Lush, Multi-tiered Emerald Clouds)
+        const bx = sx + windSway * 1.5;
+        const by = sy - 46 * z;
+
+        const isOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
+        // Deepest Canopy Under-Shadow
+        ctx.fillStyle = '#022c22';
+        ctx.beginPath();
+        ctx.ellipse(bx, by + 10 * z, 32 * z, 18 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tier 1: Dark Forest Emerald Puffs
+        ctx.fillStyle = '#064e3b';
+        ctx.beginPath();
+        ctx.arc(bx - 17 * z, by + 4 * z, 17 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 17 * z, by + 4 * z, 17 * z, 0, Math.PI * 2);
+        ctx.arc(bx, by - 6 * z, 20 * z, 0, Math.PI * 2);
+        ctx.arc(bx - 10 * z, by - 12 * z, 16 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 10 * z, by - 12 * z, 16 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tier 2: Mid Rainforest Green
+        ctx.fillStyle = '#047857';
+        ctx.beginPath();
+        ctx.arc(bx - 12 * z, by - 2 * z, 14 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 12 * z, by - 2 * z, 14 * z, 0, Math.PI * 2);
+        ctx.arc(bx, by - 14 * z, 16 * z, 0, Math.PI * 2);
+        ctx.arc(bx - 6 * z, by - 18 * z, 13 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 6 * z, by - 18 * z, 13 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tier 3: Bright Tropical Emerald
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(bx - 8 * z, by - 8 * z, 11 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 8 * z, by - 8 * z, 11 * z, 0, Math.PI * 2);
+        ctx.arc(bx, by - 20 * z, 12 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tier 4: Sunlit Lime Crest & Rim
+        ctx.fillStyle = '#84cc16';
+        ctx.beginPath();
+        ctx.arc(bx - 6 * z, by - 16 * z, 8 * z, 0, Math.PI * 2);
+        ctx.arc(bx + 5 * z, by - 15 * z, 8 * z, 0, Math.PI * 2);
+        ctx.arc(bx, by - 24 * z, 7 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#bef264';
+        ctx.beginPath();
+        ctx.arc(bx - 2 * z, by - 25 * z, 4 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Cascading Liana Vines Swaying in the Rainforest Breeze
+        const giantVines = [-22, -14, -6, 4, 12, 20];
+        giantVines.forEach((vx, idx) => {
+          const vSway = Math.sin(this.tick * 0.04 + idx * 1.1) * 5 * z;
+          const startX = bx + vx * z;
+          const startY = by + 10 * z;
+          const vLen = (18 + (idx % 3) * 7) * z;
+
+          ctx.strokeStyle = '#065f46';
+          ctx.lineWidth = 1.6 * z;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(startX + vSway * 0.7, startY + vLen * 0.5, startX + vSway, startY + vLen);
+          ctx.stroke();
+
+          // Leaf bulb at tip
+          ctx.fillStyle = '#a3e635';
+          ctx.fillRect(startX + vSway - 1.2 * z, startY + vLen - 1.2 * z, 3 * z, 3 * z);
+        });
+
+        if (isOccluding) {
+          ctx.restore();
+        }
+        break;
+      }
+
+      case 'tall_kapok': {
+        // 🌴 Tall Kapok Tree (Ceiba pentandra) — Straight emergent trunk, umbrella canopy
+        // 1. Elliptical ground shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 24 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mossy root buttress mound
+        ctx.fillStyle = '#033917';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 2 * z, 14 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Tall straight trunk (kapok is notably straight vs banyan's gnarled form)
+        // Trunk shadow
+        ctx.fillStyle = '#1a0d04';
+        ctx.beginPath();
+        ctx.moveTo(sx - 8 * z, sy);
+        ctx.lineTo(sx - 5 * z, sy - 54 * z);
+        ctx.lineTo(sx + 5 * z, sy - 54 * z);
+        ctx.lineTo(sx + 8 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Main trunk — pale grey-silver bark (characteristic of kapok)
+        ctx.fillStyle = '#8c7b6a';
+        ctx.beginPath();
+        ctx.moveTo(sx - 6 * z, sy);
+        ctx.lineTo(sx - 3.5 * z, sy - 52 * z);
+        ctx.lineTo(sx + 3.5 * z, sy - 52 * z);
+        ctx.lineTo(sx + 6 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Highlight on trunk edge
+        ctx.fillStyle = '#b5a190';
+        ctx.beginPath();
+        ctx.moveTo(sx - 2 * z, sy);
+        ctx.lineTo(sx - 1 * z, sy - 50 * z);
+        ctx.lineTo(sx + 1 * z, sy - 50 * z);
+        ctx.lineTo(sx + 2 * z, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Conical spines on trunk (kapok has distinctive conical prickles)
+        const spineRows = [12, 22, 34];
+        for (const spineY of spineRows) {
+          ctx.fillStyle = '#5c3d2a';
+          ctx.beginPath();
+          ctx.moveTo(sx - 7 * z, sy - spineY * z);
+          ctx.lineTo(sx - 12 * z, sy - (spineY + 3) * z);
+          ctx.lineTo(sx - 6 * z, sy - (spineY + 1.5) * z);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(sx + 7 * z, sy - spineY * z);
+          ctx.lineTo(sx + 12 * z, sy - (spineY + 3) * z);
+          ctx.lineTo(sx + 6 * z, sy - (spineY + 1.5) * z);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 3. Wide flat umbrella canopy (pagoda-style, different from banyan's rounded puffs)
+        const kx = sx + windSway * 1.2;
+        const ky = sy - 58 * z;
+
+        const isKapokOccluding = this.isEntityBehindTree(prop.wx, prop.wy);
+        if (isKapokOccluding) {
+          ctx.save();
+          ctx.globalAlpha = 0.32;
+        }
+
+        // Bottom umbrella tier — widest, darkest
+        ctx.fillStyle = '#033917';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky + 16 * z, 36 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#064e3b';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky + 12 * z, 32 * z, 9 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Middle tier — medium spread, brighter
+        ctx.fillStyle = '#047857';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky + 4 * z, 26 * z, 8 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky, 22 * z, 7 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Top tier — narrow, bright lime crest
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky - 8 * z, 16 * z, 6 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky - 13 * z, 10 * z, 4.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sun-kissed crown highlight
+        ctx.fillStyle = '#86efac';
+        ctx.beginPath();
+        ctx.ellipse(kx - 3 * z, ky - 15 * z, 5 * z, 2.5 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isKapokOccluding) {
           ctx.restore();
         }
         break;
