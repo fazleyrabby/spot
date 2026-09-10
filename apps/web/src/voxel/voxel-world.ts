@@ -2708,17 +2708,21 @@ function tick() {
       const _pickV = new THREE.Vector3();
       let downXY = null;
       // screen-space nearest citizen within radius px (robust in robot + dots LOD)
+  let _pickDist = 999;
   function pickCitizen(cx, cy, radius) {
     const rect = renderer.domElement.getBoundingClientRect();
+    // Match the rendered height: dots sit low, full robots sit at mid-body.
+    const hy = dotsOn ? 0.35 : 1.2;
     let best = null, bestD = radius === undefined ? 30 : radius;
     for (const c of citizens.values()) {
-      _v.set(c.x * WORLD_SCALE, (c.groundY || 0) + 1.2, c.z * WORLD_SCALE).project(camera);
+      _v.set(c.x * WORLD_SCALE, (c.groundY || 0) + hy, c.z * WORLD_SCALE).project(camera);
           if (_v.z > 1) continue;
           const sx = (_v.x * 0.5 + 0.5) * rect.width;
           const sy = (-_v.y * 0.5 + 0.5) * rect.height;
           const d = Math.hypot(sx - (cx - rect.left), sy - (cy - rect.top));
           if (d < bestD) { bestD = d; best = c; }
         }
+        _pickDist = best ? bestD : 999;
         return best;
       }
       renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -2768,14 +2772,13 @@ function tick() {
           if (near(86, 22, 1.8) && window.openArcadeModal) { window.openArcadeModal(); return 'arcade'; }
           if (near(60, 38, 1.8) && window.openMuseumModal) { window.openMuseumModal(); return 'museum'; }
         }
-        // 3. citizen — only when the cursor is really on them AND they sit in
-        //    front of the structure behind the cursor (fixes misclicks on
-        //    monuments/buildings selecting a citizen standing nearby/behind).
-        const c = pickCitizen(cx, cy, billboardClose ? 6 : 16);
+        // 3. citizen — pick when the cursor is really on them. A near-direct hit
+        //    always wins; otherwise require them in front of the structure.
+        const c = pickCitizen(cx, cy, billboardClose ? 6 : 24);
         if (c) {
-          _pickV.set(c.x * WORLD_SCALE, (c.groundY || 0) + 1.2, c.z * WORLD_SCALE);
+          _pickV.set(c.x * WORLD_SCALE, (c.groundY || 0) + (dotsOn ? 0.35 : 1.2), c.z * WORLD_SCALE);
           const camDist = camera.position.distanceTo(_pickV);
-          if (camDist < hitDist + 1.5) { citizenModal(c); return 'citizen'; }
+          if (camDist < hitDist + 1.5 || _pickDist < 10) { citizenModal(c); return 'citizen'; }
         }
         if (panelHit) {
           const bh = clickRay.intersectObjects(billboardPanels, false);
