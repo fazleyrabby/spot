@@ -107,6 +107,16 @@
       <span class="hud-btn-text">Library</span>
     </button>
 
+    <!-- Voxel World Quick Link -->
+    <a class="hud-tool-btn hud-voxel-btn" id="world-voxel-btn" href="/voxel" title="Open Spot Voxel World — 3D island">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"></path>
+        <path d="M3 7l9 5 9-5"></path>
+        <path d="M12 12v10"></path>
+      </svg>
+      <span class="hud-btn-text">Voxel</span>
+    </a>
+
 
     <!-- Search / Find Citizen Button -->
     <button class="hud-tool-btn hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
@@ -477,17 +487,34 @@
     flex-shrink: 0;
   }
 
-  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn) {
+  .hud-tool-btn:not(.hud-library-btn):not(.hud-search-btn):not(.hud-voxel-btn) {
     padding: 0;
     width: 28px;
     font-size: 0.80rem;
   }
 
   .hud-library-btn,
-  .hud-search-btn {
+  .hud-search-btn,
+  .hud-voxel-btn {
     width: auto;
     padding: 0 8px;
     gap: 5px;
+  }
+
+  a.hud-tool-btn {
+    text-decoration: none;
+  }
+
+  .hud-voxel-btn {
+    color: #a5f3fc;
+    border-color: rgba(34, 211, 238, 0.3);
+    background: rgba(34, 211, 238, 0.08);
+  }
+
+  .hud-voxel-btn:hover {
+    background: rgba(34, 211, 238, 0.16);
+    border-color: rgba(34, 211, 238, 0.55);
+    color: #ffffff;
   }
 
   .hud-tool-btn:hover {

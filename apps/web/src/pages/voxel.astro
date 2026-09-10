@@ -1,0 +1,169 @@
+---
+import '../styles/global.css';
+import ProfileModal from '../components/ProfileModal.astro';
+import BannerModal from '../components/BannerModal.astro';
+import SecretModal from '../components/SecretModal.astro';
+import LibraryModal from '../components/LibraryModal.astro';
+import ArcadeModal from '../components/ArcadeModal.astro';
+import ArtMuseumModal from '../components/ArtMuseumModal.astro';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spot — Voxel World</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b1020; }
+      #voxel-spike { position: fixed; inset: 0; z-index: 1; }
+      #voxel-spike canvas { display: block; }
+      :root {
+        --glass: rgba(9, 13, 24, 0.74);
+        --glass-2: rgba(14, 20, 34, 0.86);
+        --line: #263247;
+        --accent: #fbbf24;
+        --cyan: #67e8f9;
+        --text: #cbd5e1;
+      }
+      .hud {
+        position: fixed; top: 12px; left: 12px; z-index: 100;
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: var(--text); background: linear-gradient(180deg, var(--glass-2), var(--glass));
+        border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+        pointer-events: none; user-select: none; min-width: 236px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(6px);
+      }
+      .hud b { color: #f8fafc; }
+      .hud .title { color: var(--accent); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+      .hud .grid { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+      .hud .k { color: #64748b; }
+      .hud .v { color: #f8fafc; text-align: right; }
+      .hud .sep { height: 1px; background: var(--line); margin: 7px 0; }
+      .hud .chip {
+        display: inline-block; padding: 1px 7px; border-radius: 999px;
+        border: 1px solid var(--line); color: var(--cyan); font-size: 11px;
+      }
+      .back {
+        position: fixed; top: 12px; right: 12px; z-index: 100;
+        font: 12px ui-monospace, Menlo, monospace; color: var(--cyan);
+        background: var(--glass); border: 1px solid var(--line);
+        border-radius: 10px; padding: 8px 12px; text-decoration: none;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+      .back:hover { border-color: var(--cyan); }
+      .hint {
+        position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 100;
+        font: 12px ui-monospace, Menlo, monospace; color: #94a3b8;
+        background: var(--glass); border: 1px solid var(--line); border-radius: 999px;
+        padding: 6px 14px; pointer-events: none; user-select: none; white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+      /* bottom action bar (game UI) */
+      #voxel-toolbar {
+        position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 110;
+        display: flex; gap: 8px; align-items: center;
+        background: linear-gradient(180deg, var(--glass-2), var(--glass));
+        border: 1px solid var(--line); border-radius: 14px; padding: 8px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(6px);
+      }
+      #voxel-toolbar button {
+        height: 38px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+        font: 12px ui-monospace, Menlo, monospace; color: #f8fafc;
+        background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+        display: inline-flex; align-items: center; gap: 6px; transition: all 0.12s ease;
+      }
+      #voxel-toolbar button:hover { border-color: var(--cyan); background: rgba(103, 232, 249, 0.08); }
+      #voxel-toolbar button.sel { border-color: var(--accent); color: var(--accent); background: rgba(251, 191, 36, 0.1); }
+      .modal { z-index: 1000; }
+
+      .minimap {
+        position: fixed; right: 12px; bottom: 12px; z-index: 105;
+        background: linear-gradient(180deg, var(--glass-2), var(--glass));
+        border: 1px solid var(--line); border-radius: 12px; padding: 8px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(6px);
+        user-select: none;
+      }
+      .minimap-head {
+        display: flex; align-items: center; justify-content: space-between;
+        font: 11px ui-monospace, Menlo, monospace; color: var(--accent);
+        margin-bottom: 6px; letter-spacing: 0.08em;
+      }
+      .minimap-head button {
+        width: 20px; height: 20px; border-radius: 6px; cursor: pointer;
+        border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04);
+        color: #f8fafc; font: 12px ui-monospace, Menlo, monospace; line-height: 1;
+      }
+      #voxel-minimap {
+        display: block; border-radius: 8px; border: 1px solid var(--line);
+        background: #0a0f1e; cursor: crosshair;
+      }
+      .minimap-legend {
+        display: flex; gap: 10px; margin-top: 6px;
+        font: 10px ui-monospace, Menlo, monospace; color: #94a3b8;
+      }
+      .minimap-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+      .minimap.collapsed #voxel-minimap, .minimap.collapsed .minimap-legend { display: none; }
+
+      @media (max-width: 768px) {
+        .minimap { display: none; }
+      }
+
+      @media (max-width: 768px) {
+        #voxel-toolbar {
+          flex-wrap: wrap;
+          justify-content: center;
+          max-width: calc(100vw - 16px);
+          gap: 6px;
+          padding: 6px;
+        }
+        #voxel-toolbar button { height: 34px; padding: 0 10px; font-size: 11px; }
+        .hud { min-width: 0; font-size: 11px; padding: 8px 10px; }
+        .hint { display: none; }
+        .back { top: 8px; right: 8px; padding: 6px 10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="voxel-spike"></div>
+    <div class="hud">
+      <div class="title">◼ SPOT · VOXEL WORLD</div>
+      <div class="grid">
+        <span class="k">FPS</span><span class="v"><b id="hud-fps">–</b> · <span id="hud-ms">–</span> ms</span>
+        <span class="k">Blocks</span><span class="v" id="hud-blocks">–</span>
+        <span class="k">Citizens</span><span class="v" id="hud-bots">–</span>
+        <span class="k">Buildings</span><span class="v" id="hud-buildings">–</span>
+        <span class="k">Traffic</span><span class="v" id="hud-traffic">–</span>
+        <span class="k">District</span><span class="v" id="hud-district">–</span>
+      </div>
+      <div class="sep"></div>
+      <div><span class="chip" id="hud-biome">city</span> <span class="chip" id="hud-time">day</span></div>
+    </div>
+    <a class="back" href="/world">← back to world</a>
+    <div class="hint">edge / right-drag to pan · scroll to zoom · fixed isometric view</div>
+    <div class="minimap" id="voxel-minimap-panel">
+      <div class="minimap-head">
+        <span class="minimap-title">◉ RADAR</span>
+        <button id="voxel-minimap-toggle" type="button" aria-label="Toggle radar">–</button>
+      </div>
+      <canvas id="voxel-minimap" width="200" height="197"></canvas>
+      <div class="minimap-legend">
+        <span><i style="background:#fbbf24"></i>you</span>
+        <span><i style="background:#38bdf8"></i>train</span>
+        <span><i style="background:#f8fafc"></i>boat</span>
+      </div>
+    </div>
+    <div id="voxel-toolbar"></div>
+    <ProfileModal />
+    <BannerModal />
+    <SecretModal />
+    <LibraryModal />
+    <ArcadeModal />
+    <ArtMuseumModal />
+    <script>
+      import '../voxel/voxel-world.js';
+    </script>
+  </body>
+</html>

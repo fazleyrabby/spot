@@ -356,9 +356,9 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
     if (gy >= 100) return 'void';
     if (gy >= -2 && gy <= 99) {
       // Winding tropical jungle creek
-      const creekDist = Math.abs(Math.sin(gy * 0.12) * 4.0 - (gx + 12));
+      const creekDist = Math.abs(Math.sin(gy * 0.11) * 4.0 - (gx + 12));
       if (creekDist < 1.4) return 'jungle_creek';
-      const r = spatialHash(gx, gy, 88);
+      const r = spatialHash(gx, gy, 99);
       return r > 0.40 ? 'jungle_dense' : 'jungle_grass';
     }
   }
@@ -367,7 +367,7 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
   if (gx >= 100 && gx <= 124) {
     if (gy >= 100) return 'void';
     if (gy >= -2 && gy <= 99) {
-      // Winding tropical jungle creek
+      // Winding tropical jungle creek — mirror of western formula for symmetry
       const creekDist = Math.abs(Math.cos(gy * 0.11) * 4.0 - (gx - 112));
       if (creekDist < 1.4) return 'jungle_creek';
       const r = spatialHash(gx, gy, 99);
@@ -636,6 +636,7 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
   }
 
   // ── 2c. Eastern Emerald Jungle Wilderness Props (gx: 100..124) ────────────
+  // Mirror of western jungle using same hash seeds for symmetry
   if (gx >= 100 && gx <= 124 && gy >= 0 && gy <= 99) {
     // Bridges crossing the eastern jungle creek:
     // East Bridge 1 (gy: 24): creek is at gx 108..109. Clear gx 106..111, gy 23..25
@@ -659,9 +660,11 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     const tile = getCityTileType(gx, gy);
     if (tile === 'jungle_creek') return null;
 
-    const r = spatialHash(gx, gy, 177);
+    // Use mirrored spatial hash seeds for symmetry with western jungle
+    const mirrorGx = 99 - gx; // Mirror position for hash
+    const r = spatialHash(mirrorGx, gy, 142);
     if (r > 0.68) {
-      const v = spatialHash(gx, gy, 299);
+      const v = spatialHash(mirrorGx, gy, 203);
       // Large trees — rare, only ~9% of spawned spots each
       if (v > 0.91) {
         return { gx, gy, type: 'giant_banyan', wx, wy, hasLight: false };

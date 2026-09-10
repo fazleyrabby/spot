@@ -83,6 +83,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       </a>
     </div>
 
+    <a class="hud-voxel-btn" href="/voxel" id="header-voxel-btn" title="Open Spot Voxel World — 3D island">
+      <svg class="voxel-cube-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"></path>
+        <path d="M3 7l9 5 9-5"></path>
+        <path d="M12 12v10"></path>
+      </svg>
+      <span class="voxel-btn-label">Voxel</span>
+    </a>
+
     <a class="hud-library-btn" href="/world?modal=library" id="header-library-btn" title="Open The Grand Codex Developer Vault">
       <span class="library-btn-icon">📚</span>
       <span class="library-btn-label">Library</span>
@@ -511,6 +520,43 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     color: var(--text-primary);
   }
 
+  /* Voxel World button */
+  .hud-voxel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    box-sizing: border-box;
+    background: rgba(34, 211, 238, 0.08);
+    border: 1px solid rgba(34, 211, 238, 0.28);
+    color: #a5f3fc;
+    font-family: var(--font-tech);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .hud-voxel-btn:hover {
+    background: rgba(34, 211, 238, 0.16);
+    border-color: rgba(34, 211, 238, 0.55);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.3);
+  }
+
+  .voxel-cube-icon {
+    color: #22d3ee;
+    transition: transform 0.3s ease;
+  }
+
+  .hud-voxel-btn:hover .voxel-cube-icon {
+    transform: rotate(-12deg) scale(1.12);
+  }
+
   .hud-search-btn {
     display: inline-flex;
     align-items: center;
@@ -587,6 +633,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   .stat-pill,
   .brand-badge,
   .hud-world-btn,
+  .hud-voxel-btn,
   .hud-library-btn,
   .hud-search-btn,
   .cta-claim-btn {
@@ -597,24 +644,55 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
   @media (max-width: 768px) {
     .header-hud {
       top: 8px;
-      height: 40px;
-      padding: 0 8px;
+      height: auto;
+      min-height: 40px;
+      padding: 6px 8px;
       gap: 8px;
+      row-gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
       max-width: calc(100vw - 12px);
+      overflow: visible;
+      white-space: normal;
     }
 
     .activity-ticker {
-      top: 54px;
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .brand-title,
+    .stat-divider,
+    .visitors-pill {
+      display: none;
+    }
+
+    .stat-text,
+    .stat-total,
+    .stat-slash,
+    .mini-bar {
+      display: none;
+    }
+
+    .library-btn-label,
+    .search-label,
+    .search-shortcut,
+    .claim-btn-text {
+      display: none;
+    }
+
+    .hud-search-btn,
+    .cta-claim-btn {
+      padding: 0 8px;
     }
   }
 
   @media (max-width: 480px) {
     .header-hud {
       top: 6px;
-      height: 38px;
-      padding: 0 6px;
+      padding: 5px 6px;
       gap: 6px;
-      max-width: calc(100vw - 10px);
     }
   }
 </style>
