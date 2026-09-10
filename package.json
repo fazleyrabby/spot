@@ -6,7 +6,7 @@
     "dev": "pnpm --parallel --filter server --filter web dev",
     "dev:server": "pnpm --filter server dev",
     "dev:web": "pnpm --filter web dev",
-    "build": "pnpm --filter @spot/shared build && pnpm --filter @spot/world build && pnpm --filter server build && pnpm --filter web build",
+    "build": "pnpm --filter @spot/shared build && pnpm --filter @spot/world build && pnpm --filter server build && pnpm --filter web build && pnpm --filter marketing build",
     "check": "pnpm --filter @spot/shared check && pnpm --filter @spot/world check && pnpm --filter server check && pnpm --filter web check",
     "db:vps": "./scripts/switch-db.sh vps",
     "db:local": "./scripts/switch-db.sh local"

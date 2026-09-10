@@ -16,6 +16,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/world/package.json ./packages/world/
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
+COPY apps/marketing/package.json ./apps/marketing/
 
 # Install full dependencies for building
 RUN pnpm install --frozen-lockfile
@@ -58,6 +59,8 @@ COPY --from=builder /app/apps/server/package.json ./apps/server/
 COPY --from=builder /app/apps/server/dist ./apps/server/dist/
 COPY --from=builder /app/apps/web/package.json ./apps/web/
 COPY --from=builder /app/apps/web/dist ./apps/web/dist/
+COPY --from=builder /app/apps/marketing/package.json ./apps/marketing/
+COPY --from=builder /app/apps/marketing/dist ./apps/marketing/dist/
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile

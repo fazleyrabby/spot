@@ -69,6 +69,35 @@ services:
       - "traefik.http.routers.spot.rule=Host(`claimyourspot.lol`) || Host(`www.claimyourspot.lol`)"
       - "traefik.http.services.spot.loadbalancer.server.port=4323"
 
+  spot-marketing:
+    image: spot-spot-app
+    container_name: spot-marketing
+    restart: unless-stopped
+    command: ["node", "apps/marketing/dist/index.js", "serve"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-spot_user}:${POSTGRES_PASSWORD}@spot-postgres:5432/${POSTGRES_DB:-spot_db}
+      BSKY_HANDLE: ${BSKY_HANDLE:-}
+      BSKY_APP_PASSWORD: ${BSKY_APP_PASSWORD:-}
+      BSKY_SERVICE_URL: ${BSKY_SERVICE_URL:-https://bsky.social}
+      X_API_KEY: ${X_API_KEY:-}
+      X_API_SECRET: ${X_API_SECRET:-}
+      X_ACCESS_TOKEN: ${X_ACCESS_TOKEN:-}
+      X_ACCESS_SECRET: ${X_ACCESS_SECRET:-}
+      MARKETING_APP_URL: ${MARKETING_APP_URL:-https://claimyourspot.lol}
+      MARKETING_INTERVAL_MINUTES: ${MARKETING_INTERVAL_MINUTES:-1440}
+      MARKETING_ALWAYS_POST: ${MARKETING_ALWAYS_POST:-false}
+    depends_on:
+      spot-postgres:
+        condition: service_healthy
+    networks:
+      - spot-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
 networks:
   spot-network:
     driver: bridge

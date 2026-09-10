@@ -1,0 +1,25 @@
+{
+  "name": "marketing",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts serve",
+    "build": "tsc",
+    "start": "tsx src/index.ts serve",
+    "post": "tsx src/index.ts post",
+    "post:dry": "tsx src/index.ts post --dry-run",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.35",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.3",
+    "twitter-api-v2": "^1.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/pg": "^8.11.11",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
