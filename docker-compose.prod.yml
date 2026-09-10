@@ -74,6 +74,8 @@ services:
     container_name: spot-marketing
     restart: unless-stopped
     command: ["node", "apps/marketing/dist/index.js", "serve"]
+    healthcheck:
+      disable: true
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-spot_user}:${POSTGRES_PASSWORD}@spot-postgres:5432/${POSTGRES_DB:-spot_db}
