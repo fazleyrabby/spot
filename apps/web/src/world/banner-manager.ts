@@ -28,6 +28,7 @@ export interface WorldBanner {
   citizen?: SponsorCitizen | null;
   isSponsored?: boolean;
   expiresAt?: string;
+  viewsCount?: number;
 }
 
 export interface SponsorCitizen {
@@ -476,39 +477,51 @@ export interface ActiveSponsorshipRecord {
   buyer_name?: string;
   status?: string;
   expires_at?: string;
+  views_count?: number;
   citizen?: SponsorCitizen | null;
 }
 
 /**
  * Dynamically skins the world billboards with active sponsorships fetched from the database.
  */
-export function applyActiveSponsorships(activeRecords: ActiveSponsorshipRecord[]): void {
-  if (!Array.isArray(activeRecords)) return;
+export function applyActiveSponsorships(activeRecords: ActiveSponsorshipRecord[], stats?: Record<string, number>): void {
+  if (Array.isArray(activeRecords)) {
+    for (const record of activeRecords) {
+      const banner = WORLD_BANNERS.find((b) => b.id === record.billboard_id);
+      if (!banner) continue;
 
-  for (const record of activeRecords) {
-    const banner = WORLD_BANNERS.find((b) => b.id === record.billboard_id);
-    if (!banner) continue;
+      if (record.headline) {
+        banner.headline = record.headline.trim().toUpperCase();
+      }
+      if (record.subtext) {
+        banner.subtext = record.subtext.trim();
+      }
+      banner.tag = 'FEATURED SPONSOR';
+      banner.statusText = record.buyer_name ? `Sponsored by ${record.buyer_name}` : 'Active Sponsor';
+      banner.targetUrl = record.target_url || undefined;
+      banner.bannerImageUrl = record.banner_image_url || undefined;
+      banner.buyerName = record.buyer_name || undefined;
+      banner.citizen = record.citizen || null;
+      banner.isSponsored = true;
+      banner.expiresAt = record.expires_at || undefined;
+      if (typeof record.views_count === 'number') {
+        banner.viewsCount = record.views_count;
+      }
 
-    if (record.headline) {
-      banner.headline = record.headline.trim().toUpperCase();
+      if (record.brand_color && record.brand_color.startsWith('#')) {
+        banner.accentColor = record.brand_color;
+        banner.lightColor = `rgba(${parseInt(record.brand_color.slice(1, 3), 16) || 0}, ${
+          parseInt(record.brand_color.slice(3, 5), 16) || 240
+        }, ${parseInt(record.brand_color.slice(5, 7), 16) || 255}, 0.40)`;
+      }
     }
-    if (record.subtext) {
-      banner.subtext = record.subtext.trim();
-    }
-    banner.tag = 'FEATURED SPONSOR';
-    banner.statusText = record.buyer_name ? `Sponsored by ${record.buyer_name}` : 'Active Sponsor';
-    banner.targetUrl = record.target_url || undefined;
-    banner.bannerImageUrl = record.banner_image_url || undefined;
-    banner.buyerName = record.buyer_name || undefined;
-    banner.citizen = record.citizen || null;
-    banner.isSponsored = true;
-    banner.expiresAt = record.expires_at || undefined;
+  }
 
-    if (record.brand_color && record.brand_color.startsWith('#')) {
-      banner.accentColor = record.brand_color;
-      banner.lightColor = `rgba(${parseInt(record.brand_color.slice(1, 3), 16) || 0}, ${
-        parseInt(record.brand_color.slice(3, 5), 16) || 240
-      }, ${parseInt(record.brand_color.slice(5, 7), 16) || 255}, 0.40)`;
+  if (stats && typeof stats === 'object') {
+    for (const banner of WORLD_BANNERS) {
+      if (typeof stats[banner.id] === 'number') {
+        banner.viewsCount = stats[banner.id];
+      }
     }
   }
 }

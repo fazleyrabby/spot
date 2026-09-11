@@ -44,6 +44,7 @@ export interface Citizen {
   linkedinUrl?: string;
   email?: string;
   isVerified?: boolean;
+  viewsCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -68,6 +69,7 @@ export interface OccupiedSpotSummary {
   linkedinUrl?: string;
   isVerified?: boolean;
   isOnline?: boolean;
+  viewsCount?: number;
 }
 
 export interface WorldConfig {

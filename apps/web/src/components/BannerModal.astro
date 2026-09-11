@@ -48,6 +48,14 @@
       <div class="screen-status-bar" id="banner-modal-status-bar">
         <span class="screen-led-pip" id="banner-preview-led"></span>
         <span id="banner-modal-status">Reservation Available</span>
+        <span class="screen-clicks-badge mono-num" id="banner-modal-clicks" title="Unique visitor clicks / views" style="display: none;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span id="banner-modal-clicks-num">0</span>
+          <span class="clicks-unit">views</span>
+        </span>
         <span class="screen-expiry-badge" id="banner-modal-expiry" style="display: none;">
           <span class="expiry-icon">⏳</span>
           <span id="banner-modal-expiry-text">--</span>
@@ -483,6 +491,27 @@
     border-radius: 50%;
     background: #38bdf8;
     box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
+    flex-shrink: 0;
+  }
+
+  .screen-clicks-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .screen-clicks-badge svg {
+    color: #10b981;
     flex-shrink: 0;
   }
 

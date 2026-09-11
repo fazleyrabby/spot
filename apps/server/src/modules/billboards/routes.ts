@@ -1,10 +1,12 @@
 import express from 'express';
+import crypto from 'crypto';
 import { query } from '../../db.js';
 import { config } from '../../config.js';
 import { sendBillboardPurchaseNotification } from '../../discord.js';
 import { sendBillboardSponsoredEmail } from '../../mailer.js';
 import { ogFetchLimiter } from '../../rateLimiter.js';
 import { validateAdPolicy } from '@spot/shared';
+import { optionalAuthMiddleware, AuthenticatedRequest, clientIp } from '../../auth.js';
 
 export const billboardsRouter: express.Router = express.Router();
 
@@ -425,35 +427,45 @@ billboardsRouter.get('/orders', async (req, res) => {
  */
 billboardsRouter.get('/active', async (_req, res) => {
   try {
-    const active = await query<any>(
-      `SELECT 
-        bo.billboard_id,
-        bo.billboard_name,
-        bo.headline,
-        bo.subtext,
-        bo.target_url,
-        bo.banner_image_url,
-        bo.brand_color,
-        bo.buyer_name,
-        bo.citizen_id,
-        bo.status,
-        bo.expires_at,
-        c.id AS citizen_db_id,
-        c.display_name AS citizen_display_name,
-        c.avatar_id AS citizen_avatar_id,
-        c.avatar_url AS citizen_avatar_url,
-        (c.github_id IS NOT NULL) AS citizen_is_verified,
-        c.github_url AS citizen_github_url,
-        s.x AS spot_x,
-        s.y AS spot_y
-       FROM billboard_orders bo
-       LEFT JOIN citizens c ON bo.citizen_id = c.id
-       LEFT JOIN spots s ON s.owner_id = c.id
-       WHERE bo.status = 'live' 
-         AND bo.starts_at <= NOW()
-         AND bo.expires_at > NOW()
-       ORDER BY bo.created_at DESC`
-    );
+    const [active, statsRes] = await Promise.all([
+      query<any>(
+        `SELECT 
+          bo.billboard_id,
+          bo.billboard_name,
+          bo.headline,
+          bo.subtext,
+          bo.target_url,
+          bo.banner_image_url,
+          bo.brand_color,
+          bo.buyer_name,
+          bo.citizen_id,
+          bo.status,
+          bo.expires_at,
+          COALESCE(bs.views_count, bo.views_count, 0) AS views_count,
+          c.id AS citizen_db_id,
+          c.display_name AS citizen_display_name,
+          c.avatar_id AS citizen_avatar_id,
+          c.avatar_url AS citizen_avatar_url,
+          (c.github_id IS NOT NULL) AS citizen_is_verified,
+          c.github_url AS citizen_github_url,
+          s.x AS spot_x,
+          s.y AS spot_y
+         FROM billboard_orders bo
+         LEFT JOIN billboard_stats bs ON bo.billboard_id = bs.billboard_id
+         LEFT JOIN citizens c ON bo.citizen_id = c.id
+         LEFT JOIN spots s ON s.owner_id = c.id
+         WHERE bo.status = 'live' 
+           AND bo.starts_at <= NOW()
+           AND bo.expires_at > NOW()
+         ORDER BY bo.created_at DESC`
+      ),
+      query<any>(`SELECT billboard_id, views_count FROM billboard_stats`),
+    ]);
+
+    const statsMap: Record<string, number> = {};
+    for (const r of statsRes.rows) {
+      statsMap[r.billboard_id] = parseInt(r.views_count, 10) || 0;
+    }
 
     res.setHeader('Cache-Control', 'public, max-age=30');
 
@@ -469,6 +481,7 @@ billboardsRouter.get('/active', async (_req, res) => {
       buyer_name: row.buyer_name,
       status: row.status,
       expires_at: row.expires_at,
+      views_count: statsMap[row.billboard_id] ?? (parseInt(row.views_count, 10) || 0),
       citizen: row.citizen_db_id
         ? {
             id: row.citizen_db_id,
@@ -482,10 +495,105 @@ billboardsRouter.get('/active', async (_req, res) => {
         : null,
     }));
 
-    res.json({ activeBanners });
+    res.json({ activeBanners, stats: statsMap });
   } catch (err: any) {
     console.error('[Fetch Active Billboards Error]', err);
     res.status(500).json({ error: 'InternalServerError' });
+  }
+});
+
+/**
+ * POST /api/billboards/:id/click
+ * Track unique click / inspection of an adspot billboard.
+ * Excludes the sponsor/buyer (by citizen session, device fingerprint, or IP).
+ * Daily deduplicated per visitor (IP + device fingerprint).
+ */
+billboardsRouter.post('/:id/click', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  const billboardId = req.params.id;
+  const rawFingerprint = typeof req.body?.deviceFingerprint === 'string'
+    ? req.body.deviceFingerprint.trim().substring(0, 64)
+    : (req.headers['x-device-fingerprint'] as string)?.trim().substring(0, 64) || null;
+  const ip = clientIp(req);
+
+  try {
+    // Look up any active sponsor order and associated citizen
+    const orderRes = await query<any>(
+      `SELECT bo.id, bo.billboard_id, bo.citizen_id, bo.buyer_email,
+              c.ip_address as citizen_ip, c.device_fingerprint as citizen_dfp
+       FROM billboard_orders bo
+       LEFT JOIN citizens c ON bo.citizen_id = c.id
+       WHERE bo.billboard_id = $1 AND bo.status = 'live' AND bo.starts_at <= NOW() AND bo.expires_at > NOW()
+       LIMIT 1`,
+      [billboardId]
+    );
+
+    const liveOrder = orderRes.rows[0];
+
+    // Self-click exclusion check:
+    // If it's the founder monument, exclude founder
+    if (billboardId === 'banner_founder_showcase') {
+      const founderRes = await query<any>(`SELECT id, ip_address, device_fingerprint FROM citizens WHERE display_name ILIKE '%Fazley%' OR id = 'founder' LIMIT 1`);
+      const founder = founderRes.rows[0];
+      if (founder) {
+        if ((req.citizen && req.citizen.id === founder.id) ||
+            (rawFingerprint && founder.device_fingerprint && rawFingerprint === founder.device_fingerprint) ||
+            (ip && founder.ip_address && ip === founder.ip_address)) {
+          const statsRes = await query<any>(`SELECT views_count FROM billboard_stats WHERE billboard_id = $1`, [billboardId]);
+          res.json({ counted: false, reason: 'owner_excluded', viewsCount: parseInt(statsRes.rows[0]?.views_count || '0', 10) });
+          return;
+        }
+      }
+    } else if (liveOrder) {
+      const isOwnerBySession = Boolean(req.citizen && liveOrder.citizen_id && req.citizen.id === liveOrder.citizen_id);
+      const isOwnerByDevice = Boolean(rawFingerprint && liveOrder.citizen_dfp && rawFingerprint === liveOrder.citizen_dfp);
+      const isOwnerByIp = Boolean(ip && liveOrder.citizen_ip && ip === liveOrder.citizen_ip);
+
+      if (isOwnerBySession || isOwnerByDevice || isOwnerByIp) {
+        const statsRes = await query<any>(`SELECT views_count FROM billboard_stats WHERE billboard_id = $1`, [billboardId]);
+        res.json({ counted: false, reason: 'owner_excluded', viewsCount: parseInt(statsRes.rows[0]?.views_count || '0', 10) });
+        return;
+      }
+    }
+
+    // Visitor Hash for Daily Deduplication
+    const visitorSeed = `${ip || 'no_ip'}#${rawFingerprint || 'no_dfp'}`;
+    const visitorHash = crypto.createHash('sha256').update(visitorSeed).digest('hex').substring(0, 32);
+
+    // Daily Deduplicated Insert
+    const insertRes = await query(
+      `INSERT INTO billboard_clicks (billboard_id, visitor_hash, clicked_date)
+       VALUES ($1, $2, CURRENT_DATE)
+       ON CONFLICT (billboard_id, visitor_hash, clicked_date) DO NOTHING
+       RETURNING billboard_id`,
+      [billboardId, visitorHash]
+    );
+
+    let viewsCount = 0;
+    if (insertRes.rowCount && insertRes.rowCount > 0) {
+      // Increment stats
+      const statRes = await query<any>(
+        `INSERT INTO billboard_stats (billboard_id, views_count)
+         VALUES ($1, 1)
+         ON CONFLICT (billboard_id) DO UPDATE SET views_count = billboard_stats.views_count + 1
+         RETURNING views_count`,
+        [billboardId]
+      );
+      viewsCount = parseInt(statRes.rows[0]?.views_count, 10) || 1;
+
+      // Also update live billboard order if present
+      if (liveOrder) {
+        await query(`UPDATE billboard_orders SET views_count = views_count + 1 WHERE id = $1`, [liveOrder.id]).catch(() => {});
+      }
+
+      res.json({ counted: true, viewsCount });
+    } else {
+      const statRes = await query<any>(`SELECT views_count FROM billboard_stats WHERE billboard_id = $1`, [billboardId]);
+      viewsCount = parseInt(statRes.rows[0]?.views_count || '0', 10);
+      res.json({ counted: false, reason: 'already_counted_today', viewsCount });
+    }
+  } catch (err: any) {
+    console.error('[Billboard Click Error]', err);
+    res.status(500).json({ error: 'InternalServerError', message: 'Failed to record click' });
   }
 });
 

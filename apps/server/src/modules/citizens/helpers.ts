@@ -11,6 +11,7 @@ export const CITIZEN_PROFILE_COLUMNS = `
   instagram_url as "instagramUrl", youtube_url as "youtubeUrl",
   linkedin_url as "linkedinUrl",
   (github_url IS NOT NULL AND github_url <> '') as "isVerified",
+  COALESCE(views_count, 0) as "viewsCount",
   created_at as "createdAt", updated_at as "updatedAt"
 `;
 

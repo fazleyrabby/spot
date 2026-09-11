@@ -33,7 +33,8 @@ worldRouter.get('/', async (_req, res) => {
         c.twitter_url as "twitterUrl", c.facebook_url as "facebookUrl",
         c.instagram_url as "instagramUrl", c.youtube_url as "youtubeUrl",
         c.linkedin_url as "linkedinUrl",
-        (c.github_url IS NOT NULL AND c.github_url <> '') as "isVerified"
+        (c.github_url IS NOT NULL AND c.github_url <> '') as "isVerified",
+        COALESCE(c.views_count, 0) as "viewsCount"
       FROM spots s
       INNER JOIN citizens c ON s.owner_id = c.id
     `);

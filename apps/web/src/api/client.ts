@@ -436,3 +436,91 @@ export async function recordVisit(): Promise<number | null> {
   return null;
 }
 
+export interface CitizenClickResult {
+  counted: boolean;
+  reason?: string;
+  viewsCount: number;
+}
+
+/**
+ * Record a click on a citizen's spot / profile.
+ * Ignores the owner (by session, device fingerprint, or IP).
+ * Deduplicates multiple clicks per visitor per 24 hours.
+ */
+export async function recordCitizenClick(citizenId: string): Promise<CitizenClickResult | null> {
+  if (!citizenId || citizenId.startsWith('guest_')) return null;
+
+  // Fast client-side self-check
+  if (typeof window !== 'undefined') {
+    const savedCitId = localStorage.getItem('spot_citizen_id');
+    if (savedCitId && savedCitId === citizenId) {
+      return null;
+    }
+  }
+
+  if (API_BASE) {
+    try {
+      const deviceFingerprint = await getDeviceFingerprint().catch(() => '');
+      const headers = getAuthHeaders();
+      if (deviceFingerprint) {
+        headers['x-device-fingerprint'] = deviceFingerprint;
+      }
+      const res = await fetch(`${API_BASE}/citizens/${encodeURIComponent(citizenId)}/click`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ deviceFingerprint }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          counted: Boolean(data.counted),
+          reason: data.reason,
+          viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 0,
+        };
+      }
+    } catch (err) {
+      console.debug('Failed to record citizen click:', err);
+    }
+  }
+  return null;
+}
+
+/**
+ * Record a click on a billboard adspot.
+ * Ignores the sponsor/buyer (by session, device fingerprint, or IP).
+ * Deduplicates multiple clicks per visitor per 24 hours.
+ */
+export async function recordBillboardClick(billboardId: string): Promise<CitizenClickResult | null> {
+  if (!billboardId) return null;
+
+  if (API_BASE) {
+    try {
+      const deviceFingerprint = await getDeviceFingerprint().catch(() => '');
+      const headers = getAuthHeaders();
+      if (deviceFingerprint) {
+        headers['x-device-fingerprint'] = deviceFingerprint;
+      }
+      const res = await fetch(`${API_BASE}/billboards/${encodeURIComponent(billboardId)}/click`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ deviceFingerprint }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          counted: Boolean(data.counted),
+          reason: data.reason,
+          viewsCount: typeof data.viewsCount === 'number' ? data.viewsCount : 0,
+        };
+      }
+    } catch (err) {
+      console.debug('Failed to record billboard click:', err);
+    }
+  }
+  return null;
+}
+
+
+

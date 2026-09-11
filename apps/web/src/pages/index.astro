@@ -29,7 +29,7 @@ import ShareModal from '../components/ShareModal.astro';
 
 <script>
   import QRCode from 'qrcode';
-  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, recordVisit, type CitizenSearchResult, type SpotComment } from '../api/client.js';
+  import { API_BASE, fetchWorldSnapshot, fetchMySession, claimSpot, searchCitizens, updateMyProfile, deleteMyAccount, syncGithubAuth, fetchSpotComments, postSpotComment, updateSpotWall, registerPasskey, authenticateWithPasskey, isServerOfflineError, checkServerHealth, recordVisit, recordCitizenClick, type CitizenSearchResult, type SpotComment } from '../api/client.js';
   import { containsBlockedWord, formatSocialUrl } from '@spot/shared';
   import { supabase, signInWithGitHub, getSupabaseUser } from '../api/supabase.js';
   import { getDeviceFingerprint } from '../api/fingerprint.js';
@@ -102,6 +102,8 @@ import ShareModal from '../components/ShareModal.astro';
   const profileVerifiedBadge = document.getElementById('profile-verified-badge');
   const profilePresence = document.getElementById('profile-presence');
   const profileTagline = document.getElementById('profile-tagline');
+  const profileClicksBadge = document.getElementById('profile-clicks-badge');
+  const profileClicksNum = document.getElementById('profile-clicks-num');
   const spotWallComments = document.getElementById('spot-wall-comments');
   const spotWallForm = document.getElementById('spot-wall-form') as HTMLFormElement;
   const spotWallAuthor = document.getElementById('spot-wall-author') as HTMLInputElement;
@@ -913,6 +915,10 @@ import ShareModal from '../components/ShareModal.astro';
     if (profileName) profileName.textContent = occupied.displayName;
     if (profileVerifiedBadge) profileVerifiedBadge.style.display = occupied.isVerified ? 'inline-flex' : 'none';
     if (profileTagline) profileTagline.textContent = occupied.tagline || 'Proud citizen of Spot.';
+    if (profileClicksBadge && profileClicksNum) {
+      profileClicksBadge.style.display = 'inline-flex';
+      profileClicksNum.textContent = String(occupied.viewsCount ?? 0);
+    }
 
     // Avatar preview
     if (profileAvatarCanvas) {
@@ -1048,6 +1054,16 @@ import ShareModal from '../components/ShareModal.astro';
       profileOwnerActions.style.display = isOwner ? 'flex' : 'none';
     }
     updateSpotWallComposer(occupied, isOwner);
+
+    // Track unique inspection clicks by others (guests & non-owners)
+    if (!isOwner && occupied.citizenId && !occupied.citizenId.startsWith('guest_')) {
+      recordCitizenClick(occupied.citizenId).then((result) => {
+        if (result && profileClicksNum && currentViewingOccupied?.citizenId === occupied.citizenId) {
+          profileClicksNum.textContent = String(result.viewsCount);
+          occupied.viewsCount = result.viewsCount;
+        }
+      }).catch(() => {});
+    }
 
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');

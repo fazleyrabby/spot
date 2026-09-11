@@ -263,7 +263,7 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
   import { applyActiveSponsorships, WORLD_BANNERS } from '../world/banner-manager.js';
   import { AVATAR_CATALOG, drawAvatarOnCanvas, drawCustomAvatarOnCanvas } from '../canvas/avatars.js';
   import { containsBlockedWord, formatSocialUrl, validateAdPolicy, type OccupiedSpotSummary } from '@spot/shared';
-  import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment, recordVisit } from '../api/client.js';
+  import { fetchMySession, syncGithubAuth, searchCitizens, fetchSpotComments, postSpotComment, recordVisit, recordCitizenClick, recordBillboardClick } from '../api/client.js';
   import { supabase } from '../api/supabase.js';
 
   // ── Resolve API base ──────────────────────────────────────────────────────
@@ -305,6 +305,8 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
   const profileName     = document.getElementById('profile-name') as HTMLElement;
   const profileTagline  = document.getElementById('profile-tagline') as HTMLElement;
   const profileVerifiedBadge = document.getElementById('profile-verified-badge') as HTMLElement;
+  const profileClicksBadge = document.getElementById('profile-clicks-badge') as HTMLElement | null;
+  const profileClicksNum = document.getElementById('profile-clicks-num') as HTMLElement | null;
   const linkWebsite     = document.getElementById('link-website') as HTMLAnchorElement;
   const linkWebsiteText = document.getElementById('link-website-text') as HTMLElement;
   const linkTwitter     = document.getElementById('link-twitter') as HTMLAnchorElement;
@@ -385,10 +387,15 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
       setLink(linkGithub, null);
 
       if (spotWallSection) spotWallSection.style.display = 'none';
+      if (profileClicksBadge) profileClicksBadge.style.display = 'none';
     } else {
       if (profileSpotId)  profileSpotId.textContent  = `Spot (${spot.x}, ${spot.y})`;
       if (profileName)    profileName.textContent     = spot.displayName;
       if (profileTagline) profileTagline.textContent  = spot.tagline || '';
+      if (profileClicksBadge && profileClicksNum) {
+        profileClicksBadge.style.display = 'inline-flex';
+        profileClicksNum.textContent = String(spot.viewsCount ?? 0);
+      }
       if (profilePresenceText) profilePresenceText.textContent = 'Permanent Citizen';
       if (profilePresence) {
         profilePresence.style.background = '';
@@ -540,6 +547,24 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
     profileBackdrop.classList.add('open');
     profileBackdrop.setAttribute('aria-hidden', 'false');
     currentViewingSpotSummary = spot;
+
+    // Track unique inspection clicks by others (guests & non-owners)
+    let isSelf = false;
+    try {
+      const myCitId = localStorage.getItem('spot_citizen_id');
+      const myCitizen = localStorage.getItem('spot_my_citizen');
+      if (myCitId && myCitId === spot.citizenId) isSelf = true;
+      if (myCitizen && JSON.parse(myCitizen).id === spot.citizenId) isSelf = true;
+    } catch (_) {}
+
+    if (!isGuest && !isSelf && spot.citizenId) {
+      recordCitizenClick(spot.citizenId).then((result) => {
+        if (result && profileClicksNum && currentViewingSpotSummary?.citizenId === spot.citizenId) {
+          profileClicksNum.textContent = String(result.viewsCount);
+          spot.viewsCount = result.viewsCount;
+        }
+      }).catch(() => {});
+    }
   }
 
   // ── Spot Wall / Guestbook Comments ─────────────────────────────────────────
@@ -1063,6 +1088,13 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
     if (bannerStatus) bannerStatus.textContent = banner.statusText;
     if (bannerDesc) bannerDesc.textContent = banner.description;
 
+    const bannerClicksBadge = document.getElementById('banner-modal-clicks');
+    const bannerClicksNum = document.getElementById('banner-modal-clicks-num');
+    if (bannerClicksBadge && bannerClicksNum) {
+      bannerClicksBadge.style.display = 'inline-flex';
+      bannerClicksNum.textContent = String(banner.viewsCount ?? 0);
+    }
+
     colorPips.forEach((pip) => {
       if (pip.dataset.color?.toLowerCase() === selectedAccentColor.toLowerCase()) {
         pip.classList.add('active');
@@ -1186,11 +1218,35 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
     bannerBackdrop.classList.add('open');
     bannerBackdrop.setAttribute('aria-hidden', 'false');
 
+    // Track unique billboard / adspot inspection clicks (others, not sponsor)
+    let isSponsorSelf = false;
+    try {
+      const myCitId = localStorage.getItem('spot_citizen_id');
+      if (myCitId && banner.citizen?.id && myCitId === banner.citizen.id) {
+        isSponsorSelf = true;
+      }
+    } catch (_) {}
+
+    if (!isSponsorSelf && banner.id) {
+      recordBillboardClick(banner.id).then((result) => {
+        if (result && bannerClicksNum && currentBanner?.id === banner.id) {
+          bannerClicksNum.textContent = String(result.viewsCount);
+          banner.viewsCount = result.viewsCount;
+        }
+      }).catch(() => {});
+    }
+
     // Start live countdown ticker
     updateExpiryDisplay();
     if (countdownTimerId) clearInterval(countdownTimerId);
     countdownTimerId = window.setInterval(updateExpiryDisplay, 1000);
   }
+
+  bannerVisitBtn?.addEventListener('click', () => {
+    if (currentBanner?.id) {
+      recordBillboardClick(currentBanner.id).catch(() => {});
+    }
+  });
 
   // Handle clicking citizen plot chip
   bannerCitizenPlotBtn?.addEventListener('click', (e) => {
@@ -1821,11 +1877,12 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
       // ── Fetch Dynamic Billboard Sponsorships ──────────────────────────────
       async function syncActiveBanners() {
         try {
-          const billboardRes = await fetch(`${API_BASE}/api/billboards/active`);
+          const origin = resolveApiOrigin();
+          const billboardRes = await fetch(`${origin}/api/billboards/active`);
           if (billboardRes.ok) {
             const billboardData = await billboardRes.json();
             if (billboardData?.activeBanners) {
-              applyActiveSponsorships(billboardData.activeBanners);
+              applyActiveSponsorships(billboardData.activeBanners, billboardData.stats);
             }
           }
         } catch (_) {}

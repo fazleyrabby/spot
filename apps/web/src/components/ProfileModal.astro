@@ -42,6 +42,14 @@
         <div class="profile-meta">
           <div class="profile-meta-top">
             <div class="spot-tag mono-num" id="profile-spot-id">Spot (42, 42)</div>
+            <div class="profile-clicks-badge mono-num" id="profile-clicks-badge" title="Unique visitor clicks / views" style="display: none;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span id="profile-clicks-num">0</span>
+              <span class="clicks-unit">views</span>
+            </div>
             <button type="button" class="profile-share-chip" id="profile-share-chip" title="Share this spot or get GitHub README badge">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="18" cy="5" r="3"></circle>
@@ -700,6 +708,33 @@
     font-weight: 600;
     color: var(--accent-amber);
     letter-spacing: 0.04em;
+  }
+
+  .profile-clicks-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 6px;
+    color: #34d399;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .profile-clicks-badge svg {
+    color: #10b981;
+    flex-shrink: 0;
+  }
+
+  .clicks-unit {
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+    font-size: 0.64rem;
   }
 
   .profile-name-row {

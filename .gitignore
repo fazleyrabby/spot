@@ -54,6 +54,7 @@ database/backups/
 *.sql.gz
 *.sql.tar
 *.sql.bak
+backup_*.sql
 
 # AI Agent memory and local workspace rules
 .agents/

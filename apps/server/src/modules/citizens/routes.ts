@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import {
   optionalAuthMiddleware,
   requireAuthMiddleware,
@@ -7,6 +8,7 @@ import {
   hashToken,
   COOKIE_NAME,
   COOKIE_OPTIONS,
+  clientIp,
 } from '../../auth.js';
 import { query } from '../../db.js';
 import { config } from '../../config.js';
@@ -128,6 +130,87 @@ citizensRouter.get('/:id', async (req, res) => {
   } catch (err: any) {
     console.error('Error fetching citizen profile:', err);
     res.status(500).json({ error: 'InternalServerError' });
+  }
+});
+
+/**
+ * POST /api/citizens/:id/click
+ * Record a click / inspection on a citizen's spot modal.
+ * Excludes the owner (by session, device fingerprint, or IP address).
+ * Deduplicates multiple clicks from the same visitor per 24 hours.
+ */
+citizensRouter.post('/:id/click', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
+  const { id } = req.params;
+  const rawFingerprint = typeof req.body?.deviceFingerprint === 'string'
+    ? req.body.deviceFingerprint.trim().substring(0, 64)
+    : (req.headers['x-device-fingerprint'] as string)?.trim().substring(0, 64) || null;
+  const ip = clientIp(req);
+
+  try {
+    const citizenRes = await query<any>(
+      `SELECT id, ip_address as "ipAddress", device_fingerprint as "deviceFingerprint", COALESCE(views_count, 0) as "viewsCount"
+       FROM citizens
+       WHERE id = $1
+       LIMIT 1`,
+      [id]
+    );
+
+    if (citizenRes.rows.length === 0) {
+      res.status(404).json({ error: 'NotFound', message: 'Citizen not found' });
+      return;
+    }
+
+    const citizen = citizenRes.rows[0];
+    let currentViews = parseInt(citizen.viewsCount, 10) || 0;
+
+    // 1. Owner Self-Click Exclusion
+    const isOwnerBySession = Boolean(req.citizen && req.citizen.id === citizen.id);
+    const isOwnerByDevice = Boolean(rawFingerprint && citizen.deviceFingerprint && rawFingerprint === citizen.deviceFingerprint);
+    const isOwnerByIp = Boolean(ip && citizen.ipAddress && ip === citizen.ipAddress);
+
+    if (isOwnerBySession || isOwnerByDevice || isOwnerByIp) {
+      res.json({
+        counted: false,
+        reason: 'owner_excluded',
+        viewsCount: currentViews,
+      });
+      return;
+    }
+
+    // 2. Visitor Identity Hash for Daily Deduplication
+    const visitorSeed = `${ip || 'no_ip'}#${rawFingerprint || 'no_dfp'}`;
+    const visitorHash = crypto.createHash('sha256').update(visitorSeed).digest('hex').substring(0, 32);
+
+    // 3. Atomically Record Click with Daily Deduplication
+    const insertRes = await query(
+      `INSERT INTO citizen_clicks (citizen_id, visitor_hash, clicked_date)
+       VALUES ($1, $2, CURRENT_DATE)
+       ON CONFLICT (citizen_id, visitor_hash, clicked_date) DO NOTHING
+       RETURNING citizen_id`,
+      [citizen.id, visitorHash]
+    );
+
+    if (insertRes.rowCount && insertRes.rowCount > 0) {
+      const updateRes = await query<any>(
+        `UPDATE citizens SET views_count = views_count + 1 WHERE id = $1 RETURNING views_count as "viewsCount"`,
+        [citizen.id]
+      );
+      currentViews = parseInt(updateRes.rows[0]?.viewsCount, 10) || (currentViews + 1);
+      invalidateWorldCache();
+      res.json({
+        counted: true,
+        viewsCount: currentViews,
+      });
+    } else {
+      res.json({
+        counted: false,
+        reason: 'already_counted_today',
+        viewsCount: currentViews,
+      });
+    }
+  } catch (err: any) {
+    console.error('Error recording citizen click:', err);
+    res.status(500).json({ error: 'InternalServerError', message: 'Failed to record click' });
   }
 });
 
