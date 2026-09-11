@@ -1,5 +1,5 @@
-import { config, hasBluesky, hasTwitter } from './config.js';
-import { buildDailyPost, buildManualPost } from './content.js';
+import { config, hasBluesky, hasTwitter, hasInstagram } from './config.js';
+import { buildDailyPost, buildManualPost, buildInstagramCaption, recapImageUrl } from './content.js';
 import {
   ensureMarketingTables,
   getLastCursor,
@@ -10,6 +10,7 @@ import {
 } from './db.js';
 import { postToBluesky, verifyBluesky } from './bluesky.js';
 import { postToTwitter } from './twitter.js';
+import { postToInstagram, refreshInstagramToken, verifyInstagram } from './instagram.js';
 
 interface Args {
   command: string;
@@ -38,16 +39,21 @@ async function publish(args: Args): Promise<void> {
   const channels: string[] = [];
   if (hasBluesky) channels.push('bluesky');
   if (hasTwitter) channels.push('twitter');
+  if (hasInstagram) channels.push('instagram');
   if (channels.length === 0) {
-    log('No channels configured. Set BSKY_HANDLE + BSKY_APP_PASSWORD (free) and/or X_* keys.');
+    log('No channels configured. Set BSKY_HANDLE + BSKY_APP_PASSWORD (free) and/or X_* / IG_* keys.');
     return;
   }
 
   let text: string;
   let newestClaim: string | null = null;
+  let igImageUrl: string | null = null;
+  let igCaption: string | null = null;
 
   if (args.text) {
     text = buildManualPost(args.text).text;
+    igImageUrl = `${config.appUrl}/api/og`;
+    igCaption = `${args.text}\n\n👉 ${config.appUrl}\n\n#claimyourspot #indiedev #pixelart #buildinpublic`;
   } else {
     await ensureMarketingTables();
     const cursor = await getLastCursor();
@@ -60,6 +66,8 @@ async function publish(args: Args): Promise<void> {
     }
     const content = buildDailyPost(claims, totals, config.appUrl);
     text = content.text;
+    igImageUrl = recapImageUrl(claims, config.appUrl);
+    igCaption = buildInstagramCaption(claims, totals, config.appUrl);
     log(`Recap: ${claims.length} new claim(s), ${totals.claimed} total.`);
   }
 
@@ -95,6 +103,17 @@ async function publish(args: Args): Promise<void> {
     }
   }
 
+  if (hasInstagram && igImageUrl && igCaption) {
+    try {
+      const id = await postToInstagram(igImageUrl, igCaption);
+      posted.push('instagram');
+      log('Posted to Instagram:', id);
+      if (!args.text) await recordPost('instagram', igCaption, id).catch(() => {});
+    } catch (err) {
+      log('Instagram post failed:', (err as Error).message);
+    }
+  }
+
   if (!args.text && posted.length > 0) {
     await setLastCursor(newestClaim ?? new Date().toISOString());
   }
@@ -103,7 +122,7 @@ async function publish(args: Args): Promise<void> {
 async function serve(): Promise<void> {
   const minutes = Math.max(5, config.intervalMinutes);
   log(`Scheduler running every ${minutes} minute(s). Channels:`,
-    [hasBluesky && 'bluesky', hasTwitter && 'twitter'].filter(Boolean).join(', ') || 'none');
+    [hasBluesky && 'bluesky', hasTwitter && 'twitter', hasInstagram && 'instagram'].filter(Boolean).join(', ') || 'none');
 
   const run = async () => {
     try {
@@ -124,6 +143,13 @@ async function main(): Promise<void> {
     if (hasBluesky) log('Bluesky:', await verifyBluesky());
     else log('Bluesky: not configured');
     log('Twitter/X:', hasTwitter ? 'configured' : 'not configured (paid API required)');
+    if (hasInstagram) log('Instagram:', await verifyInstagram());
+    else log('Instagram: not configured (needs Business/Creator + Meta app token)');
+    return;
+  }
+
+  if (args.command === 'instagram-refresh') {
+    log(await refreshInstagramToken());
     return;
   }
 

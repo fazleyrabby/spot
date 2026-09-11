@@ -78,6 +78,10 @@
   - Procedural 8-bit ambient background music toggleable from the top HUD.
 - **2.5D Isometric Camera Toggle**:
   - Optional HUD switch (`[2D / 2.5D]`) providing vertical depth to buildings and plots using existing isometric transforms.
+- **🎥 Cinematic Tour Mode Camera** *(inspired by multi-view strategy games like "We March as One")*:
+  - One-click **Tour** button in the HUD launching an auto-piloted cinematic fly-through gliding over landmarks, the mountain ridge, beach, and citizen hotspots.
+  - Smooth eased camera path with slow zoom drift; any input instantly returns control to the player.
+  - Doubles as the **video source for the marketing autoposter** (Playwright records the tour for Bluesky / Instagram / X posts).
 
 ---
 
@@ -101,5 +105,5 @@
 | **Milestone 2** | **Character Sprites & Gear** | 4-way walk cycles, directional gear (backpacks, visors), 3 new archetypes | 🟡 **Next In Line** |
 | **Milestone 3** | **Viral Distribution** | GitHub README Badges, Twitter OG Cards, Fight Record Social Share | ⚪ Scheduled |
 | **Milestone 4** | **Arcade Leaderboard & 2P** | Global Hall of Fame, local 2-player keyboard duel | ⚪ Scheduled |
-| **Milestone 5** | **Immersion & Radar** | Mini-map HUD radar, Day/Night neon cycle, Chiptune soundtrack | ⚪ Scheduled |
+| **Milestone 5** | **Immersion & Radar** | Mini-map HUD radar, Day/Night neon cycle, Chiptune soundtrack, Cinematic Tour Mode | ⚪ Scheduled |
 | **Milestone 6** | **Founder Economy** | Thematic Districts, Self-Serve Billboards | ⚪ Future |

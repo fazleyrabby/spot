@@ -640,20 +640,14 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     flex-shrink: 0;
   }
 
-  /* Responsive styling across all devices */
+  /* Responsive styling across all devices: keep full content scrollable (same as /world HUD) */
   @media (max-width: 768px) {
     .header-hud {
       top: 8px;
-      height: auto;
-      min-height: 40px;
-      padding: 6px 8px;
+      height: 40px;
+      padding: 0 8px;
       gap: 8px;
-      row-gap: 6px;
-      flex-wrap: wrap;
-      justify-content: center;
       max-width: calc(100vw - 12px);
-      overflow: visible;
-      white-space: normal;
     }
 
     .activity-ticker {
@@ -661,38 +655,13 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     }
   }
 
-  @media (max-width: 640px) {
-    .brand-title,
-    .stat-divider,
-    .visitors-pill {
-      display: none;
-    }
-
-    .stat-text,
-    .stat-total,
-    .stat-slash,
-    .mini-bar {
-      display: none;
-    }
-
-    .library-btn-label,
-    .search-label,
-    .search-shortcut,
-    .claim-btn-text {
-      display: none;
-    }
-
-    .hud-search-btn,
-    .cta-claim-btn {
-      padding: 0 8px;
-    }
-  }
-
   @media (max-width: 480px) {
     .header-hud {
       top: 6px;
-      padding: 5px 6px;
+      height: 38px;
+      padding: 0 6px;
       gap: 6px;
+      max-width: calc(100vw - 10px);
     }
   }
 </style>

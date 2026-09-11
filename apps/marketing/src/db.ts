@@ -69,6 +69,23 @@ export async function setLastCursor(iso: string): Promise<void> {
   );
 }
 
+export async function getState(key: string): Promise<string | null> {
+  const res = await getPool().query<{ value: string }>(
+    `SELECT value FROM marketing_state WHERE key = $1`,
+    [key],
+  );
+  return res.rows[0]?.value ?? null;
+}
+
+export async function setState(key: string, value: string): Promise<void> {
+  await getPool().query(
+    `INSERT INTO marketing_state (key, value, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+    [key, value],
+  );
+}
+
 export async function getRecentClaims(sinceIso: string): Promise<Claim[]> {
   const res = await getPool().query<Claim>(
     `SELECT s.x, s.y,

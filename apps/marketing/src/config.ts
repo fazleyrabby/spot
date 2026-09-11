@@ -24,6 +24,10 @@ export const config = {
   xAccessToken: process.env.X_ACCESS_TOKEN || '',
   xAccessSecret: process.env.X_ACCESS_SECRET || '',
 
+  igUserId: process.env.IG_USER_ID || '',
+  igAccessToken: process.env.IG_ACCESS_TOKEN || '',
+  igGraphVersion: process.env.IG_GRAPH_VERSION || 'v21.0',
+
   intervalMinutes: Number(process.env.MARKETING_INTERVAL_MINUTES || 1440),
   alwaysPost: bool(process.env.MARKETING_ALWAYS_POST),
   maxClaimsPerPost: Number(process.env.MARKETING_MAX_CLAIMS || 5),
@@ -33,3 +37,4 @@ export const hasBluesky = Boolean(config.bskyHandle && config.bskyAppPassword);
 export const hasTwitter = Boolean(
   config.xApiKey && config.xApiSecret && config.xAccessToken && config.xAccessSecret,
 );
+export const hasInstagram = Boolean(config.igUserId && config.igAccessToken);
