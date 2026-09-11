@@ -58,7 +58,6 @@ database/backups/
 # AI Agent memory and local workspace rules
 .agents/
 
-# Marketing autoposter WIP (not part of the voxel feature branch)
-apps/marketing/src/instagram.ts
+# Marketing autoposter WIP
 apps/marketing/assets/
 
