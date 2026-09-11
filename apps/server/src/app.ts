@@ -8,7 +8,7 @@ import { apiRouter } from './routes.js';
 import { globalApiLimiter } from './rateLimiter.js';
 import { query } from './db.js';
 import { sendErrorAlert } from './discord.js';
-import { handleShareLanding } from './modules/meta/routes.js';
+import { handleShareLanding, handleSitemapSpots } from './modules/meta/routes.js';
 
 export const app: express.Express = express();
 
@@ -88,8 +88,24 @@ app.get('/health', async (_req, res) => {
 // Mount API router with global sliding-window rate limiter
 app.use('/api', globalApiLimiter, apiRouter);
 
+// Mount dynamic XML sitemaps for Google, Bing, DuckDuckGo, etc.
+app.get(['/sitemap-spots.xml', '/sitemap.xml', '/sitemap-index.xml'], handleSitemapSpots);
+
 // Mount viral share & crawler landing routes (rich OpenGraph PNG preview + deep-link redirect)
 app.get(['/share', '/spot/:identifier', '/@:identifier'], handleShareLanding);
+
+// Social crawler detection: If Twitter, Discord, Telegram, Facebook, Slack or search crawler hits
+// URLs with ?spot= or ?citizen=, serve dynamic server-rendered OpenGraph HTML with image preview.
+const BOT_UA_REGEX = /bot|crawler|spider|crawling|facebookexternalhit|twitterbot|discordbot|slackbot|telegrambot|whatsapp|linkedinbot|pinterest|applebot|bingbot|googlebot/i;
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const ua = req.headers['user-agent'] || '';
+  const hasSpotQuery = Boolean(req.query.spot || req.query.citizen || (req.query.x && req.query.y));
+  if (hasSpotQuery && BOT_UA_REGEX.test(ua)) {
+    return handleShareLanding(req, res);
+  }
+  next();
+});
 
 // Serve static frontend in production if dist exists
 const webDistPath = process.env.WEB_DIST_PATH || path.resolve(process.cwd(), '../web/dist');

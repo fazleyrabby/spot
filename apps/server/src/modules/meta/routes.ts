@@ -479,3 +479,66 @@ metaRouter.get('/badge', handleBadgeRequest);
 
 // Mount share route
 metaRouter.get('/share', handleShareLanding);
+
+/**
+ * GET /api/meta/sitemap-spots.xml
+ * Dynamic XML sitemap listing all claimed spots and permalinks for search engines.
+ */
+export const handleSitemapSpots = async (_req: express.Request, res: express.Response): Promise<void> => {
+  try {
+    const spotsRes = await query<any>(`
+      SELECT s.x, s.y, s.claimed_at as "claimedAt", c.updated_at as "updatedAt"
+      FROM spots s
+      INNER JOIN citizens c ON s.owner_id = c.id
+      ORDER BY s.claimed_at DESC
+    `);
+
+    const domain = 'https://claimyourspot.lol';
+    const now = new Date().toISOString().split('T')[0];
+    const urlsXml = spotsRes.rows
+      .map((row) => {
+        const lastmod = row.updatedAt || row.claimedAt ? new Date(row.updatedAt || row.claimedAt).toISOString().split('T')[0] : now;
+        return `  <url>
+    <loc>${domain}/?spot=${row.x},${row.y}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      })
+      .join('\n');
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${domain}/</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${domain}/world</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${domain}/voxel</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+${urlsXml}
+</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    res.send(sitemap);
+  } catch (err) {
+    console.error('Sitemap generation error:', err);
+    res.status(500).type('text/plain').send('Failed to generate sitemap');
+  }
+};
+
+metaRouter.get('/sitemap-spots.xml', handleSitemapSpots);
+metaRouter.get('/sitemap.xml', handleSitemapSpots);
+metaRouter.get('/sitemap-index.xml', handleSitemapSpots);

@@ -11,8 +11,8 @@ interface Props {
 const {
   title = 'SPOT — Your Place on the Internet',
   description = 'A persistent 10,000-tile cyber canvas where everyone gets their own spot and retro 8-bit avatar. Free to join.',
-  image = 'https://www.claimyourspot.lol/og-image.png',
-  url = 'https://www.claimyourspot.lol/',
+  image = 'https://claimyourspot.lol/og-image.png',
+  url = 'https://claimyourspot.lol/',
 } = Astro.props;
 
 const siteName = 'SPOT';
@@ -33,6 +33,7 @@ const author = 'Md. Fazley Rabbi';
     <title>{title}</title>
     <meta name="title" content={title} />
     <meta name="description" content={description} />
+    <meta name="keywords" content="claim your spot, spot city, 10000 plots, cyber canvas, digital real estate, retro pixel art, indie hackers, developer community, virtual neighborhood, pixel avatar, permanent internet spot" />
     <meta name="author" content={author} />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#090b10" />
@@ -51,6 +52,7 @@ const author = 'Md. Fazley Rabbi';
     <meta property="og:image" content={image} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SPOT — Permanent 10,000-Tile Living Cyber Canvas" />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:locale" content="en_US" />
 
@@ -84,14 +86,14 @@ const author = 'Md. Fazley Rabbi';
         {
           "@type": "WebSite",
           "name": "SPOT",
-          "url": "https://www.claimyourspot.lol/",
+          "url": "https://claimyourspot.lol/",
           "description": description,
           "inLanguage": "en"
         },
         {
           "@type": "WebApplication",
           "name": "SPOT",
-          "url": "https://www.claimyourspot.lol/",
+          "url": "https://claimyourspot.lol/",
           "description": description,
           "applicationCategory": "InternetApplication",
           "operatingSystem": "All",
@@ -101,8 +103,8 @@ const author = 'Md. Fazley Rabbi';
         {
           "@type": "Organization",
           "name": "SPOT",
-          "url": "https://www.claimyourspot.lol/",
-          "logo": "https://www.claimyourspot.lol/logo.png"
+          "url": "https://claimyourspot.lol/",
+          "logo": "https://claimyourspot.lol/logo.png"
         }
       ]
     })} />
