@@ -1,7 +1,7 @@
 import express from 'express';
 import { query } from '../../db.js';
 import { validSpotId } from '../spots/routes.js';
-import { generateOgSvg, rasterizeSvgToPng, getCachedOgImage, setCachedOgImage, type OgCardOptions } from './og.js';
+import { generateOgSvg, rasterizeSvgToPng, getCachedOgImage, setCachedOgImage, prepareCustomAvatarPng, type OgCardOptions } from './og.js';
 
 export const metaRouter: express.Router = express.Router();
 
@@ -30,8 +30,18 @@ async function resolveSpotOrCitizen(rawParam: string): Promise<{
   spotId?: string;
   isAvailable?: boolean;
 } | null> {
-  const clean = rawParam.trim();
+  let clean = rawParam.trim();
   if (!clean) return null;
+
+  try {
+    clean = decodeURIComponent(clean);
+  } catch (_) {}
+  clean = clean.trim();
+
+  // Normalize delimiters like 52-60 or 52_60 into 52,60
+  if (/^\d+[-_]\d+$/.test(clean)) {
+    clean = clean.replace(/[-_]/, ',');
+  }
 
   // 1. Check if identifier is coordinates format: x,y
   if (/^\d+,\d+$/.test(clean)) {
@@ -115,6 +125,13 @@ const handleOgRequest = async (req: express.Request, res: express.Response): Pro
   const isExplicitSvg = raw.toLowerCase().endsWith('.svg') || (req.query.format as string)?.toLowerCase() === 'svg';
   raw = raw.replace(/\.(png|svg|jpg|jpeg)$/i, '').trim();
 
+  try {
+    raw = decodeURIComponent(raw);
+  } catch (_) {}
+  if (/^\d+[-_]\d+$/.test(raw)) {
+    raw = raw.replace(/[-_]/, ',');
+  }
+
   const cacheKey = `og:${raw || 'default'}:${isExplicitSvg ? 'svg' : 'png'}`;
 
   // Check cache for PNG
@@ -142,13 +159,17 @@ const handleOgRequest = async (req: express.Request, res: express.Response): Pro
       const resolved = await resolveSpotOrCitizen(raw);
       if (resolved) {
         if (resolved.citizen) {
+          let customAvatar = resolved.citizen.customAvatarData;
+          if (customAvatar) {
+            customAvatar = await prepareCustomAvatarPng(customAvatar);
+          }
           cardOpts = {
             displayName: resolved.citizen.displayName,
             tagline: resolved.citizen.tagline,
             x: resolved.x,
             y: resolved.y,
             avatarId: resolved.citizen.avatarId,
-            customAvatarData: resolved.citizen.customAvatarData,
+            customAvatarData: customAvatar,
             githubUrl: resolved.citizen.githubUrl,
             isAvailable: false,
           };
@@ -217,7 +238,7 @@ export const handleShareLanding = async (req: express.Request, res: express.Resp
     const title = `${displayName} · SPOT Cyber City`;
     const description = `${tagline} · Plot (${spotCoords}) in the permanent 10,000-tile living canvas.`;
     const pageUrl = `https://claimyourspot.lol/?spot=${spotCoords}`;
-    const imageUrl = `https://claimyourspot.lol/api/og/${encodeURIComponent(spotCoords)}.png`;
+    const imageUrl = `https://claimyourspot.lol/api/og/${spotCoords}.png`;
 
     const ua = (req.headers['user-agent'] || '').toLowerCase();
     const isBot = /bot|crawler|spider|crawling|facebookexternalhit|twitterbot|discordbot|slackbot|telegrambot|whatsapp|linkedinbot|pinterest|applebot|bingbot|googlebot/i.test(ua);
