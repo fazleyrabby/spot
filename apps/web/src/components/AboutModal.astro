@@ -103,6 +103,25 @@
         </div>
       </div>
 
+      <!-- Homelab Node Callout -->
+      <div class="about-homelab-card">
+        <div class="homelab-card-left">
+          <div class="homelab-icon-badge">
+            <span class="homelab-icon">💻</span>
+            <span class="homelab-dot-pulse" aria-hidden="true"></span>
+          </div>
+          <div class="homelab-card-info">
+            <div class="homelab-card-header">
+              <strong class="homelab-card-title">100% Self-Hosted Homelab</strong>
+              <span class="homelab-card-badge">ThinkPad • 24/7 Node</span>
+            </div>
+            <p class="homelab-card-desc">
+              Running 24/7 on a dedicated ThinkPad laptop from my workspace. Every coordinate, citizen profile, and wall note is persistent and safely mirrored with automated offsite cloud backups.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Welcoming Actions (Eliminates tab bounce) -->
       <div class="about-actions-box">
         <button type="button" class="about-btn-primary" id="about-btn-claim-action">
@@ -124,7 +143,7 @@
 
       <!-- Trust Note -->
       <div class="about-footer-meta">
-        <span>Public good experiment • Crafted with care for the open web</span>
+        <span>Public good experiment • Self-hosted 24/7 on a ThinkPad homelab • Open web</span>
       </div>
     </div>
   </div>
@@ -404,6 +423,94 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Homelab Card */
+  .about-homelab-card {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 4px 0 2px 0;
+  }
+
+  .homelab-card-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .homelab-icon-badge {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .homelab-dot-pulse {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: homelab-dot-pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes homelab-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .homelab-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .homelab-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .homelab-card-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .homelab-card-badge {
+    font-family: var(--font-tech, monospace);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 1px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .homelab-card-desc {
+    margin: 0;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: #94a3b8;
   }
 
   /* Welcoming Actions */

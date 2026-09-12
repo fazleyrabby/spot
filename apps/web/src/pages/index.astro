@@ -236,6 +236,32 @@ import ShareModal from '../components/ShareModal.astro';
   let activityTimer: number | undefined;
   let activityResetTimer: number | undefined;
 
+  const idleTickerMessages = [
+    'Watching the city...',
+    '💻 Self-hosted on a dedicated 24/7 ThinkPad homelab',
+    '💾 Safe & persistent: automated cloud backups',
+    '✨ Choose your coordinates & claim your spot',
+  ];
+  let idleMessageIndex = 0;
+
+  function cycleIdleMessage(): void {
+    if (!activityText) return;
+    idleMessageIndex = (idleMessageIndex + 1) % idleTickerMessages.length;
+    activityText.classList.remove('activity-enter');
+    void activityText.offsetWidth;
+    activityText.textContent = idleTickerMessages[idleMessageIndex];
+    activityText.classList.add('activity-enter');
+    if (activityTimer) window.clearTimeout(activityTimer);
+    activityTimer = window.setTimeout(() => activityText.classList.remove('activity-enter'), 450);
+  }
+
+  // Periodic ticker rotation every 12 seconds when there are no live events
+  setInterval(() => {
+    if (!activityResetTimer) {
+      cycleIdleMessage();
+    }
+  }, 12_000);
+
   function showActivity(message: string): void {
     if (!activityText) return;
     if (activityResetTimer) window.clearTimeout(activityResetTimer);
@@ -246,7 +272,8 @@ import ShareModal from '../components/ShareModal.astro';
     if (activityTimer) window.clearTimeout(activityTimer);
     activityTimer = window.setTimeout(() => activityText.classList.remove('activity-enter'), 450);
     activityResetTimer = window.setTimeout(() => {
-      activityText.textContent = 'Watching the city...';
+      activityResetTimer = undefined;
+      cycleIdleMessage();
     }, 10_000);
   }
 
@@ -1483,6 +1510,7 @@ import ShareModal from '../components/ShareModal.astro';
   const aboutBackdrop = document.getElementById('about-modal-backdrop');
   const aboutCloseBtn = document.getElementById('about-modal-close');
   const btnOpenAbout = document.getElementById('btn-open-about');
+  const hudHomelabBtn = document.getElementById('hud-homelab-btn');
 
   function openAboutModal() {
     if (!aboutBackdrop) return;
@@ -1497,6 +1525,7 @@ import ShareModal from '../components/ShareModal.astro';
   }
 
   btnOpenAbout?.addEventListener('click', openAboutModal);
+  hudHomelabBtn?.addEventListener('click', openAboutModal);
   aboutCloseBtn?.addEventListener('click', closeAboutModal);
   aboutBackdrop?.addEventListener('click', (e) => {
     if (e.target === aboutBackdrop) closeAboutModal();

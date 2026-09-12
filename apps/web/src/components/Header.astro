@@ -65,6 +65,15 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
       <span class="stat-num mono-num highlight-jade" id="hud-online-count">{onlineCount}</span>
       <span class="stat-text">online</span>
     </div>
+
+    <div class="stat-divider stat-divider-homelab"></div>
+
+    <!-- 4. Homelab 24/7 Pill -->
+    <button type="button" class="stat-pill homelab-pill" id="hud-homelab-btn" title="Self-hosted on a dedicated ThinkPad laptop running 24/7 (Click to learn more)">
+      <span class="homelab-icon-emoji" aria-hidden="true">💻</span>
+      <span class="stat-text homelab-label">Homelab 24/7</span>
+      <span class="homelab-pulse-dot" aria-hidden="true"></span>
+    </button>
   </div>
 
   <div class="hud-right">
@@ -334,6 +343,62 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     border-radius: 50%;
     box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
     flex-shrink: 0;
+  }
+
+  /* Homelab HUD Pill */
+  .homelab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 999px;
+    padding: 3px 8px 3px 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    line-height: 1;
+  }
+
+  .homelab-pill:hover {
+    background: rgba(56, 189, 248, 0.16);
+    border-color: rgba(56, 189, 248, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .homelab-pill:active {
+    transform: scale(0.97);
+  }
+
+  .homelab-icon-emoji {
+    font-size: 0.76rem;
+    line-height: 1;
+  }
+
+  .homelab-label {
+    font-size: 0.70rem;
+    font-weight: 600;
+    color: #bae6fd;
+    font-family: var(--font-tech, inherit);
+    letter-spacing: 0.02em;
+  }
+
+  .homelab-pulse-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .homelab-label {
+      display: none;
+    }
+    .homelab-pill {
+      padding: 3px 6px;
+    }
   }
 
   .hud-right {

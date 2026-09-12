@@ -28,6 +28,23 @@
       </button>
     </div>
 
+    <!-- Homelab Notice Banner -->
+    <div class="support-homelab-banner">
+      <div class="support-homelab-badge">
+        <span class="support-homelab-icon">💻</span>
+        <span class="support-homelab-ping" aria-hidden="true"></span>
+      </div>
+      <div class="support-homelab-info">
+        <div class="support-homelab-heading">
+          <strong class="support-homelab-title">Self-Hosted 24/7 Homelab</strong>
+          <span class="support-homelab-pill">ThinkPad Node</span>
+        </div>
+        <p class="support-homelab-desc">
+          SPOT is kept online 24/7 on a dedicated home laptop. Every contribution directly funds power & bandwidth, domain maintenance, and upgrading to high-availability dedicated servers!
+        </p>
+      </div>
+    </div>
+
     <!-- Cards Container -->
     <div class="support-cards-list">
       <!-- 1. SupportKori (Bangladesh) -->
@@ -233,6 +250,91 @@
   .support-close-btn:hover {
     color: #f8fafc;
     background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Homelab Banner */
+  .support-homelab-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(245, 158, 11, 0.06));
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+
+  .support-homelab-badge {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .support-homelab-ping {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: support-pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes support-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .support-homelab-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .support-homelab-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .support-homelab-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .support-homelab-pill {
+    font-family: var(--font-tech, monospace);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 1px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .support-homelab-desc {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.42;
+    color: #94a3b8;
   }
 
   /* Cards List */
