@@ -216,8 +216,13 @@ export const handleShareLanding = async (req: express.Request, res: express.Resp
 
     const title = `${displayName} · SPOT Cyber City`;
     const description = `${tagline} · Plot (${spotCoords}) in the permanent 10,000-tile living canvas.`;
-    const pageUrl = `https://claimyourspot.lol/?spot=${encodeURIComponent(spotCoords)}`;
+    const pageUrl = `https://claimyourspot.lol/?spot=${spotCoords}`;
     const imageUrl = `https://claimyourspot.lol/api/og/${encodeURIComponent(spotCoords)}.png`;
+
+    const ua = (req.headers['user-agent'] || '').toLowerCase();
+    const isBot = /bot|crawler|spider|crawling|facebookexternalhit|twitterbot|discordbot|slackbot|telegrambot|whatsapp|linkedinbot|pinterest|applebot|bingbot|googlebot/i.test(ua);
+    const isAlreadyAtTarget = req.path === '/' && (req.query.spot === spotCoords || (req.query.x && req.query.y));
+    const shouldRedirect = !isBot && !isAlreadyAtTarget;
 
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
     res.type('html').send(`<!doctype html>
@@ -244,21 +249,25 @@ export const handleShareLanding = async (req: express.Request, res: express.Resp
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta name="twitter:site" content="@claimyourspot" />
-  <meta name="twitter:creator" content="@claimyourspot" />
+  <meta name="twitter:site" content="@fazleyrabby" />
+  <meta name="twitter:creator" content="@fazleyrabby" />
   <meta name="twitter:url" content="${pageUrl}" />
   <meta name="twitter:title" content="${escapeXml(title)}" />
   <meta name="twitter:description" content="${escapeXml(description)}" />
   <meta name="twitter:image" content="${imageUrl}" />
-  <meta property="twitter:image" content="${imageUrl}" />
+  <meta name="twitter:image:alt" content="${escapeXml(title)}" />
 
   <link rel="canonical" href="${pageUrl}" />
-  <meta http-equiv="refresh" content="0;url=${pageUrl}" />
+  ${shouldRedirect ? `<meta http-equiv="refresh" content="0;url=${pageUrl}" />` : ''}
 </head>
-<body style="background:#090b10;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-  <p style="font-size:1.1rem;letter-spacing:0.05em;">Connecting to Spot City (${escapeXml(spotCoords)})…</p>
-  <script>location.replace(${JSON.stringify(pageUrl)});</script>
+<body style="background:#090b10;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;padding:1.5rem;box-sizing:border-box;">
+  <div style="text-align:center;max-width:540px;background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:2.5rem 2rem;box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+    <div style="font-size:0.75rem;letter-spacing:1.5px;color:#38bdf8;font-weight:700;margin-bottom:0.75rem;">SPOT CYBER CITY · PLOT (${escapeXml(spotCoords)})</div>
+    <h1 style="font-size:1.8rem;margin:0 0 0.75rem 0;color:#f8fafc;font-weight:800;">${escapeXml(title)}</h1>
+    <p style="color:#94a3b8;font-size:1rem;line-height:1.55;margin:0 0 2rem 0;">${escapeXml(description)}</p>
+    <a href="${pageUrl}" style="display:inline-block;padding:0.85rem 1.75rem;background:#00f0ff;color:#090b10;font-weight:700;text-decoration:none;border-radius:10px;font-size:1rem;box-shadow:0 4px 14px rgba(0,240,255,0.35);">Open Spot World &rarr;</a>
+  </div>
+  ${shouldRedirect ? `<script>location.replace(${JSON.stringify(pageUrl)});</script>` : ''}
 </body>
 </html>`);
   } catch (err) {
