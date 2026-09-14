@@ -208,6 +208,13 @@ export class Engine {
         (window as any).openMuseumModal?.();
         return;
       }
+      // 0b. Yorimichi Japanese Pavilion (56, 52)
+      const pavWx = 56 * TILE_WIDTH + TILE_WIDTH / 2;
+      const pavWy = 52 * TILE_HEIGHT + TILE_HEIGHT / 2;
+      if (Math.hypot(this.player.wx - pavWx, this.player.wy - pavWy) < 76) {
+        (window as any).openVillageModal?.();
+        return;
+      }
       // 0. Check if near any Street NPC
       const nearestNpc = this.renderer.npcs.getNearestNPC(this.player.wx, this.player.wy);
       if (nearestNpc) {

@@ -75,6 +75,24 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Knowledge shared is knowledge multiplied.”',
   },
   {
+    id: 'yorimichi_village',
+    name: 'The Yorimichi Village Pavilion',
+    district: 'Grand Central Plaza',
+    icon: '⛩️',
+    gx: 56,
+    gy: 52,
+    category: 'landmark',
+    title: '寄り道 — The Soothing Village Pavilion',
+    subtitle: 'Gateway to the peaceful countryside',
+    description:
+      'An antique Japanese timber pavilion with curved hip-and-gable roofs, vermilion pillars, and warm paper chōchin lanterns. It serves as an ethereal gateway to the tranquil countryside of Yorimichi.',
+    clue: 'In the eastern plaza courtyard at (56, 52), look for an antique Japanese timber pagoda adorned with red lanterns.',
+    actionLabel: 'Enter Village World ⛩️',
+    actionUrl: 'https://yorimichi-world.vercel.app/',
+    reward: 'Wanderer of Yorimichi',
+    quote: '“Take the scenic detour and let the world slow down.”',
+  },
+  {
     id: 'mystic_duck',
     name: 'The Solitary Lake Waterfowl',
     district: 'Central Park Lake',
@@ -391,7 +409,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;

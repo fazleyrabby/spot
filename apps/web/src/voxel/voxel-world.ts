@@ -107,6 +107,7 @@ function addTorch(wx, wy, wz, color, intensity, dist) {
   torches.push({ light: L, base: intensity, ph: Math.random() * 10 });
 }
 addTorch(50, 5, 50, 0xffb066, 140, 34);
+addTorch(56, 5, 52, 0xf43f5e, 110, 28);
 addTorch(30, 5, 95, 0xffb066, 100, 28);
 addTorch(4, 6, 106, 0x67e8f9, 90, 26);
 addTorch(60, 5, 38, 0xffc861, 80, 26);
@@ -705,6 +706,34 @@ function buildProps() {
         pushGlow(gx, base + 5.1, gy, 0x22d3ee);
         windowsAt(gx, gy, base, 3);
       }
+      else if (t === 'japanese_pavilion') {
+        // Raised dark timber foundation platform (Engawa)
+        pushDetail(gx, base + 0.15, gy, 1.85, 0.3, 1.85, 0x2a1a12);
+        pushDetail(gx, base + 0.35, gy, 1.55, 0.15, 1.55, 0x4a2e1d);
+        // Vermilion corner posts
+        for (const [dx, dz] of [[-0.55, -0.55], [0.55, -0.55], [-0.55, 0.55], [0.55, 0.55]]) {
+          pushCyl(gx + dx, base + 1.35, gy + dz, 0.08, 2.0, 0xb91c1c);
+        }
+        // Inner shoji chamber
+        pushBox(gx, base + 1, gy, 0xfef08a);
+        pushBox(gx, base + 2, gy, 0xfef08a);
+        // Warm interior glow & door details
+        pushDetailGlow(gx, base + 1.2, gy + 0.52, 0.6, 0.9, 0.06, 0xffedd5);
+        pushDetail(gx, base + 1.2, gy + 0.53, 0.08, 0.9, 0.04, 0x1f1915);
+        // Lower flared eave roof
+        pushCone(gx, base + 2.8, gy, 1.7, 0.7, 0x1e293b, 4);
+        // Second tier tower & upper roof
+        pushBox(gx, base + 3, gy, 0xb91c1c);
+        pushCone(gx, base + 4.2, gy, 1.45, 0.8, 0x0f172a, 4);
+        // Top golden finial / roof crest
+        pushCyl(gx, base + 4.85, gy, 0.05, 0.6, 0xfbbf24);
+        pushGlow(gx, base + 5.15, gy, 0xf43f5e);
+        // Hanging red paper lanterns
+        pushCyl(gx - 0.7, base + 2.2, gy + 0.7, 0.12, 0.32, 0xef4444);
+        pushGlow(gx - 0.7, base + 2.2, gy + 0.7, 0xf43f5e);
+        pushCyl(gx + 0.7, base + 2.2, gy + 0.7, 0.12, 0.32, 0xef4444);
+        pushGlow(gx + 0.7, base + 2.2, gy + 0.7, 0xf43f5e);
+      }
       else if (t === 'subway_entrance' || t === 'bus_stop') { pushBox(gx, base, gy, 0x8fa3b8); }
       else if (t === 'vending_machine') { pushBox(gx, base, gy, 0xf1f5f9); }
       else if (t === 'sunset_arch') {
@@ -813,18 +842,45 @@ function makeBannerTexture(b) {
 }
 for (const b of WORLD_BANNERS) {
   if (b.gx === undefined || b.gy === undefined) continue;
-  const base = colTop(b.gx, b.gy);
-  pushDetail(b.gx - 2.2, base + 1.5, b.gy, 0.25, 3, 0.25, 0x1e293b);
-  pushDetail(b.gx + 2.2, base + 1.5, b.gy, 0.25, 3, 0.25, 0x1e293b);
-  pushDetail(b.gx, base + 4.5, b.gy, 6.4, 3.4, 0.3, 0x111827);
+  // Use true terrain surface (avoid contamination by streetlamp/prop tops)
+  const ground = terrTopAt(b.gx, b.gy) || 1;
+  const clearance = 1.8;
+  const panelHeight = 2.8;
+  const panelWidth = 5.8;
+  const panelBottom = ground + clearance;
+  const panelCenterY = panelBottom + panelHeight / 2;
+
+  // Legs dynamically span from actual terrain elevation at their feet to panel bottom
+  const lx1 = b.gx - 2.0;
+  const lx2 = b.gx + 2.0;
+  const groundL1 = terrTopAt(Math.round(lx1), b.gy) || ground;
+  const groundL2 = terrTopAt(Math.round(lx2), b.gy) || ground;
+
+  const legH1 = Math.max(0.6, panelBottom - groundL1);
+  const legH2 = Math.max(0.6, panelBottom - groundL2);
+
+  // Left & right support pillars
+  pushDetail(lx1, groundL1 + legH1 / 2, b.gy, 0.28, legH1, 0.28, 0x1e293b);
+  pushDetail(lx2, groundL2 + legH2 / 2, b.gy, 0.28, legH2, 0.28, 0x1e293b);
+
+  // Ground concrete anchor footings (eliminates any gap with asphalt / terrain)
+  pushDetail(lx1, groundL1 + 0.12, b.gy, 0.7, 0.25, 0.7, 0x334155);
+  pushDetail(lx2, groundL2 + 0.12, b.gy, 0.7, 0.25, 0.7, 0x334155);
+
+  // Structural crossbar between legs below the billboard
+  pushDetail(b.gx, panelBottom - 0.15, b.gy, 4.0, 0.18, 0.22, 0x1e293b);
+
+  // Billboard back frame
+  pushDetail(b.gx, panelCenterY, b.gy, panelWidth + 0.35, panelHeight + 0.35, 0.28, 0x111827);
+
   const panel = new THREE.Mesh(
-    new THREE.PlaneGeometry(6, 3),
+    new THREE.PlaneGeometry(panelWidth, panelHeight),
     new THREE.MeshBasicMaterial({ map: makeBannerTexture(b), side: THREE.DoubleSide, transparent: true, alphaTest: 0.5 })
   );
   panel.renderOrder = 10;
-  panel.position.set(b.gx * WORLD_SCALE, base + 4.5, b.gy * WORLD_SCALE + 0.17);
+  panel.position.set(b.gx * WORLD_SCALE, panelCenterY, b.gy * WORLD_SCALE + 0.16);
   scene.add(panel);
-  billboardSpots.push({ gx: b.gx, gy: b.gy, top: base + 6, data: b });
+  billboardSpots.push({ gx: b.gx, gy: b.gy, top: panelCenterY + panelHeight / 2, data: b });
   billboardPanels.push(panel);
   panel.userData.billboard = b;
 }
@@ -868,6 +924,7 @@ const MONUMENT_LABELS = [
   [48, 0, 'Grand Station', 6.6, '#38bdf8'],
   [60, 38, 'Museum', 5.6, '#fbbf24'],
   [44, 52, 'Library', 6.4, '#22d3ee'],
+  [56, 52, '⛩️ Yorimichi Village', 6.6, '#f43f5e'],
   [64, 16, 'Genesis Monolith', 7.2, '#fbbf24'],
   [40, -10, 'Kandahar Giant', 9.0, '#e2e8f0'],
   [50, 50, 'Wishing Fountain', 4.6, '#7dd3fc'],
@@ -2769,6 +2826,7 @@ function tick() {
           const lx = lp.x / WORLD_SCALE, lz = lp.z / WORLD_SCALE;
           const near = (tx, tz, r) => Math.hypot(lx - tx, lz - tz) < r;
           if (near(44, 52, 1.8) && window.openLibraryModal) { window.openLibraryModal(); return 'library'; }
+          if (near(56, 52, 2.0) && window.openVillageModal) { window.openVillageModal(); return 'village'; }
           if (near(86, 22, 1.8) && window.openArcadeModal) { window.openArcadeModal(); return 'arcade'; }
           if (near(60, 38, 1.8) && window.openMuseumModal) { window.openMuseumModal(); return 'museum'; }
         }
@@ -3378,6 +3436,7 @@ function tick() {
         const m = new URLSearchParams(location.search).get('modal');
         if (m) setTimeout(() => {
           if (m === 'library') window.openLibraryModal?.();
+          else if (m === 'village' || m === 'yorimichi') window.openVillageModal?.();
           else if (m === 'arcade') window.openArcadeModal?.();
           else if (m === 'museum') window.openMuseumModal?.();
         }, 700);

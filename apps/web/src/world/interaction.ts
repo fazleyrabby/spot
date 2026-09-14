@@ -118,6 +118,11 @@ export class InteractionHandler {
         const doorWy = 38 * 32 + 16;
         const onDoor = Math.hypot(world.x - doorWx, world.y - doorWy) < 40;
 
+        // Japanese Yorimichi Pavilion hover → pointer
+        const pavWx = 56 * 48 + 24;
+        const pavWy = 52 * 32 + 16;
+        const onPavilion = Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48;
+
         const onMarine = this.renderer.marine.hitTestMarine(world.x, world.y);
         // Art experiences sit on the beach (gy >= 100), outside the 0..99 city
         // grid worldToGrid validates, and their props extend above the base tile
@@ -131,7 +136,7 @@ export class InteractionHandler {
           this.renderer.hoveredSecret = null;
           this.renderer.hoveredGrid = { gx: artExp.gx, gy: artExp.gy };
           canvas.style.cursor = 'pointer';
-        } else if (onDoor || onMarine) {
+        } else if (onDoor || onMarine || onPavilion) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -199,6 +204,14 @@ export class InteractionHandler {
         const doorWy = 38 * 32 + 16;
         if (Math.hypot(world.x - doorWx, world.y - doorWy) < 40) {
           (window as any).openMuseumModal?.();
+          return;
+        }
+
+        // -0.9. Yorimichi Japanese Pavilion (56, 52) — click to load village world
+        const pavWx = 56 * 48 + 24;
+        const pavWy = 52 * 32 + 16;
+        if (Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48) {
+          (window as any).openVillageModal?.();
           return;
         }
 

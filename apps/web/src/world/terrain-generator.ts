@@ -79,6 +79,7 @@ export type UrbanPropType =
   | 'bus_stop'
   | 'genesis_monolith'
   | 'dev_library'
+  | 'japanese_pavilion'
   | 'mystic_duck'
   | 'cafe_cat'
   | 'glitch_void'
@@ -749,6 +750,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'dev_library', wx, wy,
       hasLight: true, lightColor: 'rgba(251, 191, 36, 0.35)', lightRadius: 140,
+    };
+  }
+
+  // Antique Japanese Yorimichi Pavilion Monument in Grand Plaza
+  if (gx === 56 && gy === 52) {
+    return {
+      gx, gy, type: 'japanese_pavilion', wx, wy,
+      hasLight: true, lightColor: 'rgba(244, 63, 94, 0.55)', lightRadius: 125,
     };
   }
 

@@ -16,6 +16,7 @@ import TelescopeModal from '../components/TelescopeModal.astro';
 import BinocularModal from '../components/BinocularModal.astro';
 import ArtMuseumModal from '../components/ArtMuseumModal.astro';
 import ArtExperienceModal from '../components/ArtExperienceModal.astro';
+import VillagePortalModal from '../components/VillagePortalModal.astro';
 ---
 
 <Layout
@@ -83,6 +84,9 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
 
     <!-- Fullscreen art experiences from art.fazleyrabbi.xyz -->
     <ArtExperienceModal />
+
+    <!-- Yorimichi Soothing Village World Portal -->
+    <VillagePortalModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -1756,6 +1760,8 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
             (window as any).openLibraryModal?.();
           } else if (secret.id === 'retro_arcade') {
             (window as any).openArcadeModal?.();
+          } else if (secret.id === 'yorimichi_village') {
+            (window as any).openVillageModal?.();
           } else {
             openSecretModal(secret);
           }
@@ -1773,6 +1779,7 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
           closeJournalModal();
           (window as any).closeLibraryModal?.();
           (window as any).closeArcadeModal?.();
+          (window as any).closeVillageModal?.();
         },
         onSnapshotLoaded: (snapshot) => {
           const claimedCountEl = document.getElementById('hud-claimed-count');
@@ -2100,6 +2107,10 @@ import ArtExperienceModal from '../components/ArtExperienceModal.astro';
       } else if (worldUrlParams.get('modal') === 'arcade' || worldUrlParams.get('game') === 'snake') {
         setTimeout(() => {
           (window as any).openArcadeModal?.();
+        }, 350);
+      } else if (worldUrlParams.get('modal') === 'village' || worldUrlParams.get('modal') === 'yorimichi') {
+        setTimeout(() => {
+          (window as any).openVillageModal?.();
         }, 350);
       } else if (worldUrlParams.get('modal') === 'share') {
         setTimeout(() => {

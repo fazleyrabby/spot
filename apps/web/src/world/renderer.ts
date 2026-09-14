@@ -2608,6 +2608,371 @@ export class Renderer {
         break;
       }
 
+      case 'japanese_pavilion': {
+        const isHovered =
+          this.hoveredSecret?.id === 'yorimichi_village' ||
+          (this.hoveredGrid && Math.hypot(this.hoveredGrid.gx - 56, this.hoveredGrid.gy - 52) <= 1.5);
+        const wind = Math.sin(this.tick * 0.04);
+        const sway = Math.sin(this.tick * 0.065) * 1.8 * z;
+
+        // 1. Broad Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 58 * z, 16 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Chiseled Granite Foundation Plinth (Kidan Base)
+        // Base Layer
+        ctx.fillStyle = '#0a0d16';
+        ctx.beginPath();
+        ctx.roundRect(sx - 52 * z, sy - 3 * z, 104 * z, 8 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Mid Stone Layer
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.roundRect(sx - 48 * z, sy - 6 * z, 96 * z, 5 * z, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.stroke();
+
+        // 3. Dark Cedar Engawa (Veranda Platform)
+        ctx.fillStyle = '#1e140f';
+        ctx.beginPath();
+        ctx.roundRect(sx - 44 * z, sy - 9 * z, 88 * z, 5 * z, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#3d2516';
+        ctx.lineWidth = 0.8 * z;
+        ctx.stroke();
+
+        // Veranda plank grooves
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        for (let px = -40; px <= 40; px += 8) {
+          ctx.fillRect(sx + px * z, sy - 9 * z, 0.8 * z, 5 * z);
+        }
+
+        // Stepped Front Stone Entrance Stairs
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(sx - 12 * z, sy - 4 * z, 24 * z, 5 * z);
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(sx - 10 * z, sy - 7 * z, 20 * z, 4 * z);
+
+        // Twin Carved Stone Garden Lanterns (Tōrō) at Outer Corners
+        for (const lx of [sx - 47 * z, sx + 47 * z]) {
+          // Stone pedestal base
+          ctx.fillStyle = '#1f2937';
+          ctx.fillRect(lx - 3 * z, sy - 9 * z, 6 * z, 4 * z);
+          // Stone post
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(lx - 1.5 * z, sy - 14 * z, 3 * z, 6 * z);
+          // Lantern light chamber
+          ctx.fillStyle = isHovered ? 'rgba(251, 146, 60, 0.95)' : 'rgba(245, 158, 11, 0.85)';
+          ctx.fillRect(lx - 2.5 * z, sy - 18 * z, 5 * z, 4 * z);
+          // Hexagonal stone pagoda cap
+          ctx.fillStyle = '#111827';
+          ctx.beginPath();
+          ctx.moveTo(lx - 4.5 * z, sy - 18 * z);
+          ctx.lineTo(lx, sy - 22 * z);
+          ctx.lineTo(lx + 4.5 * z, sy - 18 * z);
+          ctx.closePath();
+          ctx.fill();
+          // Warm candlelight radial aura
+          ctx.fillStyle = 'rgba(251, 146, 60, 0.18)';
+          ctx.beginPath();
+          ctx.arc(lx, sy - 16 * z, 8 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 4. Main Chamber Architecture & Vermilion Lacquer Posts
+        const hallW = 72 * z;
+        const hallH = 34 * z;
+        const hallY = sy - 42 * z;
+
+        // Inner chamber backing
+        ctx.fillStyle = '#0f111a';
+        ctx.beginPath();
+        ctx.roundRect(sx - hallW / 2, hallY, hallW, hallH, 2 * z);
+        ctx.fill();
+
+        // Glowing Shoji Screen Panels (Warm Rice Paper Lattices)
+        const panelXs = [sx - 31 * z, sx - 19 * z, sx + 9 * z, sx + 21 * z];
+        for (const px of panelXs) {
+          const pw = 10 * z;
+          const ph = 24 * z;
+          const py = sy - 34 * z;
+
+          // Warm translucent glow
+          ctx.fillStyle = isHovered ? 'rgba(254, 240, 138, 0.55)' : 'rgba(254, 240, 138, 0.35)';
+          ctx.fillRect(px, py, pw, ph);
+
+          // Fine lattice wood gridwork
+          ctx.strokeStyle = 'rgba(69, 26, 3, 0.6)';
+          ctx.lineWidth = 0.6 * z;
+          ctx.strokeRect(px, py, pw, ph);
+          // Vertical & horizontal mullions
+          ctx.beginPath();
+          ctx.moveTo(px + pw / 2, py);
+          ctx.lineTo(px + pw / 2, py + ph);
+          for (let ly = 6; ly < 24; ly += 6) {
+            ctx.moveTo(px, py + ly * z);
+            ctx.lineTo(px + pw, py + ly * z);
+          }
+          ctx.stroke();
+        }
+
+        // Central Entrance & Sliding Fusuma / Shoji (Partly Open with Inner Hearth View)
+        const doorW = 16 * z;
+        const doorH = 26 * z;
+        const doorY = sy - 35 * z;
+
+        // Warm tatami room interior glow
+        ctx.fillStyle = isHovered ? 'rgba(251, 191, 36, 0.45)' : 'rgba(251, 191, 36, 0.28)';
+        ctx.fillRect(sx - doorW / 2, doorY, doorW, doorH);
+
+        // Tatami floor perspective mat lines
+        ctx.fillStyle = 'rgba(74, 52, 28, 0.7)';
+        ctx.fillRect(sx - doorW / 2 + 1 * z, doorY + doorH - 4 * z, doorW - 2 * z, 4 * z);
+        // Slid-open wood screens
+        ctx.fillStyle = '#291811';
+        ctx.fillRect(sx - doorW / 2 - 2 * z, doorY, 4 * z, doorH);
+        ctx.fillRect(sx + doorW / 2 - 2 * z, doorY, 4 * z, doorH);
+
+        // 4 Vermilion Lacquered Timber Columns (Hashira)
+        const colXs = [sx - 34 * z, sx - 10 * z, sx + 10 * z, sx + 34 * z];
+        for (const cx of colXs) {
+          // Column base shoe
+          ctx.fillStyle = '#1e1b18';
+          ctx.fillRect(cx - 2.5 * z, sy - 11 * z, 5 * z, 3 * z);
+          // Vermilion lacquer pillar shaft
+          ctx.fillStyle = isHovered ? '#ef4444' : '#dc2626';
+          ctx.fillRect(cx - 2 * z, sy - 42 * z, 4 * z, 32 * z);
+          // Dark shadow edge
+          ctx.fillStyle = '#991b1b';
+          ctx.fillRect(cx + 0.6 * z, sy - 42 * z, 1.4 * z, 32 * z);
+          // Capital bracket tie-beam (Nageshi)
+          ctx.fillStyle = '#450a0a';
+          ctx.fillRect(cx - 2.6 * z, sy - 44 * z, 5.2 * z, 2.5 * z);
+        }
+
+        // Horizontal Vermilion Crossbeam (Nageshi & Kashiranuki)
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(sx - 36 * z, sy - 44 * z, 72 * z, 4 * z);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(sx - 36 * z, sy - 44 * z, 72 * z, 0.8 * z);
+
+        // 5. Lower Sweeping Flared Roof Eaves (Mokoshi)
+        const eave1W = 92 * z;
+        const eave1Y = sy - 44 * z;
+        ctx.fillStyle = '#182030';
+        ctx.beginPath();
+        // Flared curved hip-and-gable eave
+        ctx.moveTo(sx - eave1W / 2 - 4 * z, eave1Y + 3 * z);
+        ctx.quadraticCurveTo(sx - eave1W / 4, eave1Y - 1 * z, sx, eave1Y - 4 * z);
+        ctx.quadraticCurveTo(sx + eave1W / 4, eave1Y - 1 * z, sx + eave1W / 2 + 4 * z, eave1Y + 3 * z);
+        ctx.lineTo(sx + eave1W / 2, eave1Y + 8 * z);
+        ctx.quadraticCurveTo(sx + eave1W / 4, eave1Y + 4 * z, sx, eave1Y + 2 * z);
+        ctx.quadraticCurveTo(sx - eave1W / 4, eave1Y + 4 * z, sx - eave1W / 2, eave1Y + 8 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // Underside rafter brackets (Tokyō)
+        ctx.fillStyle = '#7f1d1d';
+        for (let bx = -36; bx <= 36; bx += 6) {
+          ctx.fillRect(sx + bx * z - 1 * z, eave1Y + 3 * z, 2 * z, 3 * z);
+        }
+
+        // Hanging Crimson Paper Lanterns (Chōchin) with gentle wind sway
+        const lanternXs = [sx - 28 * z, sx + 28 * z];
+        for (let i = 0; i < lanternXs.length; i++) {
+          const lx = lanternXs[i] + (i === 0 ? -sway : sway);
+          const ly = eave1Y + 8 * z;
+
+          // Black suspension cord
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 0.8 * z;
+          ctx.beginPath();
+          ctx.moveTo(lanternXs[i], eave1Y + 5 * z);
+          ctx.lineTo(lx, ly);
+          ctx.stroke();
+
+          // Lantern Top Cap
+          ctx.fillStyle = '#18181b';
+          ctx.fillRect(lx - 2.5 * z, ly, 5 * z, 1.8 * z);
+
+          // Oval Crimson Lantern Body
+          ctx.fillStyle = isHovered ? '#ff4d6d' : '#e11d48';
+          ctx.beginPath();
+          ctx.ellipse(lx, ly + 6 * z, 4 * z, 5.5 * z, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Soft Lantern Ambient Glow
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.32)';
+          ctx.beginPath();
+          ctx.arc(lx, ly + 6 * z, 11 * z, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Black bottom cap & hanging silk tassel
+          ctx.fillStyle = '#18181b';
+          ctx.fillRect(lx - 2 * z, ly + 11.5 * z, 4 * z, 1.5 * z);
+          ctx.strokeStyle = '#b91c1c';
+          ctx.lineWidth = 1 * z;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly + 13 * z);
+          ctx.lineTo(lx + (i === 0 ? -sway * 0.8 : sway * 0.8), ly + 18 * z);
+          ctx.stroke();
+        }
+
+        // 6. Upper Tier Pavilion Hall (Second Story Watchtower)
+        const upW = 46 * z;
+        const upH = 18 * z;
+        const upY = eave1Y - 18 * z;
+
+        ctx.fillStyle = '#0f1422';
+        ctx.beginPath();
+        ctx.roundRect(sx - upW / 2, upY, upW, upH, 1.5 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#7f1d1d';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Upper Shoji Windows & Vermilion Pillars
+        for (let ux = -16; ux <= 16; ux += 16) {
+          ctx.fillStyle = isHovered ? 'rgba(254, 240, 138, 0.55)' : 'rgba(254, 240, 138, 0.35)';
+          ctx.fillRect(sx + ux * z - 4 * z, upY + 4 * z, 8 * z, 10 * z);
+          ctx.strokeStyle = 'rgba(69, 26, 3, 0.6)';
+          ctx.lineWidth = 0.6 * z;
+          ctx.strokeRect(sx + ux * z - 4 * z, upY + 4 * z, 8 * z, 10 * z);
+
+          // Upper Pillar
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(sx + ux * z - 1.2 * z, upY, 2.4 * z, upH);
+        }
+
+        // 7. Grand Upper Tier Pagoda Roof (Irimoya Curvature)
+        const roof2W = 76 * z;
+        const roof2Y = upY - 2 * z;
+        const apexY = roof2Y - 14 * z;
+
+        ctx.fillStyle = '#141c2c';
+        ctx.beginPath();
+        // Sweeping curved hip roof to peak
+        ctx.moveTo(sx - roof2W / 2 - 5 * z, roof2Y + 2 * z);
+        ctx.quadraticCurveTo(sx - roof2W / 4, roof2Y - 4 * z, sx, apexY);
+        ctx.quadraticCurveTo(sx + roof2W / 4, roof2Y - 4 * z, sx + roof2W / 2 + 5 * z, roof2Y + 2 * z);
+        ctx.lineTo(sx + roof2W / 2, roof2Y + 7 * z);
+        ctx.quadraticCurveTo(sx + roof2W / 4, roof2Y + 2 * z, sx, roof2Y - 1 * z);
+        ctx.quadraticCurveTo(sx - roof2W / 4, roof2Y + 2 * z, sx - roof2W / 2, roof2Y + 7 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // Upper Roof Ridge Tile (Mune) & Golden Curved Finials
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - 10 * z, apexY);
+        ctx.lineTo(sx + 10 * z, apexY);
+        ctx.stroke();
+
+        // Golden Ridge Horns (Shachihoko)
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(sx - 10 * z, apexY - 2 * z, 2.2 * z, 0, Math.PI * 2);
+        ctx.arc(sx + 10 * z, apexY - 2 * z, 2.2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Central Top Golden Spire & Bell
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx, apexY - 4 * z, 2.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(sx - 0.8 * z, apexY - 9 * z, 1.6 * z, 6 * z);
+
+        // 8. Authentic Japanese Signboard Plaque (Gakuzan) mounted on lintel
+        const plaqueW = 22 * z;
+        const plaqueH = 8.5 * z;
+        const plaqueY = upY + 4 * z;
+
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.roundRect(sx - plaqueW / 2, plaqueY, plaqueW, plaqueH, 1 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        if (z >= 0.55) {
+          ctx.font = `bold ${Math.max(6, Math.floor(6.5 * z))}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fef08a';
+          ctx.fillText('⛩️ 寄り道', sx, plaqueY + 4.5 * z);
+        }
+
+        // 9. Floating Animated Sakura (Cherry Blossom) Petals drifting gently
+        const petalColors = ['#fbcfe8', '#f472b6', '#fda4af'];
+        for (let p = 0; p < 6; p++) {
+          const pSeed = p * 47;
+          const pSpeed = 0.02 + (p % 3) * 0.01;
+          const pPhase = (this.tick * pSpeed + pSeed) % (Math.PI * 2);
+          const px = sx + Math.cos(pPhase + p) * (36 * z) + wind * 8 * z;
+          const py = sy - 40 * z + Math.sin(pPhase * 1.5) * (18 * z) + (p * 4 * z);
+
+          ctx.fillStyle = petalColors[p % petalColors.length];
+          ctx.beginPath();
+          ctx.ellipse(px, py, 2.2 * z, 1.2 * z, pPhase, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 10. Interactive Hover Tooltip Card (Chic Minimalist & High-Polish)
+        if (isHovered) {
+          const pillY = apexY - 16 * z;
+          const title = '⛩️ 寄り道 Yorimichi Village';
+          const sub = 'Click to Enter Soothing World';
+
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+
+          // Drop Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
+          ctx.fill();
+
+          // Card Body (Cherry blossom noir tint)
+          ctx.fillStyle = '#140d14';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+
+          // Rose/Crimson Border
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          // Text
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#fff1f2';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+
+          ctx.font = `500 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#fda4af';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
       case 'mystic_duck': {
         ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.beginPath();
