@@ -152,32 +152,46 @@ function getCountryFlag(countryCode?: string | null): string {
   return String.fromCodePoint(...codePoints);
 }
 
-export async function sendVisitorNotification(input: DiscordVisitorNotification): Promise<void> {
-  const webhookUrl = config.visitorDiscordWebhookUrl;
-  if (!webhookUrl) return;
+// --- Visitor Webhook Batching ---
+// Discord allows 10 embeds per webhook call. We batch visitors and flush
+// every 8 seconds or when the batch is full, preventing 429 rate limits.
+const VISITOR_BATCH_SIZE = 10;
+const VISITOR_BATCH_INTERVAL_MS = 8_000;
 
+let visitorBatch: DiscordVisitorNotification[] = [];
+let visitorBatchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function buildVisitorEmbed(input: DiscordVisitorNotification) {
   const flag = getCountryFlag(input.country);
   const locationStr = [input.city, input.region, input.country].filter(Boolean).join(', ') || 'Unknown Location';
 
-  const payload = {
-    embeds: [
-      {
-        title: `🌐 New Visitor Landed • #${input.totalVisitors}`,
-        description: `**${flag} ${locationStr}**`,
-        color: 0x3b82f6, // Vibrant Blue
-        fields: [
-          { name: '📍 Location', value: `${flag} ${locationStr}`, inline: true },
-          { name: '💻 Device / OS', value: `${input.device} • ${input.os}`, inline: true },
-          { name: '🌐 Browser', value: input.browser, inline: true },
-          { name: '🛡️ IP Address', value: `\`${input.ip}\``, inline: true },
-          { name: '🔗 Referrer', value: input.referrer ? `\`${input.referrer}\`` : 'Direct / Organic', inline: true },
-          { name: '🧭 Page Path', value: `\`${input.path || '/'}\``, inline: true },
-          { name: '🔍 Full User-Agent', value: `\`\`\`${input.userAgent.slice(0, 250)}\`\`\``, inline: false },
-        ],
-        footer: { text: 'SPOT Realtime Analytics • claimyourspot.lol' },
-        timestamp: new Date().toISOString(),
-      },
+  return {
+    title: `🌐 New Visitor Landed • #${input.totalVisitors}`,
+    description: `**${flag} ${locationStr}**`,
+    color: 0x3b82f6,
+    fields: [
+      { name: '📍 Location', value: `${flag} ${locationStr}`, inline: true },
+      { name: '💻 Device / OS', value: `${input.device} • ${input.os}`, inline: true },
+      { name: '🌐 Browser', value: input.browser, inline: true },
+      { name: '🛡️ IP Address', value: `\`${input.ip}\``, inline: true },
+      { name: '🔗 Referrer', value: input.referrer ? `\`${input.referrer}\`` : 'Direct / Organic', inline: true },
+      { name: '🧭 Page Path', value: `\`${input.path || '/'}\``, inline: true },
     ],
+    footer: { text: 'SPOT Realtime Analytics • claimyourspot.lol' },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+async function flushVisitorBatch(): Promise<void> {
+  if (visitorBatch.length === 0) return;
+  const batch = visitorBatch.splice(0, VISITOR_BATCH_SIZE);
+  visitorBatchTimer = null;
+
+  const webhookUrl = config.visitorDiscordWebhookUrl;
+  if (!webhookUrl) return;
+
+  const payload = {
+    embeds: batch.map(buildVisitorEmbed),
   };
 
   try {
@@ -192,6 +206,50 @@ export async function sendVisitorNotification(input: DiscordVisitorNotification)
   } catch (err) {
     console.error('Discord visitor webhook error:', err);
   }
+
+  // If more visitors queued while we were sending, schedule another flush
+  if (visitorBatch.length > 0) {
+    scheduleVisitorFlush();
+  }
+}
+
+function scheduleVisitorFlush(): void {
+  if (visitorBatchTimer) return;
+  visitorBatchTimer = setTimeout(flushVisitorBatch, VISITOR_BATCH_INTERVAL_MS);
+}
+
+/**
+ * Queue a visitor notification. Visitors are batched and flushed to Discord
+ * every 8 seconds or when 10 visitors accumulate, preventing 429 rate limits.
+ */
+export function sendVisitorNotification(input: DiscordVisitorNotification): void {
+  const webhookUrl = config.visitorDiscordWebhookUrl;
+  if (!webhookUrl) return;
+
+  visitorBatch.push(input);
+
+  if (visitorBatch.length >= VISITOR_BATCH_SIZE) {
+    // Batch full — flush immediately
+    if (visitorBatchTimer) {
+      clearTimeout(visitorBatchTimer);
+      visitorBatchTimer = null;
+    }
+    flushVisitorBatch();
+  } else {
+    scheduleVisitorFlush();
+  }
+}
+
+/**
+ * Flush any pending visitor notifications immediately.
+ * Call on graceful shutdown to avoid losing queued visitors.
+ */
+export async function flushVisitorNotifications(): Promise<void> {
+  if (visitorBatchTimer) {
+    clearTimeout(visitorBatchTimer);
+    visitorBatchTimer = null;
+  }
+  await flushVisitorBatch();
 }
 
 export interface DiscordLibrarySuggestionNotification {

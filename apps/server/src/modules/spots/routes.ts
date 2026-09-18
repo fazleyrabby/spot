@@ -107,6 +107,15 @@ spotsRouter.post(
       );
       if (gitRes.rows.length > 0) {
         citizen = gitRes.rows[0];
+        // Link current session to the GitHub citizen to prevent duplicate creation on next claim
+        if (rawToken && citizen) {
+          const tokenHash = hashToken(rawToken);
+          await query(
+            `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+             ON CONFLICT (token_hash) DO NOTHING`,
+            [citizen.id, tokenHash]
+          );
+        }
       }
     }
 
@@ -144,70 +153,99 @@ spotsRouter.post(
 
     // If citizen is not yet registered, create them on the fly
     if (!citizen) {
-      if (!input.githubId) {
-        const ip = clientIp(req);
-        if (ip) {
-          const recentGuestRes = await query<{ count: string }>(
-            `SELECT COUNT(*)::text AS count
-             FROM citizens
-             WHERE github_id IS NULL
-               AND ip_address = $1
-               AND created_at > NOW() - INTERVAL '24 hours'`,
-            [ip]
-          );
-          if (Number(recentGuestRes.rows[0]?.count || 0) >= 5) {
-            res.status(429).json({ error: 'RateLimitExceeded', message: 'Maximum citizen registration limit reached for this IP today.' });
-            return;
+      // Guard: if a githubId was provided, check if a GitHub citizen already exists
+      // to prevent duplicate citizens (race between GitHub sync cookie and claim request)
+      if (input.githubId) {
+        const gitDupeCheck = await query<any>(
+          `SELECT ${CITIZEN_PROFILE_COLUMNS}
+           FROM citizens
+           WHERE github_id = $1
+           LIMIT 1`,
+          [input.githubId]
+        );
+        if (gitDupeCheck.rows.length > 0) {
+          citizen = gitDupeCheck.rows[0];
+          // Link current session to the existing GitHub citizen
+          const newRawToken = generateSessionToken();
+          const tokenHash = hashToken(newRawToken);
+          rawToken = newRawToken;
+          if (citizen) {
+            await query(
+              `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+               ON CONFLICT (token_hash) DO NOTHING`,
+              [citizen.id, tokenHash]
+            );
           }
+          res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
         }
       }
-      const newRawToken = generateSessionToken();
-      const tokenHash = hashToken(newRawToken);
-      const citizenId = `c_${crypto.randomBytes(12).toString('hex')}`;
 
-      try {
-        const citizenRes = await query<any>(
-          `INSERT INTO citizens (
-             id, session_token_hash, display_name, avatar_id, custom_avatar_data,
-             tagline, website_url, github_url, twitter_url, facebook_url,
-             instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address, device_fingerprint
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-           RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
-          [
-            citizenId,
-            tokenHash,
-            displayName,
-            input.avatarId,
-            input.customAvatarData || null,
-            input.tagline || null,
-            formatSocialUrl(input.websiteUrl, 'website') || null,
-            formatSocialUrl(input.githubUrl, 'github') || null,
-            formatSocialUrl(input.twitterUrl, 'twitter') || null,
-            formatSocialUrl(input.facebookUrl, 'facebook') || null,
-            formatSocialUrl(input.instagramUrl, 'instagram') || null,
-            formatSocialUrl(input.youtubeUrl, 'youtube') || null,
-            formatSocialUrl(input.linkedinUrl, 'linkedin') || null,
-            input.githubId || null,
-            input.email || null,
-            input.avatarUrl || null,
-            clientIp(req),
-            deviceFingerprint,
-          ]
-        );
-        citizen = citizenRes.rows[0];
-        createdCitizenId = citizenRes.rows[0].id;
-        rawToken = newRawToken;
-        await query(
-          `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
-           ON CONFLICT (token_hash) DO NOTHING`,
-          [createdCitizenId, tokenHash]
-        );
-        res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
-      } catch (err: any) {
-        console.error('Error creating citizen during claim:', err);
-        res.status(500).json({ error: 'InternalServerError', message: 'Failed to create citizen profile' });
-        return;
+      if (!citizen) {
+        if (!input.githubId) {
+          const ip = clientIp(req);
+          if (ip) {
+            const recentGuestRes = await query<{ count: string }>(
+              `SELECT COUNT(*)::text AS count
+               FROM citizens
+               WHERE github_id IS NULL
+                 AND ip_address = $1
+                 AND created_at > NOW() - INTERVAL '24 hours'`,
+              [ip]
+            );
+            if (Number(recentGuestRes.rows[0]?.count || 0) >= 5) {
+              res.status(429).json({ error: 'RateLimitExceeded', message: 'Maximum citizen registration limit reached for this IP today.' });
+              return;
+            }
+          }
+        }
+        const newRawToken = generateSessionToken();
+        const tokenHash = hashToken(newRawToken);
+        const citizenId = `c_${crypto.randomBytes(12).toString('hex')}`;
+
+        try {
+          const citizenRes = await query<any>(
+            `INSERT INTO citizens (
+               id, session_token_hash, display_name, avatar_id, custom_avatar_data,
+               tagline, website_url, github_url, twitter_url, facebook_url,
+               instagram_url, youtube_url, linkedin_url, github_id, email, avatar_url, ip_address, device_fingerprint
+             )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+             RETURNING ${CITIZEN_PROFILE_COLUMNS}`,
+            [
+              citizenId,
+              tokenHash,
+              displayName,
+              input.avatarId,
+              input.customAvatarData || null,
+              input.tagline || null,
+              formatSocialUrl(input.websiteUrl, 'website') || null,
+              formatSocialUrl(input.githubUrl, 'github') || null,
+              formatSocialUrl(input.twitterUrl, 'twitter') || null,
+              formatSocialUrl(input.facebookUrl, 'facebook') || null,
+              formatSocialUrl(input.instagramUrl, 'instagram') || null,
+              formatSocialUrl(input.youtubeUrl, 'youtube') || null,
+              formatSocialUrl(input.linkedinUrl, 'linkedin') || null,
+              input.githubId || null,
+              input.email || null,
+              input.avatarUrl || null,
+              clientIp(req),
+              deviceFingerprint,
+            ]
+          );
+          citizen = citizenRes.rows[0];
+          createdCitizenId = citizenRes.rows[0].id;
+          rawToken = newRawToken;
+          await query(
+            `INSERT INTO citizen_sessions (citizen_id, token_hash) VALUES ($1, $2)
+             ON CONFLICT (token_hash) DO NOTHING`,
+            [createdCitizenId, tokenHash]
+          );
+          res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS);
+        } catch (err: any) {
+          console.error('Error creating citizen during claim:', err);
+          res.status(500).json({ error: 'InternalServerError', message: 'Failed to create citizen profile' });
+          return;
+        }
       }
     } else if (input.avatarId || input.customAvatarData || input.tagline) {
       try {

@@ -55,7 +55,7 @@ analyticsRouter.get('/visit', async (req, res) => {
         path: landingPath,
         userAgent,
         totalVisitors,
-      }).catch((err) => console.error('[Discord Visitor Alert Error]', err));
+      });
     } else {
       const currentRes = await query<any>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1;`);
       totalVisitors = parseInt(currentRes.rows[0]?.value, 10) || 1;
