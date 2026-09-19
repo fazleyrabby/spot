@@ -734,6 +734,27 @@ function buildProps() {
         pushCyl(gx + 0.7, base + 2.2, gy + 0.7, 0.12, 0.32, 0xef4444);
         pushGlow(gx + 0.7, base + 2.2, gy + 0.7, 0xf43f5e);
       }
+      else if (t === 'swarmguard_bastion') {
+        // Stone foundation plinth
+        pushDetail(gx, base + 0.15, gy, 1.9, 0.3, 1.9, 0x2b3446);
+        pushDetail(gx, base + 0.35, gy, 1.72, 0.16, 1.72, 0x44506a);
+        // Central keep tower with lit arrow-slits
+        for (let y = base; y < base + 4; y++) pushBox(gx, y, gy, y % 2 === 0 ? 0x556684 : 0x44506a);
+        pushDetail(gx, base + 4.15, gy, 1.06, 0.3, 1.06, 0x6b7d99);
+        pushDetailGlow(gx, base + 2.4, gy + 0.51, 0.72, 0.3, 0.06, 0x67e8f9);
+        pushDetailGlow(gx + 0.51, base + 2.4, gy, 0.06, 0.3, 0.72, 0x67e8f9);
+        // Corner turrets with conical roofs & cannon barrels
+        for (const [dx, dz] of [[-0.72, -0.72], [0.72, -0.72], [-0.72, 0.72], [0.72, 0.72]]) {
+          pushCyl(gx + dx, base + 1.4, gy + dz, 0.13, 2.4, 0x6b7d99);
+          pushCone(gx + dx, base + 2.85, gy + dz, 0.27, 0.5, 0x2b3a52, 6);
+          pushCyl(gx + dx, base + 1.95, gy + dz, 0.05, 0.72, 0x0f172a);
+          pushGlow(gx + dx, base + 2.35, gy + dz, 0x22d3ee);
+        }
+        // Banner mast, cyan shield crest & crown glow
+        pushCyl(gx, base + 5.0, gy, 0.04, 1.0, 0x94a3b8);
+        pushDetail(gx + 0.28, base + 5.3, gy, 0.52, 0.3, 0.04, 0x22d3ee);
+        pushGlow(gx, base + 5.55, gy, 0x22d3ee);
+      }
       else if (t === 'subway_entrance' || t === 'bus_stop') { pushBox(gx, base, gy, 0x8fa3b8); }
       else if (t === 'vending_machine') { pushBox(gx, base, gy, 0xf1f5f9); }
       else if (t === 'sunset_arch') {
@@ -925,6 +946,7 @@ const MONUMENT_LABELS = [
   [60, 38, 'Museum', 5.6, '#fbbf24'],
   [44, 52, 'Library', 6.4, '#22d3ee'],
   [56, 52, '⛩️ Yorimichi Village', 6.6, '#f43f5e'],
+  [44, 58, '🛡️ Swarmguard Bastion', 6.8, '#22d3ee'],
   [64, 16, 'Genesis Monolith', 7.2, '#fbbf24'],
   [40, -10, 'Kandahar Giant', 9.0, '#e2e8f0'],
   [50, 50, 'Wishing Fountain', 4.6, '#7dd3fc'],
@@ -2827,6 +2849,7 @@ function tick() {
           const near = (tx, tz, r) => Math.hypot(lx - tx, lz - tz) < r;
           if (near(44, 52, 1.8) && window.openLibraryModal) { window.openLibraryModal(); return 'library'; }
           if (near(56, 52, 2.0) && window.openVillageModal) { window.openVillageModal(); return 'village'; }
+          if (near(44, 58, 2.0) && window.openSwarmGuardModal) { window.openSwarmGuardModal(); return 'swarmguard'; }
           if (near(86, 22, 1.8) && window.openArcadeModal) { window.openArcadeModal(); return 'arcade'; }
           if (near(60, 38, 1.8) && window.openMuseumModal) { window.openMuseumModal(); return 'museum'; }
         }
@@ -3437,6 +3460,7 @@ function tick() {
         if (m) setTimeout(() => {
           if (m === 'library') window.openLibraryModal?.();
           else if (m === 'village' || m === 'yorimichi') window.openVillageModal?.();
+          else if (m === 'swarmguard' || m === 'swarm') window.openSwarmGuardModal?.();
           else if (m === 'arcade') window.openArcadeModal?.();
           else if (m === 'museum') window.openMuseumModal?.();
         }, 700);

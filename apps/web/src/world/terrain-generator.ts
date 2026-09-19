@@ -80,6 +80,7 @@ export type UrbanPropType =
   | 'genesis_monolith'
   | 'dev_library'
   | 'japanese_pavilion'
+  | 'swarmguard_bastion'
   | 'mystic_duck'
   | 'cafe_cat'
   | 'glitch_void'
@@ -758,6 +759,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'japanese_pavilion', wx, wy,
       hasLight: true, lightColor: 'rgba(244, 63, 94, 0.55)', lightRadius: 125,
+    };
+  }
+
+  // Swarmguard Bastion — tower defense monument in the south-western Grand Plaza
+  if (gx === 44 && gy === 58) {
+    return {
+      gx, gy, type: 'swarmguard_bastion', wx, wy,
+      hasLight: true, lightColor: 'rgba(34, 211, 238, 0.55)', lightRadius: 125,
     };
   }
 

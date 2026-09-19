@@ -215,6 +215,13 @@ export class Engine {
         (window as any).openVillageModal?.();
         return;
       }
+      // 0c. Swarmguard Bastion (44, 58)
+      const bastWx = 44 * TILE_WIDTH + TILE_WIDTH / 2;
+      const bastWy = 58 * TILE_HEIGHT + TILE_HEIGHT / 2;
+      if (Math.hypot(this.player.wx - bastWx, this.player.wy - bastWy) < 80) {
+        (window as any).openSwarmGuardModal?.();
+        return;
+      }
       // 0. Check if near any Street NPC
       const nearestNpc = this.renderer.npcs.getNearestNPC(this.player.wx, this.player.wy);
       if (nearestNpc) {

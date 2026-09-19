@@ -15,7 +15,7 @@ export interface WorldSecret {
   subtitle: string;
   description: string;
   clue: string; // Mystery riddle shown in Explorer Journal before discovery
-  category: 'lore' | 'resource' | 'interactive' | 'fun';
+  category: 'lore' | 'resource' | 'interactive' | 'fun' | 'landmark';
   actionLabel?: string;
   actionUrl?: string;
   quote?: string;
@@ -91,6 +91,24 @@ export const WORLD_SECRETS: WorldSecret[] = [
     actionUrl: 'https://yorimichi-world.vercel.app/',
     reward: 'Wanderer of Yorimichi',
     quote: '“Take the scenic detour and let the world slow down.”',
+  },
+  {
+    id: 'swarmguard_bastion',
+    name: 'The Swarmguard Bastion',
+    district: 'Grand Central Plaza',
+    icon: '🛡️',
+    gx: 44,
+    gy: 58,
+    category: 'landmark',
+    title: 'Swarmguard — The Last Bastion',
+    subtitle: 'Tower defense against the endless swarm',
+    description:
+      'A reinforced stone bastion ringed by crackling cyan shield emitters and twin cannon turrets. From its ramparts, defenders hold the line against wave after wave of the encroaching swarm.',
+    clue: 'In the south-western plaza courtyard at (44, 58), a crenellated fortress hums behind a shimmering energy shield.',
+    actionLabel: 'Defend the Bastion 🛡️',
+    actionUrl: 'https://swarmguard.fazleyrabbi.xyz',
+    reward: 'Swarm Warden',
+    quote: '“Hold the line — the city endures so long as one tower still stands.”',
   },
   {
     id: 'mystic_duck',
@@ -409,7 +427,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'yorimichi_village', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'swarmguard_bastion', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;
@@ -508,6 +526,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
       secrets.includes('cyber_glitch_byte') &&
       secrets.includes('cyber_glitch_mantis') &&
       secrets.includes('cyber_glitch_null'),
+  },
+  {
+    id: 'badge_swarm_warden',
+    name: 'Swarm Warden',
+    description: 'Visited the Swarmguard Bastion',
+    icon: '🛡️',
+    color: '#22d3ee',
+    checkUnlocked: (secrets) => secrets.includes('swarmguard_bastion'),
   },
   {
     id: 'badge_metropolis_master',

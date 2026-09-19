@@ -17,6 +17,7 @@ import BinocularModal from '../components/BinocularModal.astro';
 import ArtMuseumModal from '../components/ArtMuseumModal.astro';
 import ArtExperienceModal from '../components/ArtExperienceModal.astro';
 import VillagePortalModal from '../components/VillagePortalModal.astro';
+import SwarmGuardModal from '../components/SwarmGuardModal.astro';
 ---
 
 <Layout
@@ -87,6 +88,9 @@ import VillagePortalModal from '../components/VillagePortalModal.astro';
 
     <!-- Yorimichi Soothing Village World Portal -->
     <VillagePortalModal />
+
+    <!-- SwarmGuard Tower Defense Portal -->
+    <SwarmGuardModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -1762,6 +1766,8 @@ import VillagePortalModal from '../components/VillagePortalModal.astro';
             (window as any).openArcadeModal?.();
           } else if (secret.id === 'yorimichi_village') {
             (window as any).openVillageModal?.();
+          } else if (secret.id === 'swarmguard_bastion') {
+            (window as any).openSwarmGuardModal?.();
           } else {
             openSecretModal(secret);
           }
@@ -1780,6 +1786,7 @@ import VillagePortalModal from '../components/VillagePortalModal.astro';
           (window as any).closeLibraryModal?.();
           (window as any).closeArcadeModal?.();
           (window as any).closeVillageModal?.();
+          (window as any).closeSwarmGuardModal?.();
         },
         onSnapshotLoaded: (snapshot) => {
           const claimedCountEl = document.getElementById('hud-claimed-count');
@@ -2111,6 +2118,10 @@ import VillagePortalModal from '../components/VillagePortalModal.astro';
       } else if (worldUrlParams.get('modal') === 'village' || worldUrlParams.get('modal') === 'yorimichi') {
         setTimeout(() => {
           (window as any).openVillageModal?.();
+        }, 350);
+      } else if (worldUrlParams.get('modal') === 'swarmguard' || worldUrlParams.get('modal') === 'swarm') {
+        setTimeout(() => {
+          (window as any).openSwarmGuardModal?.();
         }, 350);
       } else if (worldUrlParams.get('modal') === 'share') {
         setTimeout(() => {

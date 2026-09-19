@@ -2973,6 +2973,194 @@ export class Renderer {
         break;
       }
 
+      case 'swarmguard_bastion': {
+        const isHovered =
+          this.hoveredSecret?.id === 'swarmguard_bastion' ||
+          (this.hoveredGrid && Math.hypot(this.hoveredGrid.gx - 44, this.hoveredGrid.gy - 58) <= 1.5);
+        const pulse = 0.5 + 0.5 * Math.sin(this.tick * 0.06);
+
+        // 1. Broad Ground Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 56 * z, 15 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Chiseled Stone Foundation Plinth
+        ctx.fillStyle = '#0b1018';
+        ctx.beginPath();
+        ctx.roundRect(sx - 50 * z, sy - 4 * z, 100 * z, 9 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        ctx.fillStyle = '#161d2b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 46 * z, sy - 8 * z, 92 * z, 5 * z, 1.5 * z);
+        ctx.fill();
+
+        // 3. Outer Curtain Wall with Crenellations
+        const wallW = 88 * z;
+        const wallH = 22 * z;
+        const wallY = sy - wallH - 8 * z;
+        ctx.fillStyle = '#2b3446';
+        ctx.beginPath();
+        ctx.roundRect(sx - wallW / 2, wallY, wallW, wallH, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+        // Stone block seams
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.lineWidth = 0.6 * z;
+        for (let by = wallY + 6 * z; by < wallY + wallH; by += 6 * z) {
+          ctx.beginPath();
+          ctx.moveTo(sx - wallW / 2, by);
+          ctx.lineTo(sx + wallW / 2, by);
+          ctx.stroke();
+        }
+        // Battlements
+        ctx.fillStyle = '#38445c';
+        for (let mx = -wallW / 2 + 3 * z; mx < wallW / 2 - 3 * z; mx += 10 * z) {
+          ctx.fillRect(sx + mx, wallY - 6 * z, 6 * z, 7 * z);
+        }
+
+        // 4. Central Keep Tower
+        const keepW = 40 * z;
+        const keepH = 46 * z;
+        const keepY = sy - keepH - 10 * z;
+        ctx.fillStyle = '#1e2636';
+        ctx.beginPath();
+        ctx.roundRect(sx - keepW / 2, keepY, keepW, keepH, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+        // Keep battlements
+        ctx.fillStyle = '#38445c';
+        for (let mx = -keepW / 2 + 3 * z; mx < keepW / 2 - 3 * z; mx += 9 * z) {
+          ctx.fillRect(sx + mx, keepY - 6 * z, 5.5 * z, 7 * z);
+        }
+        // Glowing arrow-slit windows
+        for (const wy of [keepY + 12 * z, keepY + 24 * z]) {
+          ctx.fillStyle = isHovered ? 'rgba(103, 232, 249, 0.95)' : 'rgba(34, 211, 238, 0.75)';
+          ctx.fillRect(sx - 3 * z, wy, 2.5 * z, 7 * z);
+          ctx.fillRect(sx + 0.5 * z, wy, 2.5 * z, 7 * z);
+        }
+        // Arched gate
+        ctx.fillStyle = '#0a0f18';
+        ctx.beginPath();
+        ctx.moveTo(sx - 7 * z, sy - 8 * z);
+        ctx.lineTo(sx - 7 * z, sy - 20 * z);
+        ctx.quadraticCurveTo(sx, sy - 28 * z, sx + 7 * z, sy - 20 * z);
+        ctx.lineTo(sx + 7 * z, sy - 8 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
+        ctx.lineWidth = 0.8 * z;
+        ctx.stroke();
+
+        // 5. Twin Turret Cannons on the Wall Corners
+        for (const tx of [sx - 38 * z, sx + 38 * z]) {
+          ctx.fillStyle = '#33405a';
+          ctx.beginPath();
+          ctx.roundRect(tx - 8 * z, wallY - 10 * z, 16 * z, 12 * z, 2 * z);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(tx - 2 * z, wallY - 20 * z, 4 * z, 12 * z);
+          ctx.fillStyle = isHovered ? 'rgba(251, 191, 36, 0.95)' : 'rgba(251, 191, 36, 0.6)';
+          ctx.beginPath();
+          ctx.arc(tx, wallY - 20 * z, 3 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 6. Crackling Cyan Energy Shield Dome
+        ctx.save();
+        const shieldR = 46 * z;
+        const shieldY = keepY + 6 * z;
+        const grad = ctx.createRadialGradient(sx, shieldY, 2 * z, sx, shieldY, shieldR);
+        grad.addColorStop(0, `rgba(34, 211, 238, ${0.05 + pulse * 0.06})`);
+        grad.addColorStop(0.7, `rgba(34, 211, 238, ${0.10 + pulse * 0.10})`);
+        grad.addColorStop(1, 'rgba(34, 211, 238, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(sx, shieldY, shieldR, Math.PI, Math.PI * 2);
+        ctx.lineTo(sx + shieldR, shieldY);
+        ctx.lineTo(sx - shieldR, shieldY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = `rgba(103, 232, 249, ${0.35 + pulse * 0.35})`;
+        ctx.lineWidth = 1.4 * z;
+        ctx.beginPath();
+        ctx.arc(sx, shieldY, shieldR, Math.PI, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 7. Banner Flag on the Keep Roof
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.2 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, keepY - 6 * z);
+        ctx.lineTo(sx, keepY - 26 * z);
+        ctx.stroke();
+        const flagW = Math.sin(this.tick * 0.08) * 1.5 * z;
+        ctx.fillStyle = isHovered ? '#67e8f9' : '#22d3ee';
+        ctx.beginPath();
+        ctx.moveTo(sx, keepY - 26 * z);
+        ctx.lineTo(sx + 14 * z + flagW, keepY - 22 * z);
+        ctx.lineTo(sx, keepY - 18 * z);
+        ctx.closePath();
+        ctx.fill();
+
+        // 8. Orbiting Holographic Swarm Motes
+        for (let m = 0; m < 7; m++) {
+          const ang = this.tick * 0.03 + m * ((Math.PI * 2) / 7);
+          const mx = sx + Math.cos(ang) * 44 * z;
+          const my = shieldY + Math.sin(ang) * 16 * z;
+          const size = (1.4 + (m % 3) * 0.5) * z;
+          ctx.fillStyle = m % 2 === 0 ? 'rgba(251, 191, 36, 0.9)' : 'rgba(103, 232, 249, 0.9)';
+          ctx.beginPath();
+          ctx.arc(mx, my, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 9. Interactive Hover Tooltip Card
+        if (isHovered) {
+          const pillY = keepY - 40 * z;
+          const title = '🛡️ Swarmguard Bastion';
+          const sub = 'Click to Defend the City';
+
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
+          ctx.fill();
+
+          ctx.fillStyle = '#08131c';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#e0fbff';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+
+          ctx.font = `500 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#67e8f9';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
       case 'mystic_duck': {
         ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.beginPath();

@@ -123,6 +123,11 @@ export class InteractionHandler {
         const pavWy = 52 * 32 + 16;
         const onPavilion = Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48;
 
+        // Swarmguard Bastion hover → pointer
+        const bastWx = 44 * 48 + 24;
+        const bastWy = 58 * 32 + 16;
+        const onBastion = Math.hypot(world.x - bastWx, (world.y + 16) - bastWy) < 52;
+
         const onMarine = this.renderer.marine.hitTestMarine(world.x, world.y);
         // Art experiences sit on the beach (gy >= 100), outside the 0..99 city
         // grid worldToGrid validates, and their props extend above the base tile
@@ -136,7 +141,7 @@ export class InteractionHandler {
           this.renderer.hoveredSecret = null;
           this.renderer.hoveredGrid = { gx: artExp.gx, gy: artExp.gy };
           canvas.style.cursor = 'pointer';
-        } else if (onDoor || onMarine || onPavilion) {
+        } else if (onDoor || onMarine || onPavilion || onBastion) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -212,6 +217,14 @@ export class InteractionHandler {
         const pavWy = 52 * 32 + 16;
         if (Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48) {
           (window as any).openVillageModal?.();
+          return;
+        }
+
+        // -0.85. Swarmguard Bastion (44, 58) — click to launch tower defense
+        const bastWx = 44 * 48 + 24;
+        const bastWy = 58 * 32 + 16;
+        if (Math.hypot(world.x - bastWx, (world.y + 16) - bastWy) < 52) {
+          (window as any).openSwarmGuardModal?.();
           return;
         }
 

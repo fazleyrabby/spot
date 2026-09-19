@@ -1,0 +1,361 @@
+---
+/**
+ * SwarmGuardModal — Fullscreen portal to the SwarmGuard tower defense game
+ * (https://swarmguard.fazleyrabbi.xyz).
+ *
+ * Immersive viewer with tactical glassmorphism chrome,
+ * 'Open in New Tab ↗' quick link, Fullscreen toggle, and resource
+ * pausing upon close.
+ */
+---
+
+<div
+  class="swarm-portal-backdrop"
+  id="swarm-portal-backdrop"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-label="SwarmGuard Tower Defense Portal"
+>
+  <div class="swarm-portal-stage">
+    <iframe
+      id="swarm-portal-iframe"
+      class="swarm-portal-iframe"
+      src="about:blank"
+      loading="eager"
+      allow="autoplay; fullscreen; accelerometer; gyroscope; gamepad"
+      referrerpolicy="no-referrer"
+      title="SwarmGuard — Tower Defense"
+    ></iframe>
+
+    <!-- Top floating chrome -->
+    <div class="swarm-portal-chrome">
+      <div class="swarm-portal-badge">
+        <span class="swarm-emblem">🛡️</span>
+        <div class="swarm-title-group">
+          <div class="swarm-title-main">
+            <span class="swarm-name">SWARMGUARD</span>
+            <span class="swarm-tag">TOWER DEFENSE</span>
+          </div>
+          <p class="swarm-subtitle">Hold the line against the endless swarm</p>
+        </div>
+      </div>
+
+      <div class="swarm-portal-actions">
+        <a
+          href="https://swarmguard.fazleyrabbi.xyz"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="swarm-action-btn open-tab-btn"
+          title="Open the game in a new browser tab"
+        >
+          <span>Open in New Tab</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+
+        <button
+          type="button"
+          class="swarm-action-btn fullscreen-btn"
+          id="swarm-fullscreen-btn"
+          title="Toggle Fullscreen"
+          aria-label="Toggle Fullscreen"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          class="swarm-action-btn close-btn"
+          id="swarm-portal-close"
+          aria-label="Return to Spot World"
+          title="Return to Spot World (ESC)"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span class="close-label">Return to City</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .swarm-portal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #040810;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.32s ease;
+  }
+
+  .swarm-portal-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .swarm-portal-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #020408;
+    overflow: hidden;
+  }
+
+  .swarm-portal-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #020408;
+  }
+
+  .swarm-portal-chrome {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(2, 6, 14, 0.88) 0%,
+      rgba(2, 6, 14, 0.6) 45%,
+      transparent 100%
+    );
+    z-index: 10;
+  }
+
+  .swarm-portal-badge {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(8, 15, 26, 0.72);
+    border: 1px solid rgba(34, 211, 238, 0.32);
+    border-radius: 12px;
+    padding: 8px 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 211, 238, 0.15);
+  }
+
+  .swarm-emblem {
+    font-size: 1.4rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 8px rgba(34, 211, 238, 0.45));
+  }
+
+  .swarm-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .swarm-title-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+  }
+
+  .swarm-name {
+    font-family: 'Chakra Petch', 'Cinzel', ui-monospace, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #f8fafc;
+  }
+
+  .swarm-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: rgba(34, 211, 238, 0.18);
+    color: #22d3ee;
+    border: 1px solid rgba(34, 211, 238, 0.4);
+    text-transform: uppercase;
+  }
+
+  .swarm-subtitle {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
+  }
+
+  .swarm-portal-actions {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .swarm-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    user-select: none;
+  }
+
+  .open-tab-btn {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(15, 23, 42, 0.75);
+    color: #e2e8f0;
+  }
+
+  .open-tab-btn:hover {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(34, 211, 238, 0.45);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .fullscreen-btn {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(15, 23, 42, 0.75);
+    color: #e2e8f0;
+    padding: 8px 10px;
+  }
+
+  .fullscreen-btn:hover {
+    background: rgba(30, 41, 59, 0.95);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .close-btn {
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    background: rgba(8, 145, 178, 0.82);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.3);
+  }
+
+  .close-btn:hover {
+    background: rgba(34, 211, 238, 0.95);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(34, 211, 238, 0.45);
+  }
+
+  @media (max-width: 640px) {
+    .swarm-portal-chrome {
+      padding: 10px 12px;
+    }
+    .swarm-subtitle,
+    .swarm-tag,
+    .close-label {
+      display: none;
+    }
+    .swarm-action-btn {
+      padding: 7px 10px;
+    }
+  }
+</style>
+
+<script>
+  const backdrop = document.getElementById('swarm-portal-backdrop') as HTMLDivElement | null;
+  const iframe = document.getElementById('swarm-portal-iframe') as HTMLIFrameElement | null;
+  const fsBtn = document.getElementById('swarm-fullscreen-btn') as HTMLButtonElement | null;
+  const closeBtn = document.getElementById('swarm-portal-close') as HTMLButtonElement | null;
+
+  const openTabBtn = document.querySelector('.swarm-portal-actions .open-tab-btn');
+
+  const SWARM_URL = 'https://swarmguard.fazleyrabbi.xyz';
+
+  function trackClick(source = '2d') {
+    try {
+      const payload = JSON.stringify({
+        targetType: 'monument',
+        targetId: 'swarmguard_bastion',
+        source,
+      });
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/click', blob);
+      } else {
+        fetch('/api/analytics/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch (_) {}
+  }
+
+  function openSwarmGuardModal(source = '2d') {
+    if (!backdrop || !iframe) return;
+    trackClick(source);
+    if (iframe.src !== SWARM_URL) {
+      iframe.src = SWARM_URL;
+    }
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    iframe.focus();
+  }
+
+  function closeSwarmGuardModal() {
+    if (!backdrop || !iframe) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    // Unload iframe to stop audio and game loops in background
+    iframe.src = 'about:blank';
+    document.body.style.overflow = '';
+  }
+
+  function toggleFullscreen() {
+    if (!backdrop) return;
+    if (!document.fullscreenElement) {
+      backdrop.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }
+
+  closeBtn?.addEventListener('click', closeSwarmGuardModal);
+  fsBtn?.addEventListener('click', toggleFullscreen);
+  openTabBtn?.addEventListener('click', () => trackClick('new_tab'));
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeSwarmGuardModal();
+    }
+  });
+
+  (window as any).openSwarmGuardModal = openSwarmGuardModal;
+  (window as any).closeSwarmGuardModal = closeSwarmGuardModal;
+</script>
