@@ -197,6 +197,25 @@ citizensRouter.post('/:id/click', optionalAuthMiddleware, async (req: Authentica
       );
       currentViews = parseInt(updateRes.rows[0]?.viewsCount, 10) || (currentViews + 1);
       invalidateWorldCache();
+
+      // Dual-write to unified tables
+      const source = (req.headers['x-click-source'] as string) || '2d';
+      query(
+        `INSERT INTO world_click_logs (target_type, target_id, source, visitor_hash, clicked_date)
+         VALUES ('citizen', $1, $2, $3, CURRENT_DATE)
+         ON CONFLICT (target_type, target_id, visitor_hash, clicked_date) DO NOTHING`,
+        [citizen.id, source, visitorHash]
+      ).catch(() => {});
+      query(
+        `INSERT INTO world_interaction_stats (target_type, target_id, total_clicks, unique_visitors, last_clicked_at)
+         VALUES ('citizen', $1, 1, 1, NOW())
+         ON CONFLICT (target_type, target_id) DO UPDATE SET
+           total_clicks = world_interaction_stats.total_clicks + 1,
+           unique_visitors = world_interaction_stats.unique_visitors + 1,
+           last_clicked_at = NOW()`,
+        [citizen.id]
+      ).catch(() => {});
+
       res.json({
         counted: true,
         viewsCount: currentViews,

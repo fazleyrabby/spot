@@ -585,6 +585,24 @@ billboardsRouter.post('/:id/click', optionalAuthMiddleware, async (req: Authenti
         await query(`UPDATE billboard_orders SET views_count = views_count + 1 WHERE id = $1`, [liveOrder.id]).catch(() => {});
       }
 
+      // Dual-write to unified tables
+      const source = (req.headers['x-click-source'] as string) || '2d';
+      query(
+        `INSERT INTO world_click_logs (target_type, target_id, source, visitor_hash, clicked_date)
+         VALUES ('billboard', $1, $2, $3, CURRENT_DATE)
+         ON CONFLICT (target_type, target_id, visitor_hash, clicked_date) DO NOTHING`,
+        [billboardId, source, visitorHash]
+      ).catch(() => {});
+      query(
+        `INSERT INTO world_interaction_stats (target_type, target_id, total_clicks, unique_visitors, last_clicked_at)
+         VALUES ('billboard', $1, 1, 1, NOW())
+         ON CONFLICT (target_type, target_id) DO UPDATE SET
+           total_clicks = world_interaction_stats.total_clicks + 1,
+           unique_visitors = world_interaction_stats.unique_visitors + 1,
+           last_clicked_at = NOW()`,
+        [billboardId]
+      ).catch(() => {});
+
       res.json({ counted: true, viewsCount });
     } else {
       const statRes = await query<any>(`SELECT views_count FROM billboard_stats WHERE billboard_id = $1`, [billboardId]);

@@ -175,3 +175,78 @@ analyticsRouter.get('/click/:targetType/:targetId', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/analytics/summary
+ * Dashboard-ready analytics: top citizens, billboards, monuments, and totals.
+ */
+analyticsRouter.get('/summary', async (_req, res) => {
+  try {
+    const [totalVisitors, topCitizens, topBillboards, topMonuments, recentClicks] = await Promise.all([
+      query<{ value: string }>(`SELECT value FROM site_stats WHERE key = 'total_visitors' LIMIT 1`),
+      query<any>(
+        `SELECT c.id, c.display_name, c.avatar_id, c.views_count, s.id as spot_id, s.x, s.y
+         FROM citizens c
+         LEFT JOIN spots s ON s.owner_id = c.id
+         WHERE c.views_count > 0
+         ORDER BY c.views_count DESC
+         LIMIT 10`
+      ),
+      query<any>(
+        `SELECT target_id, total_clicks, unique_visitors, last_clicked_at
+         FROM world_interaction_stats
+         WHERE target_type = 'billboard'
+         ORDER BY total_clicks DESC
+         LIMIT 10`
+      ),
+      query<any>(
+        `SELECT target_id, total_clicks, unique_visitors, last_clicked_at
+         FROM world_interaction_stats
+         WHERE target_type = 'monument'
+         ORDER BY total_clicks DESC
+         LIMIT 10`
+      ),
+      query<any>(
+        `SELECT target_type, target_id, COUNT(*) as clicks_today
+         FROM world_click_logs
+         WHERE clicked_date = CURRENT_DATE
+         GROUP BY target_type, target_id
+         ORDER BY clicks_today DESC
+         LIMIT 20`
+      ),
+    ]);
+
+    res.json({
+      totalVisitors: parseInt(totalVisitors.rows[0]?.value || '0', 10),
+      topCitizens: topCitizens.rows.map((r: any) => ({
+        id: r.id,
+        displayName: r.display_name,
+        avatarId: r.avatar_id,
+        viewsCount: parseInt(r.views_count, 10),
+        spotId: r.spot_id,
+        x: r.x,
+        y: r.y,
+      })),
+      topBillboards: topBillboards.rows.map((r: any) => ({
+        billboardId: r.target_id,
+        totalClicks: parseInt(r.total_clicks, 10),
+        uniqueVisitors: parseInt(r.unique_visitors, 10),
+        lastClickedAt: r.last_clicked_at,
+      })),
+      topMonuments: topMonuments.rows.map((r: any) => ({
+        monumentId: r.target_id,
+        totalClicks: parseInt(r.total_clicks, 10),
+        uniqueVisitors: parseInt(r.unique_visitors, 10),
+        lastClickedAt: r.last_clicked_at,
+      })),
+      todayActivity: recentClicks.rows.map((r: any) => ({
+        targetType: r.target_type,
+        targetId: r.target_id,
+        clicksToday: parseInt(r.clicks_today, 10),
+      })),
+    });
+  } catch (err: any) {
+    console.error('Error fetching analytics summary:', err);
+    res.status(500).json({ error: 'InternalServerError', message: 'Failed to fetch summary' });
+  }
+});
+
