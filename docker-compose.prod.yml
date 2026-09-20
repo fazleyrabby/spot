@@ -28,6 +28,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL:-}
+        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY:-}
     container_name: spot-app
     restart: unless-stopped
     environment:

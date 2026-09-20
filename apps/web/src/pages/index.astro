@@ -1541,9 +1541,7 @@ import ShareModal from '../components/ShareModal.astro';
   function openClaimModal(gx: number, gy: number) {
     if (myOwnedSpot) {
       showToast(`You already own Spot (${myOwnedSpot.x}, ${myOwnedSpot.y})!`, 'info');
-      const pos = renderer.grid.gridToWorld(myOwnedSpot.x, myOwnedSpot.y);
-      renderer.camera.centerOn(pos.x + 18, pos.y + 18, 2.0);
-      renderer.selectSpot(myOwnedSpot.x, myOwnedSpot.y);
+      renderer.focusSpot(myOwnedSpot.x, myOwnedSpot.y, 2.0);
       return;
     }
 
