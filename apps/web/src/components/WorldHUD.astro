@@ -897,29 +897,51 @@
 
   @media (max-width: 768px) {
     .world-dock {
-      left: 50%;
-      top: auto;
-      bottom: 12px;
-      transform: translateX(-50%);
-      flex-direction: row;
-      padding: 5px 8px;
-      gap: 4px;
-      max-width: calc(100vw - 20px);
-      overflow-x: auto;
+      left: 8px;
+      top: 56px;
+      bottom: auto;
+      transform: none;
+      flex-direction: column;
+      padding: 5px 4px;
+      gap: 3px;
+      max-height: calc(100dvh - 120px);
+      overflow-y: auto;
+      overflow-x: visible;
+      scrollbar-width: none;
+      z-index: 55;
+    }
+    .world-dock::-webkit-scrollbar {
+      display: none;
     }
     .dock-section {
-      flex-direction: row;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .dock-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
     }
     .dock-divider {
-      width: 1px;
-      height: 18px;
-      margin: 0 2px;
+      width: 16px;
+      height: 1px;
+      margin: 1px 0;
     }
-    .hud-pop-card {
-      left: 50%;
-      top: auto;
-      bottom: calc(100% + 10px);
-      transform: translateX(-50%);
+    .dock-zoom-level {
+      font-size: 0.58rem;
+    }
+    .dock-pop-container .hud-pop-card {
+      position: fixed;
+      left: 48px;
+      top: 56px;
+      bottom: auto;
+      transform: none;
+      min-width: 240px;
+      max-width: calc(100vw - 60px);
+      z-index: 300;
+    }
+    .dock-tooltip {
+      display: none;
     }
   }
 
