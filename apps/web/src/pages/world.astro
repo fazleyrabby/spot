@@ -2448,6 +2448,220 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
     showToast(WEATHER_LABELS[next], 'info');
   });
 
+  // ── Cyberpunk Lo-Fi Chiptune Radio ───────────────────────────────────────
+  const btnRadio = document.getElementById('world-radio-btn');
+  const popupRadio = document.getElementById('world-radio-popup');
+  const btnCloseRadio = document.getElementById('radio-pop-close');
+  const btnRadioPlay = document.getElementById('radio-play-btn');
+  const radioPlayIcon = document.getElementById('radio-play-icon');
+  const radioPlayLabel = document.getElementById('radio-play-label');
+  const radioFreqDisplay = document.getElementById('radio-freq-display');
+  const radioTitleDisplay = document.getElementById('radio-title-display');
+  const radioBars = document.getElementById('world-radio-bars');
+  const radioLiveDot = document.getElementById('radio-live-dot');
+  const radioSlider = document.getElementById('radio-volume-slider') as HTMLInputElement | null;
+  const radioStationBtns = document.querySelectorAll<HTMLButtonElement>('.radio-station-btn');
+
+  function updateRadioUI() {
+    if (!engine) return;
+    const isPlaying = engine.audio.isRadioOn;
+    const st = engine.audio.currentStation;
+
+    if (radioBars) {
+      if (isPlaying) radioBars.classList.add('is-playing');
+      else radioBars.classList.remove('is-playing');
+    }
+    if (radioLiveDot) {
+      if (isPlaying) radioLiveDot.classList.add('is-active');
+      else radioLiveDot.classList.remove('is-active');
+    }
+    if (radioPlayIcon) radioPlayIcon.textContent = isPlaying ? '⏸' : '▶';
+    if (radioPlayLabel) radioPlayLabel.textContent = isPlaying ? 'Pause Radio' : 'Play Radio';
+    if (radioFreqDisplay) radioFreqDisplay.textContent = st.freq;
+    if (radioTitleDisplay) radioTitleDisplay.textContent = st.name;
+
+    radioStationBtns.forEach((btn) => {
+      const station = btn.getAttribute('data-station');
+      if (station === st.id) btn.classList.add('is-active');
+      else btn.classList.remove('is-active');
+    });
+  }
+
+  btnRadio?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popupPet) popupPet.style.display = 'none';
+    if (!popupRadio) return;
+    const isOpen = popupRadio.style.display !== 'none';
+    popupRadio.style.display = isOpen ? 'none' : 'flex';
+    updateRadioUI();
+  });
+
+  btnCloseRadio?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popupRadio) popupRadio.style.display = 'none';
+  });
+
+  btnRadioPlay?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const isPlaying = await engine.audio.toggleRadio();
+    updateRadioUI();
+    showToast(isPlaying ? `📻 Playing ${engine.audio.currentStation.name} (${engine.audio.currentStation.freq})` : '📻 Radio paused', 'info');
+  });
+
+  radioStationBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!engine) return;
+      const stId = btn.getAttribute('data-station') as any;
+      if (!stId) return;
+      engine.audio.setRadioStation(stId);
+      if (!engine.audio.isRadioOn) {
+        await engine.audio.startRadio(stId);
+      }
+      updateRadioUI();
+      showToast(`📻 Tuned to ${engine.audio.currentStation.name} (${engine.audio.currentStation.freq})`, 'info');
+    });
+  });
+
+  radioSlider?.addEventListener('input', (e) => {
+    e.stopPropagation();
+    if (!engine || !radioSlider) return;
+    const val = parseFloat(radioSlider.value);
+    engine.audio.setRadioVolume(val);
+  });
+
+  // ── Follower Pet Companion System ─────────────────────────────────────────
+  const btnPet = document.getElementById('world-pet-btn');
+  const popupPet = document.getElementById('world-pet-popup');
+  const iconPet = document.getElementById('world-pet-icon');
+  const petToggleStatus = document.getElementById('pet-toggle-status');
+  const petChoiceBtns = document.querySelectorAll<HTMLButtonElement>('.pet-choice-btn');
+
+  (window as any).spotPlayPetSound = (petId: string) => {
+    if (!engine) return;
+    engine.audio.playPetSound(petId);
+    showToast(`🐾 Petted ${engine.renderer.pets.pet.name}! ❤️`, 'info');
+  };
+
+  function updatePetUI() {
+    if (!engine) return;
+    const pet = engine.renderer.pets.pet;
+    const enabled = engine.renderer.pets.isEnabled;
+
+    if (iconPet) iconPet.textContent = enabled ? pet.glyph : '🐾';
+    if (petToggleStatus) {
+      petToggleStatus.textContent = enabled ? 'Active' : 'Resting';
+      if (enabled) petToggleStatus.classList.remove('is-off');
+      else petToggleStatus.classList.add('is-off');
+    }
+
+    petChoiceBtns.forEach((btn) => {
+      const pId = btn.getAttribute('data-pet');
+      if (pId === pet.id) btn.classList.add('is-active');
+      else btn.classList.remove('is-active');
+    });
+  }
+
+  btnPet?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popupRadio) popupRadio.style.display = 'none';
+    if (!popupPet) return;
+    const isOpen = popupPet.style.display !== 'none';
+    popupPet.style.display = isOpen ? 'none' : 'flex';
+    updatePetUI();
+  });
+
+  petToggleStatus?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const active = engine.renderer.pets.toggleEnabled();
+    updatePetUI();
+    showToast(active ? `🐾 ${engine.renderer.pets.pet.name} is following you!` : '🐾 Pet is resting at home', 'info');
+  });
+
+  petChoiceBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!engine) return;
+      const petId = btn.getAttribute('data-pet') as any;
+      if (!petId) return;
+      engine.renderer.pets.setPet(petId);
+      updatePetUI();
+      engine.audio.playPetSound(petId);
+      showToast(`🐾 ${engine.renderer.pets.pet.name} joined your adventure!`, 'info');
+    });
+  });
+
+  // Close popups on click outside
+  window.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    if (popupRadio && !popupRadio.contains(target) && target !== btnRadio && !btnRadio?.contains(target)) {
+      popupRadio.style.display = 'none';
+    }
+    if (popupPet && !popupPet.contains(target) && target !== btnPet && !btnPet?.contains(target)) {
+      popupPet.style.display = 'none';
+    }
+  });
+
+  // ── Cinematic Autopilot Tour Mode ─────────────────────────────────────────
+  const btnWorldTour = document.getElementById('world-tour-btn');
+  const tourOverlay = document.getElementById('world-tour-overlay');
+  const tourTitle = document.getElementById('tour-title-display');
+  const tourSubtitle = document.getElementById('tour-subtitle-display');
+  const tourIndex = document.getElementById('tour-index-display');
+  const btnTourExit = document.getElementById('tour-exit-btn');
+
+  function exitTourMode() {
+    if (!engine || !engine.tour.isRunning) return;
+    engine.tour.stop();
+    if (tourOverlay) tourOverlay.style.display = 'none';
+    if (engine) {
+      engine.camera.centerOn(engine.player.wx, engine.player.wy, 1.2);
+    }
+    showToast('Returned to player camera', 'info');
+  }
+
+  (window as any).spotCancelTour = exitTourMode;
+  (window as any).spotTourExit = () => {
+    if (tourOverlay) tourOverlay.style.display = 'none';
+  };
+
+  (window as any).spotTourLandmarkChange = (lm: any, idx: number, total: number) => {
+    if (tourTitle) tourTitle.textContent = lm.title;
+    if (tourSubtitle) tourSubtitle.textContent = lm.subtitle;
+    if (tourIndex) tourIndex.textContent = `${idx + 1} / ${total}`;
+  };
+
+  btnWorldTour?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!engine) return;
+    const isRunning = engine.tour.toggle();
+    if (tourOverlay) {
+      tourOverlay.style.display = isRunning ? 'flex' : 'none';
+    }
+    if (isRunning) {
+      const lm = engine.tour.currentLandmark;
+      if (tourTitle) tourTitle.textContent = lm.title;
+      if (tourSubtitle) tourSubtitle.textContent = lm.subtitle;
+      if (tourIndex) tourIndex.textContent = `1 / 7`;
+      showToast('🎥 Cinematic Island Tour Started! (Press ESC or WASD to exit)', 'info');
+    } else {
+      exitTourMode();
+    }
+  });
+
+  btnTourExit?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exitTourMode();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && engine?.tour.isRunning) {
+      exitTourMode();
+    }
+  });
+
   // ── HUD Citizen Identity & 1-Click Sign-In ─────────────────────────────────
   function updateHUDCitizen(c: { displayName?: string; isVerified?: boolean; avatarId?: string } | null) {
     const btn = document.getElementById('world-citizen-btn');

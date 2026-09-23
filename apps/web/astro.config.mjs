@@ -8,5 +8,10 @@ export default defineConfig({
   server: {
     port: 4321,
     host: true
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['qrcode', '@simplewebauthn/browser', 'three', 'three/addons/controls/OrbitControls.js', 'zod']
+    }
   }
 });

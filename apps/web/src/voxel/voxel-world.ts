@@ -3516,18 +3516,6 @@ function tick() {
     }
     return best;
   },
-  aimBillboard() {
-    const all = this.billboardScreens();
-    if (!all.length) return null;
-    const rect = renderer.domElement.getBoundingClientRect();
-    let best = all[0];
-    let bestD = 1e9;
-    for (const p of all) {
-      const d = Math.hypot(p.x - rect.left - rect.width / 2, p.y - rect.top - rect.height / 2);
-      if (d < bestD) { bestD = d; best = p; }
-    }
-    return best;
-  },
   billboardScreens() {
     const rect = renderer.domElement.getBoundingClientRect();
     const vv = new THREE.Vector3();

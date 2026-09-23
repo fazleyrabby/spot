@@ -204,6 +204,13 @@ export class InteractionHandler {
           return;
         }
 
+        // -1.5. Click pet companion to pet
+        if (this.renderer.pets.hitTest(world.x, world.y)) {
+          this.renderer.pets.petInteraction();
+          (window as any).spotPlayPetSound?.(this.renderer.pets.pet.id);
+          return;
+        }
+
         // -1. Museum door (60,38) — click to open (same as pressing E)
         const doorWx = 60 * 48 + 24;
         const doorWy = 38 * 32 + 16;

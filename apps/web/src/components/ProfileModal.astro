@@ -1315,6 +1315,9 @@
     const spinBtn = document.getElementById('profile-holo-spin-btn');
     if (!stage || !card || !glare) return;
 
+    const cardEl = card as HTMLElement;
+    const glareEl = glare as HTMLElement;
+
     let isHovered = false;
     let isTouching = false;
     let currentRotX = 0;
@@ -1324,7 +1327,7 @@
     let animId: number | null = null;
 
     function updateTilt(clientX: number, clientY: number) {
-      const rect = card.getBoundingClientRect();
+      const rect = cardEl.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       const cardX = rect.left + rect.width / 2;
       const cardY = rect.top + rect.height / 2;
@@ -1339,8 +1342,8 @@
       // Glare reflection position (percentage)
       const glareX = (normX * 0.5 + 0.5) * 100;
       const glareY = (normY * 0.5 + 0.5) * 100;
-      glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.8) 0%, rgba(56, 189, 248, 0.45) 25%, rgba(245, 158, 11, 0.35) 50%, transparent 75%)`;
-      glare.style.opacity = '0.75';
+      glareEl.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.8) 0%, rgba(56, 189, 248, 0.45) 25%, rgba(245, 158, 11, 0.35) 50%, transparent 75%)`;
+      glareEl.style.opacity = '0.75';
     }
 
     function renderTiltLoop() {
@@ -1348,15 +1351,15 @@
       currentRotX += (targetRotX - currentRotX) * 0.18;
       currentRotY += (targetRotY - currentRotY) * 0.18;
 
-      if (!card.classList.contains('is-spinning')) {
-        card.style.transform = `perspective(750px) rotateX(${currentRotX.toFixed(2)}deg) rotateY(${currentRotY.toFixed(2)}deg) scale3d(1.05, 1.05, 1.05)`;
+      if (!cardEl.classList.contains('is-spinning')) {
+        cardEl.style.transform = `perspective(750px) rotateX(${currentRotX.toFixed(2)}deg) rotateY(${currentRotY.toFixed(2)}deg) scale3d(1.05, 1.05, 1.05)`;
       }
 
       if (isHovered || isTouching || Math.abs(currentRotX) > 0.1 || Math.abs(currentRotY) > 0.1) {
         animId = requestAnimationFrame(renderTiltLoop);
       } else {
-        if (!card.classList.contains('is-spinning')) {
-          card.style.transform = '';
+        if (!cardEl.classList.contains('is-spinning')) {
+          cardEl.style.transform = '';
         }
         animId = null;
       }
@@ -1378,7 +1381,7 @@
       isHovered = false;
       targetRotX = 0;
       targetRotY = 0;
-      glare.style.opacity = '0';
+      glareEl.style.opacity = '0';
       startTiltLoop();
     });
 
@@ -1401,22 +1404,22 @@
       isTouching = false;
       targetRotX = 0;
       targetRotY = 0;
-      glare.style.opacity = '0';
+      glareEl.style.opacity = '0';
       startTiltLoop();
     });
 
     // 360 Spin Showcase
     function triggerSpin() {
-      if (card.classList.contains('is-spinning')) return;
-      card.classList.add('is-spinning');
-      glare.style.opacity = '0.9';
+      if (cardEl.classList.contains('is-spinning')) return;
+      cardEl.classList.add('is-spinning');
+      glareEl.style.opacity = '0.9';
       setTimeout(() => {
-        card.classList.remove('is-spinning');
-        glare.style.opacity = '0';
+        cardEl.classList.remove('is-spinning');
+        glareEl.style.opacity = '0';
       }, 950);
     }
 
-    card.addEventListener('click', triggerSpin);
+    cardEl.addEventListener('click', triggerSpin);
     spinBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       triggerSpin();

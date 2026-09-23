@@ -37,6 +37,7 @@ import { VignetteManager } from './vignette-manager.js';
 import { MarineManager } from './marine-manager.js';
 import { JungleWildlifeManager } from './jungle-wildlife.js';
 import { MuseumManager, MUSEUM_SIZE, MUSEUM_FRAMES } from './museum-manager.js';
+import { PetCompanionManager } from './pet-companion.js';
 import type { WorldSecret } from './secrets.js';
 import type { OccupiedSpotSummary } from '@spot/shared';
 
@@ -295,7 +296,9 @@ export class Renderer {
   readonly marine: MarineManager;
   readonly jungleWildlife: JungleWildlifeManager;
   readonly museum: MuseumManager;
+  readonly pets: PetCompanionManager;
   multiplayer?: import('./multiplayer-sync.js').MultiplayerSync;
+  tour?: import('./tour-manager.js').TourManager;
 
   hoveredCitizen: OccupiedSpotSummary | null = null;
   hoveredGrid: { gx: number; gy: number } | null = null;
@@ -337,6 +340,7 @@ export class Renderer {
     this.marine = new MarineManager();
     this.jungleWildlife = new JungleWildlifeManager();
     this.museum = new MuseumManager();
+    this.pets = new PetCompanionManager(player);
 
     this.initCityParticles();
   }
@@ -384,7 +388,11 @@ export class Renderer {
     this.tick++;
 
     this.camera.update();
+    if (this.tour?.isRunning) {
+      this.tour.tick();
+    }
     this.player.update();
+    this.pets.tick();
     this.monuments.updateTick();
     this.train.tick(this.player.wy);
     this.traffic.tick(this.player.wx, this.player.wy);
@@ -583,6 +591,16 @@ export class Renderer {
         this.player.render(c, playerScreen.x, playerScreen.y, currentZoom);
       },
     });
+
+    // 4d-2. Follower Pet Companion
+    if (this.pets.isEnabled) {
+      entities.push({
+        depth: this.pets.wy,
+        render: () => {
+          this.pets.render(ctx, camera);
+        },
+      });
+    }
 
     // 4e. Marine Life — sharks, speedboats, surfers (clipped to beach)
     this.marine.update();
@@ -5847,7 +5865,7 @@ export class Renderer {
         // 2. Base foliage midtones
         ctx.fillStyle = '#15803d';
         for (const p of oakPuffs) {
-          if (p.shadowOnly) continue;
+          if (p.shadowOnly || !p.r) continue;
           ctx.beginPath();
           ctx.arc(tx + p.ox * z, ty + p.oy * z, p.r * z, 0, Math.PI * 2);
           ctx.fill();
@@ -5856,7 +5874,7 @@ export class Renderer {
         // 3. Sunlit Upper Highlights (4-tone Stardew lighting)
         ctx.fillStyle = '#22c55e';
         for (const p of oakPuffs) {
-          if (p.shadowOnly) continue;
+          if (p.shadowOnly || !p.r) continue;
           ctx.beginPath();
           ctx.arc(tx + (p.ox - 2) * z, ty + (p.oy - 3) * z, (p.r * 0.7) * z, 0, Math.PI * 2);
           ctx.fill();

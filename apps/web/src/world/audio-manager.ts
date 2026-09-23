@@ -27,6 +27,22 @@ function resolveBiome(gx: number, gy: number): BiomeType {
   return 'city';
 }
 
+export type RadioStationId = 'neon_rain' | 'cyber_cafe' | 'midnight_transit';
+
+export interface RadioStation {
+  id: RadioStationId;
+  name: string;
+  genre: string;
+  freq: string;
+  bpm: number;
+}
+
+export const RADIO_STATIONS: RadioStation[] = [
+  { id: 'neon_rain', name: 'Neon Rain', genre: 'Downtempo Lo-Fi', freq: 'FM 88.4', bpm: 76 },
+  { id: 'cyber_cafe', name: 'Cyber Cafe', genre: 'Cozy Chiptune', freq: 'FM 94.2', bpm: 104 },
+  { id: 'midnight_transit', name: 'Midnight Transit', genre: 'Ambient Synthwave', freq: 'FM 106.8', bpm: 62 },
+];
+
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = true;
@@ -38,6 +54,16 @@ export class AudioManager {
   private ambientInterval: number | null = null;
   private biome: BiomeType = 'city';
   private waveLfo: OscillatorNode | null = null;
+
+  // ── Cyberpunk Lo-Fi Radio Synthesizer ───────────────────────────────────
+  private radioGainNode: GainNode | null = null;
+  private radioFilterNode: BiquadFilterNode | null = null;
+  private radioInterval: number | null = null;
+  private radioNextNoteTime: number = 0;
+  private radioStep: number = 0;
+  private currentStationId: RadioStationId = 'neon_rain';
+  private isRadioActive: boolean = false;
+  private radioVol: number = 0.5;
 
   constructor() {
     this.isMuted = true; // Always start muted to respect browser autoplay policies
@@ -618,6 +644,63 @@ export class AudioManager {
     } catch (_) {}
   }
 
+  playPetSound(petId: string): void {
+    if (this.isMuted) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      if (petId === 'pixel_cat') {
+        this.playCatPurr();
+        return;
+      }
+      if (petId === 'cyber_shibe') {
+        // Cheerful cute 8-bit woof chirp
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.exponentialRampToValueAtTime(540, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.16);
+        gain.gain.setValueAtTime(0.24, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else if (petId === 'droid_bob') {
+        // Droid dual boop
+        [880, 1320].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+          gain.gain.setValueAtTime(0.18, now + idx * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.06);
+        });
+      } else {
+        // Red panda soft chirp trill
+        [480, 680, 560].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+          gain.gain.setValueAtTime(0.16, now + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.05);
+          osc.stop(now + idx * 0.05 + 0.06);
+        });
+      }
+    } catch (_) {}
+  }
+
   playFanfare(): void {
     if (this.isMuted) return;
     const ctx = this.ctx;
@@ -915,7 +998,7 @@ export class AudioManager {
   }
 
   // ── Marine Click SFX ────────────────────────────────────────────────────
-  playMarineClickSound(kind: 'shark' | 'speedboat' | 'surfer' | 'ship'): void {
+  playMarineClickSound(kind: 'shark' | 'speedboat' | 'surfer' | 'ship' | 'dolphin'): void {
     if (this.isMuted) return;
     const ctx = this.ctx;
     if (!ctx) return;
@@ -1013,7 +1096,7 @@ export class AudioManager {
         }
       } else {
         // Ship — deep foghorn: two-tone sine, long sustain
-        [82.41, 110].forEach((freq, i) => {
+        [82.41, 110].forEach((freq) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           const filter = ctx.createBiquadFilter();
@@ -1239,4 +1322,248 @@ export class AudioManager {
       }
     } catch (_) {}
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Cyberpunk Lo-Fi Radio Synthesizer Engine ──────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+
+  get isRadioOn(): boolean {
+    return this.isRadioActive;
+  }
+
+  get currentStation(): RadioStation {
+    return RADIO_STATIONS.find((s) => s.id === this.currentStationId) || RADIO_STATIONS[0];
+  }
+
+  get currentStationVolume(): number {
+    return this.radioVol;
+  }
+
+  async startRadio(stationId?: RadioStationId): Promise<boolean> {
+    if (stationId) {
+      this.currentStationId = stationId;
+    }
+
+    const ctx = await this.ensureContext();
+    if (!ctx) return false;
+
+    if (ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch (_) {}
+    }
+
+    if (!this.radioGainNode) {
+      this.radioGainNode = ctx.createGain();
+      this.radioFilterNode = ctx.createBiquadFilter();
+      this.radioFilterNode.type = 'lowpass';
+      this.radioFilterNode.frequency.setValueAtTime(1600, ctx.currentTime);
+      this.radioFilterNode.Q.setValueAtTime(1.2, ctx.currentTime);
+
+      this.radioFilterNode.connect(this.radioGainNode);
+      this.radioGainNode.connect(ctx.destination);
+    }
+
+    // Smoothly fade in radio volume
+    const now = ctx.currentTime;
+    this.radioGainNode.gain.cancelScheduledValues(now);
+    this.radioGainNode.gain.setValueAtTime(this.radioGainNode.gain.value, now);
+    this.radioGainNode.gain.linearRampToValueAtTime(this.radioVol, now + 0.4);
+
+    this.isRadioActive = true;
+    this.radioStep = 0;
+    this.radioNextNoteTime = now + 0.1;
+
+    if (this.radioInterval !== null) {
+      window.clearInterval(this.radioInterval);
+    }
+    this.radioInterval = window.setInterval(() => this.scheduleRadioLoop(), 80);
+
+    return true;
+  }
+
+  stopRadio(): void {
+    if (!this.isRadioActive) return;
+    this.isRadioActive = false;
+
+    if (this.radioInterval !== null) {
+      window.clearInterval(this.radioInterval);
+      this.radioInterval = null;
+    }
+
+    if (this.radioGainNode && this.ctx) {
+      const now = this.ctx.currentTime;
+      this.radioGainNode.gain.cancelScheduledValues(now);
+      this.radioGainNode.gain.setValueAtTime(this.radioGainNode.gain.value, now);
+      this.radioGainNode.gain.linearRampToValueAtTime(0.0001, now + 0.3);
+    }
+  }
+
+  async toggleRadio(): Promise<boolean> {
+    if (this.isRadioActive) {
+      this.stopRadio();
+      return false;
+    } else {
+      return await this.startRadio();
+    }
+  }
+
+  setRadioStation(stationId: RadioStationId): void {
+    if (this.currentStationId === stationId) return;
+    this.currentStationId = stationId;
+
+    if (this.isRadioActive) {
+      // Smooth station cross-switch: reset note scheduler to current time
+      if (this.ctx) {
+        this.radioStep = 0;
+        this.radioNextNoteTime = this.ctx.currentTime + 0.08;
+      }
+    }
+  }
+
+  setRadioVolume(vol: number): void {
+    const clamped = Math.max(0, Math.min(1, vol));
+    this.radioVol = clamped;
+    if (this.radioGainNode && this.ctx && this.isRadioActive) {
+      this.radioGainNode.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.radioGainNode.gain.setValueAtTime(clamped, this.ctx.currentTime);
+    }
+  }
+
+  private playRadioNote(
+    freq: number,
+    startTime: number,
+    duration: number,
+    type: OscillatorType,
+    gainVal: number,
+    filterFreq: number = 1800
+  ): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.radioFilterNode) return;
+
+    try {
+      const osc = ctx.createOscillator();
+      const noteGain = ctx.createGain();
+      const localFilter = ctx.createBiquadFilter();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      localFilter.type = 'lowpass';
+      localFilter.frequency.setValueAtTime(filterFreq, startTime);
+
+      noteGain.gain.setValueAtTime(0.0001, startTime);
+      noteGain.gain.linearRampToValueAtTime(gainVal, startTime + 0.02);
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      osc.connect(localFilter);
+      localFilter.connect(noteGain);
+      noteGain.connect(this.radioFilterNode);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.05);
+    } catch (_) {}
+  }
+
+  private scheduleRadioLoop(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.isRadioActive) return;
+
+    const st = this.currentStation;
+    const stepDuration = 60 / st.bpm / 4; // 16th note length in seconds
+    const scheduleAheadTime = 0.3; // lookahead in seconds
+
+    while (this.radioNextNoteTime < ctx.currentTime + scheduleAheadTime) {
+      const t = this.radioNextNoteTime;
+      const step = this.radioStep % 16;
+      const bar = Math.floor(this.radioStep / 16) % 4;
+
+      if (st.id === 'neon_rain') {
+        // Station 1: Neon Rain — Downtempo Lo-Fi with lush chords and gentle drops
+        const progressions = [
+          { bass: 73.42, chord: [146.83, 174.61, 220.0, 261.63] }, // Dm7
+          { bass: 58.27, chord: [116.54, 174.61, 220.0, 293.66] }, // Bbmaj7
+          { bass: 87.31, chord: [130.81, 174.61, 220.0, 329.63] }, // Fmaj7
+          { bass: 65.41, chord: [130.81, 196.0, 261.63, 293.66] }, // C7sus
+        ];
+        const p = progressions[bar];
+
+        // Soft sub-bass on step 0 and 8
+        if (step === 0 || step === 8) {
+          this.playRadioNote(p.bass, t, stepDuration * 3.5, 'sine', 0.22, 400);
+        }
+
+        // Lush Rhodes/triangle chord on beat 1 and syncopated beat 3
+        if (step === 0 || step === 6) {
+          p.chord.forEach((f, i) => {
+            this.playRadioNote(f, t + i * 0.015, stepDuration * 3.8, 'triangle', 0.07, 1400);
+          });
+        }
+
+        // Sparkling rain arpeggio droplets on offbeats
+        const rainScale = [349.23, 440.0, 523.25, 587.33, 659.25, 698.46];
+        if (step === 3 || step === 7 || step === 11 || step === 14) {
+          const note = rainScale[(bar * 2 + step) % rainScale.length];
+          this.playRadioNote(note, t, stepDuration * 1.8, 'sine', 0.05, 2000);
+        }
+      } else if (st.id === 'cyber_cafe') {
+        // Station 2: Cyber Cafe — Cozy chiptune walking rhythm with square-wave bounce
+        const cafeChords = [
+          { bass: 65.41, chord: [130.81, 164.81, 196.0, 246.94] }, // Cmaj7
+          { bass: 55.0, chord: [110.0, 164.81, 220.0, 261.63] },   // Am7
+          { bass: 73.42, chord: [146.83, 174.61, 220.0, 261.63] }, // Dm7
+          { bass: 49.0, chord: [98.0, 146.83, 196.0, 246.94] },    // G7
+        ];
+        const p = cafeChords[bar];
+
+        // Bouncy 8-bit bassline
+        if (step === 0 || step === 4 || step === 8 || step === 12) {
+          const bassFreq = step === 8 ? p.bass * 1.5 : p.bass;
+          this.playRadioNote(bassFreq, t, stepDuration * 1.2, 'triangle', 0.24, 600);
+        }
+
+        // Chiptune chord blip on 2 and 4
+        if (step === 4 || step === 12) {
+          p.chord.forEach((f) => {
+            this.playRadioNote(f, t, stepDuration * 1.1, 'square', 0.04, 1800);
+          });
+        }
+
+        // Melodic lead chime
+        const cafeMelody = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
+        if (step % 2 === 0 && (step + bar) % 3 === 0) {
+          const note = cafeMelody[(step + bar * 3) % cafeMelody.length];
+          this.playRadioNote(note, t, stepDuration * 0.9, 'square', 0.035, 2400);
+        }
+      } else {
+        // Station 3: Midnight Transit — Ambient harmonic drone and night bells
+        const transitChords = [
+          { root: 41.2, chord: [82.41, 146.83, 196.0, 246.94, 293.66] }, // Em9
+          { root: 32.7, chord: [65.41, 130.81, 196.0, 246.94, 329.63] }, // Cmaj9
+          { root: 49.0, chord: [98.0, 146.83, 185.0, 246.94, 370.0] },   // Gmaj7
+          { root: 61.74, chord: [123.47, 185.0, 220.0, 293.66, 370.0] }, // Bm7
+        ];
+        const p = transitChords[bar];
+
+        // Deep drone on step 0 lasting whole bar
+        if (step === 0) {
+          this.playRadioNote(p.root, t, stepDuration * 14, 'sine', 0.28, 300);
+          p.chord.forEach((f, idx) => {
+            this.playRadioNote(f, t + idx * 0.08, stepDuration * 12, 'triangle', 0.045, 900);
+          });
+        }
+
+        // Ethereal bell chimes on random steps
+        const bells = [493.88, 587.33, 659.25, 739.99, 880.0, 987.77];
+        if (step === 4 || step === 10) {
+          const bell = bells[(bar * 3 + step) % bells.length];
+          this.playRadioNote(bell, t, stepDuration * 3.5, 'sine', 0.04, 2800);
+        }
+      }
+
+      this.radioStep++;
+      this.radioNextNoteTime += stepDuration;
+    }
+  }
 }
+

@@ -418,10 +418,6 @@ export function getCityTileType(gx: number, gy: number): UrbanTileType {
 
   // District-specific urban terrain
   switch (district) {
-    case 'grand_plaza': {
-      const isAlt = (gx + gy) % 2 === 0;
-      return isAlt ? 'plaza_grand' : 'plaza_grand';
-    }
     case 'promenade': {
       return 'plaza_terracotta';
     }

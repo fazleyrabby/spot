@@ -203,9 +203,11 @@ export class PlayerManager {
 
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+        (window as any).spotCancelTour?.();
         this.keys.add(k);
         this.resetIdle();
       } else if (k === 'e' || k === ' ' || k === 'enter') {
+        (window as any).spotCancelTour?.();
         this.resetIdle();
         this.onInteract?.();
       }
@@ -236,6 +238,7 @@ export class PlayerManager {
 
   walkTo(wx: number, wy: number): void {
     if (this.isInputBlocked()) return;
+    (window as any).spotCancelTour?.();
     const clampedWx = Math.max(MIN_WALKABLE_WX, Math.min(MAX_WALKABLE_WX, wx));
     const clampedWy = Math.max(MIN_WALKABLE_WY, Math.min(MAX_WALKABLE_WY, wy));
     const gx = Math.floor(clampedWx / TILE_WIDTH);

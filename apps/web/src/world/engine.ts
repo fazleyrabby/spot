@@ -23,6 +23,7 @@ import { getSecretAt } from './secrets.js';
 import { getBannerAt } from './banner-manager.js';
 import { AudioManager } from './audio-manager.js';
 import { MultiplayerSync } from './multiplayer-sync.js';
+import { TourManager } from './tour-manager.js';
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -61,6 +62,7 @@ export class Engine {
   input: InteractionHandler | null = null;
   readonly audio: AudioManager;
   readonly multiplayer: MultiplayerSync;
+  readonly tour: TourManager;
 
   private sseSource: EventSource | null = null;
 
@@ -106,6 +108,16 @@ export class Engine {
       this.monuments,
       this.plots,
     );
+
+    this.tour = new TourManager(this.camera, {
+      onLandmarkChange: (lm, idx, total) => {
+        (window as any).spotTourLandmarkChange?.(lm, idx, total);
+      },
+      onExit: () => {
+        (window as any).spotTourExit?.();
+      },
+    });
+    this.renderer.tour = this.tour;
 
     this.multiplayer = new MultiplayerSync({
       apiBase: options.apiBase,

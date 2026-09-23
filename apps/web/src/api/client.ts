@@ -31,6 +31,7 @@ export const API_BASE = resolveApiClientBase();
 export interface MySessionResponse {
   authenticated: boolean;
   success?: boolean;
+  sessionToken?: string;
   citizen: Citizen | null;
   ownedSpot: { id: string; x: number; y: number; claimedAt: string } | null;
 }

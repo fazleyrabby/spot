@@ -5,6 +5,7 @@
 export interface MySessionResponse {
   authenticated: boolean;
   success?: boolean;
+  sessionToken?: string;
   citizen: Citizen | null;
   ownedSpot: {
     id: string;
@@ -69,6 +70,7 @@ export interface OccupiedSpotSummary {
   linkedinUrl?: string;
   isVerified?: boolean;
   isOnline?: boolean;
+  isFounder?: boolean;
   viewsCount?: number;
 }
 

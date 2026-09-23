@@ -6,6 +6,45 @@ All notable changes to SPOT are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Cyberpunk Lo-Fi Chiptune World Radio (`audio-manager.ts`, `WorldHUD.astro`, `world.astro`):**
+  - Integrated procedural Web Audio synthesizer radio with 3 chill ambient stations:
+    - *Neon Rain* (FM 88.4): Downtempo lo-fi minor chords, filtered tape warmth, and soft rain droplets.
+    - *Cyber Cafe* (FM 94.2): Cozy, bouncy chiptune bassline, syncopated square-wave stabs, and melodic chimes.
+    - *Midnight Transit* (FM 106.8): Deep harmonic FM drone swells, atmospheric slow pads, and ethereal night bells.
+  - Interactive HUD radio pill with animated 3-bar equalizer visualizer (`.hud-radio-bars.is-playing`).
+  - Sleek glass tuner popup card with live frequency badge, station switcher, master Play/Pause button, and volume slider.
+- **Cinematic Autopilot Island Tour Mode (`tour-manager.ts`, `WorldHUD.astro`, `world.astro`, `engine.ts`):**
+  - 1-click `[Tour]` camera autopilot gliding smoothly along an island railway of 7 iconic landmarks:
+    - Grand Central Plaza & Wishing Fountain `(50, 50)`
+    - The 1984 Byte Cade Cabinet `(46, 54)`
+    - 寄り道 Yorimichi Japanese Village Pavilion `(56, 52)`
+    - SwarmGuard Bastion Citadel `(44, 58)`
+    - Kiro's Cyber Cafe `(20, 68)`
+    - Astrid's Brass Observatory `(12, 12)`
+    - Seaside Boardwalk & Ocean Horizon `(50, 96)`
+  - Smooth sinusoidal camera target interpolation with gentle zoom drift (1.15x to 1.45x).
+  - Cinematic letterbox overlay with dynamic landmark title banner, subtitle, and waypoint progress indicator (`1 / 7`).
+  - Instant handoff: pressing WASD, arrow keys, clicking the canvas, or pressing ESC immediately exits Tour Mode and centers back on the player.
+- **Procedural Follower Pet Companions (`pet-companion.ts`, `renderer.ts`, `WorldHUD.astro`, `world.astro`, `audio-manager.ts`):**
+  - Added 4 collectible companion pets trailing the player with smooth spring physics:
+    - 🐕 **Cyber Shibe (Shibe-01)**: Golden shiba with cyan cyber-goggles, wagging curled tail, and running trot.
+    - 🐱 **Pixel Cat (Kuro)**: Sleek midnight cat with glowing emerald eyes and lavender collar.
+    - 🤖 **Droid Bob (Bob-8)**: Spherical floating robot with pulsing optic sensor and blue ion exhaust spark.
+    - 🦊 **Red Panda (Pabu)**: Cozy striped bushy tail waddler.
+  - Features squash-and-stretch trot cycles, sitting idle mode after 2s of stillness, and floating mini-emotes (`💖`, `✨`, `💤`).
+  - Interactive petting: clicking any companion plays unique custom 8-bit sound effects (woof, purr, boop, trill) and emits heart particles.
+  - HUD picker popup with active/resting toggle and persistent selection in `localStorage`.
+
+### Fixed
+- **Typecheck & Hygiene Polish (`types.ts`, `audio-manager.ts`, `renderer.ts`, `terrain-generator.ts`, `client.ts`, `ProfileModal.astro`, `index.astro`):**
+  - Added `sessionToken?: string` to `MySessionResponse` and `isFounder?: boolean` to `OccupiedSpotSummary`.
+  - Added `'dolphin'` to `playMarineClickSound` union in `audio-manager.ts`.
+  - Guarded `p.r` optional property check in `renderer.ts` oak foliage loops.
+  - Removed unreachable redundant `case 'grand_plaza'` in `terrain-generator.ts`.
+  - Fixed null safety closures for 3D holographic card in `ProfileModal.astro`.
+  - Added optional `_subtext` parameter to `setHeaderClaimBtnState` in `index.astro`.
+
 ---
 
 ## 2026-09-06
