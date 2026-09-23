@@ -373,59 +373,126 @@ export class PetCompanionManager {
     ctx.arc(-7 * z + tailWag, -11 * z + bob, 3.5 * z, 0, Math.PI * 2);
     ctx.fill();
 
-    // Legs
+    // Legs with cream socks
     ctx.fillStyle = fur;
     const legOffset = this.state === 'walking' ? Math.sin(this.walkFrame * Math.PI) * 2 * z : 0;
     ctx.fillRect(-4 * z - legOffset, -2 * z, 2.5 * z, 3 * z);
     ctx.fillRect(3 * z + legOffset, -2 * z, 2.5 * z, 3 * z);
+    ctx.fillStyle = belly;
+    ctx.fillRect(-4 * z - legOffset, 0 * z, 2.5 * z, 1.2 * z);
+    ctx.fillRect(3 * z + legOffset, 0 * z, 2.5 * z, 1.2 * z);
   }
 
   private drawCat(ctx: CanvasRenderingContext2D, z: number, bob: number): void {
-    const fur = '#1e293b';
-    const eyes = '#10b981';
-    const innerEar = '#f472b6';
+    // High-contrast Midnight Charcoal with luminous slate-blue contour
+    const fur = '#1e2638';
+    const furRim = '#475569';
+    const chestWhite = '#f8fafc';
+    const eyes = '#10b981'; // Luminous emerald
+    const eyeHighlight = '#34d399';
+    const innerEar = '#f43f5e'; // Vibrant neon rose
+    const collar = '#f59e0b'; // Gold cyber-collar
+    const bell = '#fde047'; // Glowing yellow-gold bell
 
-    // Body
+    // Subtle luminous outline for total visibility on pitch-black surfaces
+    ctx.strokeStyle = furRim;
+    ctx.lineWidth = 1.2 * z;
+
+    // 1. Body
     ctx.fillStyle = fur;
     ctx.beginPath();
     ctx.ellipse(0, -6 * z + bob, 7 * z, 5 * z, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
-    // Head
+    // 2. White Tuxedo Chest & Belly Patch (high contrast!)
+    ctx.fillStyle = chestWhite;
+    ctx.beginPath();
+    ctx.ellipse(2 * z, -5 * z + bob, 3.8 * z, 3.2 * z, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Head
+    ctx.fillStyle = fur;
     ctx.beginPath();
     ctx.arc(5 * z, -11 * z + bob, 5 * z, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
-    // Triangular Ears
+    // 4. Triangular Ears with Warm Inner Fluff
     ctx.fillStyle = fur;
     ctx.beginPath();
     ctx.moveTo(2 * z, -14 * z + bob);
-    ctx.lineTo(4 * z, -18 * z + bob);
-    ctx.lineTo(6 * z, -14 * z + bob);
+    ctx.lineTo(4 * z, -19 * z + bob);
+    ctx.lineTo(6.5 * z, -14 * z + bob);
     ctx.fill();
-    ctx.fillStyle = innerEar;
-    ctx.fillRect(3.5 * z, -16 * z + bob, 1.5 * z, 2 * z);
+    ctx.stroke();
 
-    // Glowing Emerald Eyes
-    ctx.fillStyle = eyes;
-    ctx.shadowColor = eyes;
-    ctx.shadowBlur = 4 * z;
-    ctx.fillRect(6.5 * z, -12 * z + bob, 1.8 * z, 2 * z);
+    ctx.fillStyle = innerEar;
+    ctx.fillRect(3.2 * z, -17 * z + bob, 1.8 * z, 2.4 * z);
+
+    // 5. White Muzzle & Cute Pink Nose
+    ctx.fillStyle = chestWhite;
+    ctx.beginPath();
+    ctx.ellipse(7.5 * z, -10 * z + bob, 2.2 * z, 1.8 * z, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fb7185';
+    ctx.fillRect(8.5 * z, -10.8 * z + bob, 1.2 * z, 1 * z);
+
+    // 6. Vibrant Gold Collar with Glowing Bell
+    ctx.fillStyle = collar;
+    ctx.fillRect(3.5 * z, -8 * z + bob, 3.5 * z, 1.6 * z);
+
+    ctx.fillStyle = bell;
+    ctx.shadowColor = bell;
+    ctx.shadowBlur = 5 * z;
+    ctx.beginPath();
+    ctx.arc(5.2 * z, -6.6 * z + bob, 1.4 * z, 0, Math.PI * 2);
+    ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Sleek Tail Swish
+    // 7. Large Glowing Emerald Eyes with Specular Sparkle
+    ctx.fillStyle = eyes;
+    ctx.shadowColor = eyeHighlight;
+    ctx.shadowBlur = 6 * z;
+    ctx.beginPath();
+    ctx.ellipse(6.8 * z, -12 * z + bob, 1.4 * z, 1.8 * z, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Specular eye glint (makes it look alive!)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(7.2 * z, -13 * z + bob, 0.8 * z, 0.8 * z);
+
+    // 8. Sleek Tail Swish with White Dipped Tip
     const tailAng = Math.sin(this.tickCount * 0.15) * 0.4;
     ctx.strokeStyle = fur;
-    ctx.lineWidth = 2 * z;
+    ctx.lineWidth = 2.4 * z;
     ctx.beginPath();
     ctx.moveTo(-6 * z, -6 * z + bob);
     ctx.quadraticCurveTo(-11 * z, -12 * z + tailAng * 8 * z, -8 * z, -16 * z);
     ctx.stroke();
 
-    // Legs
+    // White dipped tail tip (stands out in dark mode!)
+    ctx.fillStyle = chestWhite;
+    ctx.beginPath();
+    ctx.arc(-8 * z, -16 * z, 1.8 * z, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 9. Legs with White "Mittens" / Socks
+    const legOffset = this.state === 'walking' ? Math.sin(this.walkFrame * Math.PI) * 2 * z : 0;
+
+    // Back leg (top fur, white paw)
     ctx.fillStyle = fur;
-    ctx.fillRect(-3 * z, -2 * z, 2 * z, 3 * z);
-    ctx.fillRect(3 * z, -2 * z, 2 * z, 3 * z);
+    ctx.fillRect(-3 * z - legOffset, -2 * z, 2.2 * z, 3 * z);
+    ctx.fillStyle = chestWhite;
+    ctx.fillRect(-3 * z - legOffset, 0 * z, 2.2 * z, 1.5 * z);
+
+    // Front leg (top fur, white paw)
+    ctx.fillStyle = fur;
+    ctx.fillRect(3 * z + legOffset, -2 * z, 2.2 * z, 3 * z);
+    ctx.fillStyle = chestWhite;
+    ctx.fillRect(3 * z + legOffset, 0 * z, 2.2 * z, 1.5 * z);
   }
 
   private drawDroid(ctx: CanvasRenderingContext2D, z: number, _bob: number): void {
@@ -543,9 +610,13 @@ export class PetCompanionManager {
     ctx.fillRect(-10 * z, -12 * z + bob, 1.8 * z, 5 * z);
     ctx.fillRect(-6 * z, -11 * z + bob, 1.8 * z, 5 * z);
 
-    // Legs
+    // Legs with white mitten paws
     ctx.fillStyle = darkFur;
-    ctx.fillRect(-3 * z, -2 * z, 2.5 * z, 3 * z);
-    ctx.fillRect(3 * z, -2 * z, 2.5 * z, 3 * z);
+    const legOffset = this.state === 'walking' ? Math.sin(this.walkFrame * Math.PI) * 2 * z : 0;
+    ctx.fillRect(-3 * z - legOffset, -2 * z, 2.5 * z, 3 * z);
+    ctx.fillRect(3 * z + legOffset, -2 * z, 2.5 * z, 3 * z);
+    ctx.fillStyle = white;
+    ctx.fillRect(-3 * z - legOffset, 0 * z, 2.5 * z, 1.2 * z);
+    ctx.fillRect(3 * z + legOffset, 0 * z, 2.5 * z, 1.2 * z);
   }
 }
