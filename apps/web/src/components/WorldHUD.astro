@@ -96,66 +96,50 @@
       <span id="hud-turbo-timer" class="mono-num">20s</span>
     </div>
   </div>
+</div>
 
-  <div class="hud-divider hud-divider-right" aria-hidden="true"></div>
-
-  <!-- Cluster 4: Interaction & Camera Controls -->
-  <div class="hud-group hud-group-controls">
-    <!-- Grand Codex Library Quick Button -->
-    <button class="hud-tool-btn hud-library-btn" id="world-library-btn" title="Open The Grand Codex Developer Vault">
-      <span class="hud-tool-icon">📚</span>
-      <span class="hud-btn-text">Library</span>
+<!-- Left-Side Sticky World Exploration & Media Dock -->
+<aside class="world-dock glass-panel" id="world-side-dock" aria-label="World Exploration Tools">
+  <!-- Discovery Portals -->
+  <div class="dock-section">
+    <button class="dock-btn hud-library-btn" id="world-library-btn" title="Open The Grand Codex Developer Vault">
+      <span class="dock-icon">📚</span>
+      <span class="dock-tooltip">Codex Library</span>
     </button>
-
-    <!-- Voxel World Quick Link -->
-    <a class="hud-tool-btn hud-voxel-btn" id="world-voxel-btn" href="/voxel" title="Open Spot Voxel World — 3D island">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <a class="dock-btn hud-voxel-btn" id="world-voxel-btn" href="/voxel" title="Open Spot Voxel World — 3D Island">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"></path>
         <path d="M3 7l9 5 9-5"></path>
         <path d="M12 12v10"></path>
       </svg>
-      <span class="hud-btn-text">Voxel</span>
+      <span class="dock-tooltip">3D Voxel World</span>
     </a>
-
-
-    <!-- Search / Find Citizen Button -->
-    <button class="hud-tool-btn hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="dock-btn hud-search-btn" id="world-search-btn" title="Search Citizens & Plots (Cmd+K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-      <span class="hud-btn-text">Find</span>
-      <kbd class="hud-kbd">⌘K</kbd>
+      <span class="dock-tooltip">Find Citizen (⌘K)</span>
     </button>
+  </div>
 
+  <div class="dock-divider" aria-hidden="true"></div>
 
-    <!-- Audio Ambient Sound Toggle -->
-    <button class="hud-tool-btn" id="world-audio-btn" title="Toggle Environmental Sounds">
-      <span id="world-audio-icon">🔇</span>
-    </button>
-
-    <!-- Time of Day Switcher (Day / Dusk / Night) -->
-    <button class="hud-tool-btn" id="world-tod-btn" title="Cycle Lighting (Night / Day / Sunset)">
-      <span id="world-tod-icon">🌙</span>
-    </button>
-
-    <!-- Dynamic Weather Toggle (Clear / Neon Rain / Cyber Motes) -->
-    <button class="hud-tool-btn" id="world-weather-btn" title="Cycle Weather (Clear / Neon Rain / Cyber Motes)">
-      <span id="world-weather-icon">✨</span>
-    </button>
-
+  <!-- Audio & Companion Experience -->
+  <div class="dock-section">
     <!-- Cyberpunk Lo-Fi Radio Tuner -->
-    <div class="hud-pop-container">
-      <button class="hud-tool-btn hud-radio-btn" id="world-radio-btn" title="Open Lo-Fi Chiptune FM Radio Tuner">
+    <div class="dock-pop-container">
+      <button class="dock-btn hud-radio-btn" id="world-radio-btn" title="Open Lo-Fi Chiptune FM Radio Tuner">
         <span class="hud-radio-icon">📻</span>
         <span class="hud-radio-bars" id="world-radio-bars" aria-hidden="true">
           <span class="hud-bar bar-1"></span>
           <span class="hud-bar bar-2"></span>
           <span class="hud-bar bar-3"></span>
         </span>
+        <span class="dock-tooltip">Lo-Fi FM Radio</span>
       </button>
 
-      <!-- Floating Mini Radio Tuner Card -->
+      <!-- Floating Mini Radio Tuner Card (Opens to the right of the dock) -->
       <div class="hud-pop-card glass-panel" id="world-radio-popup" style="display: none;">
         <div class="pop-header">
           <div class="radio-meta">
@@ -202,12 +186,13 @@
     </div>
 
     <!-- Follower Pet Companion -->
-    <div class="hud-pop-container">
-      <button class="hud-tool-btn hud-pet-btn" id="world-pet-btn" title="Choose Follower Pet Companion">
+    <div class="dock-pop-container">
+      <button class="dock-btn hud-pet-btn" id="world-pet-btn" title="Choose Follower Pet Companion">
         <span id="world-pet-icon">🐕</span>
+        <span class="dock-tooltip">Pet Companion</span>
       </button>
 
-      <!-- Pet Companion Picker Popup -->
+      <!-- Pet Companion Picker Popup (Opens to the right of the dock) -->
       <div class="hud-pop-card glass-panel" id="world-pet-popup" style="display: none;">
         <div class="pop-header">
           <span class="pop-title">PET COMPANION</span>
@@ -235,40 +220,62 @@
     </div>
 
     <!-- Cinematic Autopilot Tour Mode -->
-    <button class="hud-tool-btn hud-tour-btn" id="world-tour-btn" title="Cinematic Island Autopilot Tour">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="dock-btn hud-tour-btn" id="world-tour-btn" title="Cinematic Island Autopilot Tour">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="23 7 16 12 23 17 23 7"></polygon>
         <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
       </svg>
-      <span class="hud-btn-text">Tour</span>
+      <span class="dock-tooltip">Island Tour</span>
+    </button>
+  </div>
+
+  <div class="dock-divider" aria-hidden="true"></div>
+
+  <!-- Atmospheric Controls -->
+  <div class="dock-section">
+    <button class="dock-btn" id="world-audio-btn" title="Toggle Environmental Sounds">
+      <span id="world-audio-icon">🔇</span>
+      <span class="dock-tooltip">Ambient SFX</span>
     </button>
 
-    <!-- Zoom controls -->
-    <div class="hud-zoom-group">
-      <button class="hud-zoom-btn" id="world-zoom-in" title="Zoom in">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <span class="hud-zoom-level mono-num" id="world-zoom-level">55%</span>
-      <button class="hud-zoom-btn" id="world-zoom-out" title="Zoom out">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <button class="hud-zoom-btn hud-recenter-btn" id="world-recenter" title="Re-centre camera">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
-        </svg>
-      </button>
-    </div>
+    <button class="dock-btn" id="world-tod-btn" title="Cycle Lighting (Night / Day / Sunset)">
+      <span id="world-tod-icon">🌙</span>
+      <span class="dock-tooltip">Time of Day</span>
+    </button>
+
+    <button class="dock-btn" id="world-weather-btn" title="Cycle Weather (Clear / Neon Rain / Cyber Motes)">
+      <span id="world-weather-icon">✨</span>
+      <span class="dock-tooltip">Weather</span>
+    </button>
   </div>
-</div>
+
+  <div class="dock-divider" aria-hidden="true"></div>
+
+  <!-- Zoom & Recenter Controls -->
+  <div class="dock-section dock-zoom-section">
+    <button class="dock-btn dock-zoom-btn" id="world-zoom-in" title="Zoom in">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span class="dock-tooltip">Zoom In</span>
+    </button>
+    <span class="dock-zoom-level mono-num" id="world-zoom-level">55%</span>
+    <button class="dock-btn dock-zoom-btn" id="world-zoom-out" title="Zoom out">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span class="dock-tooltip">Zoom Out</span>
+    </button>
+    <button class="dock-btn dock-recenter-btn" id="world-recenter" title="Re-centre camera">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
+      </svg>
+      <span class="dock-tooltip">Recenter</span>
+    </button>
+  </div>
+</aside>
 
 <!-- Cinematic Tour Letterbox Banner Overlay -->
 <div class="tour-overlay" id="world-tour-overlay" style="display: none;">
@@ -729,33 +736,191 @@
       gap: 4px;
       max-width: calc(100vw - 10px);
     }
-  /* ── Radio & Pet Popups & Tour Overlay ─────────────────────────────────── */
-  .hud-pop-container {
+  }
+
+  /* ── Left-Side Sticky World Exploration Dock ───────────────────────────── */
+  .world-dock {
+    position: fixed;
+    left: 14px;
+    top: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    background: rgba(11, 15, 23, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 16px 36px -6px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    z-index: 45;
+    pointer-events: auto;
+    user-select: none;
+    box-sizing: border-box;
+    animation: dockSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes dockSlideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .dock-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .dock-divider {
+    width: 20px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2px 0;
+  }
+
+  .dock-btn {
     position: relative;
-    display: inline-flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    font-size: 0.88rem;
+  }
+
+  .dock-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    transform: scale(1.06);
+  }
+
+  .dock-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Tooltip to the right */
+  .dock-tooltip {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: rgba(15, 23, 42, 0.96);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.66rem;
+    font-weight: 600;
+    font-family: var(--font-tech, monospace);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+    z-index: 100;
+  }
+
+  .dock-tooltip::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 4px solid transparent;
+    border-right-color: rgba(15, 23, 42, 0.96);
+  }
+
+  .dock-btn:hover .dock-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .dock-zoom-section {
+    gap: 2px;
+  }
+  .dock-zoom-level {
+    font-size: 0.62rem;
+    font-family: var(--font-mono, monospace);
+    color: #64748b;
+    min-width: 28px;
+    text-align: center;
+    padding: 2px 0;
+  }
+
+  /* ── Radio & Pet Popups in Dock ─────────────────────────────────────────── */
+  .dock-pop-container {
+    position: relative;
+    display: flex;
   }
 
   .hud-pop-card {
     position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    min-width: 250px;
+    left: calc(100% + 12px);
+    top: 0;
+    right: auto;
+    min-width: 260px;
     padding: 12px;
     border-radius: 12px;
-    background: rgba(10, 15, 29, 0.94);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.1);
-    backdrop-filter: blur(12px);
-    z-index: 250;
+    background: rgba(10, 15, 29, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 300;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    animation: popSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: popSlideRight 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @keyframes popSlideIn {
-    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+  @keyframes popSlideRight {
+    from { opacity: 0; transform: translateX(-8px) scale(0.97); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  @media (max-width: 768px) {
+    .world-dock {
+      left: 50%;
+      top: auto;
+      bottom: 12px;
+      transform: translateX(-50%);
+      flex-direction: row;
+      padding: 5px 8px;
+      gap: 4px;
+      max-width: calc(100vw - 20px);
+      overflow-x: auto;
+    }
+    .dock-section {
+      flex-direction: row;
+    }
+    .dock-divider {
+      width: 1px;
+      height: 18px;
+      margin: 0 2px;
+    }
+    .hud-pop-card {
+      left: 50%;
+      top: auto;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%);
+    }
   }
 
   .pop-header {
