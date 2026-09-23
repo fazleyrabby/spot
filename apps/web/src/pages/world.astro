@@ -2536,6 +2536,7 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
   const popupPet = document.getElementById('world-pet-popup');
   const iconPet = document.getElementById('world-pet-icon');
   const petToggleStatus = document.getElementById('pet-toggle-status');
+  const btnClosePet = document.getElementById('pet-pop-close');
   const petChoiceBtns = document.querySelectorAll<HTMLButtonElement>('.pet-choice-btn');
 
   (window as any).spotPlayPetSound = (petId: string) => {
@@ -2570,6 +2571,11 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
     const isOpen = popupPet.style.display !== 'none';
     popupPet.style.display = isOpen ? 'none' : 'flex';
     updatePetUI();
+  });
+
+  btnClosePet?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popupPet) popupPet.style.display = 'none';
   });
 
   petToggleStatus?.addEventListener('click', (e) => {

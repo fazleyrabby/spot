@@ -127,97 +127,22 @@
 
   <!-- Audio & Companion Experience -->
   <div class="dock-section">
-    <!-- Cyberpunk Lo-Fi Radio Tuner -->
-    <div class="dock-pop-container">
-      <button class="dock-btn hud-radio-btn" id="world-radio-btn" title="Open Lo-Fi Chiptune FM Radio Tuner">
-        <span class="hud-radio-icon">📻</span>
-        <span class="hud-radio-bars" id="world-radio-bars" aria-hidden="true">
-          <span class="hud-bar bar-1"></span>
-          <span class="hud-bar bar-2"></span>
-          <span class="hud-bar bar-3"></span>
-        </span>
-        <span class="dock-tooltip">Lo-Fi FM Radio</span>
-      </button>
+    <!-- Cyberpunk Lo-Fi Radio Tuner Button -->
+    <button class="dock-btn hud-radio-btn" id="world-radio-btn" title="Open Lo-Fi Chiptune FM Radio Tuner">
+      <span class="hud-radio-icon">📻</span>
+      <span class="hud-radio-bars" id="world-radio-bars" aria-hidden="true">
+        <span class="hud-bar bar-1"></span>
+        <span class="hud-bar bar-2"></span>
+        <span class="hud-bar bar-3"></span>
+      </span>
+      <span class="dock-tooltip">Lo-Fi FM Radio</span>
+    </button>
 
-      <!-- Floating Mini Radio Tuner Card (Opens to the right of the dock) -->
-      <div class="hud-pop-card glass-panel" id="world-radio-popup" style="display: none;">
-        <div class="pop-header">
-          <div class="radio-meta">
-            <span class="radio-live-dot" id="radio-live-dot"></span>
-            <span class="radio-freq-badge" id="radio-freq-display">FM 88.4</span>
-            <span class="radio-title-text" id="radio-title-display">Neon Rain</span>
-          </div>
-          <button type="button" class="pop-close-btn" id="radio-pop-close">✕</button>
-        </div>
-        <div class="radio-station-list">
-          <button type="button" class="radio-station-btn is-active" data-station="neon_rain">
-            <span class="st-glyph">🌧️</span>
-            <span class="st-info">
-              <span class="st-name">Neon Rain</span>
-              <span class="st-sub">Downtempo Lo-Fi</span>
-            </span>
-          </button>
-          <button type="button" class="radio-station-btn" data-station="cyber_cafe">
-            <span class="st-glyph">☕</span>
-            <span class="st-info">
-              <span class="st-name">Cyber Cafe</span>
-              <span class="st-sub">Cozy Chiptune</span>
-            </span>
-          </button>
-          <button type="button" class="radio-station-btn" data-station="midnight_transit">
-            <span class="st-glyph">🌌</span>
-            <span class="st-info">
-              <span class="st-name">Midnight Transit</span>
-              <span class="st-sub">Ambient Synth</span>
-            </span>
-          </button>
-        </div>
-        <div class="radio-deck">
-          <button type="button" class="radio-master-btn" id="radio-play-btn">
-            <span id="radio-play-icon">▶</span>
-            <span id="radio-play-label">Play Radio</span>
-          </button>
-          <div class="radio-slider-box">
-            <span class="slider-icon">🔉</span>
-            <input type="range" min="0" max="1" step="0.05" value="0.5" id="radio-volume-slider" class="hud-range-slider" title="Radio Volume" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Follower Pet Companion -->
-    <div class="dock-pop-container">
-      <button class="dock-btn hud-pet-btn" id="world-pet-btn" title="Choose Follower Pet Companion">
-        <span id="world-pet-icon">🐕</span>
-        <span class="dock-tooltip">Pet Companion</span>
-      </button>
-
-      <!-- Pet Companion Picker Popup (Opens to the right of the dock) -->
-      <div class="hud-pop-card glass-panel" id="world-pet-popup" style="display: none;">
-        <div class="pop-header">
-          <span class="pop-title">PET COMPANION</span>
-          <button type="button" class="pet-toggle-status" id="pet-toggle-status">Active</button>
-        </div>
-        <div class="pet-grid">
-          <button type="button" class="pet-choice-btn is-active" data-pet="cyber_shibe" title="Cyber Shiba Inu">
-            <span class="pet-glyph">🐕</span>
-            <span class="pet-name">Shibe-01</span>
-          </button>
-          <button type="button" class="pet-choice-btn" data-pet="pixel_cat" title="Midnight Pixel Cat">
-            <span class="pet-glyph">🐱</span>
-            <span class="pet-name">Kuro Cat</span>
-          </button>
-          <button type="button" class="pet-choice-btn" data-pet="droid_bob" title="Floating Recon Droid">
-            <span class="pet-glyph">🤖</span>
-            <span class="pet-name">Droid Bob</span>
-          </button>
-          <button type="button" class="pet-choice-btn" data-pet="red_panda" title="Panda Adventurer">
-            <span class="pet-glyph">🦊</span>
-            <span class="pet-name">Red Panda</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Follower Pet Companion Button -->
+    <button class="dock-btn hud-pet-btn" id="world-pet-btn" title="Choose Follower Pet Companion">
+      <span id="world-pet-icon">🐕</span>
+      <span class="dock-tooltip">Pet Companion</span>
+    </button>
 
     <!-- Cinematic Autopilot Tour Mode -->
     <button class="dock-btn hud-tour-btn" id="world-tour-btn" title="Cinematic Island Autopilot Tour">
@@ -274,8 +199,81 @@
       </svg>
       <span class="dock-tooltip">Recenter</span>
     </button>
-  </div>
 </aside>
+
+<!-- Floating Mini Radio Tuner Modal Card (Global Fixed) -->
+<div class="hud-pop-card glass-panel" id="world-radio-popup" style="display: none;" role="dialog" aria-label="Lo-Fi Radio Tuner">
+  <div class="pop-header">
+    <div class="radio-meta">
+      <span class="radio-live-dot" id="radio-live-dot"></span>
+      <span class="radio-freq-badge" id="radio-freq-display">FM 88.4</span>
+      <span class="radio-title-text" id="radio-title-display">Neon Rain</span>
+    </div>
+    <button type="button" class="pop-close-btn" id="radio-pop-close" aria-label="Close Radio Tuner">✕</button>
+  </div>
+  <div class="radio-station-list">
+    <button type="button" class="radio-station-btn is-active" data-station="neon_rain">
+      <span class="st-glyph">🌧️</span>
+      <span class="st-info">
+        <span class="st-name">Neon Rain</span>
+        <span class="st-sub">Downtempo Lo-Fi</span>
+      </span>
+    </button>
+    <button type="button" class="radio-station-btn" data-station="cyber_cafe">
+      <span class="st-glyph">☕</span>
+      <span class="st-info">
+        <span class="st-name">Cyber Cafe</span>
+        <span class="st-sub">Cozy Chiptune</span>
+      </span>
+    </button>
+    <button type="button" class="radio-station-btn" data-station="midnight_transit">
+      <span class="st-glyph">🌌</span>
+      <span class="st-info">
+        <span class="st-name">Midnight Transit</span>
+        <span class="st-sub">Ambient Synth</span>
+      </span>
+    </button>
+  </div>
+  <div class="radio-deck">
+    <button type="button" class="radio-master-btn" id="radio-play-btn">
+      <span id="radio-play-icon">▶</span>
+      <span id="radio-play-label">Play Radio</span>
+    </button>
+    <div class="radio-slider-box">
+      <span class="slider-icon">🔉</span>
+      <input type="range" min="0" max="1" step="0.05" value="0.5" id="radio-volume-slider" class="hud-range-slider" title="Radio Volume" />
+    </div>
+  </div>
+</div>
+
+<!-- Pet Companion Picker Modal Card (Global Fixed) -->
+<div class="hud-pop-card glass-panel" id="world-pet-popup" style="display: none;" role="dialog" aria-label="Pet Companion Picker">
+  <div class="pop-header">
+    <span class="pop-title">PET COMPANION</span>
+    <div class="pop-header-actions">
+      <button type="button" class="pet-toggle-status" id="pet-toggle-status">Active</button>
+      <button type="button" class="pop-close-btn" id="pet-pop-close" aria-label="Close Pet Picker">✕</button>
+    </div>
+  </div>
+  <div class="pet-grid">
+    <button type="button" class="pet-choice-btn is-active" data-pet="cyber_shibe" title="Cyber Shiba Inu">
+      <span class="pet-glyph">🐕</span>
+      <span class="pet-name">Shibe-01</span>
+    </button>
+    <button type="button" class="pet-choice-btn" data-pet="pixel_cat" title="Midnight Pixel Cat">
+      <span class="pet-glyph">🐱</span>
+      <span class="pet-name">Kuro Cat</span>
+    </button>
+    <button type="button" class="pet-choice-btn" data-pet="droid_bob" title="Floating Recon Droid">
+      <span class="pet-glyph">🤖</span>
+      <span class="pet-name">Droid Bob</span>
+    </button>
+    <button type="button" class="pet-choice-btn" data-pet="red_panda" title="Panda Adventurer">
+      <span class="pet-glyph">🦊</span>
+      <span class="pet-name">Red Panda</span>
+    </button>
+  </div>
+</div>
 
 <!-- Cinematic Tour Letterbox Banner Overlay -->
 <div class="tour-overlay" id="world-tour-overlay" style="display: none;">
@@ -864,26 +862,20 @@
     padding: 2px 0;
   }
 
-  /* ── Radio & Pet Popups in Dock ─────────────────────────────────────────── */
-  .dock-pop-container {
-    position: relative;
-    display: flex;
-  }
-
+  /* ── Radio & Pet Standalone Popups / Modals ────────────────────────────── */
   .hud-pop-card {
-    position: absolute;
-    left: calc(100% + 12px);
-    top: 0;
-    right: auto;
+    position: fixed;
+    left: 54px;
+    top: 68px;
     min-width: 260px;
     padding: 12px;
     border-radius: 12px;
-    background: rgba(10, 15, 29, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.12);
+    background: rgba(10, 15, 29, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.14);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    z-index: 300;
+    z-index: 900;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -930,19 +922,31 @@
     .dock-zoom-level {
       font-size: 0.58rem;
     }
-    .dock-pop-container .hud-pop-card {
-      position: fixed;
-      left: 48px;
-      top: 56px;
-      bottom: auto;
-      transform: none;
-      min-width: 240px;
-      max-width: calc(100vw - 60px);
-      z-index: 300;
-    }
     .dock-tooltip {
       display: none;
     }
+    .hud-pop-card {
+      left: 50% !important;
+      top: 50% !important;
+      bottom: auto !important;
+      right: auto !important;
+      transform: translate(-50%, -50%) !important;
+      width: calc(100vw - 32px) !important;
+      max-width: 320px !important;
+      z-index: 9999 !important;
+      animation: popModalCenter 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    @keyframes popModalCenter {
+      from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+  }
+
+  .pop-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .pop-header {
