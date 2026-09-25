@@ -999,6 +999,7 @@ const MONUMENT_LABELS = [
   [40, -10, 'Kandahar Giant', 9.0, '#e2e8f0'],
   [50, 50, 'Wishing Fountain', 4.6, '#7dd3fc'],
   [30, 95, 'Beach Hotel', 9.0, '#fbbf24'],
+  [68, 105, '🌊 DESCENT Base', 6.0, '#06b6d4'],
   [4, 106, 'Cyber Lighthouse', 9.0, '#67e8f9'],
   [48, 4, 'Hermit Cabin', 4.6, '#d9a441'],
   [-7, 51, 'Jungle Hut', 4.8, '#a3e635'],
