@@ -3179,6 +3179,255 @@ export class Renderer {
         break;
       }
 
+      case 'descent_monument': {
+        const isHovered =
+          this.hoveredSecret?.id === 'descent_monument' ||
+          (this.hoveredGrid && Math.hypot(this.hoveredGrid.gx - 68, this.hoveredGrid.gy - 105) <= 1.6);
+        const pulse = 0.5 + 0.5 * Math.sin(this.tick * 0.05);
+
+        // 1. Broad Ground & Sand Drop Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 54 * z, 14 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Twin Launch Slipway Rails leading down toward the ocean surf
+        ctx.fillStyle = '#4a3828';
+        for (let ry = -8 * z; ry <= 20 * z; ry += 6 * z) {
+          ctx.fillRect(sx - 32 * z, sy + ry, 64 * z, 2.5 * z);
+        }
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(sx - 24 * z, sy - 10 * z, 3 * z, 32 * z);
+        ctx.fillRect(sx + 21 * z, sy - 10 * z, 3 * z, 32 * z);
+        // Steel top gleam on rails
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(sx - 23.5 * z, sy - 10 * z, 1 * z, 32 * z);
+        ctx.fillRect(sx + 21.5 * z, sy - 10 * z, 1 * z, 32 * z);
+
+        // 3. Volumetric Searchlight Beams (drawn under hull so hull overlays lamps)
+        ctx.save();
+        const beamEndX = sx + 72 * z;
+        const beamEndY = sy + 28 * z;
+        const beamGrad = ctx.createLinearGradient(sx + 24 * z, sy - 16 * z, beamEndX, beamEndY);
+        beamGrad.addColorStop(0, `rgba(34, 211, 238, ${0.40 + pulse * 0.15})`);
+        beamGrad.addColorStop(0.5, `rgba(6, 182, 212, ${0.18 + pulse * 0.08})`);
+        beamGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(sx + 24 * z, sy - 18 * z);
+        ctx.lineTo(beamEndX + 16 * z, beamEndY - 12 * z);
+        ctx.lineTo(beamEndX + 22 * z, beamEndY + 18 * z);
+        ctx.lineTo(sx + 22 * z, sy - 6 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 4. Launch Cradle / Hydraulic Support Trusses
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(sx - 34 * z, sy - 6 * z, 68 * z, 8 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Hazard stripes along cradle edge
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(sx - 32 * z, sy - 5 * z, 64 * z, 6 * z);
+        ctx.clip();
+        for (let hx = -38 * z; hx < 36 * z; hx += 8 * z) {
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.moveTo(sx + hx, sy + 1 * z);
+          ctx.lineTo(sx + hx + 4 * z, sy - 5 * z);
+          ctx.lineTo(sx + hx + 7 * z, sy - 5 * z);
+          ctx.lineTo(sx + hx + 3 * z, sy + 1 * z);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // 5. Heavy Bathyscaphe Submersible Hull (DSV-1)
+        const hullY = sy - 14 * z;
+        const hullW = 62 * z;
+        const hullH = 22 * z;
+
+        // Lower hull (deep marine navy)
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.ellipse(sx, hullY + 2 * z, hullW / 2, hullH / 2, 0, 0, Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // Upper hull (titanium white / ice silver)
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.ellipse(sx, hullY + 2 * z, hullW / 2, hullH / 2, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
+
+        // Electric cyan waterline stripe
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2.4 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx - hullW / 2 + 3 * z, hullY + 2 * z);
+        ctx.lineTo(sx + hullW / 2 - 3 * z, hullY + 2 * z);
+        ctx.stroke();
+
+        // Panel seams & rivets
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.25)';
+        ctx.lineWidth = 0.8 * z;
+        for (const px of [-16 * z, 0, 16 * z]) {
+          ctx.beginPath();
+          ctx.moveTo(sx + px, hullY - hullH / 2 + 2 * z);
+          ctx.lineTo(sx + px, hullY + hullH / 2 - 2 * z);
+          ctx.stroke();
+        }
+
+        // 6. Conning Tower / Sail & Navigation Mast
+        const sailX = sx - 6 * z;
+        const sailY = hullY - 14 * z;
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(sailX - 9 * z, sailY, 18 * z, 14 * z, [4 * z, 4 * z, 0, 0]);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Antenna mast
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5 * z;
+        ctx.beginPath();
+        ctx.moveTo(sailX + 2 * z, sailY);
+        ctx.lineTo(sailX + 2 * z, sailY - 15 * z);
+        ctx.stroke();
+
+        // Blinking Navigation Strobe Beacon
+        const beaconPulse = Math.sin(this.tick * 0.12) > 0;
+        ctx.fillStyle = beaconPulse ? '#ef4444' : '#7f1d1d';
+        ctx.beginPath();
+        ctx.arc(sailX + 2 * z, sailY - 16 * z, 2.4 * z, 0, Math.PI * 2);
+        ctx.fill();
+        if (beaconPulse) {
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+          ctx.beginPath();
+          ctx.arc(sailX + 2 * z, sailY - 16 * z, 5 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Stern Thruster Shrouds
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx - hullW / 2 - 5 * z, hullY - 4 * z, 6 * z, 10 * z);
+        ctx.fillStyle = '#f59e0b'; // bronze prop
+        ctx.fillRect(sx - hullW / 2 - 7 * z, hullY - 2 * z, 2 * z, 6 * z);
+
+        // 7. Panoramic Acrylic Observation Dome (Viewport)
+        const domeX = sx + hullW / 2 - 2 * z;
+        const domeY = hullY + 1 * z;
+        const domeR = 7.5 * z;
+
+        // Outer flange ring
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.arc(domeX, domeY, domeR + 2 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1 * z;
+        ctx.stroke();
+
+        // Inner glowing viewport lens
+        const domeGrad = ctx.createRadialGradient(domeX - 1 * z, domeY - 1 * z, 1 * z, domeX, domeY, domeR);
+        domeGrad.addColorStop(0, '#e0f2fe');
+        domeGrad.addColorStop(0.35, '#38bdf8');
+        domeGrad.addColorStop(0.8, '#0891b2');
+        domeGrad.addColorStop(1, '#0e7490');
+        ctx.fillStyle = domeGrad;
+        ctx.beginPath();
+        ctx.arc(domeX, domeY, domeR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glint highlight on dome
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.beginPath();
+        ctx.arc(domeX - 2.5 * z, domeY - 2.5 * z, 2 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 8. Dual Searchlight Fixtures
+        for (const [lx, ly] of [[domeX - 4 * z, hullY - 8 * z], [domeX - 2 * z, hullY + 8 * z]]) {
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(lx, ly, 3.5 * z, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#22d3ee';
+          ctx.beginPath();
+          ctx.arc(lx + 1 * z, ly, 2 * z, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 9. Digital Expedition Telemetry Plaque / Stand
+        const signX = sx - 38 * z;
+        const signY = sy - 4 * z;
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(signX + 7 * z, signY, 2 * z, 10 * z);
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath();
+        ctx.roundRect(signX, signY - 12 * z, 16 * z, 12 * z, 2 * z);
+        ctx.fill();
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 0.8 * z;
+        ctx.stroke();
+        // Tiny glowing depth LED readout
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `bold ${Math.max(6, Math.floor(5.5 * z))}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('11k-M', signX + 8 * z, signY - 7 * z);
+
+        // 10. Interactive Hover Tooltip Card
+        if (isHovered) {
+          const pillY = sailY - 26 * z;
+          const title = '🌊 DESCENT — Deep Sea Exploration';
+          const sub = 'Click to Dive into 11,000m Hadal Trench ↗';
+
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+
+          // Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
+          ctx.fill();
+
+          // Body
+          ctx.fillStyle = '#04101d';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.65)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+
+          ctx.font = `600 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#22d3ee';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
       case 'mystic_duck': {
         ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.beginPath();

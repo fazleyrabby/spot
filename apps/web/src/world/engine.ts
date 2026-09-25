@@ -234,6 +234,13 @@ export class Engine {
         (window as any).openSwarmGuardModal?.();
         return;
       }
+      // 0d. DESCENT Deep Sea Expedition Base (68, 105)
+      const descentWx = 68 * TILE_WIDTH + TILE_WIDTH / 2;
+      const descentWy = 105 * TILE_HEIGHT + TILE_HEIGHT / 2;
+      if (Math.hypot(this.player.wx - descentWx, this.player.wy - descentWy) < 85) {
+        (window as any).openDescentModal?.();
+        return;
+      }
       // 0. Check if near any Street NPC
       const nearestNpc = this.renderer.npcs.getNearestNPC(this.player.wx, this.player.wy);
       if (nearestNpc) {

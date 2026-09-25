@@ -755,6 +755,54 @@ function buildProps() {
         pushDetail(gx + 0.28, base + 5.3, gy, 0.52, 0.3, 0.04, 0x22d3ee);
         pushGlow(gx, base + 5.55, gy, 0x22d3ee);
       }
+      else if (t === 'descent_monument') {
+        solidProps.add(topKey(gx, gy));
+        // Heavy timber & steel slipway launch rails leading south toward ocean
+        pushDetail(gx, base + 0.1, gy, 2.2, 0.2, 2.4, 0x3d2c1e);
+        pushDetail(gx - 0.55, base + 0.22, gy, 0.12, 0.14, 2.4, 0x64748b);
+        pushDetail(gx + 0.55, base + 0.22, gy, 0.12, 0.14, 2.4, 0x64748b);
+        // Steel rails extending toward the surf
+        pushDetail(gx - 0.55, base + 0.12, gy + 1.2, 0.12, 0.14, 1.4, 0x94a3b8);
+        pushDetail(gx + 0.55, base + 0.12, gy + 1.2, 0.12, 0.14, 1.4, 0x94a3b8);
+
+        // Submersible launch cradle support trusses
+        pushDetail(gx, base + 0.45, gy - 0.1, 1.6, 0.35, 1.4, 0x1e293b);
+        // Hazard yellow accent trim
+        pushDetail(gx, base + 0.65, gy - 0.1, 1.5, 0.08, 1.3, 0xf59e0b);
+
+        // DSV-1 Submersible Pressure Hull
+        // Lower navy hull
+        pushDetail(gx, base + 0.95, gy - 0.1, 1.2, 0.45, 1.9, 0x0f172a);
+        // Upper titanium white hull
+        pushDetail(gx, base + 1.4, gy - 0.1, 1.15, 0.5, 1.85, 0xf1f5f9);
+        // Cyan waterline streak
+        pushDetail(gx, base + 1.15, gy - 0.1, 1.24, 0.08, 1.92, 0x06b6d4);
+
+        // Conning tower / sail
+        pushDetail(gx, base + 1.85, gy - 0.25, 0.45, 0.6, 0.7, 0x1e293b);
+        // Periscope / communications mast
+        pushCyl(gx, base + 2.45, gy - 0.25, 0.03, 0.8, 0x94a3b8);
+        // Strobe beacon (red)
+        pushSphere(gx, base + 2.85, gy - 0.25, 0.08, 0xef4444);
+        pushGlow(gx, base + 2.85, gy - 0.25, 0xef4444);
+
+        // Forward Panoramic Acrylic Observation Dome (facing south gy + 0.9)
+        pushSphere(gx, base + 1.15, gy + 0.85, 0.38, 0x22d3ee);
+        pushGlow(gx, base + 1.15, gy + 0.85, 0x06b6d4);
+
+        // Twin High-Intensity Benthic Floodlights (angled down toward ocean)
+        pushCyl(gx - 0.42, base + 1.5, gy + 0.7, 0.08, 0.25, 0x0f172a);
+        pushSphere(gx - 0.42, base + 1.5, gy + 0.82, 0.1, 0x67e8f9);
+        pushGlow(gx - 0.42, base + 1.5, gy + 0.82, 0x22d3ee);
+
+        pushCyl(gx + 0.42, base + 1.5, gy + 0.7, 0.08, 0.25, 0x0f172a);
+        pushSphere(gx + 0.42, base + 1.5, gy + 0.82, 0.1, 0x67e8f9);
+        pushGlow(gx + 0.42, base + 1.5, gy + 0.82, 0x22d3ee);
+
+        // Stern Propulsion Thruster Shroud
+        pushCyl(gx, base + 1.15, gy - 1.15, 0.22, 0.3, 0x334155);
+        pushDetail(gx, base + 1.15, gy - 1.32, 0.25, 0.1, 0.06, 0xf59e0b);
+      }
       else if (t === 'subway_entrance' || t === 'bus_stop') { pushBox(gx, base, gy, 0x8fa3b8); }
       else if (t === 'vending_machine') { pushBox(gx, base, gy, 0xf1f5f9); }
       else if (t === 'sunset_arch') {
@@ -2850,6 +2898,7 @@ function tick() {
           if (near(44, 52, 1.8) && window.openLibraryModal) { window.openLibraryModal(); return 'library'; }
           if (near(56, 52, 2.0) && window.openVillageModal) { window.openVillageModal(); return 'village'; }
           if (near(44, 58, 2.0) && window.openSwarmGuardModal) { window.openSwarmGuardModal(); return 'swarmguard'; }
+          if (near(68, 105, 2.4) && window.openDescentModal) { window.openDescentModal('voxel'); return 'descent'; }
           if (near(86, 22, 1.8) && window.openArcadeModal) { window.openArcadeModal(); return 'arcade'; }
           if (near(60, 38, 1.8) && window.openMuseumModal) { window.openMuseumModal(); return 'museum'; }
         }
@@ -3461,6 +3510,7 @@ function tick() {
           if (m === 'library') window.openLibraryModal?.();
           else if (m === 'village' || m === 'yorimichi') window.openVillageModal?.();
           else if (m === 'swarmguard' || m === 'swarm') window.openSwarmGuardModal?.();
+          else if (m === 'descent' || m === 'ocean' || m === 'deepsea') window.openDescentModal?.('voxel');
           else if (m === 'arcade') window.openArcadeModal?.();
           else if (m === 'museum') window.openMuseumModal?.();
         }, 700);

@@ -81,6 +81,7 @@ export type UrbanPropType =
   | 'dev_library'
   | 'japanese_pavilion'
   | 'swarmguard_bastion'
+  | 'descent_monument'
   | 'mystic_duck'
   | 'cafe_cat'
   | 'glitch_void'
@@ -532,6 +533,24 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
         lightRadius: !exp.underwater ? 120 : undefined,
       };
     }
+  }
+
+  // 🌊 DESCENT — Hadal Deep Sea Expedition Base at Southern Beach (gx: 68, gy: 105)
+  // DSV-1 deep-sea bathyscaphe with benthic searchlight facing south toward the ocean
+  if (gy === 105 && gx >= 67 && gx <= 69) {
+    if (gx === 68) {
+      return {
+        gx,
+        gy,
+        type: 'descent_monument',
+        wx,
+        wy,
+        hasLight: true,
+        lightColor: 'rgba(6, 182, 212, 0.75)',
+        lightRadius: 150,
+      };
+    }
+    return null; // Keep clearance corridor around DSV-1 launch slipway
   }
 
   // Beach Bonfires at scenic beach gathering spots (gy 105)

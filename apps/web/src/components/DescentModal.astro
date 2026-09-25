@@ -1,0 +1,449 @@
+---
+/**
+ * DescentModal — Fullscreen portal to the DESCENT deep sea exploration project
+ * (https://descent-explorer.vercel.app/).
+ *
+ * Immersive viewer with Hadal oceanic glassmorphism chrome,
+ * 'Open in New Tab ↗' link, Fullscreen toggle, and resource
+ * cleanup on close.
+ */
+---
+
+<div
+  class="descent-portal-backdrop"
+  id="descent-portal-backdrop"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-label="DESCENT — Deep Sea Exploration Portal"
+>
+  <div class="descent-portal-stage">
+    <iframe
+      id="descent-portal-iframe"
+      class="descent-portal-iframe"
+      src="about:blank"
+      loading="eager"
+      allow="autoplay; fullscreen; accelerometer; gyroscope; gamepad"
+      referrerpolicy="no-referrer"
+      title="DESCENT — Deep Sea Exploration"
+    ></iframe>
+
+    <!-- Top floating chrome -->
+    <div class="descent-portal-chrome">
+      <div class="descent-portal-badge">
+        <span class="descent-emblem">🌊</span>
+        <div class="descent-title-group">
+          <div class="descent-title-main">
+            <span class="descent-name">DESCENT</span>
+            <span class="descent-tag">DEEP SEA EXPLORATION</span>
+          </div>
+          <p class="descent-subtitle">Interactive bathymetric descent to 11,000m Hadal Trench</p>
+        </div>
+      </div>
+
+      <div class="descent-portal-actions">
+        <a
+          href="https://descent-explorer.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="descent-action-btn open-tab-btn"
+          title="Open the deep sea explorer in a new browser tab"
+        >
+          <span>Open in New Tab</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+
+        <button
+          type="button"
+          class="descent-action-btn fullscreen-btn"
+          id="descent-fullscreen-btn"
+          title="Toggle Fullscreen"
+          aria-label="Toggle Fullscreen"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          class="descent-action-btn close-btn"
+          id="descent-portal-close"
+          aria-label="Return to Spot World"
+          title="Return to Spot World (ESC)"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom telemetry ticker -->
+    <div class="descent-portal-footer">
+      <div class="descent-telemetry-chip">
+        <span class="descent-pulse-dot"></span>
+        <span class="descent-telemetry-text">DSV-1 EXPEDITION • HADAL ZONE READY • 0m → 11,000m</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .descent-portal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: radial-gradient(circle at 50% 10%, rgba(6, 182, 212, 0.15) 0%, rgba(2, 6, 23, 0.95) 75%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .descent-portal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .descent-portal-stage {
+    position: relative;
+    width: 96vw;
+    height: 94vh;
+    max-width: 1720px;
+    max-height: 1020px;
+    background: #020617;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    border-radius: 20px;
+    box-shadow:
+      0 0 0 1px rgba(6, 182, 212, 0.18),
+      0 24px 68px rgba(0, 0, 0, 0.75),
+      0 0 70px rgba(6, 182, 212, 0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.975);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .descent-portal-backdrop.open .descent-portal-stage {
+    transform: scale(1);
+  }
+
+  .descent-portal-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #030712;
+  }
+
+  /* Top floating chrome */
+  .descent-portal-chrome {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+    gap: 12px;
+  }
+
+  .descent-portal-badge {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px 8px 12px;
+    background: rgba(3, 14, 28, 0.82);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    border-radius: 9999px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.55),
+      0 0 20px rgba(6, 182, 212, 0.2);
+  }
+
+  .descent-emblem {
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.6));
+    animation: descent-float 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes descent-float {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-2px); }
+  }
+
+  .descent-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .descent-title-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1;
+  }
+
+  .descent-name {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #e0f2fe;
+    text-transform: uppercase;
+  }
+
+  .descent-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #22d3ee;
+    background: rgba(6, 182, 212, 0.18);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    padding: 2px 7px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+  }
+
+  .descent-subtitle {
+    margin: 0;
+    font-size: 10.5px;
+    color: #94a3b8;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
+
+  /* Action buttons */
+  .descent-portal-actions {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .descent-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    background: rgba(3, 14, 28, 0.82);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    border-radius: 9999px;
+    color: #e0f2fe;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .descent-action-btn:hover {
+    background: rgba(6, 182, 212, 0.25);
+    border-color: rgba(34, 211, 238, 0.65);
+    color: #ffffff;
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.55),
+      0 0 16px rgba(34, 211, 238, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .descent-action-btn:active {
+    transform: translateY(0);
+  }
+
+  .descent-action-btn.fullscreen-btn,
+  .descent-action-btn.close-btn {
+    width: 36px;
+    padding: 0;
+  }
+
+  .descent-action-btn.close-btn {
+    border-color: rgba(244, 63, 94, 0.35);
+  }
+
+  .descent-action-btn.close-btn:hover {
+    background: rgba(244, 63, 94, 0.22);
+    border-color: rgba(251, 113, 133, 0.65);
+    color: #ffe4e6;
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.55),
+      0 0 16px rgba(244, 63, 94, 0.35);
+  }
+
+  /* Bottom footer pill */
+  .descent-portal-footer {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .descent-telemetry-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: rgba(2, 8, 20, 0.75);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    border-radius: 9999px;
+    backdrop-filter: blur(10px);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #67e8f9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .descent-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 8px #22d3ee;
+    animation: descent-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes descent-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @media (max-width: 680px) {
+    .descent-portal-stage {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: 0;
+    }
+    .descent-subtitle {
+      display: none;
+    }
+    .descent-portal-footer {
+      display: none;
+    }
+    .open-tab-btn span {
+      display: none;
+    }
+    .open-tab-btn {
+      width: 36px;
+      padding: 0;
+    }
+  }
+</style>
+
+<script>
+  const backdrop = document.getElementById('descent-portal-backdrop');
+  const iframe = document.getElementById('descent-portal-iframe') as HTMLIFrameElement | null;
+  const fsBtn = document.getElementById('descent-fullscreen-btn') as HTMLButtonElement | null;
+  const closeBtn = document.getElementById('descent-portal-close') as HTMLButtonElement | null;
+  const openTabBtn = document.querySelector('.descent-portal-actions .open-tab-btn');
+
+  const DESCENT_URL = 'https://descent-explorer.vercel.app/';
+
+  function trackClick(source = '2d') {
+    try {
+      const payload = JSON.stringify({
+        targetType: 'monument',
+        targetId: 'descent_monument',
+        source,
+      });
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/click', blob);
+      } else {
+        fetch('/api/analytics/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch (_) {}
+  }
+
+  function recordDiscovery() {
+    try {
+      // Record secret discovery if SPOT secret system is available
+      const raw = localStorage.getItem('spot_discovered_secrets');
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      if (!list.includes('descent_monument')) {
+        list.push('descent_monument');
+        localStorage.setItem('spot_discovered_secrets', JSON.stringify(list));
+        window.dispatchEvent(new CustomEvent('secret-discovered', {
+          detail: { id: 'descent_monument' }
+        }));
+      }
+    } catch (_) {}
+  }
+
+  function openDescentModal(source = '2d') {
+    if (!backdrop || !iframe) return;
+    trackClick(source);
+    recordDiscovery();
+    if (iframe.src !== DESCENT_URL) {
+      iframe.src = DESCENT_URL;
+    }
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    iframe.focus();
+  }
+
+  function closeDescentModal() {
+    if (!backdrop || !iframe) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    // Unload iframe to stop audio and rendering loops in background
+    iframe.src = 'about:blank';
+    document.body.style.overflow = '';
+  }
+
+  function toggleFullscreen() {
+    if (!backdrop) return;
+    if (!document.fullscreenElement) {
+      backdrop.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }
+
+  closeBtn?.addEventListener('click', closeDescentModal);
+  fsBtn?.addEventListener('click', toggleFullscreen);
+  openTabBtn?.addEventListener('click', () => trackClick('new_tab'));
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) {
+      closeDescentModal();
+    }
+  });
+
+  (window as any).openDescentModal = openDescentModal;
+  (window as any).closeDescentModal = closeDescentModal;
+</script>

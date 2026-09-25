@@ -18,6 +18,7 @@ import ArtMuseumModal from '../components/ArtMuseumModal.astro';
 import ArtExperienceModal from '../components/ArtExperienceModal.astro';
 import VillagePortalModal from '../components/VillagePortalModal.astro';
 import SwarmGuardModal from '../components/SwarmGuardModal.astro';
+import DescentModal from '../components/DescentModal.astro';
 ---
 
 <Layout
@@ -91,6 +92,9 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
 
     <!-- SwarmGuard Tower Defense Portal -->
     <SwarmGuardModal />
+
+    <!-- DESCENT Deep Sea Exploration Portal -->
+    <DescentModal />
 
     <!-- Toast container -->
     <div id="world-toast-container" class="toast-container"></div>
@@ -1768,6 +1772,8 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
             (window as any).openVillageModal?.();
           } else if (secret.id === 'swarmguard_bastion') {
             (window as any).openSwarmGuardModal?.();
+          } else if (secret.id === 'descent_monument') {
+            (window as any).openDescentModal?.();
           } else {
             openSecretModal(secret);
           }
@@ -1787,6 +1793,7 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
           (window as any).closeArcadeModal?.();
           (window as any).closeVillageModal?.();
           (window as any).closeSwarmGuardModal?.();
+          (window as any).closeDescentModal?.();
         },
         onSnapshotLoaded: (snapshot) => {
           const claimedCountEl = document.getElementById('hud-claimed-count');
@@ -2122,6 +2129,10 @@ import SwarmGuardModal from '../components/SwarmGuardModal.astro';
       } else if (worldUrlParams.get('modal') === 'swarmguard' || worldUrlParams.get('modal') === 'swarm') {
         setTimeout(() => {
           (window as any).openSwarmGuardModal?.();
+        }, 350);
+      } else if (worldUrlParams.get('modal') === 'descent' || worldUrlParams.get('modal') === 'ocean' || worldUrlParams.get('modal') === 'deepsea') {
+        setTimeout(() => {
+          (window as any).openDescentModal?.();
         }, 350);
       } else if (worldUrlParams.get('modal') === 'share') {
         setTimeout(() => {

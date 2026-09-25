@@ -111,6 +111,24 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Hold the line — the city endures so long as one tower still stands.”',
   },
   {
+    id: 'descent_monument',
+    name: 'DESCENT — Deep Sea Expedition Base',
+    district: 'Southern Ocean Beach',
+    icon: '🌊',
+    gx: 68,
+    gy: 105,
+    category: 'landmark',
+    title: 'DESCENT — Deep Sea Exploration',
+    subtitle: 'Expedition DSV-1 • Dive to 11,000m Hadal Trench',
+    description:
+      'A deep-ocean research base and heavy bathyscaphe launch cradle resting on the southern beach. Twin high-intensity benthic searchlights illuminate the ocean swells, preparing explorers for the descent into the Midnight, Abyssal, and Hadal depths.',
+    clue: 'Along the sunlit southern sands at (68, 105), a deep-sea submersible stands ready on its launch rails.',
+    actionLabel: 'Explore the Deep Sea 🌊',
+    actionUrl: 'https://descent-explorer.vercel.app/',
+    reward: 'Hadal Aquanaut',
+    quote: '“Beyond the sunlit shallows lies the greatest wilderness on Earth.”',
+  },
+  {
     id: 'mystic_duck',
     name: 'The Solitary Lake Waterfowl',
     district: 'Central Park Lake',
@@ -427,7 +445,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'yorimichi_village', 'swarmguard_bastion', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'swarmguard_bastion', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;
@@ -451,7 +469,10 @@ export function getSecretAtWorld(wx: number, wy: number): WorldSecret | null {
   for (const s of WORLD_SECRETS) {
     const sx = s.gx * TILE_WIDTH + TILE_WIDTH / 2;
     const sy = s.gy * TILE_HEIGHT + TILE_HEIGHT / 2;
-    if (Math.abs(wx - sx) <= TILE_WIDTH * 0.6 && Math.abs(wy - sy) <= TILE_HEIGHT * 0.8) {
+    const isWide = s.id === 'descent_monument' || s.id === 'cyber_lighthouse';
+    const hitW = isWide ? TILE_WIDTH * 1.6 : TILE_WIDTH * 0.6;
+    const hitH = isWide ? TILE_HEIGHT * 1.6 : TILE_HEIGHT * 0.8;
+    if (Math.abs(wx - sx) <= hitW && Math.abs(wy - sy) <= hitH) {
       return s;
     }
   }
@@ -534,6 +555,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     icon: '🛡️',
     color: '#22d3ee',
     checkUnlocked: (secrets) => secrets.includes('swarmguard_bastion'),
+  },
+  {
+    id: 'badge_hadal_aquanaut',
+    name: 'Hadal Aquanaut',
+    description: 'Discovered the DESCENT Deep Sea Expedition Base',
+    icon: '🌊',
+    color: '#06b6d4',
+    checkUnlocked: (secrets) => secrets.includes('descent_monument'),
   },
   {
     id: 'badge_metropolis_master',

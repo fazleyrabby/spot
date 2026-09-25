@@ -235,6 +235,14 @@ export class InteractionHandler {
           return;
         }
 
+        // -0.8. DESCENT Deep Sea Expedition Base (68, 105) — click to explore deep sea
+        const descentWx = 68 * 48 + 24;
+        const descentWy = 105 * 32 + 16;
+        if (Math.hypot(world.x - descentWx, (world.y + 16) - descentWy) < 56) {
+          (window as any).openDescentModal?.();
+          return;
+        }
+
         // -0.5. Marine life click
         const marineHit = this.renderer.marine.hitTestMarine(world.x, world.y);
         if (marineHit) {
