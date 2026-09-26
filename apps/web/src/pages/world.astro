@@ -17,6 +17,7 @@ import BinocularModal from '../components/BinocularModal.astro';
 import ArtMuseumModal from '../components/ArtMuseumModal.astro';
 import ArtExperienceModal from '../components/ArtExperienceModal.astro';
 import VillagePortalModal from '../components/VillagePortalModal.astro';
+import MarinaPortalModal from '../components/MarinaPortalModal.astro';
 import SwarmGuardModal from '../components/SwarmGuardModal.astro';
 import DescentModal from '../components/DescentModal.astro';
 ---
@@ -89,6 +90,9 @@ import DescentModal from '../components/DescentModal.astro';
 
     <!-- Yorimichi Soothing Village World Portal -->
     <VillagePortalModal />
+
+    <!-- Apex Marina Speedboat World Portal -->
+    <MarinaPortalModal />
 
     <!-- SwarmGuard Tower Defense Portal -->
     <SwarmGuardModal />
@@ -1770,6 +1774,8 @@ import DescentModal from '../components/DescentModal.astro';
             (window as any).openArcadeModal?.();
           } else if (secret.id === 'yorimichi_village') {
             (window as any).openVillageModal?.();
+          } else if (secret.id === 'apex_marina') {
+            (window as any).openMarinaModal?.();
           } else if (secret.id === 'swarmguard_bastion') {
             (window as any).openSwarmGuardModal?.();
           } else if (secret.id === 'descent_monument') {
@@ -1792,6 +1798,7 @@ import DescentModal from '../components/DescentModal.astro';
           (window as any).closeLibraryModal?.();
           (window as any).closeArcadeModal?.();
           (window as any).closeVillageModal?.();
+          (window as any).closeMarinaModal?.();
           (window as any).closeSwarmGuardModal?.();
           (window as any).closeDescentModal?.();
         },
@@ -2133,6 +2140,10 @@ import DescentModal from '../components/DescentModal.astro';
       } else if (worldUrlParams.get('modal') === 'descent' || worldUrlParams.get('modal') === 'ocean' || worldUrlParams.get('modal') === 'deepsea') {
         setTimeout(() => {
           (window as any).openDescentModal?.();
+        }, 350);
+      } else if (worldUrlParams.get('modal') === 'marina' || worldUrlParams.get('modal') === 'apex') {
+        setTimeout(() => {
+          (window as any).openMarinaModal?.();
         }, 350);
       } else if (worldUrlParams.get('modal') === 'share') {
         setTimeout(() => {

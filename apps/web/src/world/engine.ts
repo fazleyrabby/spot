@@ -227,6 +227,13 @@ export class Engine {
         (window as any).openVillageModal?.();
         return;
       }
+      // 0b2. Apex Marina Harbor Pavilion (60, 52)
+      const marinaWx = 60 * TILE_WIDTH + TILE_WIDTH / 2;
+      const marinaWy = 52 * TILE_HEIGHT + TILE_HEIGHT / 2;
+      if (Math.hypot(this.player.wx - marinaWx, this.player.wy - marinaWy) < 76) {
+        (window as any).openMarinaModal?.();
+        return;
+      }
       // 0c. Swarmguard Bastion (44, 58)
       const bastWx = 44 * TILE_WIDTH + TILE_WIDTH / 2;
       const bastWy = 58 * TILE_HEIGHT + TILE_HEIGHT / 2;

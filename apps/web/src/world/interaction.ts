@@ -123,6 +123,11 @@ export class InteractionHandler {
         const pavWy = 52 * 32 + 16;
         const onPavilion = Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48;
 
+        // Apex Marina Harbor Pavilion hover → pointer
+        const marinaWx = 60 * 48 + 24;
+        const marinaWy = 52 * 32 + 16;
+        const onMarina = Math.hypot(world.x - marinaWx, (world.y + 16) - marinaWy) < 48;
+
         // Swarmguard Bastion hover → pointer
         const bastWx = 44 * 48 + 24;
         const bastWy = 58 * 32 + 16;
@@ -141,7 +146,7 @@ export class InteractionHandler {
           this.renderer.hoveredSecret = null;
           this.renderer.hoveredGrid = { gx: artExp.gx, gy: artExp.gy };
           canvas.style.cursor = 'pointer';
-        } else if (onDoor || onMarine || onPavilion || onBastion) {
+        } else if (onDoor || onMarine || onPavilion || onMarina || onBastion) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -224,6 +229,14 @@ export class InteractionHandler {
         const pavWy = 52 * 32 + 16;
         if (Math.hypot(world.x - pavWx, (world.y + 16) - pavWy) < 48) {
           (window as any).openVillageModal?.();
+          return;
+        }
+
+        // -0.88. Apex Marina Harbor Pavilion (60, 52) — click to launch speedboat game
+        const marinaWx = 60 * 48 + 24;
+        const marinaWy = 52 * 32 + 16;
+        if (Math.hypot(world.x - marinaWx, (world.y + 16) - marinaWy) < 48) {
+          (window as any).openMarinaModal?.();
           return;
         }
 

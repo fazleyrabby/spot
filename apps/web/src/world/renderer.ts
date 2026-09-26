@@ -3179,6 +3179,145 @@ export class Renderer {
         break;
       }
 
+      case 'marina_harbor': {
+        const isHovered =
+          this.hoveredSecret?.id === 'apex_marina' ||
+          (this.hoveredGrid && Math.hypot(this.hoveredGrid.gx - 60, this.hoveredGrid.gy - 52) <= 1.5);
+        const bob = Math.sin(this.tick * 0.05) * 1.6 * z;
+        const flagWave = Math.sin(this.tick * 0.08) * 2 * z;
+
+        // 1. Ground shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 56 * z, 15 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Harbor water basin
+        ctx.fillStyle = '#0b3542';
+        ctx.beginPath();
+        ctx.roundRect(sx - 48 * z, sy - 6 * z, 96 * z, 12 * z, 3 * z);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.beginPath();
+        ctx.roundRect(sx - 46 * z, sy - 4 * z, 92 * z, 3 * z, 2 * z);
+        ctx.fill();
+
+        // 3. Wooden pier deck
+        ctx.fillStyle = '#1e140f';
+        ctx.beginPath();
+        ctx.roundRect(sx - 44 * z, sy - 14 * z, 88 * z, 6 * z, 1.5 * z);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        for (let px = -40; px <= 40; px += 8) {
+          ctx.fillRect(sx + px * z, sy - 14 * z, 0.8 * z, 6 * z);
+        }
+        // Pier posts
+        ctx.fillStyle = '#3d2516';
+        for (const px of [-40, -14, 14, 40]) {
+          ctx.fillRect(sx + px * z, sy - 8 * z, 2.5 * z, 9 * z);
+        }
+
+        // 4. Moored speedboat (sleek hull, rocking gently)
+        const bx = sx - 8 * z;
+        const by = sy + bob;
+        ctx.fillStyle = isHovered ? '#f43f5e' : '#e11d48';
+        ctx.beginPath();
+        ctx.moveTo(bx + 20 * z, by);
+        ctx.quadraticCurveTo(bx + 4 * z, by - 7 * z, bx - 16 * z, by - 6 * z);
+        ctx.lineTo(bx - 17 * z, by + 6 * z);
+        ctx.quadraticCurveTo(bx + 4 * z, by + 7 * z, bx + 20 * z, by);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(bx + 15 * z, by);
+        ctx.quadraticCurveTo(bx + 2 * z, by - 3.5 * z, bx - 12 * z, by - 3 * z);
+        ctx.lineTo(bx - 12 * z, by + 3 * z);
+        ctx.quadraticCurveTo(bx + 2 * z, by + 3.5 * z, bx + 15 * z, by);
+        ctx.closePath();
+        ctx.fill();
+        // Cockpit + outboard
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(bx - 2 * z, by, 3.5 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(bx - 20 * z, by - 3 * z, 3 * z, 6 * z);
+
+        // 5. Signal mast with checkered racing pennant
+        const mx = sx + 34 * z;
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.4 * z;
+        ctx.beginPath();
+        ctx.moveTo(mx, sy - 8 * z);
+        ctx.lineTo(mx, sy - 34 * z);
+        ctx.stroke();
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(mx, sy - 34 * z);
+        ctx.lineTo(mx + 16 * z + flagWave, sy - 30 * z);
+        ctx.lineTo(mx, sy - 26 * z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        for (let r = 0; r < 2; r++) {
+          for (let cIdx = 0; cIdx < 3; cIdx++) {
+            if ((r + cIdx) % 2 === 0) ctx.fillRect(mx + 2 * z + cIdx * 4.4 * z, sy - 33 * z + r * 3.6 * z, 4.4 * z, 3.6 * z);
+          }
+        }
+        // Mast lamp
+        ctx.fillStyle = isHovered ? 'rgba(251, 191, 36, 0.95)' : 'rgba(251, 191, 36, 0.7)';
+        ctx.beginPath();
+        ctx.arc(mx, sy - 36 * z, 2.4 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 6. Fuel drums + mooring buoys
+        for (const [dx, color] of [[-38, '#b45309'], [-30, '#0ea5e9']] as Array<[number, string]>) {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(sx + dx * z, sy - 20 * z, 6 * z, 7 * z, 1 * z);
+          ctx.fill();
+        }
+        for (const dx of [22, 30]) {
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.arc(sx + dx * z, sy + 2 * z + bob * 0.5, 2.6 * z, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(sx + dx * z - 2.6 * z, sy + 0.8 * z + bob * 0.5, 5.2 * z, 2 * z);
+        }
+
+        // 7. Hover tooltip
+        if (isHovered) {
+          const pillY = sy - 48 * z;
+          const title = '🚤 Apex Marina Harbor';
+          const sub = 'Click to Race & Explore';
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
+          ctx.fill();
+          ctx.fillStyle = '#08131c';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#e0fbff';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+          ctx.font = `500 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#7dd3fc';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
       case 'descent_monument': {
         const isHovered =
           this.hoveredSecret?.id === 'descent_monument' ||

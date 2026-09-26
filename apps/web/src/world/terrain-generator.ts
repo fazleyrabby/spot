@@ -80,6 +80,7 @@ export type UrbanPropType =
   | 'genesis_monolith'
   | 'dev_library'
   | 'japanese_pavilion'
+  | 'marina_harbor'
   | 'swarmguard_bastion'
   | 'descent_monument'
   | 'mystic_duck'
@@ -774,6 +775,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'japanese_pavilion', wx, wy,
       hasLight: true, lightColor: 'rgba(244, 63, 94, 0.55)', lightRadius: 125,
+    };
+  }
+
+  // Apex Marina Harbor Pavilion — speedboat portal in the eastern Grand Plaza
+  if (gx === 60 && gy === 52) {
+    return {
+      gx, gy, type: 'marina_harbor', wx, wy,
+      hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 125,
     };
   }
 

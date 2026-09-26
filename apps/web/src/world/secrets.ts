@@ -93,6 +93,24 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Take the scenic detour and let the world slow down.”',
   },
   {
+    id: 'apex_marina',
+    name: 'The Apex Marina Harbor Pavilion',
+    district: 'Grand Central Plaza',
+    icon: '🚤',
+    gx: 60,
+    gy: 52,
+    category: 'landmark',
+    title: 'Apex Marina — Harbor Pavilion',
+    subtitle: 'Top-down speedboat racing & exploration',
+    description:
+      'A sunlit harbor pavilion with signal flags, stacked fuel drums, and a moored speedboat rocking gently at the pier. It serves as a portal to Apex Marina — race rival boats around Sunset Bay or sail free across a living archipelago.',
+    clue: 'In the eastern plaza courtyard at (60, 52), look for a harbor pavilion flying a checkered racing pennant.',
+    actionLabel: 'Set Sail to Apex Marina 🚤',
+    actionUrl: 'https://apex-marina.vercel.app/',
+    reward: 'Harbor Captain',
+    quote: '“Fast hulls, open water — the marina never sleeps.”',
+  },
+  {
     id: 'swarmguard_bastion',
     name: 'The Swarmguard Bastion',
     district: 'Grand Central Plaza',
@@ -445,7 +463,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'yorimichi_village', 'swarmguard_bastion', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'apex_marina', 'swarmguard_bastion', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;
@@ -563,6 +581,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     icon: '🌊',
     color: '#06b6d4',
     checkUnlocked: (secrets) => secrets.includes('descent_monument'),
+  },
+  {
+    id: 'badge_marina_captain',
+    name: 'Harbor Captain',
+    description: 'Set sail through the Apex Marina harbor portal',
+    icon: '🚤',
+    color: '#38bdf8',
+    checkUnlocked: (secrets) => secrets.includes('apex_marina'),
   },
   {
     id: 'badge_metropolis_master',
