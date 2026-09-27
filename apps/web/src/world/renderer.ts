@@ -3567,6 +3567,166 @@ export class Renderer {
         break;
       }
 
+      case 'chattogram_globe': {
+        const isHovered =
+          this.hoveredSecret?.id === 'ctg_explorer' ||
+          (this.hoveredGrid && Math.hypot(this.hoveredGrid.gx - 50, this.hoveredGrid.gy - 58) <= 1.5);
+        const spin = this.tick * 0.012;
+        const bob = Math.sin(this.tick * 0.045) * 1.4 * z;
+
+        // 1. Ground shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 44 * z, 12 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Stepped granite plinth
+        ctx.fillStyle = '#2b3446';
+        ctx.beginPath();
+        ctx.roundRect(sx - 40 * z, sy - 8 * z, 80 * z, 10 * z, 2 * z);
+        ctx.fill();
+        ctx.fillStyle = '#3f4a61';
+        ctx.beginPath();
+        ctx.roundRect(sx - 33 * z, sy - 15 * z, 66 * z, 8 * z, 2 * z);
+        ctx.fill();
+        ctx.fillStyle = '#52607d';
+        ctx.beginPath();
+        ctx.roundRect(sx - 26 * z, sy - 21 * z, 52 * z, 7 * z, 2 * z);
+        ctx.fill();
+
+        // Engraved inscription band
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.85)';
+        ctx.fillRect(sx - 22 * z, sy - 19.5 * z, 44 * z, 1.6 * z);
+
+        // 3. Support column (brass)
+        ctx.fillStyle = '#8a6d3b';
+        ctx.fillRect(sx - 3.5 * z, sy - 34 * z, 7 * z, 14 * z);
+        ctx.fillStyle = '#b8925a';
+        ctx.fillRect(sx - 3.5 * z, sy - 34 * z, 2.5 * z, 14 * z);
+
+        // 4. Slowly turning globe
+        const gx0 = sx;
+        const gy0 = sy - 42 * z + bob;
+        const gr = 15 * z;
+
+        // Pivot arc shadow
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        ctx.beginPath();
+        ctx.arc(gx0, gy0 + gr * 0.9, gr * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Globe body (ocean)
+        const globeGrad = ctx.createRadialGradient(gx0 - gr * 0.35, gy0 - gr * 0.4, gr * 0.2, gx0, gy0, gr);
+        globeGrad.addColorStop(0, '#38bdf8');
+        globeGrad.addColorStop(0.55, '#0e7490');
+        globeGrad.addColorStop(1, '#0b3a4a');
+        ctx.fillStyle = globeGrad;
+        ctx.beginPath();
+        ctx.arc(gx0, gy0, gr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Continents (rotating with spin)
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(gx0, gy0, gr, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = '#10b981';
+        const continents: Array<[number, number, number, number]> = [
+          [Math.sin(spin) * gr, -gr * 0.25, gr * 0.5, gr * 0.42],
+          [Math.sin(spin + 2.1) * gr, gr * 0.3, gr * 0.42, gr * 0.34],
+          [Math.sin(spin + 4.2) * gr * 0.7 - gr * 0.3, -gr * 0.05, gr * 0.32, gr * 0.5],
+        ];
+        for (const [cx0, cy0, cw, ch] of continents) {
+          ctx.beginPath();
+          ctx.ellipse(gx0 + cx0, gy0 + cy0, cw, ch, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Soft day/night terminator
+        ctx.fillStyle = 'rgba(2, 6, 14, 0.42)';
+        ctx.beginPath();
+        ctx.ellipse(gx0 + gr * 0.7, gy0, gr * 0.9, gr, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Specular highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.beginPath();
+        ctx.arc(gx0 - gr * 0.38, gy0 - gr * 0.4, gr * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Brass meridian ring (tilted)
+        ctx.strokeStyle = isHovered ? '#fbbf24' : '#b8925a';
+        ctx.lineWidth = 1.8 * z;
+        ctx.beginPath();
+        ctx.ellipse(gx0, gy0, gr * 0.42, gr * 1.08, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Equator band
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+        ctx.lineWidth = 1 * z;
+        ctx.beginPath();
+        ctx.ellipse(gx0, gy0, gr * 1.02, gr * 0.34, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 6. Pulsing beacon flame crowning the plinth axis
+        const flamePulse = 0.6 + 0.4 * Math.sin(this.tick * 0.09);
+        ctx.fillStyle = `rgba(16, 185, 129, ${0.5 + flamePulse * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(gx0, gy0 - gr * 1.18, 2.6 * z, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+        ctx.lineWidth = 1.4 * z;
+        ctx.beginPath();
+        ctx.moveTo(gx0, gy0 - gr * 1.1);
+        ctx.lineTo(gx0, gy0 - gr * 1.3);
+        ctx.stroke();
+
+        // 7. Orbiting satellite mote
+        const orbAng = this.tick * 0.05;
+        const ox = gx0 + Math.cos(orbAng) * gr * 1.5;
+        const oy = gy0 + Math.sin(orbAng) * gr * 0.55;
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(ox, oy, 1.8 * z, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 8. Interactive hover tooltip
+        if (isHovered) {
+          const pillY = gy0 - gr * 1.75;
+          const title = '🌐 CTG Explorer — Chattogram 3D';
+          const sub = 'Click to Explore the Port City ↗';
+
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          const tw = ctx.measureText(title).width;
+          const pw = tw + 28 * z;
+          const ph = 24 * z;
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2 + 2 * z, pillY - ph / 2 + 3 * z, pw, ph, 6 * z);
+          ctx.fill();
+
+          ctx.fillStyle = '#04160f';
+          ctx.beginPath();
+          ctx.roundRect(sx - pw / 2, pillY - ph / 2, pw, ph, 6 * z);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.65)';
+          ctx.lineWidth = 1.2 * z;
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#d1fae5';
+          ctx.fillText(title, sx, pillY - 8.5 * z);
+
+          ctx.font = `600 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+          ctx.fillStyle = '#34d399';
+          ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
       case 'mystic_duck': {
         ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.beginPath();

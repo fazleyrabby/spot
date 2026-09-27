@@ -81,6 +81,7 @@ export type UrbanPropType =
   | 'dev_library'
   | 'japanese_pavilion'
   | 'marina_harbor'
+  | 'chattogram_globe'
   | 'swarmguard_bastion'
   | 'descent_monument'
   | 'mystic_duck'
@@ -783,6 +784,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'marina_harbor', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 125,
+    };
+  }
+
+  // CTG Explorer — Chattogram 3D globe monument on the southern Grand Plaza axis
+  if (gx === 50 && gy === 58) {
+    return {
+      gx, gy, type: 'chattogram_globe', wx, wy,
+      hasLight: true, lightColor: 'rgba(16, 185, 129, 0.55)', lightRadius: 125,
     };
   }
 

@@ -234,6 +234,13 @@ export class Engine {
         (window as any).openMarinaModal?.();
         return;
       }
+      // 0b3. Chattogram Globe Monument (50, 58)
+      const globeWx = 50 * TILE_WIDTH + TILE_WIDTH / 2;
+      const globeWy = 58 * TILE_HEIGHT + TILE_HEIGHT / 2;
+      if (Math.hypot(this.player.wx - globeWx, this.player.wy - globeWy) < 76) {
+        (window as any).openCtgModal?.();
+        return;
+      }
       // 0c. Swarmguard Bastion (44, 58)
       const bastWx = 44 * TILE_WIDTH + TILE_WIDTH / 2;
       const bastWy = 58 * TILE_HEIGHT + TILE_HEIGHT / 2;

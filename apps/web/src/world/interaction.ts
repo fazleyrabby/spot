@@ -128,6 +128,11 @@ export class InteractionHandler {
         const marinaWy = 52 * 32 + 16;
         const onMarina = Math.hypot(world.x - marinaWx, (world.y + 16) - marinaWy) < 48;
 
+        // Chattogram Globe Monument (50, 58) hover → pointer
+        const globeWx = 50 * 48 + 24;
+        const globeWy = 58 * 32 + 16;
+        const onGlobe = Math.hypot(world.x - globeWx, (world.y + 16) - globeWy) < 48;
+
         // Swarmguard Bastion hover → pointer
         const bastWx = 44 * 48 + 24;
         const bastWy = 58 * 32 + 16;
@@ -146,7 +151,7 @@ export class InteractionHandler {
           this.renderer.hoveredSecret = null;
           this.renderer.hoveredGrid = { gx: artExp.gx, gy: artExp.gy };
           canvas.style.cursor = 'pointer';
-        } else if (onDoor || onMarine || onPavilion || onMarina || onBastion) {
+        } else if (onDoor || onMarine || onPavilion || onMarina || onGlobe || onBastion) {
           this.renderer.hoveredCitizen = null;
           this.renderer.hoveredBanner = null;
           this.renderer.hoveredSecret = null;
@@ -237,6 +242,14 @@ export class InteractionHandler {
         const marinaWy = 52 * 32 + 16;
         if (Math.hypot(world.x - marinaWx, (world.y + 16) - marinaWy) < 48) {
           (window as any).openMarinaModal?.();
+          return;
+        }
+
+        // -0.87. Chattogram Globe Monument (50, 58) — click to explore CTG 3D world
+        const globeWx = 50 * 48 + 24;
+        const globeWy = 58 * 32 + 16;
+        if (Math.hypot(world.x - globeWx, (world.y + 16) - globeWy) < 48) {
+          (window as any).openCtgModal?.();
           return;
         }
 

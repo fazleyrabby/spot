@@ -111,6 +111,24 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Fast hulls, open water — the marina never sleeps.”',
   },
   {
+    id: 'ctg_explorer',
+    name: 'The Chattogram Globe Monument',
+    district: 'Grand Central Plaza',
+    icon: '🌐',
+    gx: 50,
+    gy: 58,
+    category: 'landmark',
+    title: 'CTG Explorer — Chattogram 3D World',
+    subtitle: 'Roam the real streets of Chattogram in a browser 3D world',
+    description:
+      'A polished granite plinth cradling a slowly turning globe etched with the coastline of Chattogram. It is a gateway to CTG Explorer — a browser-based 3D open world built on the real geography of the port city, where you can walk its roads, hills, ponds, and landmarks on foot.',
+    clue: 'On the southern plaza axis at (50, 58), just below the wishing fountain, a brass-ringed globe turns slowly on a granite pedestal.',
+    actionLabel: 'Explore Chattogram 3D 🌐',
+    actionUrl: 'https://ctg.fazleyrabbi.xyz/',
+    reward: 'Port City Voyager',
+    quote: '“Every street on the globe is a story waiting to be walked.”',
+  },
+  {
     id: 'swarmguard_bastion',
     name: 'The Swarmguard Bastion',
     district: 'Grand Central Plaza',
@@ -463,7 +481,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'yorimichi_village', 'apex_marina', 'swarmguard_bastion', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'apex_marina', 'swarmguard_bastion', 'ctg_explorer', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;
@@ -589,6 +607,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     icon: '🚤',
     color: '#38bdf8',
     checkUnlocked: (secrets) => secrets.includes('apex_marina'),
+  },
+  {
+    id: 'badge_ctg_voyager',
+    name: 'Port City Voyager',
+    description: 'Stepped into the CTG Explorer Chattogram 3D world',
+    icon: '🌐',
+    color: '#10b981',
+    checkUnlocked: (secrets) => secrets.includes('ctg_explorer'),
   },
   {
     id: 'badge_metropolis_master',

@@ -755,6 +755,28 @@ function buildProps() {
         pushDetail(gx + 0.28, base + 5.3, gy, 0.52, 0.3, 0.04, 0x22d3ee);
         pushGlow(gx, base + 5.55, gy, 0x22d3ee);
       }
+      else if (t === 'chattogram_globe') {
+        solidProps.add(topKey(gx, gy));
+        // Stepped granite plinth
+        pushDetail(gx, base + 0.15, gy, 1.9, 0.3, 1.9, 0x2b3446);
+        pushDetail(gx, base + 0.38, gy, 1.55, 0.16, 1.55, 0x3f4a61);
+        pushDetail(gx, base + 0.56, gy, 1.25, 0.14, 1.25, 0x52607d);
+        // Engraved emerald inscription band
+        pushDetail(gx, base + 0.68, gy, 1.15, 0.06, 1.15, 0x10b981);
+        // Brass support column
+        pushCyl(gx, base + 1.15, gy, 0.14, 0.9, 0x8a6d3b);
+        // Globe body (ocean sphere) with emerald continents
+        pushSphere(gx, base + 1.98, gy, 0.78, 0x0e7490);
+        pushSphere(gx - 0.24, base + 2.2, gy - 0.06, 0.3, 0x10b981);
+        pushSphere(gx + 0.26, base + 1.76, gy + 0.08, 0.26, 0x10b981);
+        pushSphere(gx + 0.02, base + 1.98, gy + 0.3, 0.22, 0x34d399);
+        // Brass equator ring girdling the globe
+        pushCyl(gx, base + 1.98, gy, 1.0, 0.04, 0xb8925a);
+        // Crown beacon flame
+        pushCyl(gx, base + 3.0, gy, 0.04, 0.5, 0xfbbf24);
+        pushSphere(gx, base + 3.32, gy, 0.1, 0x34d399);
+        pushGlow(gx, base + 3.32, gy, 0x34d399);
+      }
       else if (t === 'descent_monument') {
         solidProps.add(topKey(gx, gy));
         // Heavy timber & steel slipway launch rails leading south toward ocean
@@ -995,6 +1017,7 @@ const MONUMENT_LABELS = [
   [44, 52, 'Library', 6.4, '#22d3ee'],
   [56, 52, '⛩️ Yorimichi Village', 6.6, '#f43f5e'],
   [44, 58, '🛡️ Swarmguard Bastion', 6.8, '#22d3ee'],
+  [50, 58, '🌐 CTG Explorer', 6.6, '#10b981'],
   [64, 16, 'Genesis Monolith', 7.2, '#fbbf24'],
   [40, -10, 'Kandahar Giant', 9.0, '#e2e8f0'],
   [50, 50, 'Wishing Fountain', 4.6, '#7dd3fc'],
@@ -2899,6 +2922,7 @@ function tick() {
           if (near(44, 52, 1.8) && window.openLibraryModal) { window.openLibraryModal(); return 'library'; }
           if (near(56, 52, 2.0) && window.openVillageModal) { window.openVillageModal(); return 'village'; }
           if (near(44, 58, 2.0) && window.openSwarmGuardModal) { window.openSwarmGuardModal(); return 'swarmguard'; }
+          if (near(50, 58, 2.0) && window.openCtgModal) { window.openCtgModal('voxel'); return 'ctg'; }
           if (near(68, 105, 2.4) && window.openDescentModal) { window.openDescentModal('voxel'); return 'descent'; }
           if (near(86, 22, 1.8) && window.openArcadeModal) { window.openArcadeModal(); return 'arcade'; }
           if (near(60, 38, 1.8) && window.openMuseumModal) { window.openMuseumModal(); return 'museum'; }
@@ -3511,6 +3535,7 @@ function tick() {
           if (m === 'library') window.openLibraryModal?.();
           else if (m === 'village' || m === 'yorimichi') window.openVillageModal?.();
           else if (m === 'swarmguard' || m === 'swarm') window.openSwarmGuardModal?.();
+          else if (m === 'ctg' || m === 'chattogram') window.openCtgModal?.('voxel');
           else if (m === 'descent' || m === 'ocean' || m === 'deepsea') window.openDescentModal?.('voxel');
           else if (m === 'arcade') window.openArcadeModal?.();
           else if (m === 'museum') window.openMuseumModal?.();
