@@ -23,8 +23,6 @@ export class WorldCanvasRenderer {
 
   // Animation & Rendering loop
   private animationFrameId: number | null = null;
-  private lastTime = 0;
-  private pulsePhase = 0;
   private dpr = 1;
   private boundHandleResize: (() => void) | null = null;
 
@@ -90,11 +88,7 @@ export class WorldCanvasRenderer {
 
   start(): void {
     if (this.animationFrameId !== null) return;
-    this.lastTime = performance.now();
-    const loop = (currentTime: number) => {
-      const delta = (currentTime - this.lastTime) / 1000;
-      this.lastTime = currentTime;
-      this.pulsePhase += delta * 3.5;
+    const loop = () => {
 
       this.update();
       this.render();
@@ -272,8 +266,7 @@ export class WorldCanvasRenderer {
     for (let i = 0; i < count; i++) {
       const seedX = (i * 1973 + 37) % width;
       const seedY = (i * 3271 + 83) % height;
-      const flicker = (Math.sin(this.pulsePhase + i) + 1) / 2;
-      ctx.fillStyle = `rgba(245, 158, 11, ${0.05 + flicker * 0.15})`;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
       ctx.fillRect(seedX, seedY, 1.5, 1.5);
     }
   }
@@ -402,11 +395,10 @@ export class WorldCanvasRenderer {
 
     // Live presence glow: kept to one lightweight stroke per online tile.
     if (occupied.isOnline && this.camera.zoom > 0.45) {
-      const pulse = (Math.sin(this.pulsePhase) + 1) / 2;
       ctx.save();
-      ctx.shadowColor = `rgba(16, 185, 129, ${0.45 + pulse * 0.3})`;
-      ctx.shadowBlur = 7 + pulse * 7;
-      ctx.strokeStyle = `rgba(52, 211, 153, ${0.55 + pulse * 0.25})`;
+      ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.7)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.roundRect(x - 1, y - 1, size + 2, size + 2, 6);
@@ -562,11 +554,10 @@ export class WorldCanvasRenderer {
     y: number,
     size: number
   ): void {
-    const pulse = (Math.sin(this.pulsePhase) + 1) / 2;
-    const expand = pulse * 6;
+    const expand = 3;
 
     ctx.save();
-    ctx.strokeStyle = `rgba(245, 158, 11, ${0.7 - pulse * 0.4})`;
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.65)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(x - expand, y - expand, size + expand * 2, size + expand * 2, 6);

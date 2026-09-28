@@ -518,14 +518,9 @@
     background: #10b981;
     border-radius: 50%;
     box-shadow: 0 0 6px #10b981;
-    animation: hudDotPulse 2s ease-in-out infinite;
     flex-shrink: 0;
   }
 
-  @keyframes hudDotPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.35; transform: scale(0.8); }
-  }
 
   .hud-spots-pill {
     cursor: pointer;
@@ -994,11 +989,6 @@
   .radio-live-dot.is-active {
     background: #10b981;
     box-shadow: 0 0 8px #10b981;
-    animation: pulseDot 1.4s ease-in-out infinite alternate;
-  }
-  @keyframes pulseDot {
-    from { opacity: 0.6; }
-    to { opacity: 1; }
   }
   .radio-freq-badge {
     font-family: var(--font-mono, monospace);
@@ -1231,11 +1221,6 @@
     height: 7px;
     border-radius: 50%;
     background: #ef4444;
-    animation: recBlink 1s infinite alternate;
-  }
-  @keyframes recBlink {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
   }
   .tour-mode-text {
     font-family: var(--font-tech, monospace);

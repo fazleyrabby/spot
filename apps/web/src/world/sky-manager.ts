@@ -71,7 +71,6 @@ export class SkyManager {
     propellerFrame: 0,
     tickerOffset: 0,
     cooldownTimer: 180, // initial ~3s delay
-    beaconTimer: 0,
     messages: [
       '✦ SPOT METROPOLIS • POPULATION: 10,000 CITIZENS • CLAIM YOUR SPOT ✦',
       '✦ 24/7 AUTONOMOUS BULLET TRAIN RUNNING ON SCHEDULE ✦',
@@ -191,7 +190,6 @@ export class SkyManager {
   }
 
   private tickBlimp(): void {
-    this.blimp.beaconTimer++;
     this.blimp.propellerFrame = (this.blimp.propellerFrame + 1) % 4;
 
     if (!this.blimp.active) {
@@ -633,9 +631,8 @@ export class SkyManager {
     }
     ctx.stroke();
 
-    // 6. Blinking Aviation Beacons
-    const isBeaconOn = Math.floor(this.blimp.beaconTimer / 30) % 2 === 0;
-    if (isBeaconOn) {
+    // 6. Steady Aviation Beacons
+    {
       // Red Tail Beacon
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();

@@ -551,8 +551,7 @@ export class PetCompanionManager {
     // Ion Propulsion Glow
     ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
     ctx.beginPath();
-    const ionPulse = Math.sin(this.tickCount * 0.3) * 1.5 * z;
-    ctx.ellipse(0, floatY + 8 * z, 3 * z, (3 + ionPulse) * z, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, floatY + 8 * z, 3 * z, 3 * z, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 

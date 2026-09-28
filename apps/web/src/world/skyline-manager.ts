@@ -5,7 +5,7 @@
  * wilderness and mountains:
  * - Parallax camera-coupled scrolling (moves at 0.18x camera speed for deep perspective)
  * - Multi-tiered skyscraper silhouettes with lit windows and architectural spires
- * - Animated FAA aviation warning beacons (pulsing red/amber LEDs atop towers)
+ * - FAA aviation warning beacons atop towers
  * - Glowing holographic corporate billboards (NEO-CORP, BYTE, SPOT)
  * - Dynamic lighting adaptation for Day, Twilight, and Night cycles
  */
@@ -28,7 +28,6 @@ interface BuildingSilhouette {
 
 export class SkylineManager {
   private buildings: BuildingSilhouette[] = [];
-  private beaconTimer = 0;
   private readonly horizonBaseWy = -4.5 * TILE_HEIGHT; // Behind the northern mountain ridge
 
   constructor() {
@@ -81,9 +80,7 @@ export class SkylineManager {
     }
   }
 
-  tick(): void {
-    this.beaconTimer++;
-  }
+  tick(): void {}
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -119,10 +116,7 @@ export class SkylineManager {
     ctx.fillStyle = horizonGlow;
     ctx.fillRect(0, screenBase.y - 180 * z, W, 220 * z);
 
-    // 2. Beacon blink cycle (every 60 frames, pulses for 15 frames)
-    const beaconLit = (this.beaconTimer % 60) < 18;
-
-    // 3. Render Skyscraper Silhouettes
+    // Render skyscraper silhouettes
     for (let i = 0; i < this.buildings.length; i++) {
       const b = this.buildings[i];
       // Parallax coordinate: anchor to world with 0.2x speed
@@ -148,8 +142,8 @@ export class SkylineManager {
         ctx.lineTo(spireX, bScreen.y - bh - spireH);
         ctx.stroke();
 
-        // Pulsing Red Warning Beacon
-        if (beaconLit && timeOfDay !== 'day') {
+        // Steady red warning beacon
+        if (timeOfDay !== 'day') {
           ctx.fillStyle = '#ef4444';
           ctx.beginPath();
           ctx.arc(spireX, bScreen.y - bh - spireH, 2.2 * z, 0, Math.PI * 2);

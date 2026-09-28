@@ -72,15 +72,12 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     <button type="button" class="stat-pill homelab-pill" id="hud-homelab-btn" title="Self-hosted on a dedicated ThinkPad laptop running 24/7 (Click to learn more)">
       <span class="homelab-icon-emoji" aria-hidden="true">💻</span>
       <span class="stat-text homelab-label">Homelab 24/7</span>
-      <span class="homelab-pulse-dot" aria-hidden="true"></span>
+      <span class="homelab-status-dot" aria-hidden="true"></span>
     </button>
   </div>
 
   <div class="hud-right">
-    <!-- World button with animated glowing orbiting border beacon -->
     <div class="world-btn-wrapper">
-      <!-- Floating glowing satellite orbiting along the button perimeter -->
-      <span class="world-orbit-particle" aria-hidden="true"></span>
       <a class="hud-world-btn" href="/world" id="header-world-btn" title="Open Spot World — 2D Cyber City">
         <svg class="world-globe-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
@@ -383,7 +380,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     letter-spacing: 0.02em;
   }
 
-  .homelab-pulse-dot {
+  .homelab-status-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
@@ -408,15 +405,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     flex-shrink: 0;
   }
 
-  /* Funky Curved Arrow Callout to peek interest */
-  .world-btn-wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
-
-  /* Animated Glowing Border Beam & Floating Comet Beacon for World button */
+  /* World navigation button */
   .world-btn-wrapper {
     position: relative;
     display: inline-flex;
@@ -429,22 +418,6 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     background: rgba(255, 255, 255, 0.05);
   }
 
-  /* Floating glowing object / satellite orbiting along the button perimeter */
-  .world-orbit-particle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow:
-      0 0 4px 1px rgba(244, 63, 94, 0.5),
-      0 0 10px 3px rgba(244, 63, 94, 0.4),
-      0 0 16px 5px rgba(251, 113, 133, 0.3);
-    filter: blur(1px);
-    pointer-events: none;
-    z-index: 4;
-    animation: orbitAroundBorder 3s linear infinite;
-  }
 
   /* Architectural World Button */
   .hud-world-btn {
@@ -481,7 +454,6 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     border-radius: 50%;
     background: #f43f5e;
     box-shadow: 0 0 8px #f43f5e;
-    animation: pulseBeacon 1.5s ease-in-out infinite;
   }
 
   .world-btn-wrapper:hover .hud-world-btn {
@@ -495,61 +467,7 @@ const pct = Math.round((claimedCount / totalSpots) * 100);
     color: #fb7185;
   }
 
-  .world-btn-wrapper:hover .world-orbit-particle {
-    animation-duration: 1.5s;
-  }
 
-  /* Smooth rectangular perimeter orbit for the floating light orb */
-  @keyframes orbitAroundBorder {
-    0% {
-      top: -3px;
-      left: 0%;
-    }
-    28% {
-      top: -3px;
-      left: calc(100% - 6px);
-    }
-    34% {
-      top: 0%;
-      left: calc(100% - 3px);
-    }
-    50% {
-      top: calc(100% - 6px);
-      left: calc(100% - 3px);
-    }
-    56% {
-      top: calc(100% - 3px);
-      left: calc(100% - 6px);
-    }
-    78% {
-      top: calc(100% - 3px);
-      left: 0%;
-    }
-    84% {
-      top: calc(100% - 6px);
-      left: -3px;
-    }
-    94% {
-      top: 0%;
-      left: -3px;
-    }
-    100% {
-      top: -3px;
-      left: 0%;
-    }
-  }
-
-  @keyframes pulseBeacon {
-    0%, 100% {
-      transform: scale(0.9);
-      opacity: 0.7;
-    }
-    50% {
-      transform: scale(1.3);
-      opacity: 1;
-      box-shadow: 0 0 10px 2px #f43f5e;
-    }
-  }
 
   .hud-world-btn:hover {
     background: rgba(244, 63, 94, 0.18);

@@ -3448,18 +3448,12 @@ export class Renderer {
         ctx.lineTo(sailX + 2 * z, sailY - 15 * z);
         ctx.stroke();
 
-        // Blinking Navigation Strobe Beacon
-        const beaconPulse = Math.sin(this.tick * 0.12) > 0;
-        ctx.fillStyle = beaconPulse ? '#ef4444' : '#7f1d1d';
+        // Steady navigation beacon
+        ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.arc(sailX + 2 * z, sailY - 16 * z, 2.4 * z, 0, Math.PI * 2);
         ctx.fill();
-        if (beaconPulse) {
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-          ctx.beginPath();
-          ctx.arc(sailX + 2 * z, sailY - 16 * z, 5 * z, 0, Math.PI * 2);
-          ctx.fill();
-        }
+
 
         // Stern Thruster Shrouds
         ctx.fillStyle = '#334155';
@@ -3668,9 +3662,8 @@ export class Renderer {
         ctx.ellipse(gx0, gy0, gr * 1.02, gr * 0.34, 0, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 6. Pulsing beacon flame crowning the plinth axis
-        const flamePulse = 0.6 + 0.4 * Math.sin(this.tick * 0.09);
-        ctx.fillStyle = `rgba(16, 185, 129, ${0.5 + flamePulse * 0.4})`;
+        // 6. Steady beacon crowning the plinth axis
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
         ctx.beginPath();
         ctx.arc(gx0, gy0 - gr * 1.18, 2.6 * z, 0, Math.PI * 2);
         ctx.fill();
@@ -5705,9 +5698,8 @@ export class Renderer {
         ctx.ellipse(sx - 1 * z, sy - 28 * z, 5 * z, 3.5 * z, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Glowing red eyes (animated pulse)
-        const eyePulse = 0.7 + Math.sin(this.tick * 0.05 + prop.gx) * 0.3;
-        ctx.fillStyle = `rgba(220, 38, 38, ${eyePulse})`;
+        // Glowing red eyes
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
         ctx.beginPath();
         ctx.arc(sx - 4.5 * z, sy - 32 * z, 2.2 * z, 0, Math.PI * 2);
         ctx.fill();
@@ -5857,8 +5849,7 @@ export class Renderer {
         ctx.lineTo(sx - 3 * z, sy - 105 * z);
         ctx.stroke();
 
-        // Glowing amber eyes (slow pulse)
-        const eyeGlow = 0.7 + Math.sin(this.tick * 0.02 + prop.gx * 0.5) * 0.3;
+        // Glowing amber eyes
         // Eye sockets (dark)
         ctx.fillStyle = '#111827';
         ctx.beginPath();
@@ -5868,7 +5859,7 @@ export class Renderer {
         ctx.ellipse(sx + 9 * z, sy - 104 * z, 5 * z, 4 * z, 0, 0, Math.PI * 2);
         ctx.fill();
         // Amber iris
-        ctx.fillStyle = `rgba(245, 158, 11, ${eyeGlow})`;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.85)';
         ctx.beginPath();
         ctx.ellipse(sx - 9 * z, sy - 104 * z, 3.5 * z, 3 * z, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -7376,8 +7367,7 @@ export class Renderer {
           const pTick = (this.tick + i * 35) % 180;
           const px = gx_pos + Math.sin(pTick * 0.04 + i) * 22 * z;
           const py = gy_pos - 10 * z + (pTick / 180) * 36 * z;
-          const pAlpha = Math.sin((pTick / 180) * Math.PI) * 0.6;
-          ctx.fillStyle = i === 0 ? `rgba(251, 191, 36, ${pAlpha})` : `rgba(134, 239, 172, ${pAlpha})`;
+          ctx.fillStyle = i === 0 ? 'rgba(251, 191, 36, 0.55)' : 'rgba(134, 239, 172, 0.55)';
           ctx.fillRect(px, py, 1.5 * z, 1.5 * z);
         }
 
@@ -7705,9 +7695,8 @@ export class Renderer {
         ctx.roundRect(sx - 6 * z, sy - 18 * z, 12 * z, 18 * z, 2 * z);
         ctx.fill();
 
-        // Pulsing Neon Top Header (Floor796 Vibe)
-        const neonPulse = 0.6 + Math.sin(this.tick * 0.1) * 0.4;
-        ctx.fillStyle = `rgba(56, 189, 248, ${neonPulse})`;
+        // Neon top header
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
         ctx.fillRect(sx - 5 * z, sy - 17 * z, 10 * z, 2.5 * z);
 
         ctx.fillStyle = '#0f172a';

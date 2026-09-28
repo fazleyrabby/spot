@@ -35,7 +35,7 @@ import Layout from '../layouts/Layout.astro';
       <!-- Top Telemetry Header -->
       <div class="telemetry-bar mono-num">
         <span class="status-indicator">
-          <span class="pulse-dot"></span>
+          <span class="status-dot"></span>
           <span>SYS_ALERT: OUT_OF_BOUNDS</span>
         </span>
         <span class="telemetry-coords">GRID: [???, ???]</span>
@@ -204,19 +204,14 @@ import Layout from '../layouts/Layout.astro';
     font-weight: 600;
   }
 
-  .pulse-dot {
+  .status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: #f59e0b;
     box-shadow: 0 0 8px #f59e0b;
-    animation: pulse 1.8s infinite;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.85); }
-  }
 
   /* Drifting Astronaut Animation */
   .astronaut-scene {

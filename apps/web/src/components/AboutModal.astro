@@ -108,7 +108,7 @@
         <div class="homelab-card-left">
           <div class="homelab-icon-badge">
             <span class="homelab-icon">💻</span>
-            <span class="homelab-dot-pulse" aria-hidden="true"></span>
+            <span class="homelab-status-dot" aria-hidden="true"></span>
           </div>
           <div class="homelab-card-info">
             <div class="homelab-card-header">
@@ -455,7 +455,7 @@
     margin-top: 1px;
   }
 
-  .homelab-dot-pulse {
+  .homelab-status-dot {
     position: absolute;
     top: -2px;
     right: -2px;
@@ -464,13 +464,8 @@
     border-radius: 50%;
     background: #10b981;
     box-shadow: 0 0 8px #10b981;
-    animation: homelab-dot-pulse 2s infinite ease-in-out;
   }
 
-  @keyframes homelab-dot-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.85); }
-  }
 
   .homelab-card-info {
     display: flex;

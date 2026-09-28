@@ -90,7 +90,7 @@
     <!-- Bottom telemetry ticker -->
     <div class="descent-portal-footer">
       <div class="descent-telemetry-chip">
-        <span class="descent-pulse-dot"></span>
+        <span class="descent-status-dot"></span>
         <span class="descent-telemetry-text">DSV-1 EXPEDITION • HADAL ZONE READY • 0m → 11,000m</span>
       </div>
     </div>
@@ -321,19 +321,14 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
-  .descent-pulse-dot {
+  .descent-status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: #22d3ee;
     box-shadow: 0 0 8px #22d3ee;
-    animation: descent-pulse 2s ease-in-out infinite;
   }
 
-  @keyframes descent-pulse {
-    0%, 100% { opacity: 0.5; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.2); }
-  }
 
   @media (max-width: 680px) {
     .descent-portal-stage {

@@ -139,13 +139,8 @@
     border-radius: 50%;
     background: #10b981;
     box-shadow: 0 0 8px #10b981;
-    animation: radarPulse 1.8s infinite;
   }
 
-  @keyframes radarPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.45; transform: scale(0.85); }
-  }
 
   .radar-title {
     font-size: 11px;
@@ -653,7 +648,7 @@
         ctx.closePath();
         ctx.fill();
 
-        // Pulsing Player Dot
+        // Player position
         ctx.fillStyle = '#22c55e';
         ctx.beginPath();
         ctx.arc(0, 0, 4, 0, Math.PI * 2);

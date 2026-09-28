@@ -722,7 +722,7 @@
       id: 'station',
       name: 'Habitat-796',
       type: 'Orbital Cyber Station',
-      desc: 'The legendary deep-space orbital station where the 796th floor resides. Solar panels glint as navigation beacons blink.',
+      desc: 'The legendary deep-space orbital station where the 796th floor resides. Solar panels glint beside its navigation beacon.',
       icon: '🛰️',
       distAU: '0.008 AU',
       period: '92 Mins',
@@ -1003,14 +1003,13 @@
 
       // Draw Sun / Star Glow Corona
       if (b.id === 'sol') {
-        const pulse = 1 + Math.sin(animTick * 0.08) * 0.08;
-        const sunGlow = ctx.createRadialGradient(bx, by, 10, bx, by, 45 * pulse);
+        const sunGlow = ctx.createRadialGradient(bx, by, 10, bx, by, 45);
         sunGlow.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
         sunGlow.addColorStop(0.4, 'rgba(245, 158, 11, 0.45)');
         sunGlow.addColorStop(1, 'transparent');
         ctx.fillStyle = sunGlow;
         ctx.beginPath();
-        ctx.arc(bx, by, 45 * pulse, 0, Math.PI * 2);
+        ctx.arc(bx, by, 45, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -1068,9 +1067,8 @@
       if (b.id === 'station') {
         ctx.fillStyle = '#38bdf8'; // Solar panels
         ctx.fillRect(bx - 10, by - 1.5, 20, 3);
-        // Blinking Navigation Strobe
-        const beacon = animTick % 30 < 15 ? '#22c55e' : '#ef4444';
-        ctx.fillStyle = beacon;
+        // Steady navigation marker
+        ctx.fillStyle = '#22c55e';
         ctx.fillRect(bx - 1, by - 4, 2, 2);
       }
 

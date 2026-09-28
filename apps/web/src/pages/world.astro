@@ -1226,9 +1226,9 @@ import DescentModal from '../components/DescentModal.astro';
       if (customizerCard) customizerCard.style.display = 'flex';
       if (bannerActionText) {
         if (banner.district.includes('Grand Central')) {
-          bannerActionText.textContent = 'Book Plaza Spot ($35) ⚡';
+          bannerActionText.textContent = 'Book Plaza Spot ($25) ⚡';
         } else if (banner.district.includes('Downtown')) {
-          bannerActionText.textContent = 'Book Downtown Spot ($20) ⚡';
+          bannerActionText.textContent = 'Book Downtown Spot ($18) ⚡';
         } else {
           bannerActionText.textContent = 'Book Scenic Spot ($10) ⚡';
         }
@@ -1384,10 +1384,10 @@ import DescentModal from '../components/DescentModal.astro';
 
     if (currentBanner.district.includes('Grand Central') || currentBanner.id === 'banner_boardwalk_pier') {
       productSlug = 'spot-billboard-plaza';
-      tierName = 'Grand Central Plaza Gateways ($35)';
+      tierName = 'Grand Central Plaza Gateways ($25)';
     } else if (currentBanner.district.includes('Downtown')) {
       productSlug = 'spot-billboard-downtown';
-      tierName = 'Downtown Cyber District ($20)';
+      tierName = 'Downtown Cyber District ($18)';
     }
 
     const gumroadBase = `https://fazleyrabbiii.gumroad.com/l/${productSlug}${discountPath}`;

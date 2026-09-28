@@ -32,7 +32,7 @@
     <div class="support-homelab-banner">
       <div class="support-homelab-badge">
         <span class="support-homelab-icon">💻</span>
-        <span class="support-homelab-ping" aria-hidden="true"></span>
+        <span class="support-homelab-status" aria-hidden="true"></span>
       </div>
       <div class="support-homelab-info">
         <div class="support-homelab-heading">
@@ -279,7 +279,7 @@
     margin-top: 1px;
   }
 
-  .support-homelab-ping {
+  .support-homelab-status {
     position: absolute;
     top: -2px;
     right: -2px;
@@ -288,13 +288,8 @@
     border-radius: 50%;
     background: #10b981;
     box-shadow: 0 0 8px #10b981;
-    animation: support-pulse 2s infinite ease-in-out;
   }
 
-  @keyframes support-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.85); }
-  }
 
   .support-homelab-info {
     display: flex;

@@ -716,7 +716,7 @@ export class PlayerManager {
       ctx.fillStyle = '#10b981';
       ctx.fillRect(sx - 3.5 * z, bodyY + 3.5 * z, 7 * z, 1.2 * z);
       ctx.fillStyle = '#34d399';
-      ctx.fillRect(sx + 1.5 * z, bodyY + 5.5 * z, 2 * z, 1.5 * z); // Blinking LED
+      ctx.fillRect(sx + 1.5 * z, bodyY + 5.5 * z, 2 * z, 1.5 * z); // Status LED
     } else if (this.avatarId === 'ai_architect') {
       // Orbiting Syntax Halo Runes
       const haloTime = this.tick * 0.06;
@@ -757,7 +757,7 @@ export class PlayerManager {
       ctx.beginPath();
       ctx.roundRect(earX - 2.5 * z, hy - 1.5 * z, 5 * z, 6 * z, 2 * z);
       ctx.fill();
-      // Pulsing Audio LED
+      // Audio status LED
       ctx.fillStyle = this.avatarId === 'hacker' ? '#10b981' : '#38bdf8';
       ctx.fillRect(earX - 1 * z, hy + 0.5 * z, 2 * z, 2 * z);
     } else if (this.avatarId === 'cyber_sysadmin') {

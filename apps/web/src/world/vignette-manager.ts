@@ -980,15 +980,6 @@ export class VignetteManager {
     ctx.arc(-6 * z, -6 * z, 3 * z, 0, Math.PI * 2);
     ctx.fill();
 
-    // Animated Soundwave Rings from Boombox
-    const pulseRadius = ((this.animTick * 0.6) % 24);
-    const pulseAlpha = Math.max(0, 1 - pulseRadius / 24);
-    ctx.strokeStyle = `rgba(236, 72, 153, ${pulseAlpha * 0.7})`;
-    ctx.lineWidth = 1.2 * z;
-    ctx.beginPath();
-    ctx.arc(-10 * z, -6 * z, pulseRadius * z, 0, Math.PI * 2);
-    ctx.stroke();
-
     // 2. Breakdancer (Right) with 4-phase routine
     const step = Math.floor(this.animTick / 14) % 4;
     ctx.save();
@@ -2442,17 +2433,15 @@ export class VignetteManager {
         continue;
       }
 
-      const pulse = 0.35 + Math.sin(this.animTick * 0.08 + i * 1.5) * 0.45;
-
       ctx.save();
       // Soft amber glow halo
-      ctx.fillStyle = `rgba(251, 191, 36, ${pulse * 0.3})`;
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.16)';
       ctx.beginPath();
       ctx.arc(screen.x, screen.y, 4.5 * z, 0, Math.PI * 2);
       ctx.fill();
 
       // Bright ember core
-      ctx.fillStyle = `rgba(254, 240, 138, ${Math.min(1, pulse * 1.2)})`;
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.8)';
       ctx.beginPath();
       ctx.arc(screen.x, screen.y, 1.5 * z, 0, Math.PI * 2);
       ctx.fill();

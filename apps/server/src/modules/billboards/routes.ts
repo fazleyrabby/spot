@@ -131,10 +131,10 @@ billboardsRouter.post('/webhook', async (req, res) => {
     // Calculate minimum required price for the chosen billboard
     const getRequiredPriceCents = (id: string): number => {
       if (id.startsWith('banner_plaza_') || id === 'banner_boardwalk_pier') {
-        return 3500; // $35 Grand Central Plaza & Pier
+        return 2500; // $25 Grand Central Plaza & Pier
       }
       if (id.startsWith('banner_cyber_')) {
-        return 2000; // $20 Downtown Cyber District
+        return 1800; // $18 Downtown Cyber District
       }
       return 1000; // $10 Scenic & Rail Landmarks
     };

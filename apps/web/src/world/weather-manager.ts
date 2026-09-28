@@ -272,9 +272,8 @@ export class WeatherManager {
     ctx.save();
     for (let i = 0; i < count; i++) {
       const m = this.motes[i];
-      const pulse = 0.5 + Math.sin(m.phase) * 0.5; // 0..1
-      const radius = m.baseRadius * (0.8 + pulse * 0.4);
-      const alpha = 0.25 + pulse * 0.55;
+      const radius = m.baseRadius;
+      const alpha = 0.5;
 
       ctx.save();
       ctx.globalAlpha = alpha;

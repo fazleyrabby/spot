@@ -34,7 +34,7 @@
             <span class="holo-corner br"></span>
           </div>
           <button type="button" class="holo-tilt-btn" id="profile-holo-spin-btn" title="Click to 3D Inspect Spin">
-            <span class="holo-pulse-dot"></span>
+            <span class="holo-status-dot"></span>
             <span>3D HOLO</span>
           </button>
         </div>
@@ -643,19 +643,14 @@
     transform: scale(1.04);
   }
 
-  .holo-pulse-dot {
+  .holo-status-dot {
     width: 4px;
     height: 4px;
     border-radius: 50%;
     background: #38bdf8;
     box-shadow: 0 0 6px #38bdf8;
-    animation: holoDotPulse 1.5s infinite;
   }
 
-  @keyframes holoDotPulse {
-    0%, 100% { opacity: 0.4; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.3); }
-  }
 
   .avatar-canvas {
     width: 54px;

@@ -804,7 +804,7 @@ function buildProps() {
         pushDetail(gx, base + 1.85, gy - 0.25, 0.45, 0.6, 0.7, 0x1e293b);
         // Periscope / communications mast
         pushCyl(gx, base + 2.45, gy - 0.25, 0.03, 0.8, 0x94a3b8);
-        // Strobe beacon (red)
+        // Red navigation beacon
         pushSphere(gx, base + 2.85, gy - 0.25, 0.08, 0xef4444);
         pushGlow(gx, base + 2.85, gy - 0.25, 0xef4444);
 
