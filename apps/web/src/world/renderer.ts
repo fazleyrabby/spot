@@ -1662,11 +1662,19 @@ export class Renderer {
         ctx.roundRect(bodyLeft, bodyTop, bodyW, FLOORS * floorH, [4 * z, 4 * z, 0, 0]);
         ctx.fill();
 
-        // Right-face shade (3D depth)
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        ctx.beginPath();
-        ctx.roundRect(bodyLeft + bodyW * 0.72, bodyTop, bodyW * 0.28, FLOORS * floorH, [0, 4 * z, 0, 0]);
-        ctx.fill();
+        // Recessed end wings and strong vertical piers give the hotel a clear frame.
+        ctx.fillStyle = '#e9d9b9';
+        ctx.fillRect(bodyLeft - 3 * z, bodyTop + 6 * z, 9 * z, FLOORS * floorH - 6 * z);
+        ctx.fillRect(bodyLeft + bodyW - 6 * z, bodyTop + 6 * z, 9 * z, FLOORS * floorH - 6 * z);
+        ctx.fillStyle = '#d2bc93';
+        ctx.fillRect(bodyLeft + 6 * z, bodyTop + 14 * z, 2 * z, FLOORS * floorH - 14 * z);
+        ctx.fillRect(bodyLeft + bodyW - 8 * z, bodyTop + 14 * z, 2 * z, FLOORS * floorH - 14 * z);
+        // The glazed central atrium reads as a separate volume behind the balconies.
+        ctx.fillStyle = '#0b5e69';
+        ctx.fillRect(sx - 12 * z, bodyTop + 17 * z, 24 * z, FLOORS * floorH - 17 * z);
+        ctx.fillStyle = 'rgba(84, 204, 204, 0.28)';
+        ctx.fillRect(sx - 9 * z, bodyTop + 17 * z, 3 * z, FLOORS * floorH - 17 * z);
+        ctx.fillRect(sx + 5 * z, bodyTop + 17 * z, 2 * z, FLOORS * floorH - 17 * z);
 
         // ── Floor bands & balconies ───────────────────────────────────────────
         for (let f = 0; f < FLOORS; f++) {
@@ -1680,9 +1688,15 @@ export class Renderer {
           ctx.lineTo(bodyLeft + bodyW, fy + floorH);
           ctx.stroke();
 
+          // Deep balcony slab with a shaded underside and pale walking surface.
+          ctx.fillStyle = '#b8aa8c';
+          ctx.fillRect(bodyLeft - 2 * z, fy + floorH - 3 * z, bodyW + 4 * z, 4 * z);
+          ctx.fillStyle = '#eadfc8';
+          ctx.fillRect(bodyLeft - 2 * z, fy + floorH - 4 * z, bodyW + 4 * z, 2 * z);
+
           // Balcony rail (teal)
           ctx.fillStyle = '#0d9488';
-          ctx.fillRect(bodyLeft + 4 * z, fy + floorH - 5 * z, bodyW - 8 * z, 3 * z);
+          ctx.fillRect(bodyLeft + 4 * z, fy + floorH - 5 * z, bodyW - 8 * z, 2 * z);
 
           // Balcony rail posts
           const postCount = 8;
@@ -1740,6 +1754,30 @@ export class Renderer {
               ctx.fill();
             }
           }
+
+          // Guests stroll back and forth on the open balcony corridors.
+          // Their positions derive from the world tick, so the resort animates without timers.
+          if (f > 0) {
+            for (let guest = 0; guest < (f % 2 === 0 ? 2 : 3); guest++) {
+              const travel = (this.tick * (0.0028 + guest * 0.0005) + f * 0.27 + guest * 0.37) % 2;
+              const progress = travel <= 1 ? travel : 2 - travel;
+              const gx = bodyLeft + (10 + progress * 96) * z;
+              const gy = fy + floorH - 5 * z;
+              const stride = Math.sin(this.tick * 0.22 + guest * 2 + f) * 0.75 * z;
+              ctx.fillStyle = '#26364a';
+              ctx.fillRect(gx - 0.7 * z, gy + 0.1 * z, 0.55 * z, 2.2 * z + stride);
+              ctx.fillRect(gx + 0.2 * z, gy + 0.1 * z, 0.55 * z, 2.2 * z - stride);
+              ctx.fillStyle = ['#e89b56', '#e6cf9a', '#a6c6c5'][(guest + f) % 3];
+              ctx.fillRect(gx - 1 * z, gy - 3.7 * z, 2 * z, 3.8 * z);
+              ctx.fillStyle = ['#c78964', '#e6bc95', '#865a42'][(guest + f) % 3];
+              ctx.beginPath();
+              ctx.arc(gx, gy - 4.8 * z, 1.1 * z, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          // Foreground rail crosses in front of people, anchoring them to the balcony.
+          ctx.fillStyle = '#087e77';
+          ctx.fillRect(bodyLeft + 3 * z, fy + floorH - 2.5 * z, bodyW - 6 * z, 1.2 * z);
         }
 
         // ── Grand entrance canopy ─────────────────────────────────────────────
@@ -3557,6 +3595,47 @@ export class Renderer {
           ctx.font = `600 ${Math.max(8, Math.floor(8.5 * z))}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
           ctx.fillStyle = '#22d3ee';
           ctx.fillText(sub, sx, pillY + 3.5 * z);
+        }
+        break;
+      }
+
+      case 'working_tower': {
+        const hovered = this.hoveredSecret?.id === 'working_tower';
+        // A small architectural cutaway previews the full simulation.
+        ctx.fillStyle = 'rgba(12, 24, 27, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 3 * z, 36 * z, 10 * z, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4d6063';
+        ctx.fillRect(sx - 28 * z, sy - 3 * z, 56 * z, 5 * z);
+        ctx.fillStyle = '#263940';
+        ctx.fillRect(sx - 22 * z, sy - 82 * z, 44 * z, 79 * z);
+        ctx.fillStyle = '#779594';
+        ctx.fillRect(sx - 24 * z, sy - 84 * z, 48 * z, 4 * z);
+        for (let floor = 0; floor < 7; floor++) {
+          const fy = sy - (floor + 1) * 10 * z - 3 * z;
+          ctx.fillStyle = floor % 2 ? '#aab8ad' : '#bfc8b7';
+          ctx.fillRect(sx - 19 * z, fy - 7 * z, 38 * z, 8 * z);
+          ctx.fillStyle = '#48646b';
+          ctx.fillRect(sx - 20 * z, fy, 40 * z, 2 * z);
+          for (const ox of [-15, -8, 7, 14]) {
+            ctx.fillStyle = floor % 2 ? '#d5ad76' : '#83b8b6';
+            ctx.fillRect(sx + ox * z, fy - 5 * z, 3 * z, 3 * z);
+          }
+        }
+        ctx.fillStyle = '#293c43';
+        ctx.fillRect(sx - 3 * z, sy - 80 * z, 6 * z, 75 * z);
+        ctx.fillStyle = '#e3b66b';
+        ctx.fillRect(sx - 2 * z, sy - (22 + (Math.sin(this.tick * 0.022) + 1) * 23) * z, 4 * z, 6 * z);
+        ctx.fillStyle = '#e3b66b';
+        ctx.fillRect(sx - 16 * z, sy - 88 * z, 32 * z, 3 * z);
+        if (hovered) {
+          ctx.fillStyle = '#17262b';
+          ctx.fillRect(sx - 43 * z, sy - 107 * z, 86 * z, 17 * z);
+          ctx.fillStyle = '#f5ddb5';
+          ctx.font = `700 ${Math.max(8, 9 * z)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText('ENTER MERIDIAN TOWER', sx, sy - 95 * z);
         }
         break;
       }

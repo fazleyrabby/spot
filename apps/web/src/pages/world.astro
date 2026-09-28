@@ -1786,6 +1786,16 @@ import DescentModal from '../components/DescentModal.astro';
             (window as any).openSwarmGuardModal?.();
           } else if (secret.id === 'descent_monument') {
             (window as any).openDescentModal?.();
+          } else if (secret.id === 'working_tower') {
+            // The office runs as its own app. Open it directly so browsers that
+            // restrict cross-origin frames still show the complete simulation.
+            window.location.assign('https://meridian-tower.vercel.app/?from=spot');
+            fetch(`${API_BASE}/api/analytics/click`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetType: 'monument', targetId: 'working_tower', source: '2d' }),
+              keepalive: true,
+            }).catch(() => {});
           } else {
             openSecretModal(secret);
           }
