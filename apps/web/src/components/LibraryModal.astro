@@ -833,7 +833,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
   let activeCategory = 'all';
   let activeSearch = '';
 
-  export function openLibraryModal() {
+  function openLibraryModal() {
     if (backdrop) {
       backdrop.classList.add('is-open');
       backdrop.setAttribute('aria-hidden', 'false');
@@ -841,7 +841,7 @@ import { LIBRARY_RESOURCES } from '../data/library-resources.js';
     }
   }
 
-  export function closeLibraryModal() {
+  function closeLibraryModal() {
     if (backdrop) {
       backdrop.classList.remove('is-open');
       backdrop.setAttribute('aria-hidden', 'true');
