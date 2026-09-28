@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import { query } from '../../db.js';
 import { sendVisitorNotification, parseUserAgent } from '../../discord.js';
+import { optionalAuthMiddleware, type AuthenticatedRequest, clientIp } from '../../auth.js';
 
 export const analyticsRouter: express.Router = express.Router();
 
@@ -73,12 +74,37 @@ analyticsRouter.get('/visit', async (req, res) => {
  * Record an interaction / click event on any world target (monument, billboard, secret, portal).
  * Deduplicates uniquely per day per visitor while maintaining overall total counts.
  */
-analyticsRouter.post('/click', async (req, res) => {
+analyticsRouter.post('/click', optionalAuthMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     const { targetType, targetId, source = '2d' } = req.body || {};
     if (!targetType || !targetId) {
       res.status(400).json({ error: 'BadRequest', message: 'targetType and targetId are required' });
       return;
+    }
+
+    if (targetType === 'homepage_sponsor' && targetId === 'directory') {
+      const ip = clientIp(req);
+      const fingerprint = typeof req.body?.deviceFingerprint === 'string'
+        ? req.body.deviceFingerprint.trim().slice(0, 64)
+        : null;
+      const founderRes = await query<{ id: string; ip_address: string | null; device_fingerprint: string | null }>(
+        `SELECT id, ip_address, device_fingerprint FROM citizens
+         WHERE id = 'founder' OR display_name ILIKE '%Fazley%'`
+      );
+      const isFounder = founderRes.rows.some((founder) =>
+        (req.citizen?.id === founder.id) ||
+        (ip && founder.ip_address === ip) ||
+        (fingerprint && founder.device_fingerprint === fingerprint)
+      );
+      const isLocal = req.hostname === 'localhost' || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+      if (isFounder || isLocal) {
+        const current = await query<{ total_clicks: string }>(
+          `SELECT total_clicks FROM world_interaction_stats WHERE target_type = $1 AND target_id = $2`,
+          [targetType, targetId]
+        );
+        res.json({ counted: false, reason: isFounder ? 'owner_excluded' : 'local_preview', totalClicks: Number(current.rows[0]?.total_clicks || 0) });
+        return;
+      }
     }
 
     const rawIp =
@@ -249,4 +275,3 @@ analyticsRouter.get('/summary', async (_req, res) => {
     res.status(500).json({ error: 'InternalServerError', message: 'Failed to fetch summary' });
   }
 });
-

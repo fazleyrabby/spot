@@ -1,8 +1,7 @@
 <aside class="home-sponsor" id="home-sponsor" aria-label="Spot World sponsor" hidden>
-  <div class="home-sponsor__top">
-    <span>Spot World sponsor</span>
-    <button type="button" class="home-sponsor__all" id="home-sponsor-all" aria-controls="billboard-directory" aria-expanded="false" aria-label="View all 21 Spot World billboards">View all</button>
-  </div>
+  <div class="home-sponsor__top"><span>Advertise in Spot World</span><span class="home-sponsor__count" id="home-sponsor-count" hidden></span></div>
+  <h2 class="home-sponsor__heading">Your brand belongs on the map.</h2>
+  <p class="home-sponsor__offer">20 real billboard locations <span>from $10</span></p>
   <a class="home-sponsor__feature" id="home-sponsor-feature" href="/world" rel="noopener noreferrer">
     <span class="home-sponsor__logo" id="home-sponsor-logo-wrap">
       <span id="home-sponsor-initials" aria-hidden="true">SP</span>
@@ -13,7 +12,7 @@
     </span>
     <svg class="home-sponsor__arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg>
   </a>
-  <a class="home-sponsor__world" id="home-sponsor-world" href="/world">Explore the billboard <span aria-hidden="true">→</span></a>
+  <button type="button" class="home-sponsor__all" id="home-sponsor-all" aria-controls="billboard-directory" aria-expanded="false">See locations &amp; prices <span aria-hidden="true">→</span></button>
 </aside>
 
 <div class="billboard-directory" id="billboard-directory" hidden>
@@ -39,10 +38,10 @@
     z-index: 28;
     top: 112px;
     right: 18px;
-    width: 216px;
-    padding: 11px;
+    width: 248px;
+    padding: 15px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+    border-radius: 14px;
     background: rgba(15, 19, 29, 0.94);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
     color: var(--text-primary);
@@ -56,24 +55,20 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 10px;
-    color: var(--text-muted);
-    font-size: 0.65rem;
+    margin-bottom: 12px;
+    color: var(--accent-amber);
+    font-size: 0.63rem;
     font-weight: 600;
     letter-spacing: 0.02em;
   }
 
-  .home-sponsor__all {
-    margin-left: auto;
-    padding: 3px 0 3px 5px;
-    color: var(--text-secondary);
-    font-size: 0.64rem;
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.28);
-    text-underline-offset: 2px;
-  }
-
-  .home-sponsor__all:hover { color: var(--accent-amber); }
+  .home-sponsor__count { margin-left: auto; color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .home-sponsor__heading { margin: 0 0 6px; font-family: var(--font-display); font-size: 1.13rem; line-height: 1.16; letter-spacing: -0.02em; }
+  .home-sponsor__offer { margin: 0 0 13px; color: var(--text-secondary); font-size: 0.73rem; line-height: 1.35; }
+  .home-sponsor__offer span { color: var(--accent-amber); font-weight: 700; white-space: nowrap; }
+  .home-sponsor__all { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 13px; padding: 10px 11px; border-radius: 7px; background: var(--accent-amber); color: #151514; font-size: 0.74rem; font-weight: 800; text-align: left; transition: background 0.15s ease, transform 0.15s ease; }
+  .home-sponsor__all:hover { background: #ffd06b; transform: translateY(-1px); }
+  .home-sponsor__all:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
   .home-sponsor__feature {
     display: flex;
@@ -85,8 +80,7 @@
     border-radius: 7px;
   }
 
-  .home-sponsor__feature:hover .home-sponsor__arrow,
-  .home-sponsor__world:hover { color: var(--accent-amber); }
+  .home-sponsor__feature:hover .home-sponsor__arrow { color: var(--accent-amber); }
 
   .home-sponsor__logo {
     display: grid;
@@ -129,15 +123,6 @@
   .home-sponsor__copy strong { font-size: 0.76rem; font-weight: 700; }
   .home-sponsor__copy small { color: var(--text-muted); font-size: 0.65rem; }
   .home-sponsor__arrow { flex: none; color: var(--text-muted); transition: color 0.15s ease; }
-
-  .home-sponsor__world {
-    display: block;
-    margin: 10px 0 0 51px;
-    color: var(--text-secondary);
-    font-size: 0.66rem;
-    text-decoration: none;
-    transition: color 0.15s ease;
-  }
 
   .billboard-directory {
     position: fixed;
@@ -270,19 +255,22 @@
 
   .billboard-directory__status--live { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; }
   .billboard-directory__status--available { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+  .billboard-directory__price { flex: none; color: var(--accent-amber); font-size: 0.77rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 
   @media (max-width: 1100px) {
     .home-sponsor { top: 66px; right: 12px; width: 196px; }
   }
 
   @media (max-width: 640px) {
-    .home-sponsor { top: 52px; right: 8px; width: min(172px, calc(100vw - 16px)); padding: 7px 9px; }
-    .home-sponsor__top { margin-bottom: 5px; font-size: 0.58rem; }
-    .home-sponsor__all { font-size: 0.6rem; }
+    .home-sponsor { top: 52px; right: 8px; width: min(208px, calc(100vw - 16px)); padding: 10px; }
+    .home-sponsor__top { margin-bottom: 6px; font-size: 0.57rem; }
+    .home-sponsor__heading { font-size: 0.91rem; }
+    .home-sponsor__offer { margin-bottom: 8px; font-size: 0.65rem; }
+    .home-sponsor__all { margin-top: 8px; padding: 8px; font-size: 0.67rem; }
     .home-sponsor__feature { min-height: 34px; gap: 7px; }
     .home-sponsor__logo { width: 32px; height: 32px; border-radius: 6px; }
     .home-sponsor__copy strong { font-size: 0.7rem; }
-    .home-sponsor__copy small, .home-sponsor__world { display: none; }
+    .home-sponsor__copy small { display: none; }
     .home-sponsor__arrow { width: 12px; height: 12px; }
 
     .billboard-directory__panel {
@@ -308,11 +296,12 @@
 
 <script>
   import { API_BASE } from '../api/client.js';
+  import { getDeviceFingerprint } from '../api/fingerprint.js';
   import { WORLD_BANNERS, type ActiveSponsorshipRecord, type WorldBanner } from '../world/banner-manager.js';
 
   const card = document.getElementById('home-sponsor');
   const feature = document.getElementById('home-sponsor-feature') as HTMLAnchorElement | null;
-  const worldLink = document.getElementById('home-sponsor-world') as HTMLAnchorElement | null;
+  const count = document.getElementById('home-sponsor-count');
   const logoWrap = document.getElementById('home-sponsor-logo-wrap');
   const initials = document.getElementById('home-sponsor-initials');
   const name = document.getElementById('home-sponsor-name');
@@ -324,12 +313,21 @@
   const directorySummary = document.getElementById('billboard-directory-summary');
   const directoryList = document.getElementById('billboard-directory-list');
 
-  if (card && feature && worldLink && logoWrap && initials && name && description && allButton && directory && directoryBackdrop && directoryClose && directorySummary && directoryList) {
+  if (card && feature && count && logoWrap && initials && name && description && allButton && directory && directoryBackdrop && directoryClose && directorySummary && directoryList) {
     const plaza = WORLD_BANNERS.find((banner) => banner.id === 'banner_plaza_nw');
     const fallbackWorldUrl = plaza ? `/world?x=${plaza.gx}&y=${plaza.gy}` : '/world';
     feature.href = fallbackWorldUrl;
-    worldLink.href = fallbackWorldUrl;
     card.hidden = false;
+    const showCount = (total: number) => {
+      count.textContent = `${total.toLocaleString()} clicks`;
+      count.hidden = false;
+    };
+    if (API_BASE) {
+      fetch(`${API_BASE}/analytics/click/homepage_sponsor/directory`)
+        .then((response) => response.ok ? response.json() : Promise.reject())
+        .then((data: { totalClicks?: number }) => { if (typeof data.totalClicks === 'number') showCount(data.totalClicks); })
+        .catch(() => {});
+    }
 
     const safeUrl = (value?: string): string | null => {
       if (!value) return null;
@@ -342,6 +340,7 @@
     };
 
     const worldUrl = (banner: WorldBanner) => `/world?x=${banner.gx}&y=${banner.gy}`;
+    const price = (banner: WorldBanner) => banner.id.startsWith('banner_plaza_') || banner.id === 'banner_boardwalk_pier' ? 25 : banner.id.startsWith('banner_cyber_') ? 18 : 10;
 
     const renderDirectory = (records: ActiveSponsorshipRecord[] | null, state: 'loading' | 'ready' | 'unavailable') => {
       const activeById = new Map((records || []).map((record) => [record.billboard_id, record]));
@@ -369,7 +368,7 @@
           const row = document.createElement('a');
           row.className = 'billboard-directory__row';
           row.href = worldUrl(banner);
-          row.setAttribute('aria-label', `${brand || banner.name}, ${banner.name}, ${status}. View in Spot World`);
+          row.setAttribute('aria-label', `${brand || banner.name}, ${banner.name}, ${founder ? 'Founder display' : `$${price(banner)} per month`}, ${status}. View in Spot World`);
 
           const mark = document.createElement('span');
           mark.className = 'billboard-directory__mark';
@@ -397,7 +396,14 @@
           if (sponsor || founder) badge.classList.add('billboard-directory__status--live');
           if (!sponsor && !founder && state === 'ready') badge.classList.add('billboard-directory__status--available');
           badge.textContent = status;
-          row.append(mark, copy, badge);
+          row.append(mark, copy);
+          if (!founder) {
+            const amount = document.createElement('span');
+            amount.className = 'billboard-directory__price';
+            amount.textContent = `$${price(banner)}`;
+            row.append(amount);
+          }
+          row.append(badge);
           directoryList.append(row);
         }
       };
@@ -417,6 +423,15 @@
       directory.hidden = false;
       allButton.setAttribute('aria-expanded', 'true');
       directoryClose.focus();
+      if (API_BASE) {
+        getDeviceFingerprint().catch(() => '').then((deviceFingerprint) => fetch(`${API_BASE}/analytics/click`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetType: 'homepage_sponsor', targetId: 'directory', source: 'homepage', deviceFingerprint }),
+        })).then((response) => response.ok ? response.json() : Promise.reject())
+          .then((data: { totalClicks?: number }) => { if (typeof data.totalClicks === 'number') showCount(data.totalClicks); })
+          .catch(() => {});
+      }
     });
     directoryClose.addEventListener('click', closeDirectory);
     directoryBackdrop.addEventListener('click', closeDirectory);
@@ -464,7 +479,6 @@
           name.textContent = selected.buyer_name || selected.headline || 'Spot World sponsor';
           description.textContent = selected.subtext || billboard.district;
           initials.textContent = name.textContent.trim().slice(0, 2).toUpperCase();
-          worldLink.href = worldUrl(billboard);
           feature.href = destination || worldUrl(billboard);
           if (destination) feature.target = '_blank';
           if (imageUrl) {
