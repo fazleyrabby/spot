@@ -83,6 +83,7 @@ export type UrbanPropType =
   | 'marina_harbor'
   | 'chattogram_globe'
   | 'swarmguard_bastion'
+  | 'working_tower'
   | 'descent_monument'
   | 'mystic_duck'
   | 'cafe_cat'
@@ -784,6 +785,14 @@ export function getCityProp(gx: number, gy: number): CityProp | null {
     return {
       gx, gy, type: 'marina_harbor', wx, wy,
       hasLight: true, lightColor: 'rgba(56, 189, 248, 0.55)', lightRadius: 125,
+    };
+  }
+
+  // Working Tower — office cutaway in the south-east Grand Plaza courtyard
+  if (gx === 56 && gy === 58) {
+    return {
+      gx, gy, type: 'working_tower', wx, wy,
+      hasLight: true, lightColor: 'rgba(226, 182, 107, 0.34)', lightRadius: 120,
     };
   }
 

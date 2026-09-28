@@ -111,6 +111,23 @@ export const WORLD_SECRETS: WorldSecret[] = [
     quote: '“Fast hulls, open water — the marina never sleeps.”',
   },
   {
+    id: 'working_tower',
+    name: 'Meridian Tower',
+    district: 'Grand Central Plaza',
+    icon: '🏢',
+    gx: 56,
+    gy: 58,
+    category: 'interactive',
+    title: 'Meridian Tower',
+    subtitle: 'A miniature city at work',
+    description: 'The Meridian twin office towers — shops at street level, busy teams above, and lifts carrying people between floors around a shared central core. Step inside the full standalone simulation: every room detailed, every worker on a routine, click any window to fly inside.',
+    clue: 'East of the southern plaza globe at (56, 58), twin glass towers show every floor at once.',
+    actionLabel: 'Enter the office simulation',
+    actionUrl: 'https://meridian-tower.vercel.app/?from=spot',
+    reward: 'Tower Observer',
+    quote: '“A city is made of the small things people do together each day.”',
+  },
+  {
     id: 'ctg_explorer',
     name: 'The Chattogram Globe Monument',
     district: 'Grand Central Plaza',
@@ -481,7 +498,7 @@ export function getSecretAt(gx: number, gy: number): WorldSecret | null {
     const dx = Math.abs(s.gx - gx);
     const dy = Math.abs(s.gy - gy);
     // Multi-tile civic buildings with large facades (3x3 tile bounds)
-    const wideBuildings = ['dev_library', 'yorimichi_village', 'apex_marina', 'swarmguard_bastion', 'ctg_explorer', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
+    const wideBuildings = ['dev_library', 'yorimichi_village', 'apex_marina', 'swarmguard_bastion', 'working_tower', 'ctg_explorer', 'descent_monument', 'retro_arcade', 'city_hall', 'cafe_storefront', 'grand_station'];
     if (wideBuildings.includes(s.id)) {
       if (dx <= 1 && dy <= 1) {
         return s;
