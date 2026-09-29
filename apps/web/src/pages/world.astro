@@ -2107,7 +2107,13 @@ import DescentModal from '../components/DescentModal.astro';
         const targetWy = y * 32 + 16;
         engine.camera.centerOn(targetWx, targetWy, 1.4);
         engine.player?.teleport(x, y);
+        // Resolve the spot separately so retries never re-teleport the player
+        // (re-teleporting yanked the player back mid-walk and caused jitter).
+        resolveSpotAt(x, y, 0);
+      }
 
+      function resolveSpotAt(x: number, y: number, attempt: number): void {
+        if (!engine) return;
         const spot = engine.plots.getSpotAt(x, y) ?? engine.plots.getPlotAt(x, y)?.owner;
         if (spot) {
           engine.renderer.selectedCitizen = spot;
@@ -2116,7 +2122,7 @@ import DescentModal from '../components/DescentModal.astro';
           }, 350);
         } else if (attempt < 8) {
           // If plots are still being fetched from server, retry gracefully
-          setTimeout(() => flyCameraToSpot(x, y, attempt + 1), 350);
+          setTimeout(() => resolveSpotAt(x, y, attempt + 1), 350);
         }
       }
 
