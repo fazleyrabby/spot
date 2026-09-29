@@ -261,5 +261,18 @@ const author = 'Md. Fazley Rabbi';
   </head>
   <body>
     <slot />
-  </body>
-</html>
+
+    <script>
+      (function() {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
+        const agent = navigator.userAgent.toLowerCase();
+        if (navigator.webdriver || ['bot','spider','crawler','preview','lighthouse','headless','playwright','puppeteer','selenium'].some(word => agent.includes(word))) return;
+        if (sessionStorage.getItem('spotTracked') === 'true') return;
+        sessionStorage.setItem('spotTracked', 'true');
+        fetch('https://views.fazleyrabbi.xyz/api/hit?project=claimyourspot&key=visitors', { 
+          method: 'GET',
+          cache: 'no-store'
+        }).catch(() => {});
+      })();
+    </script>
+  </body></html>
